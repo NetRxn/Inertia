@@ -1,67 +1,86 @@
-# Inertia decision log
+# Inertia decisions
 
-Revision: INERTIA-2026-10-22-r4  
-Updated: 2026-10-22 (UTC)  
-Status: Planning baseline. No implementation, deployment, scan, or application test execution is represented as complete.
+Revision: INERTIA-2026-10-22-r5
+Updated: 2026-10-22 (UTC)
+Stage: Design refinement; compatibility qualification and detailed design review precede implementation.
 
-## Synchronized artifact set
+## Settled decisions
 
-- [spec.md](spec.md): requirements, boundaries, contracts, and sources.
-- [testing.md](testing.md): acceptance and security tests defined before implementation.
-- [decisions.md](decisions.md): confirmed decisions, proposals, and unresolved choices.
-- [plan.md](plan.md): proposed sequence, dependencies, and evidence gates.
-- [Inertia-Architecture.pptx](Inertia-Architecture.pptx): editable seven-slide architecture view.
+| ID | Decision | Consequence |
+|---|---|---|
+| D01 | Three required outcomes: meetings, grant vote, member contribution | Preserve all three through planning. |
+| D02 | Meet/video → Gemini → organization Drive | Integrate actual outputs once access contract is known. |
+| D03 | Automatic cleaned transcript and notes publication | Routine in-policy publication is automatic. |
+| D04 | Preserve source fidelity and audience | Version outputs, retain source and read back publication. |
+| D05 | DAO uses PlanetScale PostgreSQL | Reuse existing website persistence. |
+| D06 | Reuse existing grant scanner | Qualify its current interfaces and refresh stale opportunities. |
+| D07 | Blockchain voting is settled | Bind final authority to an immutable packet. |
+| D08 | Ordinary tasks can proceed without a vote | Do not route every website or research action through governance. |
+| D09 | Y2 remains a demo integration objective | Teammate ownership makes access worth resolving early. |
+| D10 | Paperclip is the operational platform | Use its CEO, hiring, hierarchy, tasks and decisions. |
+| D11 | Buzz and dashboard are alternative interfaces | Share IDs, permissions and state in both directions. |
+| D12 | Agents eagerly acquire work and create follow-ups | Configure native autonomy, budgets and follow-up constraints. |
+| D13 | Member agents execute client-side securely | Qualify sandbox, data isolation and server validation. |
+| D14 | Reuse native/existing hardening first | Qualify existing execution hardening against the selected Paperclip release. |
+| D15 | Helix de-prioritized; 990 integration stretch | No graph dependency on the core critical path. |
+| D16 | Cloudflare is available | Select services only when deployment needs justify them. |
+| D17 | Keep four Markdown files and deck synchronized | Preserve original PDF; use focused Git commits and existing PR. |
 
-All five artifacts carry the same revision. Future user updates must reconcile all five, including explicit no-change checks. Preserve stable filenames and IDs, record superseded choices, and do not silently convert proposals into confirmed decisions. No newly generated PDF is part of this active set. The original [product overview](docs/reference/Inertia-beta-product-overview.pdf) is preserved unchanged as historical source material; its older sequencing does not override these current artifacts.
+## Superseded proposals
 
-## Change summary
+The earlier 'Paperclip-style candidate UI' becomes actual Paperclip operations. The generic bespoke task ledger, scheduler, approval store, credential manager and workspace manager are replaced by native integration as the default. A demonstrated interface gap may justify a narrowly scoped adapter, with evidence and tests recorded here. Buzz is not a parallel work engine.
 
-- Confirmed public project home: [NetRxn/Inertia](https://github.com/NetRxn/Inertia). Owner authorized publication of these artifacts and the original overview. Use focused branches, reviewable commits and pull requests; implementation and deployment remain separate.
+## Proposed integration decisions for the next design review
 
-- Confirmed Google Meet recording and Gemini processing, with outputs in the organization’s Google Drive folder. Folder IDs, exact output types, readiness signals, access, and retention remain TBD.
-- Confirmed PlanetScale PostgreSQL for the DAO website. Preserve existing storage and de-prioritize Helix.
-- Added the required member-agent contribution objective with client-side sandboxed execution, worktrees, and server-mediated result acceptance.
-- Retained the grant packet submission vote and Y2 watch loop. Integration with the existing 990 workbench is a stretch TODO.
-- Added a requirement-to-test map, security gates, decision statuses, and a proposed one-week implementation sequence.
+| ID | Proposal | Decision evidence |
+|---|---|---|
+| P01 | Prefer a native Buzz chat provider; use a bounded plugin bridge if serving-build support requires it | Selected release APIs and route/feature admission. |
+| P02 | Route Buzz task triggers into one native execution owner | Duplicate-trigger and checkout tests. |
+| P03 | Reuse existing execution hardening through native runner/plugin interfaces | Version, license, lifecycle and isolation qualification. |
+| P04 | Use native connection profiles and tool policy | Domain credential scopes and call-time authorization tests. |
+| P05 | Preserve existing grant review/signoff semantics | Current scanner interface and packet schema review. |
 
-## Decision register
+## Central configuration and compatibility register
 
-Confirmed decisions describe user intent or existing evidence, not completion. Proposed choices need validation/selection. TBD items require an accountable owner before implementation. All owners are unassigned unless explicitly described as teammate-owned. Dates below are recommended decision targets.
+All unresolved external setup is tracked here; implementation tasks link these IDs rather than repeating disclaimers.
 
-| ID | Status | Decision or open choice | Reason / consequence | Links |
-|---|---|---|---|---|
-| D01 | Confirmed scope/deadline; proposed buffer | Three required objectives: automatic meetings, grant packet submission vote, secure member-agent contribution. HackFW general lane and October 30 deadline are confirmed. October 29 is the proposed rehearsal/demo buffer. | Supersedes v2 two-objective summary. Keep baseline narrow enough for one week. | R-M01–04, R-G01–04, R-C01–05; P1–P6 |
-| D02 | Confirmed platform; TBD contract | Google Meet video recording, Gemini processing, organization Google Drive storage. | Source platform/landing location are no longer unknown. Exact folder IDs, input/output types, readiness, source ownership, retention and access still require confirmation. | R-M01–04; T-M01–05; P1 |
-| D03 | Confirmed behavior; proposed policy mechanism | Fully automatic normal meeting publication with no per-meeting approval. | Proposed versioned preapproved policy fixes eligible source, audience, output types and publisher destination. Exceptions stop unsafe work without making every meeting manual. | R-M01, R-M04; T-M01, T-M05; P1, P3 |
-| D04 | Confirmed | DAO website uses PlanetScale PostgreSQL. Preserve existing Drizzle and document integrations where fit. | No required DB migration. Grant engine storage remains separate. Exact deployed DAO API and private-document route TBD. | R-D01; T-O02; P1 |
-| D05 | Confirmed priority | De-prioritize Helix. Integration with the existing 990 workbench is a stretch TODO. TexasNova remains context. | Do not create a new graph platform or make labs a new core workstream. Lab access/API/backend unverified. | R-X01; T-X01; after P6 |
-| D06 | Confirmed baseline | Reuse DFW-Gov-Fund 3.4.0 through a narrow adapter. | Rules/matching/template drafts/immutable packets exist. Current source verification and applicant facts remain necessary. No existing embedded full LLM or blockchain bridge established. | R-G01–02; T-G01–02; P4 |
-| D07 | Confirmed intent; TBD adapter | Blockchain vote decides WHETHER to submit an exact immutable packet. Vocdoni named in prior context, exact adapter/finality unresolved. | No mandatory top-three selection vote. Changes do not inherit approval. Vote does not override eligibility, role signoffs or separately needed submission authority. | R-G03–04; T-G03–04; P1, P4 |
-| D08 | Candidate / TBD | Paperclip-style management may provide orchestration too. Choose one durable ledger/runtime owner after fit check. | No separate mandatory scheduler. Buzz remains member chat/site agent, not ledger. Deployment access and adapter contract remain TBD. | R-O01; T-O01; P1, P2 |
-| D09 | Confirmed requirement; proposed mechanism | Members connect their own client agents and contribute spare capacity. Server owns authorization/validation/publication. | Per-job participation is bounded and never broad production access. Choose auth pairing/scopes, local sandbox and supported task type before implementation. | R-C01–05; T-C01–04, T-S01–06; P1, P2, P5 |
-| D10 | Proposed security baseline | Week-one clients receive approved public/synthetic bundles only. Restricted meeting work remains trusted. | Member owners can retain downloaded content or send it to their providers. Sandbox cannot guarantee remote deletion or owner compliance. This is a proposed policy, not a user-issued ban on future confidential work. | R-C02–03; T-S02, T-S05; P1 |
-| D11 | Proposed mechanism | Disposable non-root container/VM or suitable OS sandbox, worktree only inside isolation, default-denied network, bounded resources. | Never mount main checkout/common Git directory, host credentials, Docker socket, or privileged host paths. Exact runtime and tested configuration TBD. | R-C02; T-S04–05; P1, P5 |
-| D12 | Proposed correctness baseline | Atomic claim, increasing lease epoch, current authorization at every operation, immutable idempotent receipt, unique acceptance, outbox/reconciliation. | Supports at-most-once acceptance under repeated delivery. Does not guarantee exactly-once external writes. Revocation fences server operations, not offline client execution. | R-C04–05, R-O01; T-C02–04, T-S03; P2 |
-| D13 | Planned; access TBD | Keep teammate-owned Y2 watch loop in flow. | Register interests, route source-backed alerts to related work, dedupe and retire closed watches. Confirm actual API/MCP/webhook and team access. | R-Y01; T-Y01; P1, P4 |
-| D14 | Available candidate; TBD | Cloudflare may host selected infrastructure if service/runtime fit warrants it. | Availability alone does not establish plan, deployed services, queue semantics, storage controls, or permission to create resources. | R-O01, R-C02; T-O01, T-S04; P1 |
-| D15 | Confirmed | Maintain spec.md, testing.md, decisions.md, plan.md and Inertia-Architecture.pptx together. Deck only. | Same revision/date, exact filenames, IDs, scope and sources. Previous PDF is historical, excluded from active set. | R-A01; T-A01; all phases |
-| D16 | TBD | Choose inference endpoint/provider per trusted and client lane. | Buzz local OpenAI-compatible inference is unconfirmed. Member runtime/model may differ. Data policy must cover provider egress. No provider credentials distributed by control plane. | R-C02–03; T-S02, T-S05; P1, P5 |
-| D17 | Confirmed | NetRxn/Inertia is the public project home. Owner authorized publishing the original overview and synchronized artifacts. | Focused branches, coherent commits and draft PRs. Keep private runtime data/secrets out; preserve original source unchanged and identify superseded assumptions. No merge, build or deployment authorization implied. | R-A01; T-A01; P0 |
+| ID | Resolve | Evidence needed | Owner / gate |
+|---|---|---|---|
+| U01 | Selected Paperclip release and serving build | API comparison plus enabled routes/features; source presence and runtime admission checked separately | Engineering qualification / G1 |
+| U02 | Existing execution-hardening compatibility and reuse permissions | Version pin, license/authorization, supported lifecycle, isolation and deployment evidence | Engineering qualification / G1 |
+| U03 | Buzz instance, runtime route and identity pairing | Supported bridge API, relay endpoints, paired human/agent rules, owner-author configuration | Integration owner / G2 |
+| U04 | Drive publication contract | Folder IDs, actual Gemini output types, readiness, audience and retention | DAO administrator / G2 |
+| U05 | DAO publication interface and access | Create/upsert/readback API, document storage audience guarantees and test target | Website owner / G2 |
+| U06 | Vote adapter | Chain/network, proposal payload, eligibility/finality verification and packet binding | Governance owner / G2 |
+| U07 | Y2 access | Subscription/API, registration/update identity, rate limits and demo data | Y2 teammate / G2 |
+| U08 | Member participation topology | Named agent versus shared capacity, enrollment/revocation, data classes and capabilities | User + engineering / G2 |
+| U09 | Autonomy and hiring policy | Hiring permission, board approval setting, budgets, follow-up limits, scheduling ownership | User / G2 |
+| U10 | Hosting and inference | Local/OpenAI-compatible runtime choice, Cloudflare service fit, deployment ownership | Engineering / G2 |
+| U11 | Current grant demo candidate | Fresh scan, deadline, eligibility, direct/partner route and approved DAO facts | Grant owner / G3 |
+| U12 | Delivery staffing and final date details | Named owners, capacity, October 29 rehearsal and October 30 submission logistics | User / G2 |
 
-## Unblocking questions, in implementation order
+No live instance credentials are needed in these public artifacts. Record connection references in the platform's protected configuration.
 
-1. D02–D04: Which organization Drive folder and output types are authoritative, what proves readiness, what audience may see output, how long are originals retained, and which deployed website endpoint enforces that audience? Target: October 22–23. Owner: meeting/site maintainers, to assign.
-2. D08–D12: Which existing runtime can own the ledger and claims? Who approves the proposed public/synthetic client policy, auth pairing, narrow job type, sandbox, and artifact storage? Target: October 22–23. Owner: platform/security maintainer, to assign.
-3. D06–D07: Which current opportunity and applicant route have enough evidence for demonstration, which signoffs apply, and which governance API/chain/finality policy supports exact packet hashes? Target: October 23. Owner: grant/governance maintainers, to assign.
-4. D13–D16: What Y2 contract is actually accessible, and which inference/hosting options fit the selected runtime and data policy? Target: October 23–24. Owner: Y2 teammate plus platform owner, to confirm.
+## Audit interpretation
 
-## Superseded assumptions and evidence limits
+Current public source shows substantial orchestration, chat, interaction, runner and credential primitives. The architecture should configure and extend these. Compatibility must distinguish 'API exists' from 'the chosen serving build admits that operation.' Native hiring titles do not grant policy automatically; plugins are trusted extensions; on-chain quorum requires its own verified evidence.
 
-- v2’s “two demo workstreams” is superseded by three required objectives.
-- “Recording/transcript landing unknown” is superseded by confirmed organization Drive storage. Precise delivery semantics remain open.
-- Helix has no baseline prerequisite role. Integration with an existing 990 service is distinct from building a Helix projection.
-- July grant matches are historical, not fresh October openings. Missing DAO legal/tax/partner information is unknown, not proof those facts do not exist elsewhere.
-- Public repositories are evidence of code, not proof of current deployments or lab identity. Do not conflate the separate Astro website repository, FalkorDB wiki engine, or libSQL scraper with the supplied labs.
-- No proposal in this log authorizes implementation, service creation, monitoring, publication, vote casting, or grant submission by the assistant.
+## Change log
 
-Sources and revisions: spec.md §8. Test gates: testing.md. Proposed delivery sequence: plan.md. Future changes append or supersede a decision while retaining its stable ID and explanation.
+- r5: Adopt actual Paperclip platform and shared Buzz UI, eager acquisition and follow-up creation; add reuse matrix, bridge contracts, targeted tests, compatibility-first gates and a single external configuration register.
+- r4: Establish public repository delivery and synchronized artifacts with unchanged original overview.
+
+## Source baseline
+
+Source inspection on 22 October 2026 established these native capabilities. Deployment qualification is the next evidence gate.
+
+- Paperclip: [341b622604b639b056fc58b10e2dd3312d40385c](https://github.com/paperclipai/paperclip/tree/341b622604b639b056fc58b10e2dd3312d40385c).
+- Buzz: [dc25198d530acc6237a0320b697365f29daf0ea6](https://github.com/block/buzz/tree/dc25198d530acc6237a0320b697365f29daf0ea6).
+- DAO website: [FWTX-DAO repositories](https://github.com/orgs/FWTX-DAO/repositories); user-confirmed PlanetScale PostgreSQL and Meet/Gemini/organization Drive workflow.
+- Existing scanner: [NetRxn/DFW-Gov-Fund](https://github.com/NetRxn/DFW-Gov-Fund), 3.4.0 interface baseline; qualify the selected runnable version.
+- [Y2](https://y2.dev/) is teammate-owned and remains an integration objective.
+- [Texas Nova](https://texas-nova.labs.fwtx.city/) and [990 Graph](https://990-g2.ntx.labs.fwtx.city/login) are contextual resources; 990 enrichment is stretch.
+
+## Artifact coordination
+
+The synchronized set is [spec.md](spec.md), [testing.md](testing.md), [decisions.md](decisions.md), [plan.md](plan.md), and [Inertia-Architecture.pptx](Inertia-Architecture.pptx). Update the common revision whenever new user decisions change the design. Keep stable filenames and Library identities. The original [product overview](docs/reference/Inertia-beta-product-overview.pdf) remains byte-identical historical material. Current decisions supersede its older sequencing. External configuration questions are centralized in decisions.md.

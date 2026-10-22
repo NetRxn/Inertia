@@ -1,6 +1,6 @@
 # Inertia
 
-DAO-helper for Fort Worth DAO. Planning baseline **INERTIA-2026-10-22-r4** (22 October 2026).
+DAO-helper for Fort Worth DAO. Planning baseline **INERTIA-2026-10-22-r5** (22 October 2026).
 
 ## Current planning artifacts
 
@@ -16,6 +16,10 @@ DAO-helper for Fort Worth DAO. Planning baseline **INERTIA-2026-10-22-r4** (22 O
 1. Automatically clean Roundtable meeting transcripts and notes and upload them to the DAO website within the configured authorized audience.
 2. Reuse the grant engine to prepare a reviewed application packet and record a blockchain vote on whether to submit that exact version.
 3. Let members contribute their own client-side agent capacity through sandboxed jobs and server-controlled authorization, validation and publication.
+
+## Operating model
+
+Paperclip provides the operational platform, CEO/hiring hierarchy, tasks and decisions. Buzz and the dashboard are two interfaces to the same work. Agents acquire eligible work eagerly and create bounded follow-ups. Existing execution hardening is qualified against the selected Paperclip release. See the capability matrix and bridge contracts in the specification.
 
 ## Status and contribution discipline
 
