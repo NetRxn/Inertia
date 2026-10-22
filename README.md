@@ -32,3 +32,9 @@ Existing DAO platform and grant-engine repositories remain separate systems. Thi
 ## Run the transport demo
 
 The first executable slice verifies signed Buzz messages and retries delivery safely. Run `npm ci --ignore-scripts`, then `npm run demo` (Node.js 22+). Tests and exact source contracts are documented in [Buzz transport development](docs/development/buzz-transport.md).
+
+## Connected bridge demo
+
+`npm ci && npm run demo` runs a signed Buzz reply through the real Paperclip adapter and durable SQL bridge, then returns a signed receipt with the same native IDs. External services are local fixtures; no credentials or network calls are used. Restart/replay is included.
+
+[Connection setup and recovery](docs/operations.md) · [Native authority and state contract](docs/bridge-state-contract.md)
