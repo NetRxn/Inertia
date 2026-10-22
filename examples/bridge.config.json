@@ -1,0 +1,8 @@
+{
+  "relay": "https://buzz.example.invalid",
+  "bridgePubkey": "REPLACE_WITH_ADMITTED_BRIDGE_PUBLIC_KEY",
+  "bindings": [],
+  "pairings": [],
+  "cards": [],
+  "maxCommentBytes": 16384
+}
