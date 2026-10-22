@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Inertia private/runtime material must not enter the public repository
+private/
+data/
+runs/
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
