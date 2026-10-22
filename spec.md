@@ -1,8 +1,22 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-22-r5
+Revision: INERTIA-2026-10-22-r6
 Updated: 2026-10-22 (UTC)
-Stage: Design refinement; compatibility qualification and detailed design review precede implementation.
+Stage: Connected bridge and Roundtable core merged; domain integration in progress.
+
+
+## Implementation evidence at r6
+
+| Slice | State | Verified evidence | Next acceptance |
+|---|---|---|---|
+| Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
+| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
+| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; combined repository suite 108 passing; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Grant/vote, Y2 and member participation | Grant slice active; remaining adapters planned | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+
+Merged baseline: develop `1d41eeb70b02275a488a7f7583c116c8d2c77f3c`, 22 October 2026. Combined verification: 108 tests, typecheck, build and synthetic connected demo passed after PRs 4 and 5. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+
 
 ## 1. Product outcome
 
@@ -13,7 +27,7 @@ The required demo has three connected outcomes:
 2. The existing scanner finds a current grant opportunity; a reviewed application packet is frozen and a blockchain vote is bound to that exact packet.
 3. Another DAO member connects an agent, which eagerly acquires eligible work, returns a validated contribution, and creates a justified follow-up when needed.
 
-Y2 watches support the connected loop. Helix is de-prioritized. Form 990 enrichment is a known stretch goal. The demo target is October 29 with an October 30 submission deadline; delivery planning is refined against compatibility results.
+Y2 watches support the connected loop. Helix is de-prioritized. Form 990 enrichment is a known stretch goal. The proposed rehearsal buffer is October 29 ahead of the October 30 submission deadline; delivery planning is refined against compatibility results.
 
 ## 2. Operating model
 
@@ -61,11 +75,13 @@ Plugins execute trusted extension code. Runtime isolation, credential boundaries
 | Audience | Preserve source and destination audience restrictions. Reject cross-company or cross-channel privilege expansion. |
 | Execution | Exactly one scheduler/checkout owner controls each admitted job. Buzz ACP launch is a transport/runtime option, not a competing scheduler. |
 
-Preferred route: implement Buzz as a native chat-channel provider if the selected serving build supports those capabilities. Alternative: a bounded plugin bridge using paired-user comments and native interaction APIs. Choose after compatibility qualification; preserve the same IDs and authority in either route. Buzz owner attestations do not turn agent output into a human approval.
+Selected first route: a bounded TypeScript plugin bridge using the pinned SDK's paired-user comments and accept/reject interaction APIs. This avoids an upstream upgrade merely to obtain the newer native chat-provider framework. Preserve native IDs and authority; do not build a second task or decision ledger. Buzz owner attestations do not turn agent output into a human approval.
 
 ## 4. Domain requirements
 
 ### Meetings: R-M01–R-M04
+
+Current core uses source-grounded extractive quotes. It rejects model-supplied owners and labels model classifications unverified. The actual website publisher/readback adapter remains the next integration step; the contracts below define the complete target.
 
 - R-M01: Observe authorized ready Meet/Gemini outputs in organization Drive. Identify meeting, source file, source revision and content hash; preserve originals and provenance.
 - R-M02: Produce a faithful cleaned transcript separately from notes, decisions and action items. Preserve uncertainties and source links. A summary-only source yields notes and a missing-transcript exception, never an invented transcript.
@@ -109,7 +125,53 @@ The demo evidence package contains: source-to-publication trace and readback; cu
 
 ## 7. Design progression
 
-The settled product/platform choices in decisions.md stand. Qualification determines supported bridge and execution routes. Then review concrete API contracts, selected deployment topology and owners before implementation. This source-informed refinement replaces the earlier generic custom-control-plane proposal.
+The settled choices in decisions.md stand. Build the thin bridge now using signed fixtures and public SDK contracts. Resolve live access/admission separately while domain adapters proceed against explicit contracts. Existing hardened execution remains the reuse path; the bridge does not implement a sandbox or scheduler.
+
+## 8. First build: a real, small bridge
+
+### Experience
+
+One-time pairing and channel binding are administrator setup. Thereafter members reply in their existing Buzz thread or use the Paperclip dashboard, without moving task IDs between tools. A decision card gives context and a clear accept/reject action; the result appears in the same thread. Normal successful processing is quiet. A recoverable disconnect heals automatically; an unresolved action shows one actionable status with a retry or configuration instruction, not repeated stack traces. Operator health reports connection, backlog and oldest pending item, last successful sync, and the precise next action when blocked. No additional dashboard is built.
+
+The initial executable delivers signed Buzz ingress → native human comment or accept/reject decision → signed Buzz receipt, plus native interaction → Buzz decision prompt. It runs end to end with realistic fixture services. Production connection settings and pairing records are injected by the trusted host. Live key creation, grants, provisioning and deployment are separate operational steps.
+
+### Baseline and implementation
+
+Use TypeScript ESM on Node 24, npm lockfile, Vitest, and nostr-tools for Nostr cryptography. Compile the plugin manifest and native adapter against the public Paperclip SDK from v2026.1012.0, commit bba6a45f0d364cfd962ac59b3bdf2426a8222adb. Use the public registry package @paperclipai/plugin-sdk@2026.1012.0 and record its integrity; its release version differs from the source package.json version 1.0.0. Compile against the published artifact and audit compatibility with the source pin rather than assuming byte identity. Do not silently substitute latest SDK or copy private vendor trees. Keep the source pin and package integrity together in docs/bridge-state-contract.md. Buzz wire baseline is dc25198d530acc6237a0320b697365f29daf0ea6.
+
+Reuse ctx.issues.createComment, listComments, listInteractions and respondInteraction. The host checks current human company membership. A human-attributed comment already participates in native assignee wakes; the bridge adds no extra wake. Initial direct decisions support accept/reject for immutable plain confirmations. Target-bound or structured decisions open their native Paperclip UI. Structured question answers, hiring decisions and blockchain ratification remain distinct adapters, not guessed meanings of an emoji. The plugin exports a real SDK manifest and worker entrypoint with capability declarations and native health reporting.
+
+### Wire and identity
+
+- Accept only structurally valid Nostr messages whose ID and Schnorr signature verify against canonical event bytes. No inbound flag such as verified=true is trusted.
+- Derive the author from the signed public key. Resolve a trusted pairing scoped to the configured relay and company. Incoming actorUserId/companyId fields cannot select authority.
+- Derive channel and thread from unambiguous signed tags. Unknown, conflicting, unbound or foreign destinations fail closed. Event kind 9 is the initial supported conversational input. Reject auxiliary/moderation kinds as commands.
+- Pairing distinguishes human and agent. Unknown/revoked identities cannot write; agents cannot use the human decision path, even with owner attestation.
+- Bind relay+channel+root to a native issue and company in host-controlled configuration. A signed command cannot redirect that binding.
+- Use POST /query for reads and POST /events for publishing. Authenticate with fresh NIP-98 events, kind 27235, binding exact URL, HTTP method and SHA-256 request body. Disable redirects. Permit only the configured HTTPS relay origin (loopback HTTP only in test mode).
+- Outbound event signing is injected through a signer; persist the signed event before delivery. Retry the same event ID, with fresh HTTP authentication. Incoming bridge-authored events and known outbox IDs never trigger native work.
+- Render an interaction's native ID plus a random opaque card token. Store the token's company, issue, interaction and rendered-content digest. A reply must match that binding and current interaction content. New/replaced content produces a new card. Accept/reject commands are deterministic, not LLM interpretation of an ambiguous reply.
+
+Initial text fallback: normal replies in a bound issue thread become comments; decision prompts include `/inertia accept <card-token>` and `/inertia reject <card-token>`. Malformed or unknown `/inertia` commands return short guidance rather than becoming comments. Existing Buzz buttons can later map to the same verified command without changing authorization.
+
+### Persistence and reconciliation
+
+Use the plugin's namespaced PostgreSQL database via ctx.db, with migrations for bridge bindings, pairings, inbox receipts, decision-card bindings, and outbox records. These are transport records, never a duplicate work queue. SQL parameters carry all values; namespace is the host-provided validated identifier. Use unique keys and compare-and-set transitions, not get-then-set deduplication. A lightweight PostgreSQL-compatible fixture database may execute the same migration/queries in tests; report its scope accurately.
+
+Inbox key is (relay, eventId). States are received, applying, applied, rejected, and uncertain. Claim with a conditional write before host mutation. Applied/rejected duplicates return the saved result. Persist the destination and deterministic receipt key with the result; an outbox repair pass reconstructs a missing receipt from an applied row after a crash. Only one claimant enters applying. An expired claim must not blindly repeat a potentially committed mutation.
+
+Native comments have no assumed idempotency key: include a stable source-event correlation marker in the comment and reconcile listComments after a lost response. If a matching comment exists, save its native ID; if the previous request may still complete, retain uncertain and do not issue a second create. Native interactions return applied=false when already resolved; render the authoritative result, never claim the requested opposite action won. Before resolving, reread the interaction and enforce card binding. Use the host's atomic resolution as final authority. If the chosen host allows pending interaction content mutation without compare-and-set, disable direct resolution for that case and link to the native card until a safe API exists.
+
+Outbox states are pending, delivered and blocked. A lost publish response retries the same signed event; relay event-ID deduplication converges. Use bounded exponential backoff with jitter for transport failures and 429/5xx, respect Retry-After, and surface permanent 4xx/configuration failures once. Native plugin jobs/events drive reconciliation; do not create a job scheduler. Cursors advance only after each fetched event has a durable disposition. Recheck a bounded recent lookback for delayed events, deduplicate by event ID, and persist resumable historical backfill. Isolate future-dated events so they cannot move the checkpoint beyond legitimate traffic. Scope health and recovery to the configured company; addressed confirmation cards stay with their authorized audience. Source edits/deletes become linked correction/tombstone evidence; they never retroactively reverse an accepted native decision.
+
+### Boundary contracts for following slices
+
+- MeetingSource: meetingId, sourceId, revision, sha256, observedAt, audience, sourceUrl, transcript-or-summary classification. Publisher upsert/readback returns publicationId, revision, URLs, audience and verified hash.
+- GrantOpportunity: scanner source ID, URL, retrievedAt, deadline, eligibility evidence, applicant route. PacketManifest: packetId, version, canonical hash, attachment hashes, review/signoff references. VoteReceipt binds network, proposal, action, packet hash and finality evidence.
+- Contribution: native issue/run/checkout identity, member principal, allowed input references, output manifest and provenance. A trusted adapter accepts outputs through existing execution lifecycle and native review; member machines never receive control-plane broker credentials.
+- Y2Update: subscription/interest ID, external event ID, source URL, revision and relevance evidence. Native issue bindings and deduplication prevent repeated tasks.
+
+These contracts preserve the full product while the first executable establishes the shared interaction path. Implement adapters against actual source interfaces before connecting live services.
 
 ## Source baseline
 
