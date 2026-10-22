@@ -1,0 +1,25 @@
+{
+  "name": "@inertia/dao-helper",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "demo": "npm run build && node dist/examples/buzz-dry-run.js"
+  },
+  "dependencies": {
+    "@paperclipai/plugin-sdk": "2026.1012.0",
+    "nostr-tools": "2.25.2"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.11",
+    "@types/node": "24.10.0",
+    "typescript": "5.9.3",
+    "vitest": "4.0.18"
+  }
+}
