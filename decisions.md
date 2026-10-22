@@ -46,7 +46,6 @@ Confirmed decisions describe user intent or existing evidence, not completion. P
 | D14 | Available candidate; TBD | Cloudflare may host selected infrastructure if service/runtime fit warrants it. | Availability alone does not establish plan, deployed services, queue semantics, storage controls, or permission to create resources. | R-O01, R-C02; T-O01, T-S04; P1 |
 | D15 | Confirmed | Maintain spec.md, testing.md, decisions.md, plan.md and Inertia-Architecture.pptx together. Deck only. | Same revision/date, exact filenames, IDs, scope and sources. Previous PDF is historical, excluded from active set. | R-A01; T-A01; all phases |
 | D16 | TBD | Choose inference endpoint/provider per trusted and client lane. | Buzz local OpenAI-compatible inference is unconfirmed. Member runtime/model may differ. Data policy must cover provider egress. No provider credentials distributed by control plane. | R-C02–03; T-S02, T-S05; P1, P5 |
-
 | D17 | Confirmed | NetRxn/Inertia is the public project home. Owner authorized publishing the original overview and synchronized artifacts. | Focused branches, coherent commits and draft PRs. Keep private runtime data/secrets out; preserve original source unchanged and identify superseded assumptions. No merge, build or deployment authorization implied. | R-A01; T-A01; P0 |
 
 ## Unblocking questions, in implementation order
