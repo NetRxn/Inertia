@@ -228,3 +228,7 @@ runs/
 *.sqlite3
 *.pem
 *.key
+
+# Node build and dependencies
+node_modules/
+coverage/

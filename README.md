@@ -28,3 +28,7 @@ This repository currently contains documentation, not an implemented or deployed
 Use focused branches and reviewable pull requests. Keep the four Markdown artifacts and deck synchronized when requirements change. Record decisions and define relevant tests before implementation. Do not commit credentials, private meeting material, local databases or generated runtime results. The original overview remains unchanged; update current planning artifacts instead.
 
 Existing DAO platform and grant-engine repositories remain separate systems. This repository does not grant access to their data or infrastructure.
+
+## Run the transport demo
+
+The first executable slice verifies signed Buzz messages and retries delivery safely. Run `npm ci --ignore-scripts`, then `npm run demo` (Node.js 22+). Tests and exact source contracts are documented in [Buzz transport development](docs/development/buzz-transport.md).
