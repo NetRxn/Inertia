@@ -1,0 +1,4 @@
+ALTER TABLE plugin_netrxn_inertia_e936d62b87.bridge_inbox ADD COLUMN recovery_scanned_at timestamptz;
+ALTER TABLE plugin_netrxn_inertia_e936d62b87.bridge_outbox ADD COLUMN next_attempt_at timestamptz;
+CREATE INDEX bridge_recovery_rotation ON plugin_netrxn_inertia_e936d62b87.bridge_inbox ((COALESCE(recovery_scanned_at,created_at)),created_at,relay,event_id);
+CREATE INDEX bridge_delivery_due ON plugin_netrxn_inertia_e936d62b87.bridge_outbox (state,next_attempt_at,created_at,receipt_key);
