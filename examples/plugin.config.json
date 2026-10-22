@@ -1,0 +1,9 @@
+{
+  "enabled": false,
+  "relayUrl": "https://buzz.example.invalid",
+  "bridgePubkey": "REPLACE_WITH_ADMITTED_BRIDGE_PUBLIC_KEY",
+  "signingKeyRef": { "type": "secret_ref", "secretId": "SELECT_EXISTING_SECRET" },
+  "bindings": [],
+  "pairings": [],
+  "cards": []
+}
