@@ -1,12 +1,51 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-22-r5
+Revision: INERTIA-2026-10-22-r6
 Updated: 2026-10-22 (UTC)
-Stage: Design refinement; compatibility qualification and detailed design review precede implementation.
+Stage: Connected bridge and Roundtable core merged; domain integration in progress.
+
+
+## Implementation evidence at r6
+
+| Slice | State | Verified evidence | Next acceptance |
+|---|---|---|---|
+| Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
+| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
+| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; combined repository suite 108 passing; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Grant/vote, Y2 and member participation | Grant slice active; remaining adapters planned | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+
+Merged baseline: develop `1d41eeb70b02275a488a7f7583c116c8d2c77f3c`, 22 October 2026. Combined verification: 108 tests, typecheck, build and synthetic connected demo passed after PRs 4 and 5. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+
 
 ## Strategy and evidence
 
 Define fixtures and expected outcomes before implementation. Reuse upstream and existing execution-integration tests; add Inertia contracts at bridge and domain boundaries. Source review identifies capabilities. Each executed test records code/configuration revisions, UTC time, fixture class, expected/actual result and receipts. The following is the required test plan.
+
+## Connected-loop verification details
+
+Reviewed integration commit: `ee5dcfeaeb710f5de6f8cc9eef7b15c29ad67063`. The 85-test suite adds same-thread signed receipts, restart/replay recovery, persistent retry windows, delayed-event lookback/backfill, future-event isolation, paired command guidance, addressed-card privacy and company-scoped health. `npm test -- --maxWorkers=1` avoids contention from concurrent PGlite fixture startup; this is a test-runner setting, not a runtime concurrency restriction. Typecheck, build, fixture demo and diff checks pass. The merged combined result is 108 passing tests, with typecheck, build and synthetic connected demo also passing.
+
+## First build verification: B0–B5
+
+The evidence table above records completed slices. The matrix below retains acceptance requirements for the complete connected plugin and domain adapters. Fixture end-to-end means real bridge code, signed events and real persistence queries with substituted external services; live service admission is a separate test layer.
+
+| Suite | Precise assertions | Evidence command |
+|---|---|---|
+| B0 Toolchain | Exact SDK provenance, lockfile integrity; real manifest and adapter compile against public SDK | npm ci; npm run typecheck; npm run build |
+| B1 Cryptography/transport | Valid signed kind9 accepted; body/id/pubkey/signature tampering and ambiguous routing rejected; NIP98 kind27235 URL/method/body hash/signature correct; redirects blocked; stable outbound event across retries | npm test -- test/buzz.test.ts |
+| B2 Authority | Native IDs/actor come solely from trusted binding; unknown/revoked/agent keys cannot use human path; no extra wake for native human comment; malformed commands give guidance; host rejection preserved | npm test -- test/bridge/policy.test.ts test/paperclip/adapter.test.ts |
+| B3 Persistence | Same migration and SQL execute; concurrent duplicate claim has one winner; new store instance reads prior result; invalid state transitions fail; outbox repair is unique | npm test -- test/store |
+| B4 Recovery | Native commit/lost response reconciles without duplicate create; uncertainty never blind-retries; crash between outcome/outbox repairs; lost receipt retries same event; dashboard conflict returns native state; echoes do nothing | npm test -- test/e2e/connected-loop.test.ts test/e2e/connected-loop.test.ts |
+| B5 Operator experience | Manifest/worker load, least declared capabilities, one-command fixture demo, concise health states and actionable redacted error, no live credentials required | npm test -- test/e2e/plugin.test.ts; npm run demo |
+
+Transport fixtures use disposable test-only private keys generated in the test process or explicitly documented public fixture keys; never real account keys. Tests must mutate real signed bytes rather than stub verify=true. For PostgreSQL-compatible fixture engines, record engine/version and separately test native host query restrictions before live enablement. A pure in-memory JavaScript store may aid unit testing but cannot satisfy B3.
+
+Required failure cut points: before claim, after claim before native call, native commit before response, result saved before outbox insertion, event published before receipt, and restart with unresolved applying state. Assert exact native call count and stable IDs at each point. An absent comment immediately after a timeout is not proof the request did not execute.
+
+Interaction test fixtures include pending, already accepted, already rejected, replaced ID, same ID with changed content, member revoked after rendering and concurrent dashboard resolution. Fail closed if the pinned host cannot guarantee the required stale-content check atomically; do not claim preflight reading alone closes a race.
+
+Demo UX acceptance: install/configuration instructions use one obvious sequence; a member never manually transfers native IDs during normal replies; successful retries are quiet; a permanent failure produces one concrete remedy and remains visible in native health. All logs exclude keys, source transcript bodies and unrelated company metadata.
 
 ## G1 compatibility qualification
 
