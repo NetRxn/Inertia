@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-23",
+  "result": "passed",
+  "sourceTree": "8039b3e5f54e49c302b4751445f382403381ab91",
+  "artifactSha256": "19e67c88a8de52404412e49312cebfd6db42c462de3378cf3397966250add76c",
+  "hostPackage": "paperclipai@2026.1012.0",
+  "hostCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "hostLockSha256": "07f8491888d9afd91f207118fa69757777d9c837de8f2ad18c539a7e73d200f8",
+  "node": "24.19.0",
+  "postgres": "18.1",
+  "hostMigrations": "applyPendingMigrations completed successfully on empty disposable database",
+  "pluginMigrationsApplied": 6,
+  "jobsRegistered": 3,
+  "disabledJobRpcCompleted": [
+    "backfill-conversations",
+    "retry-blocked-deliveries",
+    "reconcile"
+  ],
+  "namespaceTableCount": 8,
+  "workerInitialized": true,
+  "configValidation": {
+    "ok": true
+  },
+  "config": {
+    "enabled": false
+  },
+  "health": {
+    "status": "degraded",
+    "details": {
+      "connections": 0,
+      "pendingReceipts": 0,
+      "uncertainMutations": 0,
+      "blockedReceipts": 0,
+      "inFlightPublications": 0,
+      "oldestPendingAgeSeconds": 0
+    },
+    "message": "Enable a company connection to begin."
+  },
+  "nativeSqlTests": {
+    "methods": [
+      "uncertainCount",
+      "resumeBlocked",
+      "deliveryHealth",
+      "listCommentValidation"
+    ],
+    "empty": true,
+    "single": true,
+    "multiple": true,
+    "quotedId": true,
+    "companyIsolation": true,
+    "validationScanUpdates": true
+  },
+  "lifecycleDisable": "disabled",
+  "workerExitCode": 0,
+  "postgresStopped": true,
+  "httpHostTested": false,
+  "liveIntegrationsUsed": false,
+  "hostPatched": false,
+  "dependencyReuse": "Reused prior verified official host dependency installation and plugin production dependency tree; exact direct dependency versions asserted before run. No host or dependency source edits.",
+  "harnessSha256": {
+    "qualify-runtime.mjs": "18dd6fb337187864cde08a2abf06e64af72bebc79b6c36ab7aface5e4a87ca2c",
+    "check-host-binding.mjs": "dcfeab6988177021f24cad154c723d5c7b02176c1a35b1259db41650dac1bd33"
+  }
+}
