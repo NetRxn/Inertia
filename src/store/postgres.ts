@@ -90,7 +90,10 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
             return db.query<InboxReceipt>(`SELECT ${inboxFields} FROM ${inbox} WHERE relay=$1 AND destination->>'companyId'=$2 AND destination->>'issueId'=$3 AND command->>'kind'='comment' AND state IN ('applying','uncertain','applied')`, [binding.relay, binding.companyId, binding.issueId]);
         },
         async claim(key: InboxKey, input: ClaimInput): Promise<'claimed' | InboxReceipt> {
-            const result = await db.execute(`INSERT INTO ${inbox} (relay,event_id,state,destination,command,receipt_key) VALUES ($1,$2,'applying',$3::jsonb,$4::jsonb,$5) ON CONFLICT (relay,event_id) DO NOTHING`, [key.relay, key.eventId, JSON.stringify(input.destination), JSON.stringify(input.command), input.receiptKey]);
+            // Concurrent identical claims can race on either unique index in real
+            // PostgreSQL. Resolve both, then require the intended event to exist;
+            // an unrelated receipt-key collision must still fail closed below.
+            const result = await db.execute(`INSERT INTO ${inbox} (relay,event_id,state,destination,command,receipt_key) VALUES ($1,$2,'applying',$3::jsonb,$4::jsonb,$5) ON CONFLICT DO NOTHING`, [key.relay, key.eventId, JSON.stringify(input.destination), JSON.stringify(input.command), input.receiptKey]);
             if (result.rowCount === 1)
                 return 'claimed';
             const existing = await get(key);
@@ -115,7 +118,15 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
             }
             return rows;
         },
-        async putOutbox(record: OutboxRecord) { return (await db.execute(`INSERT INTO ${outbox} (receipt_key,relay,event_id,event) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT (receipt_key) DO NOTHING`, [record.receiptKey, record.relay, record.eventId, JSON.stringify(record.event)])).rowCount === 1; },
+        async putOutbox(record: OutboxRecord) {
+            const inserted = (await db.execute(`INSERT INTO ${outbox} (receipt_key,relay,event_id,event) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT DO NOTHING`, [record.receiptKey, record.relay, record.eventId, JSON.stringify(record.event)])).rowCount === 1;
+            if (inserted) return true;
+            // Resolve concurrent conflicts on both unique indexes, but never treat
+            // another receipt's signed event as this receipt's successful write.
+            const existing = await db.query<{ receiptKey: string }>(`SELECT receipt_key AS "receiptKey" FROM ${outbox} WHERE receipt_key=$1`, [record.receiptKey]);
+            if (!existing.length) throw Error('Bridge outbox receipt could not be read.');
+            return false;
+        },
         async listOutbox(limit = 100, after?: OutboxCursor) {
             if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000)
                 throw Error('Invalid delivery batch limit.');

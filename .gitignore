@@ -223,6 +223,7 @@ __marimo__/
 private/
 data/
 runs/
+runs-cloud-rehearsal-*/
 *.db
 *.sqlite
 *.sqlite3
@@ -235,3 +236,7 @@ coverage/
 
 # Local plugin packaging artifacts
 *.tgz
+
+# Qualification installs may be local dependency links during development
+scripts/cloud-rehearsal/node_modules
+scripts/cloud-rehearsal/host/node_modules

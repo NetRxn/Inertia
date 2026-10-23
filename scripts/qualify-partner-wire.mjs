@@ -30,5 +30,5 @@ try {
   assert.equal(removed.deleted,true); assert(removed.revision>live.revision);
   assert.equal((await target.candidates(fixture.scope,query)).length,0);
   await assert.rejects(()=>target.apply(fixture.lease,fixture.live),/revision/);
-  console.log(JSON.stringify({result:'passed',qualification:'actual Python SQLite export to official embedded Helix',query_first:true,rejected_opportunity_kept_knowledge:true,live_revision:live.revision,revoked_revision:removed.revision,immediate_authoritative_revocation:true,stale_projection_replay_denied:true,remote_gateway_test:false},null,2));
+  console.log(JSON.stringify({result:'passed',qualification:'actual owning-service export to official embedded Helix',query_first:true,rejected_opportunity_kept_knowledge:true,live_revision:live.revision,revoked_revision:removed.revision,immediate_authoritative_revocation:true,stale_projection_replay_denied:true,remote_gateway_test:false},null,2));
 } finally { await client.close(); }
