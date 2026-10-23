@@ -8,7 +8,7 @@ participant G as Packet core [I]
 participant V as DAO vote / Vocdoni [E]
 A-->>F: Scoped skill / CLI / MCP: evidence + draft proposals
 A-->>P: Task documents + questions + review requests
-Note over A,P: Same harness; task-authorized inputs<br/>No shared database or admin token<br/>No portal credentials for members
+Note over A,P: Same harness, task-authorized inputs<br/>No shared database or admin token<br/>No portal credentials for members
 P-->>T: Authenticated human-only verdict / role confirmation<br/>Addressed reviewer + current document revision
 Note over T,F: PLANNED: actor · scope · configured role<br/>Addressee · workspace / packet revision<br/>Exact artifact checks
 T-->>F: Apply existing review / signoff operations<br/>Interaction + item + proposal/version/action
@@ -17,4 +17,4 @@ Note over F,G: Freeze direct-application packet [I]<br/>Exact artifacts + review
 G-->>V: Exact packet hash + authorize_manual_submission [P]
 V-->>G: Verifier: network · proposal · action · exact packet<br/>Effective final result / finality [P]
 G-->>F: Fresh source / packet / review check before acceptance [P]
-Note over A,V: Native task / board approval ≠ DAO ratification · changed packet / reviews require a new vote<br/>External submission stays an authorized human handoff; record completion only
+Note over A,V: Native task / board approval ≠ DAO ratification · changed packet / reviews require a new vote<br/>External submission stays an authorized human handoff, record completion only

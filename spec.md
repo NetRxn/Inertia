@@ -1,13 +1,13 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-23-r12
+Revision: INERTIA-2026-10-23-r13
 Updated: 2026-10-23 (UTC)
-Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
+Status: funding enhancement implementation authorized; benchmark in progress. Integrations below remain planned unless recorded as qualified.
 
 
 ## Implementation status
 
-Documentation baseline: develop `85699551`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
+Documentation baseline: develop `1ac44a7a`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
 
 | Component | Verified state | Remaining integration |
 |---|---|---|
@@ -119,7 +119,26 @@ The merged packet core already verifies exact artifact bytes and freezes packet,
 - R-G03: Freeze packet ID, version, canonical content hash, attachments and review record. A blockchain vote references exactly this immutable packet and its proposed action.
 - R-G04: Validate chain/network, proposal identity, eligible result, finality and packet binding before applying voted authority. Changed content needs renewed authority. Actual funder submission is a separately controlled step.
 
-Ordinary authorized research, drafts and website maintenance need no vote. The required final packet vote is independent of an optional shortlist vote. Application assertions must be supported by approved DAO information. The DAO website is the intended authoritative organizational knowledge source, including governance rules and formation documents. The deployed agent retrieves these through authorized authenticated access before asking the user to re-enter facts. Preserve source URL/document ID, version or content hash, retrieval time, exact supporting passage and access classification with each claim. Establish source gaps through authorized retrieval. Keep restricted material out of public artifacts and outside contributors’ authorized data scope.
+Ordinary authorized research, drafts and website maintenance need no vote. The required final packet vote is independent of an optional shortlist vote. Factual application assertions require claim-specific support and appropriate attribution. Proposed work remains explicitly proposed; accepted facts and commitments retain their approval requirements. The DAO website is the intended authoritative organizational knowledge source, including governance rules and formation documents. The deployed agent retrieves these through authorized authenticated access before asking the user to re-enter facts. Preserve source URL/document ID, version or content hash, retrieval time, exact supporting passage and access classification with each claim. Establish source gaps through authorized retrieval. Keep restricted material out of public artifacts and outside contributors’ authorized data scope.
+
+### Funding quality and meeting preparation: R-F01–R-F07 (planned)
+
+The [detailed funding specification](docs/development/funding-enhancement/spec.md) extends the existing engine and native review contract. A case owner coordinates research, eligibility, evidence, drafting, independent review and submission preparation. Specialists run when needed. Start with one draft and up to two targeted rework rounds, with configurable limits.
+
+- R-F01: Draft all answerable requirements before requesting human input. Keep draft candidates separate from accepted facts, with exact requirement/version, claim spans, evidence hashes, route and remaining gaps. Preserve all sponsor requirements in readiness reporting.
+- R-F02: Independently assess claim support, route, numeric evidence and contradictions against the frozen candidate. Draft DAO contributions on partner routes while retaining lead-owned requirements. Distinguish observed evidence, attributed statements, proposed work and authorized commitments.
+- R-F03: Persist research coverage, failures and next sources. Resume bounded research rather than repeatedly asking members for publicly answerable facts. Closed-cycle, inaccessible and genuinely empty results have distinct outcomes.
+- R-F04: Reuse scoped DAO knowledge from admitted sources and meeting minutes. Store revisions, source passages, effective dates, audience, status and supersession. Extraction creates candidates; trusted admission establishes current facts or adopted decisions. Corrections invalidate dependent drafts.
+- R-F05: Read QuickBooks through sanitized financial snapshots carrying period, accounting basis, currency and source hash. Keep actuals, requested funding and approved spending distinct.
+- R-F06: Prepare a DAO meeting brief covering opportunity/deadline, direct or partner route, fit, active projects, application effort, delivery effort, reporting obligations, drafted sections and remaining decisions with owners. Meeting decisions create scoped knowledge and targeted follow-up work.
+- R-F07: Deliver the same canonical skill and proposal contracts through Codex, Claude and a named local tool-using runtime. Qualify actual skill/tool execution. Members receive scoped evidence and proposal tools; trusted servers apply human decisions.
+
+### General objective intake: R-I01–R-I04 (planned)
+
+- R-I01: Every website innovation-bounty submission enters the general Paperclip backlog. Preserve original text, submitter, visibility and source identity. The CEO prioritizes within its assigned mandate.
+- R-I02: One durable source-to-native mapping reconciles retries and unknown creates. Trusted ordering and compare-and-swap prevent stale updates. Withdrawal retains an audit record; audience narrowing suppresses derived output until permissions converge.
+- R-I03: DFW stores versioned many-to-many objective/funding links with fit rationale, contribution and packet reference. Website owns submitted content, Paperclip owns work state, and DFW owns funding/link state.
+- R-I04: Buzz, dashboard and member portal expose permitted views of those records. General objectives can proceed without grant work. Funding may support existing objectives or reveal new project opportunities.
 
 ### Member contribution: R-C01–R-C05
 
