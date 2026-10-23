@@ -1,17 +1,17 @@
-flowchart LR
- C["CI baseline: PR35 merged / checks passed"]
- B["Public benchmark: In progress / gold review pending"]
- D["Draft + independent review: Planned / frozen claim evidence"]
- R["Persistent research: Planned / bounded source coverage"]
- P["Portable harness: Planned / Codex + Claude + local"]
- K["Reusable knowledge: Planned / meeting + finance"]
- N["Trusted native decisions: Planned / scope + revision + receipt"]
- O["Objectives + DAO brief: Planned / versioned funding links"]
- T["Integrated rehearsal: Planned / grant + meeting + member"]
- C -.-> B
- B -.-> D
- D -.-> P
- B -.-> R
- K -.-> N
- N -.-> O
- O -.-> T
+flowchart TB
+ I["Implemented<br/>Shared task and review foundations<br/>Meeting publication core and client<br/>Grant packet and vote binding<br/>Funding candidates and portable skills"]
+ P["Reviewed local changes<br/>Public drafting and gap preparation<br/>Reusable source-backed knowledge<br/>Sanitized financial fixture contracts"]
+ P --> Q["Publish and qualify<br/>Complete benchmark evidence review<br/>Prove live models, tools and data adapters"]
+ D["Fresh October discovery<br/>Draft published<br/>Source qualification in review<br/>Fresh scout pending"] --> Q
+ I --> X["Connect services<br/>Drive and website<br/>Human review and vote verification<br/>Member contribution and Y2"]
+ K["Core partner graph<br/>Source inventory and typed relationships<br/>Query before research<br/>Durable writeback and indexed reuse"] --> DEMO["Connected demo<br/>Meeting publication<br/>Reviewed grant packet and vote<br/>Accepted member contribution<br/>Research reused by the next run"]
+ X --> DEMO
+ Q --> DEMO
+ class I core
+ class P reviewed
+ class D,Q,X,K,DEMO planned
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

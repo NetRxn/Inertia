@@ -1,20 +1,20 @@
-sequenceDiagram
-autonumber
-participant D as Drive / Gemini [E]
-participant J as Source job / planned [P]
-participant R as Roundtable / core + client [I]
-participant W as DAO server / API / policy [P]
-participant P as Paperclip / + Buzz [E]
-D-->>J: Ready output: meeting ID · revision · content hash
-J-->>R: Original bytes + provenance
-Note over J,R: Extractive transcript + separate notes [I]<br/>Summary-only source → notes + missing-transcript issue
-R-->>W: GET /api/integrations/v1/roundtables/<br/>operations/{operationId}
-W-->>R: Existing exact receipt OR operation_absent
-opt operation_absent
-R-->>W: POST /api/integrations/v1/roundtables/publications<br/>Exact persisted body · expected prior hash (CAS)
-end
-Note over W,P: Privy + active membership for member reads<br/>DAO PostgreSQL meeting schema: target<br/>Least-privilege service role: verify provider support
-R-->>W: GET operation: full content / audience readback
-W-->>R: Readback: content · hashes · version · audience=members
-R-->>P: Validated URLs + source/output references
-Note over D,P: Timeout → reconcile operation before retry · correction → CAS · audience/hash mismatch → exception issue
+flowchart TB
+ D["Meet and Gemini<br/>Original outputs in organization Drive"] -.-> J["Source job<br/>Ready source and revision"]
+ J -.-> R["Roundtable core and publication client<br/>Transcript when supplied<br/>Separate notes and actions"]
+ R -.->|Publish exact content| W["Website service<br/>Publication API and member policy"]
+ W -.->|Read back content and audience| R
+ W -.-> P["Member website<br/>Transcript and notes<br/>Active membership required"]
+ R -.->|Verified publication links| T["Paperclip task and Buzz thread"]
+ R -.-> A["Proposed action intake<br/>Source-linked work"]
+ A -.-> T
+ R -.-> K["Trusted knowledge admission<br/>Reviewed facts and adopted decisions<br/>Source version and access scope"]
+ K -.-> DB[("Reusable DAO knowledge")]
+ class R core
+ class J,W,A planned
+ class K reviewed
+ class DB store
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

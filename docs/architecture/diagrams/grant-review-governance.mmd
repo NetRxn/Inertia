@@ -1,20 +1,23 @@
-sequenceDiagram
-autonumber
-participant A as Grant agents / central / member [E]
-participant P as Paperclip / human review [E]
-participant T as Grant adapter / PLANNED [P]
-participant F as Funding service / DAO schema: P [E]
-participant G as Packet core [I]
-participant V as DAO vote / Vocdoni [E]
-A-->>F: Scoped skill / CLI / MCP: evidence + draft proposals
-A-->>P: Task documents + questions + review requests
-Note over A,P: Same harness, task-authorized inputs<br/>No shared database or admin token<br/>No portal credentials for members
-P-->>T: Authenticated human-only verdict / role confirmation<br/>Addressed reviewer + current document revision
-Note over T,F: PLANNED: actor · scope · configured role<br/>Addressee · workspace / packet revision<br/>Exact artifact checks
-T-->>F: Apply existing review / signoff operations<br/>Interaction + item + proposal/version/action
-F-->>G: Trusted consistent domain read + exact artifact bytes [P]
-Note over F,G: Freeze direct-application packet [I]<br/>Exact artifacts + review references<br/>Native revision alone does not verify bytes
-G-->>V: Exact packet hash + authorize_manual_submission [P]
-V-->>G: Verifier: network · proposal · action · exact packet<br/>Effective final result / finality [P]
-G-->>F: Fresh source / packet / review check before acceptance [P]
-Note over A,V: Native task / board approval ≠ DAO ratification · changed packet / reviews require a new vote<br/>External submission stays an authorized human handoff, record completion only
+flowchart TB
+ subgraph P[Agent preparation]
+ direction LR
+ I["Public grant sources<br/>DAO projects and finances"] --> D["Research and draft<br/>Query saved partners first<br/>Research missing or stale evidence"]
+ D --> R{"Independent agent review<br/>Claims, route and gaps"}
+ R -->|More agent work| D
+ end
+ R -->|Decision ready| M["DAO meeting<br/>Prepared brief<br/>Project and next steps"]
+ M -->|Further preparation| D
+ M -->|Ready for signoff| H["Authenticated human decisions<br/>Proposal review, then packet-role signoffs"]
+ H -.->|Required signoffs approved| A["Human decision adapter<br/>Actor, role and exact revision"]
+ A -.-> F[("Frozen direct-application packet<br/>Exact artifacts and review references")]
+ F --> V["Required final-packet vote<br/>Vocdoni"]
+ V -.-> Q["Verify vote authority<br/>Exact packet, action and final result"]
+ Q -.->|Verified approval| S["Authorized manual submission<br/>Human submitter"]
+ S -.-> C["Record submission receipt"]
+ class F store
+ class A,Q planned
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

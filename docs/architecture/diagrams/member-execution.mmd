@@ -1,17 +1,25 @@
-flowchart LR
- subgraph T[Trusted host / DAO boundary]
- A["Paperclip admission + central grant harness [E] · same skills / tool schema · scoped DAO sources · pairing / applicant scope / budgets"]
- B["Native checkout + Runner [E] · one owner / prepare / submit / reconcile / cleanup"]
- E["Trusted validation + decision adapter [P] · authenticated human / role / addressee / current revision · separate proposal and decision permissions"]
- K["No shared database / reviewer admin token / portal credentials in member environments"]
- F["Follow-up: parent / reason / acceptance criteria / dedup key"]
+flowchart TB
+ subgraph M[Member environment]
+ U["DAO member<br/>Operates an approved agent"] --> E["Isolated member runtime<br/>Shared skills and tool schema<br/>Task-scoped evidence"]
+ E --> P["Candidate result<br/>Artifacts and source references"]
  end
- subgraph M[Member-controlled execution boundary]
- C["Member grant harness [P] · same skills / tool schema · isolated workspace / explicit evidence subset / proposal permissions / PPC2 hardening"]
- D["Candidate proposal [P] · workspace hash / allowed evidence IDs / artifact bytes"]
+ subgraph T[Trusted services]
+ PC["Paperclip<br/>Task assignment and permitted inputs"]
+ V["Server validation<br/>Identity, task revision,<br/>source and artifact checks"]
+ A["Review and acceptance<br/>Authorized task update"]
+ D["Privileged domain services<br/>Database and publisher credentials"]
+ V -->|Validated evidence| A
+ A -.->|Authorized domain action| D
  end
- A -->|Admitted task| B
- B -.->|Task-scoped data| C
- C -.->|Execute| D
- D -.->|Submit| E
- E -.->|Accepted native state| B
+ PC -.->|Scoped task| E
+ P -.->|Submit candidate| V
+ H["Authorized human reviewer"] -.->|Authenticated decision when required| A
+ A -.->|Outcome and status| E
+ A -->|Accepted task state| PC
+ class PC,V,A core
+ class E planned
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

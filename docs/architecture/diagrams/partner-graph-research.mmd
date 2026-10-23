@@ -1,0 +1,22 @@
+flowchart TB
+ T["Research task"] --> Q["Query saved partners first<br/>Roles, capabilities, work history and owners"]
+ Q -.-> HX[("Helix partner and people index")]
+ HX -.-> V["Revalidate evidence in PostgreSQL<br/>Current source, revision and audience"]
+ Q -.->|Index unavailable or behind| F["Bounded indexed PostgreSQL lookup"]
+ F -.-> V
+ V --> N{"New research needed?"}
+ N -->|Missing or stale facts| R["Research remaining gaps"]
+ N -->|Evidence already sufficient| A
+ R --> A["Answer and knowledge delta<br/>Useful findings or a no-change reason"]
+ A -.-> C["Trusted commit<br/>Validate facts, identities and scope"]
+ C -.-> PG[("One PostgreSQL transaction<br/>Evidence, history and projection outbox")]
+ PG -.-> O["Answer and durable receipt<br/>Graph refresh status stays visible"]
+ PG -.->|Changed assertions| P["Project and reconcile<br/>Retry safely with stable identities and revisions"]
+ P -.->|Confirmed indexed update| HX
+ class HX,Q,F,V,C,P planned
+ class PG store
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

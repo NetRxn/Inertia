@@ -1,14 +1,14 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-23-r13
+Revision: INERTIA-2026-10-23-r15
 Updated: 2026-10-23 (UTC)
-Status: funding enhancement implementation authorized; benchmark in progress. Integrations below remain planned unless recorded as qualified.
+Status: DFW foundations merged; drafting/gap and Task 6 knowledge/financial contracts independently reviewed locally, awaiting publication. Core Helix partner-graph implementation is underway. October discovery draft PR42 is published; CI is running and source qualification is in review. Final scout and live integrations remain pending.
 
 Use test-driven implementation, isolated feature branches and independent review. Inertia feature branches target develop. DFW-Gov-Fund feature branches target main; apply repository-specific merge authorization.
 
-**Goal:** Deliver a working signed Buzz ↔ native Paperclip interaction loop, then attach automatic meetings, grant/vote/Y2 and member contribution adapters.
+**Goal:** Deliver the signed Buzz ↔ native Paperclip loop with automatic meetings, grant/vote/Y2 and member contribution adapters, plus maintained partner knowledge that agents query and grow through research.
 
-**Architecture:** A small trusted plugin connects Buzz transport to existing Paperclip tasks and decisions. Native APIs retain authority, orchestration and execution ownership. Plugin PostgreSQL stays in Paperclip’s independent native database and stores only transport bindings, inbox/outbox receipts and recovery state. Funding and meeting services target one existing DAO PostgreSQL database with isolated schemas/roles; Helix is a future derived graph/vector store.
+**Architecture:** A small trusted plugin connects Buzz transport to existing Paperclip tasks and decisions. Native APIs retain authority, orchestration and execution ownership. Plugin PostgreSQL stays in Paperclip’s independent native database and stores only transport bindings, inbox/outbox receipts and recovery state. Funding, meeting and admitted partner evidence use one existing DAO PostgreSQL database with isolated schemas/roles. Helix provides the core derived indexed partner graph; PG owns evidence/history and the transactional projection outbox.
 
 **Tech Stack:** TypeScript ESM, Node 24.11+, npm lockfile, Vitest, nostr-tools, public @paperclipai/plugin-sdk matching Paperclip v2026.1012.0 / bba6a45f0d364cfd962ac59b3bdf2426a8222adb; native namespaced PostgreSQL. A PostgreSQL-compatible fixture engine may test migrations without a deployed server.
 
@@ -21,7 +21,7 @@ Develop `1ac44a7a`; runtime through PR 17. See [implementation status](spec.md#i
 
 ## Global constraints
 
-- Preserve required meeting publication, grant packet vote and second-member contribution outcomes; the bridge is the first build slice, not the whole demo.
+- Deliver meeting publication, grant packet vote and second-member contribution outcomes after the bridge foundation.
 - Use develop as integration branch; isolated feature branches, focused commits, no force push, no main changes.
 - Reuse public native SDK types and facilities. No copied private integration source, custom scheduler, task ledger, sandbox or credential store.
 - No live credentials, permission changes, deployment, external messages, blockchain transactions or grant submissions in fixture builds.
@@ -57,11 +57,11 @@ The foundation uses src/buzz/events.ts (including its shared event types), src/b
 
 Core contracts:
 - `verifyBuzzEvent(raw: unknown): VerifiedBuzzEvent` verifies canonical ID and signature before deriving author/channel/root.
-- `makeBuzzHttpClient(config: BuzzClientConfig): BuzzClient` exposes `query(filters): Promise<VerifiedBuzzEvent[]>` and `publish(event): Promise<{eventId: string}>`; fetch and signer are injected, not verification.
+- `makeBuzzHttpClient(config: BuzzClientConfig): BuzzClient` exposes `query(filters): Promise<VerifiedBuzzEvent[]>` and `publish(event): Promise<{eventId: string}>`; inject fetch and signer while retaining verification inside the client.
 - `resolveCommand(event: VerifiedBuzzEvent, config: TrustedBridgeConfig): BridgeCommand | Rejection`. BridgeCommand is a discriminated comment or interactionResponse with native binding; human principal comes only from configured signed-key pairing.
 - `createPaperclipAdapter(ctx: Pick<PluginContext, 'issues'>): PaperclipAdapter` exposes `comment(command)`, `listComments(binding)`, `getInteraction(binding, id)`, and `respond(command)`, using native return types where practical.
 - `BridgeStore.claim(key, input): Promise<'claimed' | ExistingReceipt>` is an atomic unique insert/conditional transition; `saveOutcome`, `markUncertain`, `listRecoverable`, `putOutbox`, `markDelivered` persist transitions. No external native mutation runs inside a SQL transaction.
-- `createBridge(deps): { ingest(raw: unknown): Promise<IngressOutcome>; reconcile(): Promise<HealthSummary> }`. Dependencies contain trusted config, native adapter, store, Buzz client, clock and signer. `ingest` verifies internally, not a caller-supplied Verified flag.
+- `createBridge(deps): { ingest(raw: unknown): Promise<IngressOutcome>; reconcile(): Promise<HealthSummary> }`. Dependencies contain trusted config, native adapter, store, Buzz client, clock and signer. `ingest` verifies raw input internally and rejects caller flags as evidence of verification.
 - `IngressOutcome` carries status applied/replayed/rejected/uncertain, source event ID, native object ID when authorized, and receipt ID. Health carries backlog count/oldest age, last success and redacted actionable error.
 
 ## Completed foundation: tasks 1–3
@@ -88,7 +88,7 @@ PR 4 completed the connected-plugin checks below. Domain and live acceptance con
 
 ## Completed grant packet binding
 
-PR 7 adds the pure grant evaluator and synthetic fixture demonstration. It composes an explicit trusted domain read port over engine-owned packet, artifact, review and current-opportunity records; this does not require a separate funding UI. It verifies artifact bytes, freezes canonical content and review, then requires exact packet/network/proposal/action evidence from an injected verifier. Currentness and review are rechecked before evaluation; replay/conflict and invalid-calendar tests pass. The combined suite is 145 tests before the package/setup changes.
+PR 7 adds the pure grant evaluator and synthetic fixture demonstration. It reads engine-owned packet, artifact, review and current-opportunity records through an explicit trusted domain adapter. It verifies artifact bytes, freezes canonical content and review, then requires exact packet/network/proposal/action evidence from an injected verifier. Currentness and review are rechecked before evaluation; replay/conflict and invalid-calendar tests pass. The combined suite is 145 tests before the package/setup changes.
 
 ## Installable package and guided setup
 
@@ -106,38 +106,48 @@ Replace each seam against the concrete [live handoff checklist](docs/implementat
 
 1. Run `node scripts/paperclip-upgrade.mjs` to discover the latest published host/SDK, then `node scripts/paperclip-upgrade.mjs --qualify` for isolated SDK/package checks. Follow [the upgrade recipe](docs/qualification/paperclip-upgrades.md) and record versions and integrity in the version manifest. Keep the current baseline available for reproducibility while evaluating the candidate.
 2. Run compatibility, package, native-service and full-host smoke checks in a disposable environment. Exercise upgrade migrations against representative current data and compare permission/configuration changes.
-3. Rehearse recovery using the previous runtime plus a verified pre-upgrade database backup. Do not rely on binary downgrade after schema changes.
-4. Promote the qualified artifact through the deployment process and verify health/work recovery. Keep routine output concise and failures actionable. A live upgrade schedule is a separate operational setup, not enabled by this planning change.
+3. Rehearse recovery using the previous runtime plus a verified pre-upgrade database backup. Restore the compatible database backup together with the prior runtime after schema changes.
+4. Promote the qualified artifact through the deployment process and verify health/work recovery. Keep routine output concise and failures actionable. Live upgrade scheduling remains a separate operational setup task.
 
 ## Following connected product slices
 
 Deployment ownership: Inertia engineering deploys Paperclip and connects the existing Buzz instance. Website API/schema/contracts are a separate proposal for the user’s rollout. Arrange the second participant’s repository-admin role and scoped DAO-agent enrollment independently.
 
-These remain required product work. Build with the same native issue/artifact and bridge contracts; do not re-open settled platform choices.
+These remain required product work. Build with the settled platform choices and existing native issue/artifact and bridge contracts.
 
 1. Meetings: finish authorized Drive-ready source adaptation and single-owner native job wiring around the merged core and caller-side website publisher/readback using R-M01–04. Admit the website team’s proposed v1.1 server contract before live use. Start with supplied de-identified fixtures; real folder/publication API admission is U04–05. Test summary-only, duplicate/correction, source injection and audience before enabling routine automatic publishing. Existing Privy login only establishes authenticated-user access; propose explicit active-membership checks for the required members-only portal publication. The user owns website API/schema rollout.
 2. Grants and vote: implement the [native-first grant contract](docs/development/native-grant-workflow.md). Package existing skill/CLI/MCP for native central/member agents, with scoped proposal tools and one scheduling owner. Configure real human role mappings (U13); walk one packet through native documents, human-only cards and edit → regenerate → new review before considering a custom editor. Build the trusted server decision adapter and consistent-read `ReviewedGrantSource`; test decision/version/action reconciliation, identity, stale bytes and crash/replay (T-G06–12). Current MCP acceptance/signoff is absent. Complete the Vocdoni verifier (U06) and native receipt acceptance separately, using the user’s example to establish all applicable final-action stages. Preserve exact packet/review/artifact binding and a separately authorized human submission handoff.
 3. Member contribution: use existing hardened runner/provider lifecycle and native checkout, add narrow member enrollment/result boundary. Test source data limits, revoked member, stale run and hostile artifact. Do not share privileged broker credentials with members.
 4. Y2: implement interest registration/update adapter against teammate API U07; deduplicate follow-ups and preserve provenance. 990 enrichment remains stretch.
-5. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution and shared Buzz/dashboard state. Assemble reproducible receipts and record any environment-bound work still pending.
+5. Partner knowledge: implement the four core slices below, then connect query-first/writeback to scouting and diligence. Reuse Task 6 evidence and existing member/project identities.
+6. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution, shared Buzz/dashboard state and partner reuse → durable research delta → next-run retrieval. Assemble reproducible receipts and record any environment-bound work still pending.
 
 ## DAO data consolidation gate
 
-Follow the [source-grounded storage contract](docs/development/dao-data-consolidation.md), not a new migration framework. U14 first inventories current stores read-only and verifies provider/schema/PostGIS support and backups. Assign non-overlapping Drizzle/meeting and Alembic/funding ownership, qualify role isolation and compatibility in an isolated copy, then backfill/reconcile IDs, hashes, versions and review state. An authorized cutover pauses writers, reconciles the final delta, switches scoped service bindings and checks readback. Restore-tested rollback preserves post-cutover writes and never blindly replays external effects. Keep production migration and credentials outside this design task. Planned acceptance: T-D01–06.
+Follow the [source-grounded storage contract](docs/development/dao-data-consolidation.md) and existing migration tools. U14 first inventories current stores read-only and verifies provider/schema/PostGIS support and backups. Assign non-overlapping Drizzle/meeting and Alembic/funding ownership, qualify role isolation and compatibility in an isolated copy, then backfill/reconcile IDs, hashes, versions and review state. An authorized cutover pauses writers, reconciles the final delta, switches scoped service bindings and checks readback. Restore-tested rollback preserves post-cutover writes and never blindly replays external effects. Keep production migration and credentials outside this design task. Planned acceptance: T-D01–06.
 
-Helix remains the eventual funding/990/Y2 graph/vector projection. Include it in the week demo only if an actual retrieval need warrants the additional integration; core outcomes cannot depend on its availability.
+## Operational partner graph implementation
+
+The maintained graph and research writeback are core work under implementation. Task 6 supplies the locally implemented evidence/SQL foundation. Helix integration is underway; projector, writeback and end-to-end qualification remain pending. Define and run failing T-K01–12 fixtures before their corresponding implementation.
+
+1. **Align source inventory and compatibility.** Pin reviewed Task 6 and Helix SDK 3.1.0/embedded runtime 0.3.3 (U15); the first real embedded query has passed. Inventory authorized website, meeting and existing partner records with source revisions, permissions and stable member/project IDs. Seed DAO, TechFW/MADE, Moonshot, LiquidAcre and HackFW; retain unresolved identities/owners and distinguish planned from completed activity.
+2. **Add typed knowledge and durable writeback.** Extend trusted admission with separately versioned entity/relationship assertions, canonical semantic conflicts and exact evidence/scope binding. Commit research deltas, existing audit history and a projection outbox in one DAO PG transaction. Backfill every inventoried partner/contact with a mapped or unresolved coverage disposition.
+3. **Build indexed projection and query tools.** Implement fenced, idempotent Helix projection, active indexes and bounded partner/context/introduction queries with PG/source revalidation. Add scoped PG outage fallback. Wire scanners/diligence to query first and return answer plus useful delta, including rejected-opportunity discoveries.
+4. **Qualify recovery and the demo.** Prove replay/lost response, out-of-order delivery, stale-worker fencing, tombstones, corrections/revocation, backfill overlap and generation rebuild. Qualify real PG/Helix and measure performance. Rehearse known partner reuse, newly saved knowledge and next-run retrieval before accepting the October 30 demo.
+
+Use Paperclip's existing jobs for scheduling and real unresolved work. Projection receipts track delivery; Paperclip owns task state. Broader 990 enrichment and optional semantic/vector retrieval follow after this operational slice.
 
 ## Delivery and artifact synchronization
 
-Proposed engineering sequence, with the October 29 rehearsal as a buffer rather than an owner commitment:
+Proposed engineering sequence, subject to owner confirmation, with an October 29 rehearsal buffer:
 
-Oct 22–23: connected-plugin and Roundtable core merges, then domain adapter integration. Oct 23–27: domain adapters and approved integration targets in parallel. Oct 28–29: recovery/security tests and three-outcome rehearsal (proposed October 29 buffer). Oct 30: submission deadline and owner handoff; prepare the package for the owner to submit. Update exact dates with actual execution evidence, not assumed progress.
+Oct 22–23: connected-plugin and Roundtable core merges, then domain adapter integration. Oct 23–27: domain adapters and approved integration targets in parallel. Oct 28–29: recovery/security tests and three-outcome rehearsal (proposed October 29 buffer). Oct 30: submission deadline and owner handoff; prepare the package for the owner to submit. Update dates from actual execution evidence.
 
-Keep spec.md, testing.md, decisions.md, plan.md and editable Inertia-Architecture.pptx at one revision before publishing the synchronized set. Original overview PDF stays byte-identical. No PDF deck export required. A code task may merge independently with its tests while the artifact sync catches up, but do not claim the deck has been updated until rendered and checked.
+Keep spec.md, testing.md, decisions.md, plan.md and editable Inertia-Architecture.pptx at one revision before publishing the synchronized set. Original overview PDF stays byte-identical. No PDF deck export required. A code task may merge with its tests while artifact synchronization continues. Render and inspect the updated deck before delivery.
 
 ## Organizational knowledge before grant drafting
 
-Connect authorized read access to the DAO website as part of deployment, then retrieve governance, formation and applicant evidence with citations and access labels. Use that source first rather than asking for a manual applicant fact sheet. Resolve only remaining gaps with the user. Keep restricted records in scoped storage and prevent publication or contributor access beyond their audience.
+Connect authorized read access to the DAO website as part of deployment, then retrieve governance, formation and applicant evidence with citations and access labels. Retrieve the available applicant facts from that source first. Resolve only remaining gaps with the user. Keep restricted records in scoped storage and prevent publication or contributor access beyond their audience.
 
 ## Website implementation handoff
 
@@ -147,7 +157,7 @@ The [members-only publication and authorized knowledge proposal](docs/integratio
 
 1. Complete website/server, source and native job acceptance.
 2. Configure the existing CEO with assigned intake, native run policy and budgets for an authorized pilot.
-3. Complete grant, member and Y2 adapters against the contracts above.
+3. Complete grant, member and Y2 adapters and the core partner graph/query-first writeback against the contracts above.
 4. Qualify each changed runtime archive through the package/native/HTTP workflow. Preserve its exact hash and receipts.
 5. Publish synchronized documents and diagrams after independent review.
 
@@ -157,16 +167,21 @@ The [detailed implementation plan](docs/development/funding-enhancement/plan.md)
 
 | Slice | Work | Current state |
 |---|---|---|
-| 0 | Essential CI, compatible dependency fixes and duplicate-run reduction | DFW PR35 qualified on GitHub; merged into main at `ac483c309d1df84dec8a8106ec5f13860e080fc0` |
-| 1 | Frozen public cases, independent gold review and reproducible scoring | Implementation in progress |
-| 2–3 | Substantive draft candidates and route-aware independent review | Planned; follows benchmark contracts |
-| 4 | Persistent bounded research and source coverage | Planned; can run alongside drafting |
-| 5 | Canonical skill, portable packaging, actual Codex/Claude/local qualification | Planned; follows stable proposal contracts |
-| 6 | Reusable DAO knowledge and sanitized financial snapshot contract | Planned |
-| 7 | Trusted native human decisions, revision/authorization checks and receipts | Planned; follows stable domain contracts |
-| 8 | General intake, durable objective/funding links and DAO meeting brief | Planned; uses knowledge and native mappings |
-| 9 | Current packet, meeting feedback and second-member rehearsal | Planned; requires integrated qualified slices |
+| 0 | CI and dependency baseline | Merged PR35 |
+| 1 | Frozen public benchmark | Merged PR37; v3 handoff criteria in reviewed candidate; complete inventories/gold admission pending |
+| 2–3 | Draft candidates and route review | Merged PR38/39; scoped public drafting/repair bridge reviewed, awaiting publication |
+| 4 | Research and actionable preparation | Reviewed gap checkpoints and independent handoff review, awaiting publication |
+| 5 | Canonical portable skill | Merged PR40, version 3.4.1; offline Codex install/cache verified; live runtimes pending |
+| 6 | Reusable DAO knowledge and financial snapshots | Implemented and independently approved locally; unpublished/not live; real PG/importer/financial-source qualification pending |
+| 6A–6D | Maintained partner graph and research writeback | Core implementation underway; typed assertions/outbox, Helix/query tools and operational acceptance pending |
+| 7 | Trusted native human decisions | Planned; transactional scope/revision/authority checks required |
+| 8 | General intake, funding links and DAO brief | Planned; use native work and domain records |
+| 9 | Live integration rehearsal | Pending actual models, host adapters, PostgreSQL and admitted sources |
 
-Source baseline: Inertia develop `1ac44a7a5c9d8e1376e2c358ee2888b16be58905`; DFW inspected main `859a9f5a7b88bbbdd6eda3cb9c453fb15184a045`, advanced by CI PR35 to `ac483c309d1df84dec8a8106ec5f13860e080fc0`. Refresh each base before implementation. Exact July artifacts are needed only for historical replay. Source access, actual reviewer roles, selected local runtime and website server admission are later integration inputs.
+DFW main: `c615525291a656f9abd4da1262c23fa8ae97290c`. Inertia documentation source: develop `1ac44a7a5c9d8e1376e2c358ee2888b16be58905`; refresh remote base before publication. No Inertia runtime change is part of this artifact update.
 
-Update the master artifacts and [design source map](docs/development/funding-enhancement/source-map.md) with measured results as each slice lands. No grant-quality gain is recorded at this revision.
+Next: publish and qualify the reviewed public drafting/gap candidate, then qualify trusted independent candidate and gap-plan review in the selected host. Unfinished research remains agent-owned. Human requests carry prepared work and an exact remaining authority, access or private-record decision. Reassess the five examples against v3 preparation and handoff criteria.
+
+Publish the reviewed Task 6 repository slices, then qualify the trusted importer, real PG concurrency/schema roles and chosen financial source. Build and qualify the core graph in slices 6A–6D. Native human-decision effects, objective intake/brief and live deployment remain explicit work.
+
+Separately, qualify the published October discovery draft PR42 on `discovery/2026-10-23-refresh`, inspect each guarded source result, then run the authorized bounded scout and remove the temporary CI job before merge. The initial DNS-failed attempt, manual findings and replay retain distinct labels; final live results are pending. July case improvements remain a separate benchmark track. Existing meeting, vote, member and Y2 gates continue.

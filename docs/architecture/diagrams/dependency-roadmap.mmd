@@ -1,22 +1,23 @@
 flowchart LR
- M1["Source + job adapter [P] · Drive readiness / durable native job"]
- M2["Website server contract [P] · publication API / member ACL / readback"]
- M3["Meeting acceptance [P] · source → transcript + notes → member URLs"]
- G1["Native review + trusted adapter [P] · human_only roles / actor + scope / current revisions / idempotent replay"]
- G2["Governance verifier [P] · canonical rules / completed vote example / network + action + packet binding"]
- G3["Grant acceptance [P] · exact packet + artifact bytes + review references / bound vote / manual submission handoff"]
- C1["Member authorization [P] · identity / project / capabilities / budgets"]
- C2["PPC2 / Runner qualification [P] · isolation / lifecycle / scoped tools"]
- C3["Member acceptance [P] · second contributor / validated output / denied out-of-scope action"]
- Y1["Y2 contract + access [P] · interest / update / provenance"]
- Y2["Watch adapter [P] · deduplicated issue / follow-up"]
- Y3["Watch acceptance [P] · update → traceable native work"]
- M1 -.-> M3
- M2 -.-> M3
- G1 -.-> G3
- G2 -.-> G3
- C1 -.-> C3
- C2 -.-> C3
- Y1 -.-> Y2
- Y2 -.-> Y3
- note["Shared prerequisite: configured Paperclip host / independent database / authorized relay + identities / exact-artifact qualification. DAO storage target: existing PostgreSQL / isolated domain schemas / least-privilege roles / provider support verification. Helix: optional derived graph-vector projection / no approval authority / no new demo dependency"]
+ subgraph Inertia[Inertia integration work]
+ B["Buzz and Paperclip host<br/>Deploy and pair relay and members<br/>Verify requests and returned results"]
+ R["Roundtable source job<br/>Authorized Drive source and revision"]
+ G["Funding and Vocdoni<br/>Human decision adapter<br/>Exact-packet vote verifier"]
+ C["Member runtime<br/>Enrollment, isolation and accepted output"]
+ Y["Y2 updates<br/>Stable sources and deduplicated work links"]
+ K["Partner graph and knowledge<br/>Source inventory, typed facts and outbox<br/>Helix queries and PG revalidation"]
+ end
+ W["Website team<br/>Publication endpoints<br/>Active-member policy and readback"]
+ R -.->|Publication contract| W
+ B -.-> DEMO["Connected rehearsal"]
+ W -.-> DEMO
+ G -.-> DEMO
+ C -.-> DEMO
+ Y -.-> DEMO
+ K -.-> DEMO
+ class B,R,G,C,Y,K,W,DEMO planned
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38
