@@ -1,21 +1,23 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-22-r6
-Updated: 2026-10-22 (UTC)
-Stage: Connected bridge and Roundtable core merged; domain integration in progress.
+Revision: INERTIA-2026-10-23-r7
+Updated: 2026-10-23 (UTC)
+Stage: Grant core merged and installable plugin verified; deployment and domain integration pending.
 
 
-## Implementation evidence at r6
+## Implementation evidence at r7
 
 | Slice | State | Verified evidence | Next acceptance |
 |---|---|---|---|
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; combined repository suite 108 passing; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
-| Grant/vote, Y2 and member participation | Grant slice active; remaining adapters planned | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
+| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Install the archive into an admitted Paperclip host and configure authorized targets |
+| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
 
-Merged baseline: develop `1d41eeb70b02275a488a7f7583c116c8d2c77f3c`, 22 October 2026. Combined verification: 108 tests, typecheck, build and synthetic connected demo passed after PRs 4 and 5. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+Merged baseline: develop `53d0f2eedf62778f8af6cc92da6fc7b84f3f0435`, 23 October 2026. Combined verification after PR 8: 149 tests, typecheck, build, clean production archive install and native JSON-RPC worker handshake passed. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
 
 
 ## Strategy and evidence
@@ -24,7 +26,11 @@ Define fixtures and expected outcomes before implementation. Reuse upstream and 
 
 ## Connected-loop verification details
 
-Reviewed integration commit: `ee5dcfeaeb710f5de6f8cc9eef7b15c29ad67063`. The 85-test suite adds same-thread signed receipts, restart/replay recovery, persistent retry windows, delayed-event lookback/backfill, future-event isolation, paired command guidance, addressed-card privacy and company-scoped health. `npm test -- --maxWorkers=1` avoids contention from concurrent PGlite fixture startup; this is a test-runner setting, not a runtime concurrency restriction. Typecheck, build, fixture demo and diff checks pass. The merged combined result is 108 passing tests, with typecheck, build and synthetic connected demo also passing.
+Reviewed integration commit: `ee5dcfeaeb710f5de6f8cc9eef7b15c29ad67063`. The 85-test suite adds same-thread signed receipts, restart/replay recovery, persistent retry windows, delayed-event lookback/backfill, future-event isolation, paired command guidance, addressed-card privacy and company-scoped health. `npm test -- --maxWorkers=1` avoids contention from concurrent PGlite fixture startup; this is a test-runner setting, not a runtime concurrency restriction. Typecheck, build, fixture demo and diff checks pass. The historical combined result after PR 5 was 108 passing tests, with typecheck, build and synthetic connected demo also passing.
+
+## Package and setup verification
+
+Reviewed packaging commit `f68e8bb98df0bb05f9a946340d885e0bcfc6e188`: 149 of 149 tests pass, plus typecheck, build, clean package installation and a native JSON-RPC worker handshake. Archive verification checks compiled entrypoints and migrations, installs production dependencies into a fresh directory, then loads the actual worker. Configuration tests cover required nested fields, ambiguous mappings and redacted field-path errors. Node 24.11.0 or newer satisfies the selected SDK requirement. The packaged archive is an installable deliverable; deployment and live connection acceptance follow operator setup.
 
 ## First build verification: B0–B5
 
@@ -67,6 +73,10 @@ Pin all integrations; compare required SDK APIs and enabled serving routes separ
 | T-B10 | Create in Buzz, resolve in dashboard, then reverse | Identical task/interaction IDs and revision. |
 | T-B11 | Membership revoked after rendering | Apply-time authorization rejects answer. |
 | T-B12 | Agent message carries owner attestation | Remains agent-authored, cannot satisfy human approval. |
+
+## Grant-core verification
+
+PR 7 adds 37 tests covering currentness, deadlines, signoffs, artifact integrity, packet/review mutation, wrong proposal/network/action, finality, conflict/replay and simulation labeling. Trusted policy snapshots precede asynchronous reads; impossible ISO dates fail without normalizing into accepted evidence. The 145-test combined suite at PR 7 and grant fixture demo passed. Live chain proofs and transactional acceptance remain integration tests.
 
 ## Domain suite
 

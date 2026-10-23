@@ -1,7 +1,7 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-22-r6
-Updated: 2026-10-22 (UTC)
+Revision: INERTIA-2026-10-23-r7
+Updated: 2026-10-23 (UTC)
 
 > Agentic workers: use test-driven implementation in isolated feature branches, followed by focused independent review. The user has authorized autonomous engineering decisions and feature merges into develop while offline.
 
@@ -9,22 +9,24 @@ Updated: 2026-10-22 (UTC)
 
 **Architecture:** A small trusted plugin connects Buzz transport to existing Paperclip tasks and decisions. Native APIs retain authority, orchestration and execution ownership. Plugin PostgreSQL stores only transport bindings, inbox/outbox receipts and recovery state.
 
-**Tech Stack:** TypeScript ESM, Node 24, npm lockfile, Vitest, nostr-tools, public @paperclipai/plugin-sdk matching Paperclip v2026.1012.0 / bba6a45f0d364cfd962ac59b3bdf2426a8222adb; native namespaced PostgreSQL. A PostgreSQL-compatible fixture engine may test migrations without a deployed server.
+**Tech Stack:** TypeScript ESM, Node 24.11+, npm lockfile, Vitest, nostr-tools, public @paperclipai/plugin-sdk matching Paperclip v2026.1012.0 / bba6a45f0d364cfd962ac59b3bdf2426a8222adb; native namespaced PostgreSQL. A PostgreSQL-compatible fixture engine may test migrations without a deployed server.
 
 **Spec:** [spec.md](spec.md), particularly section 8. Tests and evidence: [testing.md](testing.md). Decisions: [decisions.md](decisions.md).
 
 
-## Implementation evidence at r6
+## Implementation evidence at r7
 
 | Slice | State | Verified evidence | Next acceptance |
 |---|---|---|---|
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; combined repository suite 108 passing; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
-| Grant/vote, Y2 and member participation | Grant slice active; remaining adapters planned | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
+| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Install the archive into an admitted Paperclip host and configure authorized targets |
+| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
 
-Merged baseline: develop `1d41eeb70b02275a488a7f7583c116c8d2c77f3c`, 22 October 2026. Combined verification: 108 tests, typecheck, build and synthetic connected demo passed after PRs 4 and 5. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+Merged baseline: develop `53d0f2eedf62778f8af6cc92da6fc7b84f3f0435`, 23 October 2026. Combined verification after PR 8: 149 tests, typecheck, build, clean production archive install and native JSON-RPC worker handshake passed. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
 
 
 ## Global constraints
@@ -94,12 +96,22 @@ The checklist below describes the remaining connected-plugin acceptance work. Th
 - One-time operator setup and automatic recovery are documented in `docs/operations.md`. Live host/relay configuration is the next bridge acceptance step.
 - PR 4 merged after independent review. Its 85-test suite, typecheck, build and fixture demo passed. The current combined result is recorded in the evidence table.
 
+## Completed grant packet binding
+
+PR 7 adds the pure grant evaluator and synthetic fixture demonstration. It composes an explicit trusted export port over engine-owned packet, artifact, review and current-opportunity records. It verifies artifact bytes, freezes canonical content and review, then requires exact packet/network/proposal/action evidence from an injected verifier. Currentness and review are rechecked before evaluation; replay/conflict and invalid-calendar tests pass. The combined suite is 145 tests before the package/setup changes.
+
+## Installable package and guided setup
+
+The reviewed package includes compiled `dist/src/` entrypoints and SQL migrations, runs the build before packing, and qualifies a fresh production-only install with a native JSON-RPC worker handshake. A filled disabled configuration example and typed field-path validation guide the operator without exposing secret values. Use Node 24.11.0 or newer. Development test/demo commands belong in a source checkout; install the archive through Paperclip’s admitted plugin workflow for production use.
+
+One-time setup: install the versioned archive, reference an existing signing secret, configure trusted channel/task and member mappings, validate while disabled, then enable after access checks. Routine work and transient recovery run automatically. See `docs/operations.md` for exact source-build and packaged-install steps. No live deployment is included in archive qualification.
+
 ## Following connected product slices
 
 These remain required product work. Build with the same native issue/artifact and bridge contracts; do not re-open settled platform choices.
 
 1. Meetings: implement Drive-ready source adapter, faithful transcript/notes transformer and website publisher/readback using R-M01–04. Start with supplied de-identified fixtures; real folder/publication API admission is U04–05. Test summary-only, duplicate/correction, source injection and audience before enabling routine automatic publishing.
-2. Grants and vote: wrap existing scanner current interfaces; refresh sources, preserve review/signoff, freeze canonical packet manifest, implement vote verifier against configured chain U06. Test hash/network/finality/replay. Do not submit grants or execute on-chain actions in fixture testing.
+2. Grants and vote: complete a consistent-read production exporter from the scanner engine, a configured chain-specific governance verifier (U06), and transactional acceptance on the native work item. The merged pure evaluator already covers canonical packet/review binding and negative fixtures. Revalidate source revision at the eventual manual engine handoff; preserve engine signoffs and authorized-representative submission.
 3. Member contribution: use existing hardened runner/provider lifecycle and native checkout, add narrow member enrollment/result boundary. Test source data limits, revoked member, stale run and hostile artifact. Do not share privileged broker credentials with members.
 4. Y2: implement interest registration/update adapter against teammate API U07; deduplicate follow-ups and preserve provenance. 990 enrichment remains stretch.
 5. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution and shared Buzz/dashboard state. Assemble reproducible receipts and record any environment-bound work still pending.

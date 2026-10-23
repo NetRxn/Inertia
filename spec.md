@@ -1,21 +1,23 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-22-r6
-Updated: 2026-10-22 (UTC)
-Stage: Connected bridge and Roundtable core merged; domain integration in progress.
+Revision: INERTIA-2026-10-23-r7
+Updated: 2026-10-23 (UTC)
+Stage: Grant core merged and installable plugin verified; deployment and domain integration pending.
 
 
-## Implementation evidence at r6
+## Implementation evidence at r7
 
 | Slice | State | Verified evidence | Next acceptance |
 |---|---|---|---|
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; combined repository suite 108 passing; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
-| Grant/vote, Y2 and member participation | Grant slice active; remaining adapters planned | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
+| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Install the archive into an admitted Paperclip host and configure authorized targets |
+| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
 
-Merged baseline: develop `1d41eeb70b02275a488a7f7583c116c8d2c77f3c`, 22 October 2026. Combined verification: 108 tests, typecheck, build and synthetic connected demo passed after PRs 4 and 5. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+Merged baseline: develop `53d0f2eedf62778f8af6cc92da6fc7b84f3f0435`, 23 October 2026. Combined verification after PR 8: 149 tests, typecheck, build, clean production archive install and native JSON-RPC worker handshake passed. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
 
 
 ## 1. Product outcome
@@ -92,6 +94,8 @@ Action-item extraction proposes native work with explicit source references. Una
 
 ### Grants: R-G01–R-G04
 
+The merged grant core reads a trusted export of engine-owned records and verifies artifact bytes before freezing the packet, version, review and hashes together. It requires a fresh source re-read and exact network/proposal/action/packet match from an injected governance verifier. Production integration supplies a consistent-read exporter, chain-specific verification and transactional acceptance on the native work item. The engine retains its existing review and manual submission handoff.
+
 - R-G01: Reuse the existing scanner's acquisition, eligibility rules, matching, saved-result and drafting interfaces. Refresh opportunity data and record retrieval time, deadline and source URL.
 - R-G02: Verify applicant eligibility and direct-versus-partner route. Create a cited, template-based draft, preserving human review and existing signoffs.
 - R-G03: Freeze packet ID, version, canonical content hash, attachments and review record. A blockchain vote references exactly this immutable packet and its proposed action.
@@ -137,7 +141,7 @@ The initial executable delivers signed Buzz ingress → native human comment or 
 
 ### Baseline and implementation
 
-Use TypeScript ESM on Node 24, npm lockfile, Vitest, and nostr-tools for Nostr cryptography. Compile the plugin manifest and native adapter against the public Paperclip SDK from v2026.1012.0, commit bba6a45f0d364cfd962ac59b3bdf2426a8222adb. Use the public registry package @paperclipai/plugin-sdk@2026.1012.0 and record its integrity; its release version differs from the source package.json version 1.0.0. Compile against the published artifact and audit compatibility with the source pin rather than assuming byte identity. Do not silently substitute latest SDK or copy private vendor trees. Keep the source pin and package integrity together in docs/bridge-state-contract.md. Buzz wire baseline is dc25198d530acc6237a0320b697365f29daf0ea6.
+Use TypeScript ESM on Node 24.11+, npm lockfile, Vitest, and nostr-tools for Nostr cryptography. Compile the plugin manifest and native adapter against the public Paperclip SDK from v2026.1012.0, commit bba6a45f0d364cfd962ac59b3bdf2426a8222adb. Use the public registry package @paperclipai/plugin-sdk@2026.1012.0 and record its integrity; its release version differs from the source package.json version 1.0.0. Compile against the published artifact and audit compatibility with the source pin rather than assuming byte identity. Do not silently substitute latest SDK or copy private vendor trees. Keep the source pin and package integrity together in docs/bridge-state-contract.md. Buzz wire baseline is dc25198d530acc6237a0320b697365f29daf0ea6.
 
 Reuse ctx.issues.createComment, listComments, listInteractions and respondInteraction. The host checks current human company membership. A human-attributed comment already participates in native assignee wakes; the bridge adds no extra wake. Initial direct decisions support accept/reject for immutable plain confirmations. Target-bound or structured decisions open their native Paperclip UI. Structured question answers, hiring decisions and blockchain ratification remain distinct adapters, not guessed meanings of an emoji. The plugin exports a real SDK manifest and worker entrypoint with capability declarations and native health reporting.
 

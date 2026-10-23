@@ -1,21 +1,23 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-22-r6
-Updated: 2026-10-22 (UTC)
-Stage: Connected bridge and Roundtable core merged; domain integration in progress.
+Revision: INERTIA-2026-10-23-r7
+Updated: 2026-10-23 (UTC)
+Stage: Grant core merged and installable plugin verified; deployment and domain integration pending.
 
 
-## Implementation evidence at r6
+## Implementation evidence at r7
 
 | Slice | State | Verified evidence | Next acceptance |
 |---|---|---|---|
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; combined repository suite 108 passing; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
-| Grant/vote, Y2 and member participation | Grant slice active; remaining adapters planned | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
+| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Install the archive into an admitted Paperclip host and configure authorized targets |
+| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
 
-Merged baseline: develop `1d41eeb70b02275a488a7f7583c116c8d2c77f3c`, 22 October 2026. Combined verification: 108 tests, typecheck, build and synthetic connected demo passed after PRs 4 and 5. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+Merged baseline: develop `53d0f2eedf62778f8af6cc92da6fc7b84f3f0435`, 23 October 2026. Combined verification after PR 8: 149 tests, typecheck, build, clean production archive install and native JSON-RPC worker handshake passed. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
 
 
 ## Settled decisions
@@ -85,7 +87,7 @@ The user explicitly requested autonomous progress, best practice and simplicity,
 
 | ID | Decision and rationale |
 |---|---|
-| D18 | Node 24, TypeScript ESM, npm/Vitest and real public SDK types. This follows Paperclip's language and keeps a single small package easy to run. |
+| D18 | Node 24.11+, TypeScript ESM, npm/Vitest and real public SDK types. This follows Paperclip's language and keeps a single small package easy to run. |
 | D19 | First route is the pinned SDK plugin bridge. A latest native-chat provider remains a future migration option when justified, not a simultaneous implementation. |
 | D20 | Real signed Nostr event verification and NIP98 HTTP transport, injected I/O for tests. No caller-provided trusted flags or simulated cryptographic checks. |
 | D21 | Native plugin PostgreSQL stores bridge receipts/bindings; native Paperclip stores work/decision state. Atomic unique writes handle concurrency; transport persistence is not a competing scheduler. |
@@ -93,6 +95,7 @@ The user explicitly requested autonomous progress, best practice and simplicity,
 | D23 | Comment mutations with lost responses reconcile through a stable source marker. Unknown outcomes are held rather than blindly retried. Interactions use native convergence; edited pending content needs safe replacement/CAS. |
 | D24 | Fixture demo is usable with one command. Minimal health reports connection/backlog and a concrete corrective action. No bespoke dashboard. |
 | D25 | develop is the integration branch; feature branches and reviewed tested merges are authorized. Preserve main and existing user changes. |
+| D28 | Package version 0.1.0 targets public SDK 2026.1012.0 and Node 24.11.0+. Qualify the actual archive in a fresh production-only install, including a native JSON-RPC worker handshake. Keep development commands in the source checkout. |
 | D27 | Keep routine operation automatic after one-time setup. Recover transient faults silently; report only material results, permanent setup failures or unresolved mutation outcomes with a concrete next action. |
 | D26 | Private hardening implementation stays outside public artifacts; integrate through public execution contracts. The bridge does not qualify or deploy the execution layer. |
 
@@ -100,6 +103,7 @@ Alternatives considered: latest native chat-provider implementation offers broad
 
 ## Change log
 
+- r7: Record merged grant packet binding, minimum Node 24.11+ and verified package/setup delivery. Preserve the production exporter, chain verifier, native transactional acceptance and website publisher as explicit integration work.
 - r6: Select compatibility-backed thin bridge; define signed transport, SDK adapter, durable receipts, recovery tests, autonomous develop workflow and frictionless operator UX.
 - r5: Adopt actual Paperclip platform and shared Buzz UI, eager acquisition and follow-up creation; add reuse matrix, bridge contracts, targeted tests, compatibility-first gates and a single external configuration register.
 - r4: Establish public repository delivery and synchronized artifacts with unchanged original overview.
