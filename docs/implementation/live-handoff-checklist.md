@@ -8,6 +8,70 @@ The fixture orchestrator seeds one initiative/issue from an unverified action ca
 
 Cloud is the default development and verification environment. Laptop Docker checks are optional, used only for a specific cloud blocker or platform check; they do not gate this rehearsal.
 
+## First live deployment: one small cloud control plane
+
+**Recommended profile, not an executed deployment:** one always-on Paperclip application instance in an ordinary cloud container/VM, one durable PostgreSQL database, and the existing Buzz service. Keep `netrxn.inertia` inside Paperclip's admitted plugin runtime. Use the host's native company, CEO/hiring, issue, assignment, wake, review and audit primitives. Do not introduce a second task database, broker, scheduler, custom identity service or separate bridge daemon. The plugin's SQL namespace is a delivery/correlation journal, not an alternate work ledger.
+
+Start with a 2-vCPU/4-GiB application allocation as a sizing hypothesis, not a capacity guarantee. The [Docker receipt](../qualification/docker-http-receipt.json) used these limits for a synthetic single-host check, not production load. Prefer an existing managed PostgreSQL service with automatic backups; otherwise budget and operate a durable database separately. Keep production data, plugin state, host configuration and any required host secret/encryption material on persistent storage or the provider's supported secret store. Do not rely on an ephemeral container filesystem.
+
+- **Private by default:** authenticated, member-only Paperclip using the installed release's supported authentication and onboarding paths. Set the real canonical HTTPS origin and allowed hosts through supported host configuration. Validate proxy forwarding, session behavior and native company membership before connecting Buzz. Never expose the qualification fixture's `local_trusted` mode or trust-authenticated database to a shared/public network. A reverse proxy is not a substitute for native authorization.
+- **Small operational surface:** one TLS ingress to Paperclip; database reachable only from the application/operations path; outbound HTTPS to the verified Buzz origin and only the approved services needed by the selected host adapters. Run non-root with no privilege escalation, no Docker socket or host-home mounts, bounded resources and writable paths limited to required runtime state. Verify the supported host actually starts under these restrictions rather than silently disabling them. The qualification fixture's `network: none` is not a live deployment profile.
+- **Immutable release:** use the exact qualified official host package and reviewed Inertia package/lock, record their digests, and disable unattended version changes. “Latest released” means resolve and qualify the latest stable candidate before promotion, not float the running image to `latest`. Reuse [the upgrade check and qualification](../qualification/paperclip-upgrades.md); do not add another upgrade script.
+- **Member-owned execution:** the cloud service owns orchestration, not members' personal runtimes. Member agents execute client-side in isolated sandboxes/worktrees with minimum task data and separately scoped native access. No shared signing key, database credential, host administrator credential or another member's workspace goes to an agent. Private execution-hardening integrations remain private dependencies, not source copied into this public package. Cross-member denial and revocation are live acceptance gates, not properties proved by the bridge demo.
+
+### Minimum owner inputs, collected once
+
+Keep the actual values in the private deployment configuration, not this public checklist:
+
+1. Approved cloud account/target and Paperclip HTTPS hostname, plus the operator identity allowed to administer the host and its supported authentication setup.
+2. Existing Buzz HTTPS origin, intended channel UUID and signed thread-root event ID, with access to verify their audience and the relay's actual API behavior.
+3. Intended native company and pilot issue (or authorization to create them through Paperclip), plus the human member's native user ID and independently verified Buzz public key.
+4. Existing company-scoped Paperclip signing-secret reference and matching bridge public key, or a separate authorized secret-setup handoff if none exists. Do not send a private key in chat or a config file.
+
+The deployment operator resolves provider/database/backup details within the approved target. These missing inputs block live setup, not offline preparation. Choosing this profile does not create an account, buy infrastructure, create credentials, accept agreements, expose a service or authorize live deployment.
+
+### Preflight: prepare once, remain disabled
+
+1. From a clean reviewed source checkout on Node >=24.11, run `npm ci`, `npm test`, `npm run typecheck`, `npm run build`, `npm run test:package`, and `node --test scripts/test/paperclip-upgrade.test.mjs`. Run `npm run demo:workflow` for the combined synthetic journey. These checks do not prove a live connection.
+2. Run `node scripts/paperclip-upgrade.mjs --dry-run`. If the observed host/SDK differ from the qualified baseline, or the release identity is mismatched, stop promotion and follow the existing qualification flow. Capture the source commit and package/image digests. Historical qualification is explicitly scoped to the source/version in its receipt; do not label a new artifact qualified solely because its version string matches.
+3. After deployment authorization, provision the approved private host/database, complete native authentication, and verify unauthenticated access is refused for member data. Validate an authorized member can reach only their intended company. Back up the database plus required configuration/secret material and successfully restore into an isolated disposable environment before accepting live work.
+4. Install the reviewed package through the native admitted-plugin workflow. Let the host derive and migrate the plugin namespace; do not manually create a second copy of the tables. Confirm four current plugin migrations, three registered native jobs and successful worker activation. In the target company start with exactly `{ "enabled": false }`. Degraded health saying “Enable a company connection to begin.” is expected here, not a deployment failure.
+5. Prepare the existing [operations configuration shape](../operations.md#mapping-fields) with verified values, `enabled: false`, one pilot binding, one verified human pairing and `cards: []`. Do not invent card tokens or native IDs. Confirm relay origin, channel/thread audience, current native company membership, same-person key pairing and secret/public-key match independently. The relay must implement this client's signed `POST /query` and `POST /events` contract; an HTTPS response alone is not compatibility proof. See [transport contract](../development/buzz-transport.md).
+6. Validate a copy with `enabled: true` using the existing `validateConfiguration(candidate, companyId)` from built `dist/src/config.js`, without saving/enabling that copy. It performs structural and company-scope checks only; it neither reads the secret nor verifies live membership, audience, key ownership or relay access. **The validator intentionally accepts disabled incomplete configuration**, so a green test on `{ "enabled": false }` is not a readiness gate. Use the native host's supported config test too, then independently establish the checks it cannot prove.
+
+No new deployment launcher is supplied: the target and supported host authentication setup are not yet known. A speculative one-command launcher would hide exactly the security and service choices that need real values. The intended experience is one operator-owned setup, then normal native jobs and a small health surface, not repeated manual reconciliation.
+
+### Enable one pilot and prove the round trip
+
+Use a private pilot thread/issue with approved non-sensitive test content. These are live writes and require the applicable authorization; this checklist does not execute them.
+
+1. Confirm pairing and binding readback in the target company, then enable that company's connection. Observe the next native reconcile job, normally scheduled each minute. Do not promise sub-second chat delivery.
+2. Send one signed human Buzz reply. Observe the exact native issue comment, author attribution, input event ID and signed Buzz receipt. Restart the worker and replay the exact event; verify there is still only one native mutation. Record readback in the existing native audit/issue evidence, not a new work ledger.
+3. Create a supported untargeted native `request_confirmation`. Confirm its card appears only in the bound Buzz thread, then approve/reject with the paired human key. Verify authoritative native resolution and the matching signed receipt. Agent keys must not exercise human authority. Targeted/tool/secret/other complex decisions remain in Paperclip's dashboard.
+4. Verify an unpaired sender, wrong-company mapping, revoked pairing and unauthorized member cannot mutate native work. Check both services' actual audience controls; signing alone does not provide confidentiality or membership.
+5. Exercise a relay outage and recover without duplicating the signed event or native mutation. Verify health returns to normal and the native job survives a restart. Do not induce an ambiguous production mutation merely to test it; use a disposable approved pilot environment for lost-response fault injection.
+6. Expand bindings only after the pilot passes. Run member-agent execution separately only after client-side isolation, scope, revocation and cross-member denial have passed on the selected native adapter/runtime. No agent self-attestation substitutes for this evidence.
+
+### Maintenance and stop path
+
+Use native plugin health and the three existing jobs, not another monitoring database. Check `pendingReceipts`, `uncertainMutations`, `blockedReceipts`, `oldestPendingAgeSeconds` and successful sync freshness together with host/job availability. Disabled health is expected; a growing backlog, stale jobs or an uncertain mutation is not. A host that is down cannot report its own health, so use the deployment provider's existing uptime/backup alerts where authorized.
+
+Follow [existing recovery guidance](../operations.md#recovery-without-babysitting): allow bounded normal retries; correct permanent access/configuration failures before “Retry blocked deliveries”; use “Backfill connected conversations” after a long offline period. Never delete inbox/outbox rows to force replay or re-sign an uncertain outgoing event. Unknown native outcomes need authoritative native readback.
+
+To stop new bridge processing, set the company's `enabled` to false and verify readback; already in-flight work may finish, so inspect outstanding native results rather than assuming cancellation. Revoke a pairing for a specific identity through native configuration. Keep durable delivery state intact. Before any upgrade, reuse the existing upgrade gates and restore-tested backup. If migrations are incompatible or uncertain, restore the prior database/configuration and matching host/plugin together; rolling back a binary alone is unsafe. Reconcile any external Buzz events/native results after a restore before resuming so a stale backup cannot blindly replay already-applied work.
+
+### What this does not yet deliver
+
+The current plugin supports **Buzz replies → native issue comments** and **selected native confirmation cards → Buzz → native resolution**, with signed receipts, durable delivery and replay protection. It is not yet a general two-way chat/task UI: arbitrary new native comments and task/status changes are not mirrored outbound, and Buzz does not automatically create native work, recruit/hire agents or select a CEO.
+
+Implementation priorities after deployment preparation:
+
+1. **Native CEO-led intake:** replace fixture-only work seeding with trusted, policy-scoped native company/CEO/hiring/issue creation and durable source-operation correlation. Reconcile uncertain creates before retry; distinguish an extracted candidate from an authorized assignment. Keep ownership and scheduling native.
+2. **Complete conversation continuity:** add authorized outbound native comment/status updates using the existing durable outbox and bindings, with audience checks, provenance, echo suppression and stable operation IDs. Test restart/replay in both directions; do not introduce a parallel task store.
+3. **Make setup self-explanatory:** build on native company plugin settings and health to expose verified mapping/readiness and the exact next repair. Structural validation must not appear as live verification. Keep private execution-hardening code outside this public repository and qualify the chosen member runner before enabling it.
+
+Drive, DAO publication, reviewed grant export, governance and Y2 remain separately tested adapter handoffs below. None should be implied live by a successful Paperclip/Buzz pilot.
+
 ## Adapter acceptance checklist
 
 Each live adapter needs a configured owner, a least-privilege identity, and an integration test against the named instance. Keep shared credentials on the trusted server, outside agent task inputs.
