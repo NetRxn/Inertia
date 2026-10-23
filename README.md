@@ -35,7 +35,7 @@ Install the resulting package through an admitted Paperclip plugin workflow targ
 
 ## Product direction and artifacts
 
-The required demo spans automatic Roundtable publication, grant-packet preparation with a vote on the exact version, and secure contributions from members' agents. Existing DAO and grant-engine repositories remain authoritative for their domains.
+The required demo spans automatic Roundtable publication, grant-packet preparation with a vote on the exact version, and secure contributions from members' agents. Existing DAO and grant-engine repositories remain authoritative for their domains. Grant scouting/drafting and human review are native-first Paperclip workflows, using a shared scoped harness for central/member agents. The funding UI is optional; the trusted human-decision adapter is planned, not shipped. See the [native grant contract](docs/development/native-grant-workflow.md).
 
 The source repository keeps the synchronized [specification](spec.md), [testing plan](testing.md), [decisions](decisions.md), [implementation plan](plan.md) and [editable architecture deck](Inertia-Architecture.pptx) and [visual system overview](docs/architecture/Inertia-System-Overview.html). Editable [Mermaid diagram sources](docs/architecture/diagrams) accompany the HTML. The [original product overview](docs/reference/Inertia-beta-product-overview.pdf) is retained as historical source material.
 

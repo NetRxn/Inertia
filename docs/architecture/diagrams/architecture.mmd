@@ -1,20 +1,28 @@
 flowchart TB
- B["Buzz [E] · conversation / transport data"]
- PC["Paperclip [E] · agents / issues / runs / operational approvals / budgets / audit · PostgreSQL"]
- D["Meet / Gemini → Drive [E] · original source + revision"]
- G["Grant scanner / engine [E] · opportunity / draft / review authority"]
- W["DAO portal [E] · organization-fact authority · PlanetScale PostgreSQL / Privy · API + member policy [P]"]
- V["Vocdoni / DAO governance [E] · business-vote authority · verifier contract [P]"]
- Y["Y2 [E] · watch contract [P]"]
+ B["Buzz [E] · signed conversation / transport"]
+ PC["Paperclip [E] · tasks / agents / runs / documents / authenticated user decisions / audit"]
+ H["Grant skills + CLI/MCP [E] · central/member task-scoped harness deployment [P] · proposal writes only"]
+ N["Native grant workflow [E] · questions / human_only cards / addressed roles / current document revision"]
+ F["Funding domain [E] · evidence / proposals / immutable packets / validation / audit · specialist UI optional"]
+ D["Meet / Gemini / Drive [E] · original source + revision"]
+ W["DAO portal [E] · organization facts · PlanetScale PostgreSQL / Privy · publication API + member policy [P]"]
+ V["Vocdoni [E] · separate DAO business authority · exact packet/action verifier [P]"]
+ Y["Y2 [E] · native issue / follow-up contract [P]"]
  subgraph Inertia[Inertia plugin · trusted host extension]
- BR["Buzz bridge [I] · paired identity / inbox / outbox / dedup / reconcile · outbound comments default-off + audience acknowledgment"]
- RT["Roundtable + publication client [I] · extractive transcript / notes / hashes / CAS"]
- GR["Grant packet core [I] · immutable packet / artifact verification / injected ports"]
+ BR["Buzz bridge [I] · pairing / inbox / outbox / reconcile"]
+ RT["Roundtable + publication client [I] · extractive notes / hashes / CAS"]
+ A["Trusted decision adapter [P] · authenticated actor / company + applicant scope / role / addressee / current workspace + packet + artifacts / per-item actor + verdict / interaction + item + proposal-or-packet ID + version + action"]
+ GR["Grant packet core [I] · direct_application / exact bytes / frozen packet + reviews / freshness / authorize_manual_submission vote binding"]
  end
  B <-->|Signed relay / NIP-98| BR
- BR <-->|Native SDK · comment / accept-reject / receipts| PC
+ BR <-->|Native SDK| PC
+ PC -.->|Harness deployment P| H
+ PC -->|Existing native capabilities| N
+ H -.->|Scoped proposals P| F
+ N -.->|Authenticated native decision P| A
+ A -.->|Existing domain operations P| F
+ F -.->|Trusted domain read P; no UI export prerequisite| GR
  D -.->|Ingest P| RT
  RT -.->|HTTP v1 P| W
- G -.->|Export P| GR
- GR -.->|Verify P| V
- Y -.->|Watch → native issue P| PC
+ GR -.->|Exact packet + action verification P| V
+ Y -.->|Native issue P| PC

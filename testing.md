@@ -1,8 +1,8 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-23-r10
+Revision: INERTIA-2026-10-23-r11
 Updated: 2026-10-23 (UTC)
-Status: implementation merged; live integration pending.
+Status: runtime unchanged; native-first grant integration planned.
 
 
 ## Qualification record
@@ -17,7 +17,7 @@ Status: implementation merged; live integration pending.
 | HTTP/API | Historical pre-mirror source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`; candidate HTTP/auth/UI acceptance pending |
 | External services | Synthetic demo I/O; live website, Drive, grant/vote, member and Y2 acceptance pending |
 
-[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `f9423e5`.
+[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `778996e9`.
 
 ### Historical slice evidence
 
@@ -27,7 +27,7 @@ Status: implementation merged; live integration pending.
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
 | Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR 14; deployed server/source/job admission pending |
-| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
+| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Trusted domain/human-decision adapter, chain verifier and native receipt acceptance |
 | Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
 | Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
 | Historical native service qualification | Passed for its recorded pre-mirror artifact | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
@@ -109,6 +109,22 @@ Pin all integrations; compare required SDK APIs and enabled serving routes separ
 ## Grant-core verification
 
 PR 7 adds 37 tests covering currentness, deadlines, signoffs, artifact integrity, packet/review mutation, wrong proposal/network/action, finality, conflict/replay and simulation labeling. Trusted policy snapshots precede asynchronous reads; impossible ISO dates fail without normalizing into accepted evidence. The 145-test combined suite at PR 7 and grant fixture demo passed. Live chain proofs and transactional acceptance remain integration tests.
+
+## Native grant review acceptance (planned)
+
+These are new adapter requirements, **not executed tests or added runtime capability**. Qualify against the [pinned release and funding source](docs/reference/native-grant-workflow.md).
+
+| ID | Fixture | Required result |
+|---|---|---|
+| T-G06 | Agent resolver, wrong addressed human, wrong role or forged actor/decision ID | Explicit human-only policy plus authenticated native readback and configured role mapping deny application. |
+| T-G07 | Changed document revision, workspace hash, packet version, review or artifact bytes | Old decision cannot advance the packet; correction generates a new proposal/review; changed frozen content needs a new vote. |
+| T-G08 | Duplicate/multi-item/partially resolved card; crash before/after write or receipt | Item decision identity = interaction ID + item ID. Reconcile with proposal/packet ID + version + action; distinct items do not collide. Apply once using each item’s actor/verdict; hold unknown outcomes. |
+| T-G09 | Proposal/role reject, defer, or partner N/A action | Proposal reject → rejected; role reject → changes_requested. Defer has no write; none advances review. Only an explicit partner action can record not_applicable, never inferred from reject/defer. |
+| T-G10 | Cross-company/applicant read; member requests privileged tools or credentials | Deny access; member receives only authorized evidence and proposal tools, no database/admin keys or portal credentials. |
+| T-G11 | Native approval, packet readiness, passed vote or submission-record request | No portal submission side effect. Manual-submission receipt requires the domain-approved state and separately authorized human action. |
+| T-G12 | Real packet with one correction; central and member draft paths | Native task/doc/cards remain one workflow; edit → regenerate → new review works without a custom panel or duplicate scheduler. |
+
+Also prove each route’s required roles: direct application has five; partner contribution four; next-cycle readiness program/fiscal; monitor-only none. Native document freshness never substitutes for exact external artifact-byte verification.
 
 ## Domain suite
 
