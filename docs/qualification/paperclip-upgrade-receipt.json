@@ -1,0 +1,53 @@
+{
+  "result": "sdk-and-package-qualified",
+  "rootLockPolicy": "read-only",
+  "baseline": {
+    "host": "2026.1012.0",
+    "sdk": "2026.1012.0",
+    "nativeServices": "passed",
+    "fullHttp": "passed",
+    "evidence": "native-services-receipt.json",
+    "fullHttpEvidence": "docker-http-receipt.json",
+    "fullHttpScope": "Disposable Docker HTTP/API qualification of source-built plugin at a3e60ee5; browser UI and live integrations excluded"
+  },
+  "sourceCommit": "a32ae89aef3008694748ca7df9ca61fac95da328",
+  "workingTreeDirty": true,
+  "candidate": {
+    "observedAt": "2026-10-23T02:01:58.930Z",
+    "host": {
+      "name": "paperclipai",
+      "version": "2026.1012.0",
+      "integrity": "sha512-dFAKM7DbuO/S+akBnDLgNShdnsP5vN+XrLi22ec4dEnla3pAgW7gcmaRyDkzJO26T51fbEYerOE+014v3u4udA==",
+      "tarball": "https://registry.npmjs.org/paperclipai/-/paperclipai-2026.1012.0.tgz"
+    },
+    "sdk": {
+      "name": "@paperclipai/plugin-sdk",
+      "version": "2026.1012.0",
+      "integrity": "sha512-9T5loVkWyNARibDwye31P4YbrFpq0MiREF1lX8jrKlyvv0MQQZOiQnLUExyoBQ14F9jz8fQB1MhWIdBdj42zpQ==",
+      "tarball": "https://registry.npmjs.org/@paperclipai/plugin-sdk/-/plugin-sdk-2026.1012.0.tgz"
+    },
+    "release": {
+      "tag": "v2026.1012.0",
+      "url": "https://github.com/paperclipai/paperclip/releases/tag/v2026.1012.0",
+      "publishedAt": "2026-10-12T21:06:53Z"
+    },
+    "releaseMatchesHost": true,
+    "versionsAligned": true
+  },
+  "gates": {
+    "typecheck": "passed",
+    "test": "passed",
+    "test:package": "passed"
+  },
+  "nativeHost": "Separate native-services and full HTTP qualification required for this exact host candidate before promotion.",
+  "completedAt": "2026-10-23T02:05:22.390Z",
+  "baselineEvidenceNote": "Current baseline status reconciled with independently supplied Docker receipt after this SDK-only run.",
+  "evidence": {
+    "runtimeTests": 152,
+    "workflowUnitTests": 12,
+    "packageFiles": 45,
+    "pluginMigrations": 4,
+    "rootLockSha256": "87ce9cb1d6e1a553341510b1cbd3507ead4c80af448dbbffea93a8cd6facd843",
+    "rootLockUnchangedVerified": true
+  }
+}

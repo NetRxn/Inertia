@@ -1,0 +1,32 @@
+{
+  "policy": "Latest published stable is the target; baseline is reproducible evidence, not an upgrade prohibition.",
+  "baseline": {
+    "host": "2026.1012.0",
+    "sdk": "2026.1012.0",
+    "nativeServices": "passed",
+    "fullHttp": "passed",
+    "evidence": "native-services-receipt.json",
+    "fullHttpEvidence": "docker-http-receipt.json",
+    "fullHttpScope": "Disposable Docker HTTP/API qualification of source-built plugin at a3e60ee5; browser UI and live integrations excluded"
+  },
+  "observedCandidate": {
+    "observedAt": "2026-10-23T01:49:01.508Z",
+    "host": {
+      "name": "paperclipai",
+      "version": "2026.1012.0",
+      "integrity": "sha512-dFAKM7DbuO/S+akBnDLgNShdnsP5vN+XrLi22ec4dEnla3pAgW7gcmaRyDkzJO26T51fbEYerOE+014v3u4udA==",
+      "tarball": "https://registry.npmjs.org/paperclipai/-/paperclipai-2026.1012.0.tgz"
+    },
+    "sdk": {
+      "name": "@paperclipai/plugin-sdk",
+      "version": "2026.1012.0",
+      "integrity": "sha512-9T5loVkWyNARibDwye31P4YbrFpq0MiREF1lX8jrKlyvv0MQQZOiQnLUExyoBQ14F9jz8fQB1MhWIdBdj42zpQ==",
+      "tarball": "https://registry.npmjs.org/@paperclipai/plugin-sdk/-/plugin-sdk-2026.1012.0.tgz"
+    },
+    "release": {
+      "tag": "v2026.1012.0",
+      "publishedAt": "2026-10-12T21:06:53Z",
+      "url": "https://github.com/paperclipai/paperclip/releases/tag/v2026.1012.0"
+    }
+  }
+}
