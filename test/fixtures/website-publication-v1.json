@@ -1,0 +1,84 @@
+{
+  "description": "Synthetic proposed contract v1.1 clarification fixture; no live endpoint or credential.",
+  "record": {
+    "recordVersion": "website-operation-v1",
+    "origin": "https://dao.example",
+    "principalId": "synthetic-integration",
+    "operationId": "09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147",
+    "body": "{\"contractVersion\":\"roundtable-publication-v1\",\"meeting\":{\"title\":\"Synthetic Roundtable\",\"date\":\"2026-10-23\",\"attendees\":null,\"agenda\":null,\"tags\":[]},\"publication\":{\"meetingId\":\"synthetic-meeting\",\"sourceId\":\"synthetic-source\",\"revision\":\"1\",\"sourceHash\":\"b90ab6e537eda5c5ab0df5a5e01c52ce3cf21f50b51eca6c6193aef83b70a6b0\",\"audience\":\"members\",\"transcript\":\"Speaker: Plan.\\nSpeaker: Do not approve.\",\"notes\":{\"notes\":[{\"text\":\"Speaker: Plan.\",\"line\":1,\"verification\":\"unverified\"}],\"decisions\":[],\"actions\":[{\"text\":\"Speaker: Do not approve.\",\"line\":2,\"owner\":null,\"verification\":\"unverified\"}]},\"outputVersion\":\"extractive-v1\",\"expectedPreviousOutputHash\":null,\"outputHash\":\"ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0\",\"operationId\":\"09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147\"}}",
+    "bodyHash": "f19020c3f14b1120dbb539f2b5655c5a9a297f1416bf7cbb9b29bda89d71d9db"
+  },
+  "requestHeaders": {
+    "Content-Type": "application/json; charset=utf-8",
+    "Idempotency-Key": "09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147",
+    "If-None-Match": "*"
+  },
+  "responseHeaders": {
+    "Content-Type": "application/json",
+    "ETag": "\"ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0\"",
+    "Cache-Control": "private, no-store"
+  },
+  "postReceipt": {
+    "state": "present",
+    "publicationId": "p_synthetic",
+    "meetingNoteId": "m_synthetic",
+    "operationId": "09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147",
+    "outputHash": "ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0",
+    "requestBodyHash": "f19020c3f14b1120dbb539f2b5655c5a9a297f1416bf7cbb9b29bda89d71d9db",
+    "audience": "members",
+    "current": true,
+    "readbackPath": "/api/integrations/v1/roundtables/operations/09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147"
+  },
+  "getReceipt": {
+    "state": "present",
+    "publicationId": "p_synthetic",
+    "meetingNoteId": "m_synthetic",
+    "operationId": "09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147",
+    "outputHash": "ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0",
+    "requestBodyHash": "f19020c3f14b1120dbb539f2b5655c5a9a297f1416bf7cbb9b29bda89d71d9db",
+    "audience": "members",
+    "current": true,
+    "readbackPath": "/api/integrations/v1/roundtables/operations/09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147",
+    "currentOutputHash": "ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0",
+    "envelope": {
+      "contractVersion": "roundtable-publication-v1",
+      "meeting": {
+        "title": "Synthetic Roundtable",
+        "date": "2026-10-23",
+        "attendees": null,
+        "agenda": null,
+        "tags": []
+      },
+      "publication": {
+        "meetingId": "synthetic-meeting",
+        "sourceId": "synthetic-source",
+        "revision": "1",
+        "sourceHash": "b90ab6e537eda5c5ab0df5a5e01c52ce3cf21f50b51eca6c6193aef83b70a6b0",
+        "audience": "members",
+        "transcript": "Speaker: Plan.\nSpeaker: Do not approve.",
+        "notes": {
+          "notes": [
+            {
+              "text": "Speaker: Plan.",
+              "line": 1,
+              "verification": "unverified"
+            }
+          ],
+          "decisions": [],
+          "actions": [
+            {
+              "text": "Speaker: Do not approve.",
+              "line": 2,
+              "owner": null,
+              "verification": "unverified"
+            }
+          ]
+        },
+        "outputVersion": "extractive-v1",
+        "expectedPreviousOutputHash": null,
+        "outputHash": "ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0",
+        "operationId": "09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147"
+      }
+    }
+  }
+}

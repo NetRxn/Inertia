@@ -1,0 +1,128 @@
+[
+  {
+    "source": {
+      "meetingId": "synthetic-meeting",
+      "sourceId": "synthetic-source",
+      "revision": "1",
+      "ready": true,
+      "kind": "transcript",
+      "audience": "members",
+      "text": "Speaker: Plan.\r\nSpeaker: Do not approve."
+    },
+    "prepared": {
+      "meetingId": "synthetic-meeting",
+      "sourceId": "synthetic-source",
+      "revision": "1",
+      "sourceHash": "b90ab6e537eda5c5ab0df5a5e01c52ce3cf21f50b51eca6c6193aef83b70a6b0",
+      "audience": "members",
+      "transcript": "Speaker: Plan.\nSpeaker: Do not approve.",
+      "notes": {
+        "notes": [
+          {
+            "text": "Speaker: Plan.",
+            "line": 1,
+            "verification": "unverified"
+          }
+        ],
+        "decisions": [],
+        "actions": [
+          {
+            "text": "Speaker: Do not approve.",
+            "line": 2,
+            "owner": null,
+            "verification": "unverified"
+          }
+        ]
+      },
+      "outputVersion": "extractive-v1",
+      "expectedPreviousOutputHash": null,
+      "outputHash": "ce1b5f0c566e43d13ac29129cd2c6921b717c4dd346f997755dc163b76f0f4f0",
+      "operationId": "09f6740562685da27cbaf4f7fcd0d7d98bb553bc4e8c6cc38fdd098a1bd78147",
+      "raw": "Speaker: Plan.\r\nSpeaker: Do not approve."
+    }
+  },
+  {
+    "source": {
+      "meetingId": "synthetic-meeting",
+      "sourceId": "synthetic-source",
+      "revision": "1",
+      "ready": true,
+      "kind": "transcript",
+      "audience": "members",
+      "text": "Zoë: Prépare 日本語 “budget”.\nSpeaker: Quote \"yes\" and \\ slash."
+    },
+    "prepared": {
+      "meetingId": "synthetic-meeting",
+      "sourceId": "synthetic-source",
+      "revision": "1",
+      "sourceHash": "97204837bd78f7128961c95883d61d32a4774a1f6dd3212619f5ab303c082bf1",
+      "audience": "members",
+      "transcript": "Zoë: Prépare 日本語 “budget”.\nSpeaker: Quote \"yes\" and \\ slash.",
+      "notes": {
+        "notes": [
+          {
+            "text": "Zoë: Prépare 日本語 “budget”.",
+            "line": 1,
+            "verification": "unverified"
+          }
+        ],
+        "decisions": [],
+        "actions": [
+          {
+            "text": "Speaker: Quote \"yes\" and \\ slash.",
+            "line": 2,
+            "owner": null,
+            "verification": "unverified"
+          }
+        ]
+      },
+      "outputVersion": "extractive-v1",
+      "expectedPreviousOutputHash": null,
+      "outputHash": "4d6cc909d33ed11bae0d4e443fb394a8a5bea08c0859205fb608401a9f35d3dd",
+      "operationId": "8f8ab5a54ca20800fc9c100b62b3c4229853e60f5231e65528e965b1c7c7d606",
+      "raw": "Zoë: Prépare 日本語 “budget”.\nSpeaker: Quote \"yes\" and \\ slash."
+    }
+  },
+  {
+    "source": {
+      "meetingId": "synthetic-meeting",
+      "sourceId": "synthetic-source",
+      "revision": "1",
+      "ready": true,
+      "kind": "transcript",
+      "audience": "members",
+      "text": "Speaker: 😀\tDraft.\rSpeaker: unknown owner."
+    },
+    "prepared": {
+      "meetingId": "synthetic-meeting",
+      "sourceId": "synthetic-source",
+      "revision": "1",
+      "sourceHash": "1fe7eb937a2c216006a7641d6d0c6eab36029a4034b36834c4f9d281a3d9b03a",
+      "audience": "members",
+      "transcript": "Speaker: 😀\tDraft.\nSpeaker: unknown owner.",
+      "notes": {
+        "notes": [
+          {
+            "text": "Speaker: 😀\tDraft.",
+            "line": 1,
+            "verification": "unverified"
+          }
+        ],
+        "decisions": [],
+        "actions": [
+          {
+            "text": "Speaker: unknown owner.",
+            "line": 2,
+            "owner": null,
+            "verification": "unverified"
+          }
+        ]
+      },
+      "outputVersion": "extractive-v1",
+      "expectedPreviousOutputHash": null,
+      "outputHash": "b80eb7d0b122fd8a338a49e9a13d08fa891fc1bd5d808f8fe9262a5abfddacfc",
+      "operationId": "232a4c0c3cce59dcf3b6f96b203e5a6cdd4a4ce1a4f9d40397bc1d32a4493365",
+      "raw": "Speaker: 😀\tDraft.\rSpeaker: unknown owner."
+    }
+  }
+]

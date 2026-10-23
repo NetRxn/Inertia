@@ -2,6 +2,8 @@
 
 Status: proposed implementation contract for the website team. Owner: website rollout by John; Inertia owns the caller/adapter. Version 1, 2026-10-23. No website changes, credential provisioning, or deployment are included in this document.
 
+Implementation coordination note (2026-10-23): see the separate [v1.1 clarification addendum](dao-website-publication-v1.1-clarifications.md) for the full receipt field shape, metadata bounds and shared synthetic fixtures. The original wire version and digest algorithms below are unchanged; no endpoint is live by virtue of this document.
+
 ## 1. Outcome and boundaries
 
 After one authorized setup, a ready Roundtable transcript produces a separate transcript and readable notes on the member portal automatically. Retries produce one publication; corrections produce a visible new version without overwriting somebody else's changes. Ordinary publication requires neither a per-meeting vote nor human approval. Missing inputs, conflicts and policy violations become actionable exceptions rather than partial public posts.
