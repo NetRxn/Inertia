@@ -42,7 +42,7 @@ async function main() {
     const url=`postgres://fixture:${password}@127.0.0.1:${pgPort}/postgres`;
     const local=join(work,'host');await mkdir(join(local,'plugin'),{recursive:true});
     await symlink(join(host,'node_modules'),join(local,'node_modules'),'dir');
-    for(const f of ['qualify-runtime.mjs','check-host-binding.mjs','check-native-members.mjs','check-pg-recovery.mjs'])await cp(join(here,f),join(local,f));
+    for(const f of ['qualify-runtime.mjs','migration-inventory.mjs','check-host-binding.mjs','check-native-members.mjs','check-pg-recovery.mjs'])await cp(join(here,f),join(local,f));
     for(const f of ['package.json','README.md','LICENSE','migrations','docs','dist/src'])await cp(join(root,f),join(local,'plugin',f),{recursive:true});
     await symlink(join(root,'node_modules'),join(local,'plugin/node_modules'),'dir');
     const dbEnv={QUALIFICATION_DATABASE_URL:url};

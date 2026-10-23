@@ -3,7 +3,8 @@ import {issueService} from './node_modules/@paperclipai/server/dist/services/iss
 import {checkHostBinding} from './check-host-binding.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
+import {assertMigrationInventory} from './migration-inventory.mjs';
 import {createDb} from '@paperclipai/db';
 import postgres from 'postgres';
 import {createHostClientHandlers} from '@paperclipai/plugin-sdk';
@@ -37,7 +38,7 @@ try{
  console.log('JOBS',JSON.stringify(await sql`select job_key from plugin_jobs`));
  console.log('CONFIG',JSON.stringify(await sql`select config_json from plugin_config`));
  const migrations=await sql`select migration_key,status from plugin_migrations`;
- assert.equal(migrations.length,6);assert.ok(migrations.every(x=>x.status==='applied'));
+ assertMigrationInventory(migrations,await readdir(root+'/plugin/migrations'));
  const jobs=await sql`select job_key from plugin_jobs`;assert.equal(jobs.length,3);
  const tables=await sql`select table_name from information_schema.tables where table_schema='plugin_netrxn_inertia_e936d62b87' order by table_name`;console.log('TABLES',JSON.stringify(tables));
  assert.ok((await sql`select config_json from plugin_config`).every(x=>x.config_json.enabled===false));

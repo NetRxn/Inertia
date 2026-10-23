@@ -194,3 +194,7 @@ Owner setup checklist:
 - Second repo administrator performs independent rehearsal. Vocdoni example and Y2 workspace details are separate handoffs, not blockers for this website contract.
 
 Production migration and credential provisioning require separate authorization.
+
+## Objective intake caller extension (local, not deployed)
+
+The [objective intake contract](../development/objective-intake.md) aligns existing innovation bounty/project IDs with one native Paperclip backlog item and DFW many-to-many funding links. Its source export requires authenticated current audience/author policy, opaque revisions and a prior-hash chain; existing timestamps/status fields are not an adequate substitute. Reference-only native items avoid treating company visibility as website authorization. Read-through progress suppresses stale/revoked/narrowed source views. No proposed endpoint here is a verified live API; website rollout remains with its owner.
