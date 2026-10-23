@@ -22,3 +22,7 @@ Acceptance tests cover content/version/review changes, wrong proposal/network/ac
 Run `npm run build && node dist/src/grants/demo.js`. No network, keys, live records, approval writes, or blockchain transactions occur. Configure a trusted source exporter and governance verifier later; the verifier owns chain-specific proofs, eligible voter/result rules, reorganization policy and finality. The core accepts only evidence from that injected verifier, never a member-supplied verified boolean. Store accepted receipts transactionally on the existing native work item; this pure evaluator does not create an authorization ledger or execute anything. The host must serialize acceptance with the source revision and revalidate at the eventual manual handoff. A vote cannot replace the engine's reviews or authorized representative.
 
 Review hardening: policy dates, verifier kind/function, source methods and prior receipt are captured before the first asynchronous read. ISO timestamps validate calendar dates and time/offset ranges, preserving engine microsecond precision; impossible dates cannot normalize into accepted review evidence.
+
+## Public organizational draft evidence
+
+Use the [source-pinned public DAO grounding reference](public-dao-grant-grounding.md) for attributed draft identity and mission material while primary documents are pending. It distinguishes self-published claims from legal/tax evidence and unresolved governance policy. It is not an import contract and cannot clear review or eligibility gates.
