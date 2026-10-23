@@ -1,33 +1,15 @@
 flowchart TB
- B["Buzz [E] · signed conversation / transport"]
- PC["Paperclip [E] · tasks / agents / runs / documents / authenticated user decisions / audit · independent native PostgreSQL database"]
- H["Grant skills + CLI/MCP [E] · central/member task-scoped harness deployment [P] · proposal writes only"]
- N["Native grant workflow [E] · questions / human_only cards / addressed roles / current document revision"]
- F["Funding backend [E] · evidence / proposals / immutable packets / validation / audit · specialist UI optional · logical domain ownership"]
- D["Meet / Gemini / Drive [E] · original source + revision"]
- W["DAO portal [E] · organization facts / meeting backend · Privy · publication API + member policy [P]"]
- V["Vocdoni [E] · separate DAO business authority · exact packet/action verifier [P]"]
- Y["Y2 [E] · native issue / follow-up contract [P]"]
- DB["One existing DAO PostgreSQL database [P target] · isolated organization / meeting / funding schemas · least-privilege service roles · verify provider capabilities · logical domain ownership does not imply separate DB servers"]
- HX["Helix graph / vector projection [P] · funding / 990 / Y2 · provenance / version / access-filtered / rebuildable · no fact / transaction / review / approval authority · demo optional, no critical-path dependency"]
- subgraph Inertia[Inertia plugin · trusted host extension]
- BR["Buzz bridge [I] · pairing / inbox / outbox / reconcile"]
- RT["Roundtable + publication client [I] · extractive notes / hashes / CAS"]
- A["Trusted decision adapter [P] · authenticated actor / company + applicant scope / role / addressee / current workspace + packet + artifacts / per-item actor + verdict / interaction + item + proposal-or-packet ID + version + action"]
- GR["Grant packet core [I] · direct_application / exact bytes / frozen packet + reviews / freshness / authorize_manual_submission vote binding"]
- end
- B <-->|Signed relay / NIP-98| BR
- BR <-->|Native SDK| PC
- PC -.->|Harness deployment P| H
- PC -->|Existing native capabilities| N
- H -.->|Scoped proposals P| F
- N -.->|Authenticated native decision P| A
- A -.->|Existing domain operations P| F
- F -.->|Trusted domain read P, no UI export prerequisite| GR
- D -.->|Ingest P| RT
- RT -.->|HTTP v1 P| W
- GR -.->|Exact packet + action verification P| V
- Y -.->|Native issue P| PC
- F -.->|Scoped funding service role P| DB
- W -.->|Scoped portal / meeting service role P| DB
- DB -.->|Derived projection P| HX
+ B["Buzz<br/>Member conversation"] <--> BR["Inertia bridge<br/>Paired signed messages"]
+ BR <--> PC["Paperclip<br/>Tasks, agents, runs and human decisions<br/>Delegation, hiring and budgets"]
+ UI["Paperclip dashboard<br/>Member work and review"] <--> PC
+ I["Work intake<br/>Meeting actions, innovation bounties<br/>and funding opportunities"] -.-> PC
+ PC <-.-> R["Agent runtimes<br/>Central or member computers"]
+ PC <-.-> A["Inertia adapters<br/>Knowledge and domain actions"]
+ A <-.-> S["Connected services<br/>Website, funding and Helix<br/>Vocdoni and Y2"]
+ class PC,BR core
+ class I,R,A planned
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

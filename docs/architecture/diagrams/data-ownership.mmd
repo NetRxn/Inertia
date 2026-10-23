@@ -1,0 +1,20 @@
+flowchart TB
+ PC[("Paperclip database<br/>Tasks, agents, runs and decisions<br/>Bridge transport state")]
+ A["Service adapters<br/>Task links and domain decisions"]
+ DAO[("DAO PostgreSQL<br/>Authoritative evidence and history<br/>Domain schemas and projection outbox")]
+ PC <-.-> A
+ A <-.-> DAO
+ M["Meeting sources and decisions"] -.-> K["Trusted knowledge admission<br/>Source revision and access scope"]
+ Q["Financial snapshots<br/>Sanitized fixture contracts reviewed"] -.-> K
+ K -.-> DAO
+ DAO -.->|Admitted records and revisions| HX[("Helix partner graph<br/>Maintained derived index<br/>Core capability, implementation underway")]
+ HX -.-> C["Authorized queries<br/>Revalidate current PG sources and access"]
+ DAO -.->|Access and revision checks| C
+ class PC,DAO store
+ class A,HX,C planned
+ class K,Q reviewed
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

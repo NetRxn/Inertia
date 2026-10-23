@@ -1,24 +1,24 @@
 flowchart TB
- W["Website innovation bounty: General objectives"]
- P["Paperclip backlog: CEO triage + eligible work"]
- A["Agent implementation: General work / native checkout"]
- M["Meeting minutes: Quoted source + revision"]
- K["Reusable DAO knowledge: Scope + source + admission"]
- Q["QuickBooks snapshot: Period / basis / currency"]
- S["Opportunity scout: Current notice + eligibility"]
- D["Draft + independent review: Evidence spans / targeted rework"]
- B["DAO opportunity brief: Fit / projects / effort / gaps"]
- R["Meeting / human decisions: Pursue / revise / defer / decline"]
- H["Reviewed packet handoff: Exact version / authorized action"]
- W -.-> P
- P -.-> A
- M -.-> K
- Q -.-> K
- K -.-> D
- S -.-> D
- D -.-> B
- B -.-> R
- D -.-> H
- P -.-> D
- R -.-> D
- R -.-> K
+ subgraph G[Funding preparation]
+ direction TB
+ A["Query existing partner knowledge<br/>Affiliations, work history and owners"] --> L["Research remaining gaps<br/>Local partners and public contacts"]
+ L --> P["Prepare the next step<br/>Evidence, worksheet or draft outreach"]
+ P --> R{"Independent gap review<br/>Exact saved plan and source support"}
+ R -->|More agent work| L
+ R -->|Decision ready| H["Human input<br/>Project choice, access,<br/>private record or authority"]
+ P --> S[("Saved preparation and attempts")]
+ S --> O["Markdown and DOCX<br/>Prepared work and remaining decision"]
+ end
+ B["General innovation bounty<br/>Objective and intended outcome"] -.-> T["Paperclip task<br/>General work backlog"]
+ T -.->|Optional funding link| A
+ K["Reusable DAO evidence<br/>Meeting decisions and financial snapshots"] -.-> P
+ L -.-> U["Useful knowledge delta<br/>Keep findings from rejected opportunities"]
+ H -.->|Decision and feedback| T
+ class L,P,R,H,S,O reviewed
+ class A,B,U planned
+ class K reviewed
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

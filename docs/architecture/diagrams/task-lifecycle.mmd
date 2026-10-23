@@ -1,0 +1,17 @@
+flowchart TB
+ I["Task intake<br/>Objective, source and done criteria"] --> T["Paperclip task<br/>Dependencies and current revision"]
+ T --> C["CEO agent<br/>Prioritize and delegate"]
+ C --> O["Claim task<br/>Exclusive execution owner"]
+ O --> E["Execute<br/>Central or member runtime<br/>Task-scoped tools and inputs"]
+ E --> V{"Validate result<br/>Task criteria and required reviews"}
+ V -->|Rework| E
+ V -->|Pass| R["Accepted result<br/>Task status and output links"]
+ R --> U["Buzz and dashboard<br/>Result returned to the member"]
+ R -->|Justified next step| F["Linked follow-up<br/>Parent, reason and done criteria<br/>Deduplicated against existing work"]
+ F --> T
+ class T,C,O,R core
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

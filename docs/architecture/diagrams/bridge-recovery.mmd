@@ -1,0 +1,20 @@
+flowchart TB
+ I["Signed message"] --> V["Verify identity and permission"]
+ V --> C{"Deduplicated claim"}
+ C -->|New event| A["Authorized Paperclip action"]
+ C -->|Completed duplicate| O[("Saved outcome and durable outbox")]
+ C -->|Claim already active| W["Wait for current owner"]
+ A -->|Success| O
+ A -->|Outcome unknown| R["Read back native state"]
+ R -->|Established result| O
+ R -->|Still unknown| H["Hold and reconcile<br/>Before any retry"]
+ H --> R
+ O --> D["Deliver signed receipt to Buzz"]
+ D -->|Delivery retry: same event ID| O
+ D -->|Acknowledged| F["Delivery complete"]
+ class V,C,A,O,D core
+
+ classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
+ classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
+ classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
+ classDef store fill:#edf2f7,stroke:#61788b,color:#132e38

@@ -4,7 +4,7 @@ Reference revision 3, 2026-10-23. Scope: pinned public sources. Deployment and o
 
 ## Shared storage boundary
 
-Target one existing DAO managed PostgreSQL database for funding and meeting records, isolated by owned schemas and least-privilege roles; keep Paperclip native persistence independent. Existing Meeting Mode/website tables require read-only inventory and identifier mapping, not assumed duplication or automatic migration. Drizzle owns website/meeting changes; funding Alembic owns its own schema. Helix is a future access-filtered projection across funding/990/Y2, never a review or governance authority. See [source compatibility and migration gates](../development/dao-data-consolidation.md). This changes design, not deployed storage.
+Target one existing DAO managed PostgreSQL database for funding and meeting records, isolated by owned schemas and least-privilege roles; keep Paperclip native persistence independent. Existing Meeting Mode/website tables require read-only inventory and identifier mapping, not assumed duplication or automatic migration. Drizzle owns website/meeting changes; funding Alembic owns its own schema. Helix is the core indexed partner graph under implementation, fed by query-first research writeback and the DAO PostgreSQL evidence/history outbox. Queries revalidate source/access/version, with bounded PG fallback during outages. Broader 990 and optional semantic/vector enrichment follow later; review and governance retain their domain owners. See [source compatibility and migration gates](../development/dao-data-consolidation.md). This changes design, not deployed storage.
 
 ## Meeting source reuse
 
