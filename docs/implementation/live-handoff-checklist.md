@@ -10,7 +10,7 @@ Cloud is the default development and verification environment. Laptop Docker che
 
 ## Cloud deployment profile
 
-**Status: proposed.** one always-on Paperclip application instance in an ordinary cloud container/VM, one durable PostgreSQL database, and the existing Buzz service. Keep `netrxn.inertia` inside Paperclip's admitted plugin runtime. Use the host's native company, CEO/hiring, issue, assignment, wake, review and audit primitives. Keep scheduling, tasks, identity and execution ownership native. The plugin SQL namespace stores delivery/correlation records only.
+**Status: proposed.** one always-on Paperclip application instance in an ordinary cloud container/VM, one independent durable Paperclip PostgreSQL database, and the existing Buzz service. Funding and meeting records reuse the existing DAO relational database under isolated domain schemas/roles; this does not provision another domain database per service. Keep `netrxn.inertia` inside Paperclip's admitted plugin runtime. Use the host's native company, CEO/hiring, issue, assignment, wake, review and audit primitives. Keep scheduling, tasks, identity and execution ownership native. The plugin SQL namespace stores delivery/correlation records only.
 
 Initial sizing hypothesis: 2 vCPU/4 GiB, matching the [synthetic Docker check](../qualification/docker-http-receipt.json). Production capacity testing is pending. Prefer an existing managed PostgreSQL service with automatic backups; otherwise budget and operate a durable database separately. Keep production data, plugin state, host configuration and any required host secret/encryption material on persistent storage or the provider's supported secret store. Do not rely on an ephemeral container filesystem.
 
@@ -28,7 +28,7 @@ Keep the actual values in the private deployment configuration, not this public 
 3. Intended native company and pilot issue (or authorization to create them through Paperclip), plus the human member's native user ID and independently verified Buzz public key.
 4. Existing company-scoped Paperclip signing-secret reference and matching bridge public key, or a separate authorized secret-setup handoff if none exists. Do not send a private key in chat or a config file.
 
-The deployment operator resolves provider/database/backup details within the approved target. Live setup requires these inputs and deployment authorization.
+The deployment operator resolves provider/database/backup details within the approved target. For DAO consolidation, resolve U14 and the [migration gates](../development/dao-data-consolidation.md) before changing storage; keep Paperclip backup/restore independent. Live setup requires these inputs and deployment authorization.
 
 ### Preflight: prepare once, remain disabled
 

@@ -13,7 +13,7 @@ W-->>R: Existing exact receipt OR operation_absent
 opt operation_absent
 R-->>W: POST /api/integrations/v1/roundtables/publications<br/>Exact persisted body · expected prior hash (CAS)
 end
-Note over W,P: Privy + active membership for member reads<br/>Scoped service identity for machine writes
+Note over W,P: Privy + active membership for member reads<br/>DAO PostgreSQL meeting schema: target<br/>Least-privilege service role: verify provider support
 R-->>W: GET operation: full content / audience readback
 W-->>R: Readback: content · hashes · version · audience=members
 R-->>P: Validated URLs + source/output references

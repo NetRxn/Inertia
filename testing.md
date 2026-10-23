@@ -1,8 +1,8 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-23-r11
+Revision: INERTIA-2026-10-23-r12
 Updated: 2026-10-23 (UTC)
-Status: runtime unchanged; native-first grant integration planned.
+Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
 
 
 ## Qualification record
@@ -17,7 +17,7 @@ Status: runtime unchanged; native-first grant integration planned.
 | HTTP/API | Historical pre-mirror source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`; candidate HTTP/auth/UI acceptance pending |
 | External services | Synthetic demo I/O; live website, Drive, grant/vote, member and Y2 acceptance pending |
 
-[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `778996e9`.
+[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `85699551`.
 
 ### Historical slice evidence
 
@@ -37,6 +37,19 @@ Status: runtime unchanged; native-first grant integration planned.
 ## Strategy and evidence
 
 Define fixtures and expected outcomes before implementation. Reuse upstream and existing execution-integration tests; add Inertia contracts at bridge and domain boundaries. Source review identifies capabilities. Each executed test records code/configuration revisions, UTC time, fixture class, expected/actual result and receipts. The following is the required test plan.
+
+## Shared DAO storage acceptance (planned)
+
+Design acceptance only; none of these checks has run against deployed DAO storage. Source evidence and migration sequence: [data consolidation contract](docs/development/dao-data-consolidation.md).
+
+| ID | Check | Required result |
+|---|---|---|
+| T-D01 | Provider/schema compatibility and migration dry run | Actual version, schema/role support, PostGIS and backup restore verified; funding PostgreSQL types/constraints and schema-qualified SQL pass; SQLite success alone is insufficient. |
+| T-D02 | Migration ownership/collisions | Drizzle touches only website/meeting-owned objects; Alembic only funding-owned objects/history. Existing table/ID names, indexes and foreign keys cannot collide or be silently dropped. |
+| T-D03 | Cross-schema and row/audience isolation | Meeting role cannot read/write funding tables; funding role cannot read membership or unrestricted meeting data. Test direct SQL, unsafe search paths, new-table default grants, revoked roles, cross-applicant/company and expired membership. Narrow authorized API/view access works without widening grants. |
+| T-D04 | Backfill and consistent-read reconciliation | Counts, stable IDs/FKs, JSON/time values, hashes, immutable versions, reviews and publication readbacks match; concurrent edits cannot produce a mixed-version packet or duplicate decision. |
+| T-D05 | Cutover/rollback rehearsal | Pause/delta/switch/readback sequence and restore pass in isolation; reconcile post-cutover writes and external effects before resuming. No dual authoritative writers, lost reviews or duplicate publication/submission. |
+| T-D06 | Future Helix projection safety | Replay/rebuild deduplicates source ID/version; stale/deleted/revoked or wrong-audience records are not served, including vector/graph results. Retrieval rechecks authoritative access/version. Helix outage does not block native work or domain review; graph output cannot approve or bypass packet/vote checks. |
 
 ## Connected-loop verification details
 

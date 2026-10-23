@@ -42,7 +42,7 @@ For protected responses use Cache-Control: private, no-store; do not place them 
 
 ## 4. Minimal additive persistence
 
-Use existing Drizzle migrations and PlanetScale PostgreSQL transactions. Proposed schema:
+Use existing Drizzle migrations and PlanetScale PostgreSQL transactions in the shared DAO relational database. Website/meeting objects remain Drizzle-owned; funding objects use an isolated Alembic-owned schema and separate least-privilege role. Scope introspection and migration history so neither tool manages the other domain. Existing unqualified website tables need an explicit ownership inventory before any namespace move; do not rename them blindly. Shared storage does not bypass the API policy or expand document/member access. See [storage contract](../development/dao-data-consolidation.md). Wire/digest versions are unchanged. Proposed schema:
 
 ### meeting_notes additions
 

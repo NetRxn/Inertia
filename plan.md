@@ -1,14 +1,14 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-23-r11
+Revision: INERTIA-2026-10-23-r12
 Updated: 2026-10-23 (UTC)
-Status: runtime unchanged; native-first grant integration planned.
+Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
 
 Use test-driven implementation, isolated feature branches and independent review. Merge authorized changes into develop.
 
 **Goal:** Deliver a working signed Buzz ↔ native Paperclip interaction loop, then attach automatic meetings, grant/vote/Y2 and member contribution adapters.
 
-**Architecture:** A small trusted plugin connects Buzz transport to existing Paperclip tasks and decisions. Native APIs retain authority, orchestration and execution ownership. Plugin PostgreSQL stores only transport bindings, inbox/outbox receipts and recovery state.
+**Architecture:** A small trusted plugin connects Buzz transport to existing Paperclip tasks and decisions. Native APIs retain authority, orchestration and execution ownership. Plugin PostgreSQL stays in Paperclip’s independent native database and stores only transport bindings, inbox/outbox receipts and recovery state. Funding and meeting services target one existing DAO PostgreSQL database with isolated schemas/roles; Helix is a future derived graph/vector store.
 
 **Tech Stack:** TypeScript ESM, Node 24.11+, npm lockfile, Vitest, nostr-tools, public @paperclipai/plugin-sdk matching Paperclip v2026.1012.0 / bba6a45f0d364cfd962ac59b3bdf2426a8222adb; native namespaced PostgreSQL. A PostgreSQL-compatible fixture engine may test migrations without a deployed server.
 
@@ -17,7 +17,7 @@ Use test-driven implementation, isolated feature branches and independent review
 
 ## Current baseline
 
-Develop `778996e9`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `85699551`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Global constraints
 
@@ -120,6 +120,12 @@ These remain required product work. Build with the same native issue/artifact an
 3. Member contribution: use existing hardened runner/provider lifecycle and native checkout, add narrow member enrollment/result boundary. Test source data limits, revoked member, stale run and hostile artifact. Do not share privileged broker credentials with members.
 4. Y2: implement interest registration/update adapter against teammate API U07; deduplicate follow-ups and preserve provenance. 990 enrichment remains stretch.
 5. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution and shared Buzz/dashboard state. Assemble reproducible receipts and record any environment-bound work still pending.
+
+## DAO data consolidation gate
+
+Follow the [source-grounded storage contract](docs/development/dao-data-consolidation.md), not a new migration framework. U14 first inventories current stores read-only and verifies provider/schema/PostGIS support and backups. Assign non-overlapping Drizzle/meeting and Alembic/funding ownership, qualify role isolation and compatibility in an isolated copy, then backfill/reconcile IDs, hashes, versions and review state. An authorized cutover pauses writers, reconciles the final delta, switches scoped service bindings and checks readback. Restore-tested rollback preserves post-cutover writes and never blindly replays external effects. Keep production migration and credentials outside this design task. Planned acceptance: T-D01–06.
+
+Helix remains the eventual funding/990/Y2 graph/vector projection. Include it in the week demo only if an actual retrieval need warrants the additional integration; core outcomes cannot depend on its availability.
 
 ## Delivery and artifact synchronization
 

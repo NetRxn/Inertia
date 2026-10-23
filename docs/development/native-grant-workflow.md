@@ -2,9 +2,9 @@
 
 **Planned, not shipped.** Reuse the [source-pinned primitives](../reference/native-grant-workflow.md). Current runtime, packet core and qualification receipts are unchanged.
 
-## One workflow, two stores
+## One workflow, separate authority
 
-Paperclip agents scout and draft using the funding skill/CLI/MCP harness. Native tasks, documents, questions, human-only cards and run history provide the default experience. The funding backend retains domain evidence, validated proposals, immutable packets and review audit. Its UI is optional specialist/admin fallback.
+Paperclip agents scout and draft using the funding skill/CLI/MCP harness. Native tasks, documents, questions, human-only cards and run history provide the default experience. The funding backend retains domain evidence, validated proposals, immutable packets and review audit. Its UI is optional specialist/admin fallback. Domain records target a funding-owned schema in the shared DAO PostgreSQL database alongside isolated meeting schemas; Paperclip keeps its independent native DB. Service ownership does not imply another server. See [storage and migration ownership](dao-data-consolidation.md).
 
 Use one native scheduling owner for each scan/draft job; disable overlapping funding triggers. Do not add a grant task board, scheduler or approval ledger.
 
