@@ -1,0 +1,1 @@
+{"private": true, "dependencies": {"@embedded-postgres/linux-x64": "18.1.0-beta.16", "postgres": "3.4.9"}}

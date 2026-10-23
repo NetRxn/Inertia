@@ -12,6 +12,21 @@ beforeEach(async () => { pg = new PGlite(); await pg.exec(`CREATE SCHEMA ${BRIDG
 afterEach(async () => { await pg.close(); });
 const key = { relay: 'https://buzz.example', eventId: 'a'.repeat(64) };
 const input = { destination: { relay: key.relay, channelId: 'channel', rootId: 'root', companyId: 'co', issueId: 'issue' }, command: { kind: 'comment', body: 'hello' }, receiptKey: 'receipt-a' };
+it('fails closed when a different event collides with an existing inbox receipt', async () => {
+    const s = createBridgeStore(db);
+    await s.claim(key, input);
+    await expect(s.claim({ ...key, eventId: 'different-event' }, input)).rejects.toThrow();
+    expect(await s.get({ ...key, eventId: 'different-event' })).toBeNull();
+    expect((await s.get(key))?.state).toBe('applying');
+});
+it('fails closed when a different outbox receipt collides with an existing signed event', async () => {
+    const s = createBridgeStore(db);
+    const record = { receiptKey: 'receipt', relay: key.relay, eventId: 'signed-event', event: { id: 'signed-event' } };
+    expect(await s.putOutbox(record)).toBe(true);
+    await expect(s.putOutbox({ ...record, receiptKey: 'different-receipt' })).rejects.toThrow();
+    expect(await s.getOutbox('different-receipt')).toBeNull();
+    expect((await s.getOutbox('receipt'))?.eventId).toBe('signed-event');
+});
 it('allows exactly one concurrent claim and survives store reconstruction', async () => { const a = createBridgeStore(db); const results = await Promise.all(Array.from({ length: 8 }, () => a.claim(key, input))); expect(results.filter(r => r === 'claimed')).toHaveLength(1); expect(await createBridgeStore(db).get(key)).toMatchObject({ state: 'applying', receiptKey: 'receipt-a' }); expect(await a.claim({ ...key, relay: 'https://other.example' }, { ...input, receiptKey: 'receipt-other-relay' })).toBe('claimed'); });
 it('uses conditional transitions and never reclaims uncertain mutation', async () => { const s = createBridgeStore(db); await s.claim(key, input); expect(await s.markUncertain(key)).toBe(true); expect(await s.claim(key, input)).toMatchObject({ state: 'uncertain' }); expect(await s.saveOutcome(key, 'applied', { nativeId: 'comment' })).toBe(true); expect(await s.saveOutcome(key, 'rejected', { reason: 'late' })).toBe(false); expect(await s.markUncertain(key)).toBe(false); expect((await s.get(key))?.outcome).toEqual({ nativeId: 'comment' }); });
 it('repairs one deterministic outbox and retains immutable publication', async () => { const s = createBridgeStore(db); await s.claim(key, input); await s.saveOutcome(key, 'applied', { nativeId: 'comment' }); expect(await s.listRecoverable()).toHaveLength(1); const record = { receiptKey: 'receipt-a', relay: key.relay, eventId: 'signed-id', event: { id: 'signed-id', content: 'receipt' } }; expect(await s.putOutbox(record)).toBe(true); expect(await s.putOutbox({ ...record, eventId: 'replacement', event: { id: 'replacement' } })).toBe(false); expect((await s.listOutbox())[0]?.eventId).toBe('signed-id'); expect(await s.markDelivered('receipt-a')).toBe(true); expect(await s.markDelivered('receipt-a')).toBe(false); expect(await s.listOutbox()).toHaveLength(0); expect(await s.listRecoverable()).toHaveLength(0); });
