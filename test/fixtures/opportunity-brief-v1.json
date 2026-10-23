@@ -1,0 +1,125 @@
+{
+  "contract_version": "opportunity-brief-v1",
+  "organization_id": "dao",
+  "opportunity_id": "fund:1",
+  "title": "Test fund",
+  "deadline": "2026-12-31",
+  "amount": {
+    "minimum": null,
+    "maximum": "5000.00",
+    "currency": "USD",
+    "source_refs": [
+      "opportunity:fund:1"
+    ]
+  },
+  "audience": "public",
+  "route": "direct_application",
+  "fit": {
+    "text": "Potential fit with the admitted affiliation",
+    "source_refs": [
+      "record"
+    ]
+  },
+  "project_alignment": [
+    {
+      "text": "Potential support for the active learning objective",
+      "source_refs": [
+        "record"
+      ],
+      "project_id": "project-1"
+    }
+  ],
+  "proposed_outcome": "Proposed workshop, subject to member decision",
+  "effort": {
+    "application": {
+      "minimum_hours": 2.0,
+      "maximum_hours": 5.0,
+      "basis": "Proposed planning estimate; not a member commitment",
+      "source_refs": [
+        "record"
+      ]
+    },
+    "delivery": {
+      "minimum_hours": 20.0,
+      "maximum_hours": 40.0,
+      "basis": "Proposed planning estimate; not a member commitment",
+      "source_refs": [
+        "record"
+      ]
+    },
+    "reporting": null
+  },
+  "obligations": [
+    {
+      "text": "Reporting terms still require review",
+      "source_refs": [
+        "opportunity:fund:1"
+      ]
+    }
+  ],
+  "partners": [
+    {
+      "entity_id": "network",
+      "name": "Community learning network",
+      "proposed_role": "Potential collaborator",
+      "source_refs": [
+        "record"
+      ],
+      "remaining_checks": [
+        "Confirm interest and delivery capacity"
+      ]
+    }
+  ],
+  "prepared_materials": [
+    {
+      "title": "Draft outline",
+      "artifact_key": "outline",
+      "content_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "pursuit",
+      "question": "Pursue, revise, defer or decline this proposed workshop?",
+      "owner": null,
+      "scope": "fund:1",
+      "options": [
+        "pursue",
+        "revise",
+        "defer",
+        "decline"
+      ],
+      "blocks": [
+        "Further application preparation"
+      ]
+    }
+  ],
+  "recommendation": "Defer pending comparison of value against application and delivery effort",
+  "next_action": "Compare existing higher-value opportunities",
+  "packet": {
+    "id": "packet",
+    "version": 1,
+    "content_hash": "b1498d5fd9b396827e9ca4c0faf45fb9e5bfcda30091d13ee9075a3dde036534"
+  },
+  "sources": [
+    {
+      "id": "record",
+      "url": null,
+      "title": "minutes-1",
+      "source_revision": "r1",
+      "source_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "quote": "The DAO is affiliated with the community learning network."
+    },
+    {
+      "id": "opportunity:fund:1",
+      "url": "https://example.org/fund",
+      "title": "Test fund",
+      "source_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "quote": "Funding record summary: Test fund; status: open; deadline: 2026-12-31; amount: unknown–5000.00 USD"
+    }
+  ],
+  "gaps": [
+    "Reporting effort unknown"
+  ]
+}
