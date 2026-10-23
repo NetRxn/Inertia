@@ -1,23 +1,26 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-23-r7
+Revision: INERTIA-2026-10-23-r8
 Updated: 2026-10-23 (UTC)
-Stage: Grant core merged and installable plugin verified; deployment and domain integration pending.
+Stage: Connected rehearsal and native HTTP/API qualification passed; deployment and live domain adapters next.
 
 
-## Implementation evidence at r7
+## Implementation evidence at r8
 
 | Slice | State | Verified evidence | Next acceptance |
 |---|---|---|---|
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
-| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Live host/relay admission and domain integration |
-| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Live host/relay admission and domain integration |
+| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
+| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
 | Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
 | Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
-| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Install the archive into an admitted Paperclip host and configure authorized targets |
+| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
+| Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
+| Native service qualification | Passed against pinned Paperclip services | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
+| Latest-release qualification | Merged into develop | [PR 11](https://github.com/NetRxn/Inertia/pull/11): official registry discovery, isolated exact-lock qualification, 12 focused tests plus actual 152 runtime tests/typecheck/production package verification | Qualify each new candidate with native/HTTP checks and tested database recovery before promotion |
 | Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
 
-Merged baseline: develop `53d0f2eedf62778f8af6cc92da6fc7b84f3f0435`, 23 October 2026. Combined verification after PR 8: 149 tests, typecheck, build, clean production archive install and native JSON-RPC worker handshake passed. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+Merged baseline: develop `ec26c1b850e7937a9d5b1561c1a27b43d06394de`, 23 October 2026. Combined verification after PR 10: 152 tests, typecheck, build and five demos passed. Package/install qualification from PR 8 remains unchanged; the workflow demo is source-checkout-only. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
 
 
 ## Strategy and evidence
@@ -31,6 +34,24 @@ Reviewed integration commit: `ee5dcfeaeb710f5de6f8cc9eef7b15c29ad67063`. The 85-
 ## Package and setup verification
 
 Reviewed packaging commit `f68e8bb98df0bb05f9a946340d885e0bcfc6e188`: 149 of 149 tests pass, plus typecheck, build, clean package installation and a native JSON-RPC worker handshake. Archive verification checks compiled entrypoints and migrations, installs production dependencies into a fresh directory, then loads the actual worker. Configuration tests cover required nested fields, ambiguous mappings and redacted field-path errors. Node 24.11.0 or newer satisfies the selected SDK requirement. The packaged archive is an installable deliverable; deployment and live connection acceptance follow operator setup.
+
+## Native service qualification
+
+The pinned Paperclip plugin loader, PostgreSQL migration runner and worker services ran against a real ephemeral database. Four plugin migrations created eight tables, the worker initialized, and three jobs registered. Disabled configuration validated successfully; degraded health was expected while disabled. The full HTTP server could not start because `os.networkInterfaces` returned `ERR_SYSTEM_ERROR` / `uv_interface_addresses` under the cloud sandbox. No shim or policy bypass was used. Test processes were stopped after verification. A subsequent authorized isolated Docker fallback passed full HTTP/API qualification on the same baseline; this closes host/API qualification while the cloud restriction remains environment-specific.
+
+## Full HTTP/API qualification
+
+The [Docker HTTP receipt](docs/qualification/docker-http-receipt.json) identifies the source-built package by source/image/version. The delivered archive retains its separate SHA-bound package/native-service qualification. The authorized Docker fallback exercised the unmodified official Paperclip 2026.1012.0 host with Inertia source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`: HTTP health, synthetic company creation, plugin installation, disabled configuration, actual worker validation/health, jobs and scheduled/manual disabled reconciliation passed. The database applied 304 host migrations and four plugin migrations, with eight plugin tables and three jobs. The non-root container used a read-only filesystem, no network/ports/host mounts, dropped capabilities and no-new-privileges, bounded to 2 CPU/4 GiB/256 PIDs. No OOM or source patch/shim occurred. Test containers were stopped and removed. This qualifies HTTP/API behavior with synthetic disabled configuration; browser UI and live external integrations remain separate acceptance work.
+
+## Connected workflow rehearsal verification
+
+Run `npm run demo:workflow` from the source checkout. Assert deterministic receipt bytes across fresh runs; meeting/work/packet provenance and hash agreement; one native mutation after bridge reconstruction and replay; fixture governance labeling; pending publication on unknown readback; and explicit pending live-adapter records. Run the transport, connected bridge, Roundtable, grant and workflow demos. The production archive remains unchanged because source-checkout demos and PGlite are excluded.
+
+## Latest-release upgrade qualification
+
+The implemented [upgrade workflow](docs/qualification/paperclip-upgrades.md) has 12 focused metadata/provenance/failure-path tests. Its first isolated qualification passed 152 runtime tests, typecheck and production-only package verification without changing the root lock. As checked on 23 October 2026, latest published host and SDK are both 2026.1012.0. Future candidates require their own host/migration evidence.
+
+For each candidate host/SDK release, record exact package integrity and schema baseline; run the complete bridge/domain contracts, clean archive install, native services and HTTP/UI smoke against the candidate. Exercise migration from a representative current database, verify existing records/permissions/jobs and repeat activation without duplicate migration or work. Compare capability requirements and configuration changes. Rehearse restoring a verified pre-upgrade backup with the previous runtime, and verify restored data consistency. A successful new install alone does not qualify an upgrade or recovery path. Promote only the tested artifact; retain the result and actionable failure details.
 
 ## First build verification: B0–B5
 
@@ -102,6 +123,9 @@ PR 7 adds 37 tests covering currentness, deadlines, signoffs, artifact integrity
 ## Security and failure suite
 
 - T-S01: Malicious source text cannot change permissions, destinations or execution policy.
+- T-S10: Repository-admin access alone grants no DAO application or control-plane authority; verify separate scoped enrollment and cross-member denial.
+- T-S09: A valid Privy login without active membership cannot access material configured for members only. Verify the actual website audience and reject unauthorized narrowing claims.
+- T-G05: Use the user’s Vocdoni example to determine required final-action stages. Any required but incomplete settlement remains pending; wrong chain/action/hash or missing effective authority is rejected. This is planned adapter acceptance, not an implemented FWTX verifier.
 - T-S02: Foreign company/task IDs, guessed artifacts and revoked identities fail server authorization.
 - T-S03: Actual selected sandbox blocks prohibited filesystem, network and process behavior; worktree isolation is tested separately.
 - T-S04: Oversized, wrong-type, traversal and executable output payloads are rejected or quarantined.
@@ -126,3 +150,7 @@ Validate common revision, requirement/test references, source pins and public-da
 ## Artifact coordination
 
 The synchronized set is [spec.md](spec.md), [testing.md](testing.md), [decisions.md](decisions.md), [plan.md](plan.md), and [Inertia-Architecture.pptx](Inertia-Architecture.pptx). Update the common revision whenever new user decisions change the design. Keep stable filenames and Library identities. The original [product overview](docs/reference/Inertia-beta-product-overview.pdf) remains byte-identical historical material. Current decisions supersede its older sequencing. External configuration questions are centralized in decisions.md.
+
+### Authorized organizational knowledge
+
+Test authenticated retrieval of governance/formation records with citations, source version and audience labels. A publicly inaccessible document must remain an unresolved retrieval result rather than a claim that evidence is missing. Verify denied/revoked access fails closed, restricted passages do not enter public outputs or unrelated agent inputs, and only unresolved factual gaps are escalated to the user.
