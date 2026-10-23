@@ -232,3 +232,6 @@ runs/
 # Node build and dependencies
 node_modules/
 coverage/
+
+# Local plugin packaging artifacts
+*.tgz

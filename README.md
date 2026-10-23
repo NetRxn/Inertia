@@ -1,40 +1,42 @@
 # Inertia
 
-DAO-helper for Fort Worth DAO. Planning baseline **INERTIA-2026-10-22-r5** (22 October 2026).
+Fort Worth DAO's helper for connecting conversations, decisions and member-owned agent capacity. Paperclip owns tasks and governance; Buzz provides a second interface to the same work.
 
-## Current planning artifacts
+## Try the working slices
 
-- [Specification](spec.md): requirements, architecture, trust boundaries and sources.
-- [Testing plan](testing.md): acceptance and security requirements defined before implementation.
-- [Decision register](decisions.md): confirmed choices, proposals and unresolved contracts.
-- [Implementation plan](plan.md): dependencies, proposed owners and evidence gates.
-- [Editable architecture deck](Inertia-Architecture.pptx): seven-slide overview.
-- [Original product overview](docs/reference/Inertia-beta-product-overview.pdf): unchanged historical source document by Kyle Christmon, 15 October 2026. Its four-week sequencing and earlier technology priorities are superseded where the current artifacts differ.
+Use Node.js 24.11.0 or newer. From a source checkout:
 
-## Required demo objectives
+```sh
+npm ci
+npm test
+npm run typecheck
+npm run demo
+npm run demo:roundtable
+```
 
-1. Automatically clean Roundtable meeting transcripts and notes and upload them to the DAO website within the configured authorized audience.
-2. Reuse the grant engine to prepare a reviewed application packet and record a blockchain vote on whether to submit that exact version.
-3. Let members contribute their own client-side agent capacity through sandboxed jobs and server-controlled authorization, validation and publication.
+- **Connected bridge:** a signed Buzz reply becomes a native Paperclip comment and a signed receipt with matching IDs. The fixture demonstrates restart/replay without duplicate native writes. Native confirmation cards, recoverable receipt delivery and scoped health are implemented.
+- **Roundtable ingestion:** deterministic transcript/notes preparation and an idempotent publication contract, exercised with a local fixture publisher.
+- `npm run demo:transport` isolates signed HTTP delivery and retry behavior.
 
-## Operating model
+These demos use fixture external services. They need no credentials and send nothing to a live relay or website. Live Google Drive intake, the authorized DAO publisher, grant/vote integration and member execution-provider admission remain separate integration steps.
 
-Paperclip provides the operational platform, CEO/hiring hierarchy, tasks and decisions. Buzz and the dashboard are two interfaces to the same work. Agents acquire eligible work eagerly and create bounded follow-ups. Existing execution hardening is qualified against the selected Paperclip release. See the capability matrix and bridge contracts in the specification.
+## Build an installable plugin
 
-## Status and contribution discipline
+```sh
+npm run test:package
+npm pack
+```
 
-This repository currently contains documentation, not an implemented or deployed service. Application and security tests are planned, not run. Actual funder submission is outside demo acceptance.
+`npm pack` builds automatically and produces a local `.tgz` containing runtime modules, SQL migrations and operating instructions. The package remains private; this workflow does not publish it to npm. `test:package` starts from a clean temporary source tree, packs it, installs production dependencies in a fresh consumer, imports the installed worker and validates its manifest against the pinned native schema. It also checks that development sources, test files and private files are excluded.
 
-Use focused branches and reviewable pull requests. Keep the four Markdown artifacts and deck synchronized when requirements change. Record decisions and define relevant tests before implementation. Do not commit credentials, private meeting material, local databases or generated runtime results. The original overview remains unchanged; update current planning artifacts instead.
+Install the resulting package through an admitted Paperclip plugin workflow targeting **2026.1012.0**. The package declares its manifest and worker in `paperclipPlugin`; the host resolves `migrations/` relative to the installed package. No post-install build or developer dependencies are required.
 
-Existing DAO platform and grant-engine repositories remain separate systems. This repository does not grant access to their data or infrastructure.
+[Connection setup, configuration and recovery](docs/operations.md) · [Native authority and state contract](docs/bridge-state-contract.md)
 
-## Run the transport demo
+## Product direction and artifacts
 
-The first executable slice verifies signed Buzz messages and retries delivery safely. Run `npm ci --ignore-scripts`, then `npm run demo` (Node.js 22+). Tests and exact source contracts are documented in [Buzz transport development](docs/development/buzz-transport.md).
+The required demo spans automatic Roundtable publication, grant-packet preparation with a vote on the exact version, and secure contributions from members' agents. Existing DAO and grant-engine repositories remain authoritative for their domains.
 
-## Connected bridge demo
+The source repository keeps the synchronized [specification](spec.md), [testing plan](testing.md), [decisions](decisions.md), [implementation plan](plan.md) and [editable architecture deck](Inertia-Architecture.pptx). The [original product overview](docs/reference/Inertia-beta-product-overview.pdf) is retained as historical source material.
 
-`npm ci && npm run demo` runs a signed Buzz reply through the real Paperclip adapter and durable SQL bridge, then returns a signed receipt with the same native IDs. External services are local fixtures; no credentials or network calls are used. Restart/replay is included.
-
-[Connection setup and recovery](docs/operations.md) · [Native authority and state contract](docs/bridge-state-contract.md)
+Work on focused feature branches and merge reviewed changes into `develop`. Keep artifacts synchronized as requirements change. Never commit credentials, private meeting material, local databases or runtime captures. Actual funder submission and live deployment require their separately authorized integrations.

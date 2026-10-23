@@ -1,4 +1,7 @@
-import { beforeEach, afterEach, it, expect } from 'vitest';
+import { vi, beforeEach, afterEach, it, expect } from 'vitest';
+// PGlite initializes PostgreSQL WASM per fixture. Shared cloud CPU can make
+// startup slow; this fixture-only budget does not change application deadlines.
+vi.setConfig({ hookTimeout: 60000 });
 import { PGlite } from '@electric-sql/pglite';
 import { readFile } from 'node:fs/promises';
 import type { PluginDatabaseClient } from '@paperclipai/plugin-sdk';
