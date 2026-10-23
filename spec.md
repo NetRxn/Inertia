@@ -1,20 +1,20 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-23-r10
+Revision: INERTIA-2026-10-23-r11
 Updated: 2026-10-23 (UTC)
-Status: implementation merged; live integration pending.
+Status: runtime unchanged; native-first grant integration planned.
 
 
 ## Implementation status
 
-Documentation baseline: develop `f9423e5`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
+Documentation baseline: develop `778996e9`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
 
 | Component | Verified state | Remaining integration |
 |---|---|---|
 | Buzz bridge | Signed transport, native comments/confirmations, durable recovery | Approved relay, pairing and live admission |
 | Native comment export | First-publication mirroring, default-off | Per-binding audience approval and history cutoff; status mirroring planned |
 | Roundtable | Source/hash core and website caller contract-tested | Website server, authorized Drive source and single-owner native job |
-| Grants | Packet/review/vote binding core and public draft references | Consistent-read exporter, effective-authority verifier and native transactional acceptance |
+| Grants | Packet/review/vote binding core; native review primitives source-verified | Scoped skill/tool harness, trusted human-decision/domain adapter, effective-authority verifier and native receipt acceptance |
 | CEO | Native operator checklist | Assigned intake mandate, native run policy, budgets and authorized pilot |
 | Member agents and Y2 | Interfaces identified | Enrollment, execution isolation and live adapters |
 
@@ -66,7 +66,7 @@ A Buzz mention or workflow event must resolve to one Paperclip wake/issue operat
 
 ### Ownership boundary
 
-Paperclip controls policy and accepted state. The selected runner and existing execution-hardening integration control execution isolation and workspace lifecycle. Member results are candidate evidence. A trusted domain adapter validates them and performs authorized external writes. Member runtimes receive only the task's authorized data and never receive shared publisher or grant-submission credentials.
+Paperclip controls policy and accepted state. The selected runner and existing execution-hardening integration control execution isolation and workspace lifecycle. Member results are candidate evidence. A trusted domain adapter validates them and performs authorized external writes. Member runtimes receive only the task's authorized evidence and scoped proposal tools, never the organization database, database-admin/reviewer keys, shared publisher credentials, portal credentials or human-decision tools.
 
 Plugins execute trusted code. Qualify runtime isolation, credentials and host networking separately from workspace isolation. Combine native budget admission with bounded runtime/tool requests.
 
@@ -108,10 +108,14 @@ The [public integration map](docs/implementation/public-dao-integration-map.md) 
 
 Vocdoni is selected, and the user will provide an example. The [documented FWTX route](https://documentation.robsrulesdao.com/aragon) suggests possible Aragon/final-action stages; verify which stages apply to the actual setup rather than mandating another platform. The configured verifier must establish the effective final result and exact packet binding. Confirm network and completed proposal evidence through U06.
 
-The merged grant core reads a trusted export of engine-owned records and verifies artifact bytes before freezing the packet, version, review and hashes together. It requires a fresh source re-read and exact network/proposal/action/packet match from an injected governance verifier. Production integration supplies a consistent-read exporter, chain-specific verification and transactional acceptance on the native work item. The engine retains its existing review and manual submission handoff.
+**Native-first target; integration not implemented.** Scout and application-drafting agents run in Paperclip using the existing funding skill and CLI/MCP harness, centrally or in scoped member environments. Paperclip owns tasks, documents, questions and human review cards. The funding backend retains evidence, validated proposals, immutable packets, eligibility and review audit. Its web UI is an optional specialist/admin fallback, not a required workflow boundary.
+
+Use native per-item verdicts with explicit `resolverPolicy: human_only`, configured addressees and current document-revision targets. A **planned trusted server adapter** verifies the authenticated human, designated role, company/applicant, workspace and packet version, then applies existing funding-domain review operations. Current funding MCP does not expose proposal acceptance or packet signoff; agents have neither permission. Initially, corrections use document edit → regenerated proposal → new review. Add a structured grant panel only if a real packet walkthrough proves that path insufficient.
+
+The merged packet core already verifies exact artifact bytes and freezes packet, version and reviews. `ReviewedGrantSource` is a trusted domain read adapter, not a mandatory export from a separate UI or an existing HTTP endpoint. Production still needs consistent reads, durable decision/domain reconciliation, chain-specific verification and native receipt acceptance. A native decision is not a DAO vote, and neither submits to a funder. See the [source-pinned mapping](docs/reference/native-grant-workflow.md) and [adapter contract](docs/development/native-grant-workflow.md).
 
 - R-G01: Reuse the existing scanner's acquisition, eligibility rules, matching, saved-result and drafting interfaces. Refresh opportunity data and record retrieval time, deadline and source URL.
-- R-G02: Verify applicant eligibility and direct-versus-partner route. Create a cited, template-based draft, preserving human review and existing signoffs.
+- R-G02: Verify applicant eligibility and direct-versus-partner route. Create cited drafts through the shared harness; collect native human-only review with authenticated role mapping while preserving funding-domain validation and signoffs.
 - R-G03: Freeze packet ID, version, canonical content hash, attachments and review record. A blockchain vote references exactly this immutable packet and its proposed action.
 - R-G04: Validate chain/network, proposal identity, eligible result, finality and packet binding before applying voted authority. Changed content needs renewed authority. Actual funder submission is a separately controlled step.
 

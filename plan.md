@@ -1,8 +1,8 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-23-r10
+Revision: INERTIA-2026-10-23-r11
 Updated: 2026-10-23 (UTC)
-Status: implementation merged; live integration pending.
+Status: runtime unchanged; native-first grant integration planned.
 
 Use test-driven implementation, isolated feature branches and independent review. Merge authorized changes into develop.
 
@@ -17,7 +17,7 @@ Use test-driven implementation, isolated feature branches and independent review
 
 ## Current baseline
 
-Develop `f9423e5`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `778996e9`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Global constraints
 
@@ -88,7 +88,7 @@ PR 4 completed the connected-plugin checks below. Domain and live acceptance con
 
 ## Completed grant packet binding
 
-PR 7 adds the pure grant evaluator and synthetic fixture demonstration. It composes an explicit trusted export port over engine-owned packet, artifact, review and current-opportunity records. It verifies artifact bytes, freezes canonical content and review, then requires exact packet/network/proposal/action evidence from an injected verifier. Currentness and review are rechecked before evaluation; replay/conflict and invalid-calendar tests pass. The combined suite is 145 tests before the package/setup changes.
+PR 7 adds the pure grant evaluator and synthetic fixture demonstration. It composes an explicit trusted domain read port over engine-owned packet, artifact, review and current-opportunity records; this does not require a separate funding UI. It verifies artifact bytes, freezes canonical content and review, then requires exact packet/network/proposal/action evidence from an injected verifier. Currentness and review are rechecked before evaluation; replay/conflict and invalid-calendar tests pass. The combined suite is 145 tests before the package/setup changes.
 
 ## Installable package and guided setup
 
@@ -116,7 +116,7 @@ Deployment ownership: Inertia engineering deploys Paperclip and connects the exi
 These remain required product work. Build with the same native issue/artifact and bridge contracts; do not re-open settled platform choices.
 
 1. Meetings: finish authorized Drive-ready source adaptation and single-owner native job wiring around the merged core and caller-side website publisher/readback using R-M01–04. Admit the website team’s proposed v1.1 server contract before live use. Start with supplied de-identified fixtures; real folder/publication API admission is U04–05. Test summary-only, duplicate/correction, source injection and audience before enabling routine automatic publishing. Existing Privy login only establishes authenticated-user access; propose explicit active-membership checks for the required members-only portal publication. The user owns website API/schema rollout.
-2. Grants and vote: complete a consistent-read production exporter from the scanner engine, a Vocdoni governance verifier (U06) for effective final authority under the user’s actual setup, and transactional acceptance on the native work item. Use the user-provided example to confirm network, completed proposal evidence and any applicable Aragon/final-action stage; require all stages that actually authorize the action. The merged pure evaluator already covers canonical packet/review binding and negative fixtures. Revalidate source revision at the eventual manual engine handoff; preserve engine signoffs and authorized-representative submission.
+2. Grants and vote: implement the [native-first grant contract](docs/development/native-grant-workflow.md). Package existing skill/CLI/MCP for native central/member agents, with scoped proposal tools and one scheduling owner. Configure real human role mappings (U13); walk one packet through native documents, human-only cards and edit → regenerate → new review before considering a custom editor. Build the trusted server decision adapter and consistent-read `ReviewedGrantSource`; test decision/version/action reconciliation, identity, stale bytes and crash/replay (T-G06–12). Current MCP acceptance/signoff is absent. Complete the Vocdoni verifier (U06) and native receipt acceptance separately, using the user’s example to establish all applicable final-action stages. Preserve exact packet/review/artifact binding and a separately authorized human submission handoff.
 3. Member contribution: use existing hardened runner/provider lifecycle and native checkout, add narrow member enrollment/result boundary. Test source data limits, revoked member, stale run and hostile artifact. Do not share privileged broker credentials with members.
 4. Y2: implement interest registration/update adapter against teammate API U07; deduplicate follow-ups and preserve provenance. 990 enrichment remains stretch.
 5. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution and shared Buzz/dashboard state. Assemble reproducible receipts and record any environment-bound work still pending.

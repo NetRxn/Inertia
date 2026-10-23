@@ -1,13 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-23-r10
+Revision: INERTIA-2026-10-23-r11
 Updated: 2026-10-23 (UTC)
-Status: implementation merged; live integration pending.
+Status: runtime unchanged; native-first grant integration planned.
 
 
 ## Current baseline
 
-Develop `f9423e5`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `778996e9`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Settled decisions
 
@@ -43,7 +43,7 @@ Paperclip supplies operations, scheduling, task/approval state, credentials and 
 | P02 | Route Buzz task triggers into one native execution owner | Duplicate-trigger and checkout tests. |
 | P03 | Reuse existing execution hardening through native runner/plugin interfaces | Version, license, lifecycle and isolation qualification. |
 | P04 | Use native connection profiles and tool policy | Domain credential scopes and call-time authorization tests. |
-| P05 | Preserve existing grant review/signoff semantics | Current scanner interface and packet schema review. |
+| P05 | Preserve funding-domain review/signoff semantics through native Paperclip UI | Source-pinned mapping; trusted human-decision adapter remains planned. |
 
 ## Central configuration and compatibility register
 
@@ -63,6 +63,7 @@ Implementation tasks reference these setup IDs.
 | U10 | Hosting and inference | Deploy Paperclip as part of Inertia; connect the existing target Buzz instance. Resolve inference/Cloudflare fit and deployment configuration | Inertia engineering / deployment |
 | U11 | Current grant demo candidate | Fresh scan, deadline, eligibility, direct/partner route and approved DAO facts | Grant owner / G3 |
 | U12 | Delivery staffing and final date details | Named owners, capacity, proposed October 29 rehearsal buffer and October 30 submission logistics | User / G2 |
+| U13 | Native grant reviewer configuration and correction walkthrough | Authenticated humans mapped to required roles; one real packet/correction cycle; member evidence/tool scopes and decision reconciliation | Grant owner + engineering / integration |
 
 Keep credential references in protected platform configuration.
 
@@ -104,8 +105,13 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D38: Public applicant facts remain attributed review inputs, never eligibility proof. Conflicting governance sources require operative ratification evidence; do not guess vote thresholds or current signing authority.
 - D39: The selected native outbound slice mirrors eligible comments only, default-off with explicit binding audience approval/start time, using the existing durable outbox/reconciler. PR 17 is reviewed/tested and merged into develop. PR 16 supplies the native operator setup checklist; automatic intake still needs an explicitly assigned mandate and authorized live setup. General status mirroring remains future.
 
+- D40: Run grant scouting/drafting through a shared skill/tool harness on central or scoped member Paperclip agents. Native tasks, documents and human-only cards are the default UI; the funding web UI is optional specialist/admin fallback.
+- D41: Retain funding evidence, validated proposals, immutable packets and review audit. A planned trusted server adapter applies authenticated, addressed, revision-bound native decisions through domain validation. Current MCP lacks acceptance/signoff; agents cannot approve. Reconcile decision identity (interaction + item for verdicts), proposal/packet ID/version and action, without claiming a cross-system transaction.
+- D42: Start corrections with document edit → regenerated proposal → new review. Build a structured panel only after a real walkthrough demonstrates need. Preserve separate Vocdoni authority and exact artifact/packet/review binding.
+
 ## Change log
 
+- r11: Adopt native-first grant execution/review, scoped central/member harness and a planned trusted decision adapter. Runtime and qualification evidence unchanged.
 - r10: Condense current artifacts, centralize evidence and retain requirements, decisions and acceptance gates.
 - r9: Synchronize the reviewed website caller, proposed v1.1 limits, authenticated cloud handoff and public DAO grounding. Record PR 17’s reviewed 248-test candidate and exact native-service receipt while keeping live deployment outside this evidence.
 - r8: Add the connected workflow rehearsal, deterministic receipt and native-service evidence; adopt cloud-first execution and latest-release maintenance through repeatable qualification and tested database recovery.
@@ -116,7 +122,7 @@ Alternatives considered: latest native chat-provider implementation offers broad
 
 ## Source baseline
 
-Source inspection baselines, 22 October 2026. Exact runtime qualification is recorded in [testing.md](testing.md#qualification-record).
+Grant/native-review source pins, 23 October 2026: [Paperclip v2026.1012.0 and DFW-Gov-Fund mapping](docs/reference/native-grant-workflow.md). Earlier general source baselines, 22 October 2026, follow. Exact runtime qualification is recorded in [testing.md](testing.md#qualification-record).
 
 - Paperclip: [341b622604b639b056fc58b10e2dd3312d40385c](https://github.com/paperclipai/paperclip/tree/341b622604b639b056fc58b10e2dd3312d40385c).
 - Buzz: [dc25198d530acc6237a0320b697365f29daf0ea6](https://github.com/block/buzz/tree/dc25198d530acc6237a0320b697365f29daf0ea6).

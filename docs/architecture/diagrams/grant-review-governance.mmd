@@ -1,16 +1,20 @@
 sequenceDiagram
 autonumber
-participant E as Grant engine [E]
+participant A as Grant agents / central / member [E]
+participant P as Paperclip / human review [E]
+participant T as Grant adapter / PLANNED [P]
+participant F as Funding domain [E]
 participant G as Packet core [I]
-participant H as Human review [E]
 participant V as DAO vote / Vocdoni [E]
-participant P as Paperclip [E]
-H->>E: Engine review: packet + evidence + signoffs
-E-->>G: Consistent-read export + reviewed artifact bytes [P]
-Note over E,G: Freeze packet ID · version · content hash<br/>Bind attachments + review record [I]
-G-->>V: Exact packet hash + proposed action [P]
-V-->>G: Verifier: network · proposal · action · packet hash<br/>Effective final result / finality [P]
-E-->>G: Fresh source re-read before acceptance [P]
-G-->>P: Transactional acceptance of validated authority [P]
-Note over H,P: DAO vote = business authority<br/>Paperclip confirmation = operational approval
-Note over E,P: Changed packet → renewed review + authority · funder submission → separate controlled handoff
+A-->>F: Scoped skill / CLI / MCP: evidence + draft proposals
+A-->>P: Task documents + questions + review requests
+Note over A,P: Same harness; task-authorized inputs<br/>No shared database or admin token<br/>No portal credentials for members
+P-->>T: Authenticated human-only verdict / role confirmation<br/>Addressed reviewer + current document revision
+Note over T,F: PLANNED: actor · scope · configured role<br/>Addressee · workspace / packet revision<br/>Exact artifact checks
+T-->>F: Apply existing review / signoff operations<br/>Interaction + item + proposal/version/action
+F-->>G: Trusted consistent domain read + exact artifact bytes [P]
+Note over F,G: Freeze direct-application packet [I]<br/>Exact artifacts + review references<br/>Native revision alone does not verify bytes
+G-->>V: Exact packet hash + authorize_manual_submission [P]
+V-->>G: Verifier: network · proposal · action · exact packet<br/>Effective final result / finality [P]
+G-->>F: Fresh source / packet / review check before acceptance [P]
+Note over A,V: Native task / board approval ≠ DAO ratification · changed packet / reviews require a new vote<br/>External submission stays an authorized human handoff; record completion only

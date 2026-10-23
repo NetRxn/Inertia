@@ -1,14 +1,14 @@
 flowchart LR
  subgraph T[Trusted host / DAO boundary]
- A["Paperclip admission [E] · pairing / scope / capabilities / budgets / dependencies"]
+ A["Paperclip admission + central grant harness [E] · same skills / tool schema · scoped DAO sources · pairing / applicant scope / budgets"]
  B["Native checkout + Runner [E] · one owner / prepare / submit / reconcile / cleanup"]
- E["Trusted validation / acceptance [P] · type / size / provenance / revision · one accepted completion"]
- K["Publisher / submission credentials remain host-side"]
+ E["Trusted validation + decision adapter [P] · authenticated human / role / addressee / current revision · separate proposal and decision permissions"]
+ K["No shared database / reviewer admin token / portal credentials in member environments"]
  F["Follow-up: parent / reason / acceptance criteria / dedup key"]
  end
  subgraph M[Member-controlled execution boundary]
- C["Member agent + PPC2 reuse [P] · qualified isolated workspace / scoped tools · no private vendor-code copy"]
- D["Candidate contribution [P] · bytes / provenance / task revision"]
+ C["Member grant harness [P] · same skills / tool schema · isolated workspace / explicit evidence subset / proposal permissions / PPC2 hardening"]
+ D["Candidate proposal [P] · workspace hash / allowed evidence IDs / artifact bytes"]
  end
  A -->|Admitted task| B
  B -.->|Task-scoped data| C
