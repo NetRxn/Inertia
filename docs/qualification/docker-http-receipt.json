@@ -1,0 +1,82 @@
+{
+  "result": "passed",
+  "completedAt": "2026-10-23T01:57:47Z",
+  "scope": "Disposable synthetic Docker qualification; no live integrations",
+  "sourceCommit": "a3e60ee5f1f9d9a295d3f744d3eca452a4ded947",
+  "paperclip": {
+    "version": "2026.1012.0",
+    "commit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb"
+  },
+  "pluginVersion": "0.1.0",
+  "nodeVersion": "24.22.1",
+  "baseImage": "node@sha256:69c591a18fa7c36c4658f4ff9f993ae3d587923b92809cfddcc2fa8bfd4df664",
+  "http": {
+    "GET /api/health": 200,
+    "POST /api/companies": 201,
+    "POST /api/plugins/install": 200,
+    "POST /api/plugins/:pluginId/config": 200,
+    "POST /api/plugins/:pluginId/config/test": 200,
+    "GET /api/plugins/:pluginId": 200,
+    "GET /api/plugins/:pluginId/health": 200,
+    "GET /api/plugins/:pluginId/jobs": 200
+  },
+  "nativeEvidence": {
+    "hostMigrations": 304,
+    "pluginMigrations": 4,
+    "pluginTables": 8,
+    "registeredJobs": 3,
+    "disabledManualReconciliation": "succeeded",
+    "disabledScheduledReconciliation": "succeeded"
+  },
+  "offlineValidation": {
+    "testsPassed": 152,
+    "testFilesPassed": 12,
+    "typecheck": "passed",
+    "build": "passed",
+    "connectedDemo": "passed",
+    "workflowDemo": "passed",
+    "roundtableDemo": "passed",
+    "transportDemo": "passed",
+    "grantFixture": "passed",
+    "freshProductionPackageInstall": "passed",
+    "packagedFiles": 45
+  },
+  "isolation": {
+    "nonroot": true,
+    "readOnlyRoot": true,
+    "runtimeNetwork": "none",
+    "publishedPorts": [],
+    "hostMounts": [],
+    "capabilitiesDropped": "ALL",
+    "noNewPrivileges": true,
+    "cpuLimit": 2,
+    "memoryLimitBytes": 4294967296,
+    "pidLimit": 256
+  },
+  "resources": {
+    "hostPeakObservedBytes": 926703616,
+    "fixturePeakBytes": 3170316288,
+    "fixturePeakPids": 57,
+    "oomEvents": 0
+  },
+  "preparation": {
+    "hostInstall": "Exact published version; scripts disabled; resolved lock retained by hash",
+    "postgresLibraries": "Official library-alias helper and explicit LD_LIBRARY_PATH",
+    "packageSourcePatched": false,
+    "fixtureScratchExecutable": true
+  },
+  "cleanup": {
+    "hostWorkerAndDatabaseStopped": true,
+    "taskContainersRemoved": true,
+    "disposableSnapshotsRemoved": true,
+    "supersededImageRemoved": true,
+    "checkoutUnchanged": true
+  },
+  "retainedImage": {
+    "tag": "inertia-host-qualification:a3e60ee-arm64",
+    "id": "sha256:20c91ee389964dc3e4fe007faaae7f1a99ae095edbfef7beb8af452b98dfcf42",
+    "sizeBytes": 3584096068
+  },
+  "secretValuesIncluded": false,
+  "remainingBlockers": []
+}

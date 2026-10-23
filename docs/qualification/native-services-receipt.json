@@ -1,0 +1,29 @@
+{
+  "date": "2026-10-23",
+  "hostPackage": "paperclipai@2026.1012.0",
+  "hostCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "node": "24.19.0",
+  "postgres": "18.1",
+  "plugin": "@inertia/dao-helper@0.1.0",
+  "pluginSha256": "5da7342496f12d6f43e9944bfb7b390df4b2f17f67f78ced2ab4649862d921fa",
+  "qualification": "native services with real disposable PostgreSQL, not HTTP host startup",
+  "hostMigrationsApplied": 304,
+  "pluginMigrationsApplied": 4,
+  "namespaceTableCount": 8,
+  "jobsRegistered": 3,
+  "workerInitialized": true,
+  "configValidation": {
+    "ok": true
+  },
+  "health": {
+    "status": "degraded",
+    "message": "Enable a company connection to begin."
+  },
+  "workerExitCode": 0,
+  "postgresStopped": true,
+  "fullHostBlocker": "ERR_SYSTEM_ERROR: uv_interface_addresses fails in os.networkInterfaces(), called unconditionally by buildRuntimeApiCandidateUrls before HTTP listen",
+  "liveIntegrationsUsed": false,
+  "harnessSha256": "5a78c56ced77f1de5b6f98fbaad2be2b29281a113f9a79d3e27c74772c1d6094",
+  "hostVersionSource": "installed paperclipai/package.json; official package lock/build commit establishes provenance",
+  "harnessRecheck": "Passed after metadata-derived hostVersion update; worker/database stopped cleanly"
+}
