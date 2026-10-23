@@ -1,0 +1,25 @@
+{
+  "contract": "partner-graph-seed-proposal-v1",
+  "status": "not_ingested",
+  "reviewed_at": "2026-10-23",
+  "instructions": "Resolve existing canonical IDs through owning services, capture exact current source bytes and Task6 evidence, then apply trusted typed admission. These proposal keys are not entity IDs. No contact data or private member fields are included.",
+  "entities": [
+    {
+      "proposal_key": "dao", "entity_type": "Organization", "name": "Fort Worth DAO LCA", "canonical_id": null,
+      "identifiers": [{"kind": "EIN", "value": "41-2815082", "status": "public_evidence_available"}],
+      "sources": ["https://fwtx.city/", "https://www.irs.gov/pub/irs-soi/eo_co.csv", "https://apps.irs.gov/pub/epostcard/data-download-pub78.zip"],
+      "evidence_notes": ["Exact IRS Pub. 78 row: 412815082|Fort Worth Dao Lca|Lakewood|CO|United States|PC", "IRS BMF subsection03 and foundation16 support 501(c)(3), 509(a)(2); determination-letter attachment is a separate missing document.", "Lakewood Colorado filing/mailing geography is separate from Fort Worth service geography. Ruling month202601 is not an invented exact effective date."]
+    },
+    {"proposal_key": "techfw", "entity_type": "Organization", "name": "TechFW", "canonical_id": null, "sources": ["https://www.techfortworth.org/made-manufacturing-accelerator"]},
+    {"proposal_key": "made", "entity_type": "Program", "name": "Manufacturing Accelerator and Development Engine (MADE)", "canonical_id": null, "sources": ["https://www.techfortworth.org/made-manufacturing-accelerator"], "proposed_relationship": {"predicate": "PROGRAM_OF", "object_proposal_key": "techfw"}, "evidence_notes": ["Not a separately verified legal organization."]},
+    {"proposal_key": "moonshot", "entity_type": "Organization", "name": "Moonshot", "canonical_id": null, "sources": ["https://moonshotus.com/", "https://www.linkedin.com/company/moonshotglobal/"], "evidence_notes": ["North Texas electrical/data-center infrastructure manufacturer, not another similarly named AI company.", "October30 closing-host role remains planned unless dated delivery evidence is admitted; no grant commitment is implied."]},
+    {"proposal_key": "liquidacre", "entity_type": "Organization", "name": "LiquidAcre", "canonical_id": null, "sources": ["https://liquidacre.com/", "https://www.linkedin.com/company/fwtx-dao"], "unresolved_aliases": [{"value": "Liquid Acres", "status": "candidate_only", "reason": "Spoken reference is contextually corroborated, not an approved identity merge."}]},
+    {"proposal_key": "hackfw2026", "entity_type": "Event", "name": "HackFW 2026", "canonical_id": null, "sources": ["https://hack.fwtx.city/", "https://luma.com/ycw304lf"], "evidence_notes": ["October1–30 program; opening and ongoing work require their own dated evidence. Future closing is not completed delivery.", "Attendance, sponsorship, cohosting and employer collaboration remain distinct source-backed roles, not a generic partner edge."]}
+  ],
+  "inventory_dispositions": [
+    "Website member/project IDs not yet inventoried in this local slice; source-owned IDs must be retained when resolved.",
+    "Relevant people/public work roles require a bounded authorized source inventory; no invented contacts.",
+    "No proposition grants outreach, fiscal sponsorship, match, staffing or funding commitments.",
+    "Private opportunity-scouter delta is not incorporated into public repository fixtures."
+  ]
+}
