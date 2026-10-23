@@ -1,3 +1,4 @@
+import { configurationSchema } from "./config.js";
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 export const manifest: PaperclipPluginManifestV1 = {
   id: "netrxn.inertia",
@@ -43,22 +44,6 @@ export const manifest: PaperclipPluginManifestV1 = {
       schedule: "* * * * *",
     },
   ],
-  instanceConfigSchema: {
-    type: "object",
-    properties: {
-      enabled: { type: "boolean", default: false },
-      relayUrl: { type: "string", description: "Bare HTTPS Buzz relay origin" },
-      bridgePubkey: { type: "string", pattern: "^[0-9a-f]{64}$" },
-      signingKeyRef: {
-        type: "object",
-        description:
-          "Paperclip secret_ref binding containing a hex Nostr secret key",
-      },
-      bindings: { type: "array", items: { type: "object" } },
-      pairings: { type: "array", items: { type: "object" } },
-      cards: { type: "array", items: { type: "object" } },
-    },
-    additionalProperties: false,
-  },
+  instanceConfigSchema: configurationSchema,
 };
 export default manifest;

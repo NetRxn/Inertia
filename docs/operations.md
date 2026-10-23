@@ -2,7 +2,7 @@
 
 ## Try it now
 
-Use Node 24 and run `npm ci && npm run demo`. This uses the real signature verifier, native SDK adapter, PostgreSQL migration/store, service and Buzz HTTP transport. Only the external host and relay I/O are fixtures. It prints the linked source, native comment and receipt IDs, then proves replay after service reconstruction creates no second comment. Nothing leaves your computer and no credentials are needed.
+From a source checkout, use Node 24.11.0 or newer and run `npm ci && npm run demo`. These development commands are not run inside an installed production package. This uses the real signature verifier, native SDK adapter, PostgreSQL migration/store, service and Buzz HTTP transport. Only the external host and relay I/O are fixtures. It prints the linked source, native comment and receipt IDs, then proves replay after service reconstruction creates no second comment. Nothing leaves your computer and no credentials are needed.
 
 `npm test && npm run typecheck && npm run build` verifies the full repository. `npm run demo:transport` isolates the signed HTTP transport.
 
@@ -25,3 +25,39 @@ Configuration keys: `enabled`, `relayUrl`, `bridgePubkey`, `signingKeyRef` (`{ty
 - Polling rechecks the last 24 hours to catch delayed signed messages and deduplicates by event ID. Larger backlogs resume in bounded batches on the next native job. Use “Backfill connected conversations” to scan all retained history after a longer offline period; its progress survives restarts. A saturated timestamp preserves the checkpoint and reports an operator-visible blocker instead of silently dropping events.
 
 The plugin runs a delivery reconciliation job, not a separate task scheduler. Paperclip keeps ownership, decisions, hierarchy, assignment, wakes and native audit history. No blockchain vote, grant submission, credential creation or live deployment is performed by this demo.
+
+## Mapping fields
+
+Configure these in the intended Paperclip company's plugin settings. Use IDs from the actual native objects and signed Buzz events, not names or IDs supplied in a chat message.
+
+- `bindings`: `{relay, channelId, rootId, companyId, issueId}`. `relay` exactly matches `relayUrl` without a trailing slash; `channelId` is the Buzz channel UUID; `rootId` is the 64-character signed thread-root event ID. Native company/issue IDs identify the destination.
+- `pairings`: `{relay, companyId, pubkey, actorUserId, kind, active}`. `pubkey` is the verified member's 64-character Nostr public key, and `actorUserId` is that same person's native member ID. Use `kind: "human"` only for a verified human key; agent keys use `"agent"` and cannot submit human decisions. `active: false` revokes the mapping.
+- `cards`: normally `[]`. The bridge records supported native confirmation cards automatically. Do not copy or invent another issue's card tokens.
+- `bridgePubkey`: the public key matching the selected existing signing-key secret. `signingKeyRef` is a Paperclip secret reference object, never the key itself.
+
+Example shape (synthetic placeholders; replace every ID with verified values before enabling):
+
+```json
+{
+  "enabled": false,
+  "relayUrl": "https://buzz.example.invalid",
+  "bridgePubkey": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "signingKeyRef": {"type": "secret_ref", "secretId": "SELECT_EXISTING_SECRET"},
+  "bindings": [{
+    "relay": "https://buzz.example.invalid",
+    "channelId": "44444444-4444-4444-8444-444444444444",
+    "rootId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "companyId": "11111111-1111-4111-8111-111111111111",
+    "issueId": "22222222-2222-4222-8222-222222222222"
+  }],
+  "pairings": [{
+    "relay": "https://buzz.example.invalid",
+    "companyId": "11111111-1111-4111-8111-111111111111",
+    "pubkey": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "actorUserId": "33333333-3333-4333-8333-333333333333",
+    "kind": "human",
+    "active": true
+  }],
+  "cards": []
+}
+```

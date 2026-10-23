@@ -22,75 +22,18 @@ import type {
 import { createBridgeStore } from "./store/postgres.js";
 import { createPaperclipAdapter } from "./paperclip/adapter.js";
 const hex = /^[0-9a-f]{64}$/;
-export function validateConfiguration(c: Record<string, unknown>) {
-  if (c.enabled !== true) return { ok: true };
-  const errors: string[] = [];
-  try {
-    const u = new URL(String(c.relayUrl));
-    if (
-      u.protocol !== "https:" ||
-      u.username ||
-      u.password ||
-      u.search ||
-      u.hash ||
-      u.pathname !== "/"
-    )
-      throw Error();
-  } catch {
-    errors.push("Set relayUrl to a bare HTTPS Buzz origin.");
-  }
-  if (typeof c.bridgePubkey !== "string" || !hex.test(c.bridgePubkey))
-    errors.push("Set the bridge public key.");
-  const ref = c.signingKeyRef as Record<string, unknown> | undefined;
-  if (
-    !ref ||
-    typeof ref !== "object" ||
-    ref.type !== "secret_ref" ||
-    typeof ref.secretId !== "string"
-  )
-    errors.push(
-      "Select an existing Paperclip secret reference for the signing key.",
-    );
-  for (const key of ["bindings", "pairings", "cards"])
-    if (!Array.isArray(c[key])) errors.push("Configure " + key + " as a list.");
-  return errors.length ? { ok: false, errors } : { ok: true };
-}
+import { validateConfiguration } from "./config.js";
+export { validateConfiguration } from "./config.js";
 function trusted(
   c: Record<string, unknown>,
   companyId: string,
 ): TrustedBridgeConfig {
-  const validation = validateConfiguration(c);
+  const validation = validateConfiguration(c, companyId);
   if (!validation.ok) throw Error("Connection configuration needs attention.");
   const relay = new URL(c.relayUrl as string).origin;
   const bindings = c.bindings as Binding[],
     pairings = c.pairings as Pairing[],
     cards = c.cards as DecisionCard[];
-  if (
-    bindings.some(
-      (b) =>
-        b.companyId !== companyId ||
-        b.relay !== relay ||
-        typeof b.issueId !== "string" ||
-        !hex.test(b.rootId) ||
-        !/^[-0-9a-f]{36}$/i.test(b.channelId),
-    ) ||
-    pairings.some(
-      (p) =>
-        p.companyId !== companyId ||
-        p.relay !== relay ||
-        !hex.test(p.pubkey) ||
-        typeof p.actorUserId !== "string" ||
-        !["human", "agent"].includes(p.kind) ||
-        typeof p.active !== "boolean",
-    ) ||
-    cards.some(
-      (c) =>
-        c.companyId !== companyId ||
-        typeof c.token !== "string" ||
-        !hex.test(c.digest),
-    )
-  )
-    throw Error("Connection mappings must belong to this company and relay.");
   return {
     relay,
     bridgePubkey: c.bridgePubkey as string,
