@@ -1,4 +1,5 @@
-import { createHash } from "node:crypto";
+import { COMMENT_TYPE, outboundEnabled, sameBinding, commentReceiptKey, projectComment } from "./outbound-comments.js";
+import { createHash, randomUUID } from "node:crypto";
 import { verifyBuzzEvent, verifySignedEvent } from "../buzz/events.js";
 import {
   BuzzConfigurationError,
@@ -16,7 +17,7 @@ import {
   type PaperclipAdapter,
 } from "../paperclip/adapter.js";
 import type { RuntimeState } from "./runtime.js";
-import type { BridgeStore, InboxReceipt } from "../store/postgres.js";
+import type { BridgeStore, InboxReceipt, OutboxReceipt } from "../store/postgres.js";
 export interface BridgeDependencies {
   store: BridgeStore;
   native: PaperclipAdapter;
@@ -34,6 +35,7 @@ export interface IngressOutcome {
   code?: string;
 }
 export interface HealthSummary {
+  inFlightPublications?: number;
   state: "idle" | "progressing" | "retrying" | "uncertain" | "blocked";
   blocked?: number;
   oldestPendingAgeSeconds?: number;
@@ -96,6 +98,69 @@ export function createBridge(d: BridgeDependencies) {
       event,
     });
   }
+  async function mirrorComments(cfg: TrustedBridgeConfig) {
+    let scanFailed = false;
+    for (const binding of cfg.bindings) {
+      if (!outboundEnabled(binding)) continue;
+      try {
+      const ingress = await d.store.listCommentIngress(binding);
+      const comments = await d.native.listComments(binding);
+      const eligible = comments.map(row => ({ row, projection: projectComment(binding, row) }))
+        .filter(x => x.projection !== null)
+        .sort((a,b) => a.projection!.createdAt.localeCompare(b.projection!.createdAt) || a.row.id.localeCompare(b.row.id));
+      let queued = 0;
+      for (const { row, projection } of eligible) {
+        if (ingress.some(receipt => {
+          const c = receipt.command as import("./types.js").CommentCommand;
+          const outcome = receipt.outcome as { nativeId?: string } | null;
+          return (receipt.state === "applied" && outcome?.nativeId === row.id) ||
+            (row.authorUserId === c.actorUserId && row.body === c.body + "\n\n" + sourceMarker(c.binding, c.sourceEventId));
+        })) continue;
+        const receiptKey = commentReceiptKey(binding, row.id);
+        if (await d.store.getOutbox(receiptKey)) continue;
+        const fresh = await d.loadConfig();
+        if (!fresh.bindings.some(b => sameBinding(b,binding) && outboundEnabled(b) && projectComment(b,row))) continue;
+        const template = {
+          kind: 9, created_at: Math.floor(Date.parse(projection!.createdAt)/1000),
+          tags: [["h", binding.channelId], ["e", binding.rootId, "", "root"], ["e", binding.rootId, "", "reply"], ["inertia", receiptKey]],
+          content: JSON.stringify(projection),
+        };
+        const event = verifySignedEvent(await d.signer(template));
+        if (event.pubkey !== fresh.bridgePubkey || event.kind !== template.kind || event.created_at !== template.created_at || event.content !== template.content || JSON.stringify(event.tags) !== JSON.stringify(template.tags))
+          throw Error("Comment signing configuration is invalid.");
+        await d.runtime.scopeReceipt(receiptKey, binding.issueId);
+        await d.store.putOutbox({ receiptKey, relay: binding.relay, eventId: event.id, event });
+        if (++queued >= 100) break;
+      }
+      } catch { scanFailed = true; }
+    }
+    return scanFailed;
+  }
+  async function validateQueuedComment(row: OutboxReceipt): Promise<boolean> {
+    const signed = verifyBuzzEvent(row.event);
+    const payload = JSON.parse(signed.event.content) as { type?: string; companyId?: string; issueId?: string; commentId?: string };
+    const cfg = await d.loadConfig();
+    if (!(cfg.companyId === payload.companyId || (!cfg.companyId && cfg.bindings.some(b => b.companyId === payload.companyId)))) return false;
+    const binding = cfg.bindings.find(b => b.companyId === payload.companyId && b.issueId === payload.issueId && b.relay === row.relay && b.channelId === signed.channelId && b.rootId === signed.rootId);
+    const suppress = async () => { await d.store.suppressOutbox(row.receiptKey); return false; };
+    if (!binding || !outboundEnabled(binding) || signed.event.pubkey !== cfg.bridgePubkey || payload.type !== COMMENT_TYPE || !payload.commentId || commentReceiptKey(binding,payload.commentId) !== row.receiptKey) return suppress();
+    const current = (await d.native.listComments(binding)).find(c => c.id === payload.commentId);
+    const projection = current && projectComment(binding,current);
+    if (!projection || JSON.stringify(projection) !== signed.event.content) return suppress();
+    const latest = await d.loadConfig();
+    if (!latest.bindings.some(b => sameBinding(b,binding) && outboundEnabled(b) && projectComment(b,current!)) || latest.bridgePubkey !== signed.event.pubkey) return suppress();
+    return true;
+  }
+  async function invalidateCommentSnapshots(cfg: TrustedBridgeConfig): Promise<boolean> {
+    let failed = false;
+    for (const companyId of new Set(cfg.companyId ? [cfg.companyId] : cfg.bindings.map(b => b.companyId))) {
+      for (const row of await d.store.listCommentValidation(companyId)) {
+        try { await validateQueuedComment(row); }
+        catch { failed = true; } // A read outage does not hide later invalidations.
+      }
+    }
+    return failed;
+  }
   async function deliver() {
     const cfg = await d.loadConfig();
     let pending = 0;
@@ -107,7 +172,12 @@ export function createBridge(d: BridgeDependencies) {
     for (const row of batch) {
       if (row.relay !== cfg.relay) continue;
       const signed = verifyBuzzEvent(row.event);
-      const payload = JSON.parse(signed.event.content) as { issueId?: string };
+      const payload = JSON.parse(signed.event.content) as { type?: string; companyId?: string; issueId?: string; commentId?: string };
+      const isComment = row.receiptKey.startsWith("comment:");
+      if (isComment) {
+        try { if (!await validateQueuedComment(row)) continue; }
+        catch { pending++; continue; }
+      }
       if (
         signed.event.pubkey !== cfg.bridgePubkey ||
         !cfg.bindings.some(
@@ -118,23 +188,27 @@ export function createBridge(d: BridgeDependencies) {
         )
       )
         continue;
+      // Linearization point: suppression and publication cannot both win pending.
+      // No expiry: a timed-out host RPC does not cancel its worker handler.
+      const token = isComment ? randomUUID() : null;
+      if (token && !await d.store.claimCommentDelivery(row.receiptKey,token)) continue;
       try {
         const result = await d.buzz.publish(verifySignedEvent(row.event));
         if (result.eventId !== row.eventId)
           throw Error("Unexpected delivery ID.");
-        await d.store.markDelivered(row.receiptKey);
+        if (token) await d.store.finishCommentDelivery(row.receiptKey,token,"delivered");
+        else await d.store.markDelivered(row.receiptKey);
       } catch (error) {
-        if (
-          error instanceof BuzzConfigurationError ||
-          error instanceof BuzzRequestRejected
-        ) {
-          await d.store.markBlocked(row.receiptKey);
-          await d.runtime.set("delivery-blocked", true);
+        const blocked = error instanceof BuzzConfigurationError || error instanceof BuzzRequestRejected;
+        const cause = error instanceof BuzzDeliveryUnknown ? error.cause : error;
+        const retryAfterMs = cause instanceof BuzzRetryDeferred ? cause.retryAfterMs : 0;
+        if (token) {
+          await d.store.finishCommentDelivery(row.receiptKey,token,blocked ? "blocked" : "pending",retryAfterMs);
+        } else {
+          if (blocked) await d.store.markBlocked(row.receiptKey);
+          if (retryAfterMs) await d.store.markDeferred(row.receiptKey,retryAfterMs);
         }
-        const cause =
-          error instanceof BuzzDeliveryUnknown ? error.cause : error;
-        if (cause instanceof BuzzRetryDeferred)
-          await d.store.markDeferred(row.receiptKey, cause.retryAfterMs);
+        if (blocked) await d.runtime.set("delivery-blocked",true);
         pending++;
       }
     }
@@ -230,6 +304,8 @@ export function createBridge(d: BridgeDependencies) {
       }
       await makeReceipt(row);
     }
+    const invalidationFailed = await invalidateCommentSnapshots(await d.loadConfig());
+    const commentScanFailed = await mirrorComments(await d.loadConfig()) || invalidationFailed;
     let pending = await deliver();
     const summary = await d.runtime.deliveryHealth(
       cfg.bindings.map((b) => b.issueId),
@@ -239,7 +315,9 @@ export function createBridge(d: BridgeDependencies) {
       cfg.bindings.map((b) => b.issueId),
     );
     const blocked = summary?.blocked ?? 0;
+    const inFlightPublications = summary?.publishing ?? 0;
     return {
+      inFlightPublications,
       blocked,
       oldestPendingAgeSeconds: summary?.oldest
         ? Math.max(
@@ -247,19 +325,25 @@ export function createBridge(d: BridgeDependencies) {
             d.clock() - Math.floor(new Date(summary.oldest).getTime() / 1000),
           )
         : 0,
-      state: blocked
+      state: inFlightPublications
+        ? "uncertain"
+        : blocked
         ? "blocked"
         : uncertain
           ? "uncertain"
-          : pending
+          : pending || commentScanFailed
             ? "retrying"
             : "idle",
       pending,
       uncertain,
-      message: blocked
+      message: inFlightPublications
+        ? "Publication is in flight or interrupted. Do not retry its claim until the prior worker is verified stopped; use targeted same-event recovery."
+        : blocked
         ? "Receipt delivery blocked; check the connection and explicitly resume blocked receipts."
         : uncertain
           ? "Native outcome needs review; no mutation will be retried."
+          : commentScanFailed
+            ? "Native comment synchronization will retry automatically."
           : pending
             ? "Receipt delivery will retry automatically."
             : "Connected and up to date.",

@@ -62,3 +62,19 @@ it("provides typed required row fields in the native configuration schema", () =
   );
   expect(schema.properties.signingKeyRef.required).toContain("secretId");
 });
+it("requires explicit audience acknowledgment and an unambiguous start time for outbound comments", () => {
+  const c: any = good();
+  c.bindings[0].outboundComments = { enabled: true, notBefore: "2026-10-23T00:00:00.000Z" };
+  expect(validateConfiguration(c).ok).toBe(false);
+  c.bindings[0].outboundComments.audienceAcknowledged = true;
+  expect(validateConfiguration(c).ok).toBe(true);
+  for (const date of ["yesterday", "2026-10-23", "2026-02-30T00:00:00.000Z"]) {
+    c.bindings[0].outboundComments.notBefore = date;
+    expect(validateConfiguration(c).ok).toBe(false);
+  }
+});
+it("rejects a non-string outbound boundary even when it is a valid Date object", () => {
+ const c: any = good();
+ c.bindings[0].outboundComments = { enabled: true, audienceAcknowledged: true, notBefore: new Date("2026-10-23T00:00:00.000Z") };
+ expect(validateConfiguration(c).ok).toBe(false);
+});

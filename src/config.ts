@@ -1,3 +1,4 @@
+import { validOutboundComments } from "./bridge/outbound-comments.js";
 import type { JsonSchema } from "@paperclipai/plugin-sdk";
 const text = { type: "string", minLength: 1 };
 const hex = { type: "string", pattern: "^[0-9a-f]{64}$" };
@@ -41,6 +42,11 @@ export const configurationSchema: JsonSchema = {
               "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
           },
           rootId: hex,
+          outboundComments: object({
+            enabled: { type: "boolean", default: false },
+            audienceAcknowledged: { type: "boolean", description: "I authorize sharing native comment text with everyone who can read this Buzz thread." },
+            notBefore: { type: "string", description: "Earliest creation time to export, canonical UTC ISO timestamp including milliseconds." },
+          }, ["enabled", "audienceAcknowledged", "notBefore"]),
         },
         ["relay", "companyId", "issueId", "channelId", "rootId"],
       ),
@@ -151,6 +157,8 @@ export function validateConfiguration(
       if (name !== "cards" && row.relay !== origin)
         error(path + ".relay", "must exactly match the relayUrl origin.");
       if (name === "bindings") {
+        if (row.outboundComments !== undefined && !validOutboundComments(row.outboundComments))
+          error(path + ".outboundComments", "provide enabled, explicit audience acknowledgment and a canonical UTC start timestamp.");
         if (
           typeof row.channelId !== "string" ||
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(

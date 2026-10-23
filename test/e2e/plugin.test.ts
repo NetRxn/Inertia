@@ -45,3 +45,15 @@ it("registers the native scheduled job and reports disabled setup without extern
     message: "Enable a company connection to begin.",
   });
 });
+
+it("keeps interrupted publication health visible when the connection is disabled", async () => {
+  const { createTestHarness } = await import("@paperclipai/plugin-sdk/testing");
+  const { BRIDGE_NAMESPACE } = await import("../../src/store/postgres.js");
+  const harness = createTestHarness({ manifest, config: { enabled: false } });
+  harness.ctx.companies.list = async () => [{id:"co"}] as any;
+  Object.assign(harness.ctx.db, { namespace:BRIDGE_NAMESPACE, query:async(sql:string)=>sql.includes("GROUP BY") ? [{state:"publishing",count:"1",oldest:"2026-10-23T00:00:00.000Z"}] : [] });
+  const plugin=createPlugin(); await plugin.definition.setup(harness.ctx); await harness.runJob("reconcile");
+  const health=await plugin.definition.onHealth!();
+  expect(health.details?.inFlightPublications).toBe(1);
+  expect(health.message).toContain("prior worker");
+});

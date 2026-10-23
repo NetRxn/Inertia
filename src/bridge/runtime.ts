@@ -8,7 +8,7 @@ export interface RuntimeState {
   scopeReceipt(receiptKey: string, issueId: string): Promise<void>;
   deliveryHealth(
     issueIds: string[],
-  ): Promise<{ pending: number; blocked: number; oldest: string | null }>;
+  ): Promise<{ pending: number; blocked: number; publishing?: number; oldest: string | null }>;
 }
 export function runtimeState(
   db: PluginDatabaseClient,
@@ -24,8 +24,8 @@ export function runtimeState(
         return Number(
           (
             await db.query<{ count: string }>(
-              `SELECT count(*)::text AS count FROM "${BRIDGE_NAMESPACE}".bridge_inbox WHERE relay=$1 AND state IN ('applying','uncertain') AND destination->>'companyId'=$2 AND destination->>'issueId'=ANY($3::text[])`,
-              [relay, companyId, issueIds],
+              `SELECT count(*)::text AS count FROM "${BRIDGE_NAMESPACE}".bridge_inbox WHERE relay=$1 AND state IN ('applying','uncertain') AND destination->>'companyId'=$2 AND destination->>'issueId' IN (SELECT jsonb_array_elements_text($3::jsonb))`,
+              [relay, companyId, JSON.stringify(issueIds)],
             )
           )[0]?.count ?? 0,
         );
@@ -36,8 +36,8 @@ export function runtimeState(
     async resumeBlocked(issueIds: string[]) {
       try {
         await db.execute(
-          `UPDATE "${BRIDGE_NAMESPACE}".bridge_outbox SET state='pending',next_attempt_at=NULL,updated_at=now() WHERE state='blocked' AND relay=$1 AND receipt_key IN (SELECT receipt_key FROM "${BRIDGE_NAMESPACE}".bridge_outbox_scopes WHERE company_id=$2 AND issue_id=ANY($3::text[]))`,
-          [relay, companyId, issueIds],
+          `UPDATE "${BRIDGE_NAMESPACE}".bridge_outbox SET state='pending',next_attempt_at=NULL,updated_at=now() WHERE state='blocked' AND relay=$1 AND receipt_key IN (SELECT receipt_key FROM "${BRIDGE_NAMESPACE}".bridge_outbox_scopes WHERE company_id=$2 AND issue_id IN (SELECT jsonb_array_elements_text($3::jsonb)))`,
+          [relay, companyId, JSON.stringify(issueIds)],
         );
       } catch {
         throw Error("Blocked receipts could not be resumed.");
@@ -60,11 +60,12 @@ export function runtimeState(
           count: string;
           oldest: string | null;
         }>(
-          `SELECT o.state,count(*)::text AS count,min(o.created_at)::text AS oldest FROM "${BRIDGE_NAMESPACE}".bridge_outbox o JOIN "${BRIDGE_NAMESPACE}".bridge_outbox_scopes s ON s.receipt_key=o.receipt_key WHERE o.relay=$1 AND o.state IN ('pending','blocked') AND s.company_id=$2 AND s.issue_id=ANY($3::text[]) GROUP BY o.state`,
-          [relay, companyId, issueIds],
+          `SELECT o.state,count(*)::text AS count,min(o.created_at)::text AS oldest FROM "${BRIDGE_NAMESPACE}".bridge_outbox o JOIN "${BRIDGE_NAMESPACE}".bridge_outbox_scopes s ON s.receipt_key=o.receipt_key WHERE o.state IN ('pending','blocked','publishing') AND s.company_id=$2 AND ((o.relay=$1 AND s.issue_id IN (SELECT jsonb_array_elements_text($3::jsonb))) OR (o.state='publishing' AND o.receipt_key LIKE 'comment:%')) GROUP BY o.state`,
+          [relay, companyId, JSON.stringify(issueIds)],
         );
         return {
           pending: Number(rows.find((x) => x.state === "pending")?.count ?? 0),
+          publishing: Number(rows.find((x) => x.state === "publishing")?.count ?? 0),
           blocked: Number(rows.find((x) => x.state === "blocked")?.count ?? 0),
           oldest:
             rows
