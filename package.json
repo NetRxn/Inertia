@@ -18,11 +18,13 @@
     "demo:workflow": "npm run build && node dist/examples/workflow-demo.js"
   },
   "dependencies": {
+    "@helix-db/helix-db": "3.1.0",
     "@paperclipai/plugin-sdk": "2026.1012.0",
     "nostr-tools": "2.25.2"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.11",
+    "@helix-db/helix-db-embedded": "0.3.3",
     "@types/node": "24.10.0",
     "typescript": "5.9.3",
     "vitest": "4.0.18"
