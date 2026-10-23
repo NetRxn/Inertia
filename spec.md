@@ -1,13 +1,13 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-23-r11
+Revision: INERTIA-2026-10-23-r12
 Updated: 2026-10-23 (UTC)
-Status: runtime unchanged; native-first grant integration planned.
+Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
 
 
 ## Implementation status
 
-Documentation baseline: develop `778996e9`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
+Documentation baseline: develop `85699551`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
 
 | Component | Verified state | Remaining integration |
 |---|---|---|
@@ -35,7 +35,7 @@ The required demo has three connected outcomes:
 2. The existing scanner finds a current grant opportunity; a reviewed application packet is frozen and a blockchain vote is bound to that exact packet.
 3. Another DAO member connects an agent, which eagerly acquires eligible work, returns a validated contribution, and creates a justified follow-up when needed.
 
-Y2 watches support the connected loop. Helix is de-prioritized. Form 990 enrichment is a known stretch goal. The proposed rehearsal buffer is October 29 ahead of the October 30 submission deadline; delivery planning is refined against compatibility results.
+Y2 watches support the connected loop. Helix is the eventual graph/vector projection across funding, 990 and Y2, not a core-demo dependency. Add it to the demo only for a demonstrated retrieval need; Form 990 enrichment remains stretch. The proposed rehearsal buffer is October 29 ahead of the October 30 submission deadline; delivery planning is refined against compatibility results.
 
 ## 2. Operating model
 
@@ -139,7 +139,13 @@ The user will arrange repository-admin access for a second rehearsal participant
 
 ## 5. Data and authority
 
-Preserve DAO PlanetScale PostgreSQL and the scanner's existing data model. Paperclip owns work state; Buzz retains its own transport data. Integrations store references and mappings rather than duplicating full databases. Use native connection/credential facilities and scoped capability bindings before introducing another secret store. Cloudflare may provide hosting, access or event transport after the service choice is confirmed.
+Default to **one relational database on the existing DAO managed PostgreSQL service** for grant funding and meeting information, with domain-owned schemas/tables and least-privilege service roles. Preserve the funding data model and DAO website/Drizzle ownership; sharing persistence does not grant cross-domain reads or writes. Backend service boundaries do not require separate database instances or application servers. Physical placement is a deployment choice, not an assertion that all applications share one server.
+
+Paperclip keeps its **independent native database**, including plugin transport state. Buzz retains existing transport storage. Funding services own evidence, validated proposals, immutable packets and domain review audit in the DAO database; meeting services own publication versions and audience enforcement there. Native authenticated decisions remain in Paperclip and reconcile through the planned adapter. Do not invent a cross-system transaction.
+
+Helix is the eventual **separate specialized graph/vector store**, holding rebuildable, provenance/version/access-filtered projections across funding, 990 and Y2. DAO PostgreSQL remains authoritative for domain facts, transactions and review state; Paperclip for native work/decisions. Graph similarity or a graph edge never approves a grant, establishes eligibility or replaces packet-bound governance. Recheck source access and current version on retrieval; propagate revocations/deletions before serving restricted results.
+
+The [data consolidation contract](docs/development/dao-data-consolidation.md) defines source compatibility, schema ownership and the gated migration/rollback plan. Use native connection/credential facilities and scoped bindings, not a new secret store. No database migration, credential change or deployment is performed by this design revision.
 
 A blockchain vote and a Paperclip workflow approval are separate evidence types. A native approval can coordinate work; voted DAO authority additionally requires the immutable packet and chain result. A changed packet invalidates reuse of the earlier vote. Private documents are not uploaded to public or content-addressed storage merely because a URL is available.
 

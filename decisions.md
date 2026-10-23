@@ -1,13 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-23-r11
+Revision: INERTIA-2026-10-23-r12
 Updated: 2026-10-23 (UTC)
-Status: runtime unchanged; native-first grant integration planned.
+Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
 
 
 ## Current baseline
 
-Develop `778996e9`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `85699551`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Settled decisions
 
@@ -17,7 +17,7 @@ Develop `778996e9`; runtime through PR 17. See [implementation status](spec.md#i
 | D02 | Meet/video → Gemini → organization Drive | Integrate actual outputs once access contract is known. |
 | D03 | Automatic cleaned transcript and notes publication | Routine in-policy publication is automatic. |
 | D04 | Preserve source fidelity and audience | Version outputs, retain source and read back publication. |
-| D05 | DAO uses PlanetScale PostgreSQL | Reuse existing website persistence. |
+| D05 | Reuse DAO PlanetScale PostgreSQL for funding and meetings | One relational database; isolated domain schemas and service roles. Paperclip DB remains independent. |
 | D06 | Reuse existing grant scanner | Qualify its current interfaces and refresh stale opportunities. |
 | D07 | Blockchain voting is settled | Bind final authority to an immutable packet. |
 | D08 | Ordinary tasks can proceed without a vote | Do not route every website or research action through governance. |
@@ -27,7 +27,7 @@ Develop `778996e9`; runtime through PR 17. See [implementation status](spec.md#i
 | D12 | Agents eagerly acquire work and create follow-ups | Configure native autonomy, budgets and follow-up constraints. |
 | D13 | Member agents execute client-side securely | Qualify sandbox, data isolation and server validation. |
 | D14 | Reuse native/existing hardening first | Qualify existing execution hardening against the selected Paperclip release. |
-| D15 | Helix de-prioritized; 990 integration stretch | No graph dependency on the core critical path. |
+| D15 | Helix is the eventual graph/vector projection across funding, 990 and Y2 | Core demo stays independent unless a concrete retrieval need justifies inclusion; 990 enrichment remains stretch. |
 | D16 | Cloudflare is available | Select services only when deployment needs justify them. |
 | D17 | Keep four Markdown files and deck synchronized | Preserve original PDF; use focused Git commits and existing PR. |
 
@@ -64,6 +64,7 @@ Implementation tasks reference these setup IDs.
 | U11 | Current grant demo candidate | Fresh scan, deadline, eligibility, direct/partner route and approved DAO facts | Grant owner / G3 |
 | U12 | Delivery staffing and final date details | Named owners, capacity, proposed October 29 rehearsal buffer and October 30 submission logistics | User / G2 |
 | U13 | Native grant reviewer configuration and correction walkthrough | Authenticated humans mapped to required roles; one real packet/correction cycle; member evidence/tool scopes and decision reconciliation | Grant owner + engineering / integration |
+| U14 | Shared DAO database readiness | Verify deployed PostgreSQL version, provider schema/role/backup/PostGIS support, current stores, collision inventory and Drizzle/Alembic ownership; qualify restore and cutover | DAO database + domain owners / before migration |
 
 Keep credential references in protected platform configuration.
 
@@ -109,8 +110,13 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D41: Retain funding evidence, validated proposals, immutable packets and review audit. A planned trusted server adapter applies authenticated, addressed, revision-bound native decisions through domain validation. Current MCP lacks acceptance/signoff; agents cannot approve. Reconcile decision identity (interaction + item for verdicts), proposal/packet ID/version and action, without claiming a cross-system transaction.
 - D42: Start corrections with document edit → regenerated proposal → new review. Build a structured panel only after a real walkthrough demonstrates need. Preserve separate Vocdoni authority and exact artifact/packet/review binding.
 
+- D43: Consolidate funding and meeting relational data in one existing DAO PostgreSQL database, with separate domain schemas and least-privilege roles. Keep Paperclip native persistence independent. Backend ownership is not a requirement for separate servers; qualify provider capabilities before migration.
+- D44: Keep Drizzle responsible for DAO website/meeting tables and Alembic for funding tables, with non-overlapping schema scope and separate migration histories. No shared all-powerful application role or competing migration owner. See [consolidation plan](docs/development/dao-data-consolidation.md).
+- D45: Helix holds derived graph/vector projections, not authoritative facts, review state or approval authority. Preserve source IDs, versions and access restrictions; no new demo dependency without a demonstrated need.
+
 ## Change log
 
+- r12: Consolidate DAO domain persistence by schema/role, retain separate Paperclip DB, and clarify eventual Helix projection and gated migration. Design only; runtime/qualification unchanged.
 - r11: Adopt native-first grant execution/review, scoped central/member harness and a planned trusted decision adapter. Runtime and qualification evidence unchanged.
 - r10: Condense current artifacts, centralize evidence and retain requirements, decisions and acceptance gates.
 - r9: Synchronize the reviewed website caller, proposed v1.1 limits, authenticated cloud handoff and public DAO grounding. Record PR 17’s reviewed 248-test candidate and exact native-service receipt while keeping live deployment outside this evidence.

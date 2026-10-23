@@ -39,6 +39,10 @@ Funding MCP exposes draft/workspace/proposal operations but **not acceptance/sig
 
 Retain domain states: `evidence_resolution`, `ready_for_internal_review`, `internal_review`, `approved_for_manual_submission`, `approved_for_partner_delivery`, `next_cycle_readiness_complete`, `monitor_only`, `submitted_externally`. Display them on native work; do not create another orchestration state machine.
 
+## Storage compatibility
+
+Funding defaults to SQLite but includes a PostgreSQL/psycopg path, PostGIS geometry and Alembic migrations. Its current unqualified schema/SQL is not yet a qualified isolated funding schema. The [consolidation contract](../development/dao-data-consolidation.md) pins that evidence and assigns Drizzle/Alembic ownership without changing runtime.
+
 ## Pinned evidence
 
 - Funding [portable skill](https://github.com/NetRxn/DFW-Gov-Fund/blob/859a9f5a7b88bbbdd6eda3cb9c453fb15184a045/government-funding-dfw/.agents/skills/dfw-funding-orchestrator/SKILL.md), [MCP tools](https://github.com/NetRxn/DFW-Gov-Fund/blob/859a9f5a7b88bbbdd6eda3cb9c453fb15184a045/government-funding-dfw/src/dfw_incentives/mcp_server.py#L181-L242), [proposal review](https://github.com/NetRxn/DFW-Gov-Fund/blob/859a9f5a7b88bbbdd6eda3cb9c453fb15184a045/government-funding-dfw/src/dfw_incentives/codex_agents.py#L461-L547).
