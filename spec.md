@@ -1,38 +1,24 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-23-r9
+Revision: INERTIA-2026-10-23-r10
 Updated: 2026-10-23 (UTC)
-Stage: PR 17 merged into develop; exact runtime archive native-qualified. Live deployment and domain admission remain pending.
+Status: implementation merged; live integration pending.
 
 
-## Implementation evidence at r9
+## Implementation status
 
-| Slice | State | Verified evidence | Next acceptance |
-|---|---|---|---|
-| Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
-| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
-| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR 14; deployed server/source/job admission pending |
-| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
-| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
-| Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
-| Historical native service qualification | Passed for its recorded pre-mirror artifact | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
-| Latest-release qualification | Merged into develop | [PR 11](https://github.com/NetRxn/Inertia/pull/11): official registry discovery, isolated exact-lock qualification, 12 focused tests plus actual 152 runtime tests/typecheck/production package verification | Qualify each new candidate with native/HTTP checks and tested database recovery before promotion |
-| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+Documentation baseline: develop `f9423e5`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
 
-Merged baseline: develop `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`, 23 October 2026, through PR 17. PR 14 final verification passed 216 tests, typecheck and build; the original connected workflow and Roundtable demos remain explicitly synthetic. Earlier package/native/HTTP receipts qualify their recorded source baselines, not every later runtime change. No live website, cloud deployment or member integration has been admitted. PR 17 merged at 11:12:50 UTC from exact reviewed head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, with 248 passing combined tests. The merge preserves its reviewed source bytes. The qualified archive/source-tree hashes below remain the evidence identity; this documentation revision does not retroactively qualify a new artifact.
+| Component | Verified state | Remaining integration |
+|---|---|---|
+| Buzz bridge | Signed transport, native comments/confirmations, durable recovery | Approved relay, pairing and live admission |
+| Native comment export | First-publication mirroring, default-off | Per-binding audience approval and history cutoff; status mirroring planned |
+| Roundtable | Source/hash core and website caller contract-tested | Website server, authorized Drive source and single-owner native job |
+| Grants | Packet/review/vote binding core and public draft references | Consistent-read exporter, effective-authority verifier and native transactional acceptance |
+| CEO | Native operator checklist | Assigned intake mandate, native run policy, budgets and authorized pilot |
+| Member agents and Y2 | Interfaces identified | Enrollment, execution isolation and live adapters |
 
-## Overnight integration status
-
-- **Website caller implemented, live publication pending.** [PR 14](https://github.com/NetRxn/Inertia/pull/14) adds exact-body operation persistence, read-before-write reconciliation, CAS corrections, full audience/content readback, bounded HTTP and actionable authentication/rate-limit outcomes. The reviewed final suite passed 216 tests. These are mocked-I/O contract checks, not deployed website acceptance. The existing demos still use `pendingDaoPublisher`.
-- **Website contract remains proposed.** The [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md) and [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md) retain `roundtable-publication-v1` / `extractive-v1`. Metadata-only corrections are explicitly unsupported until a new versioned codec binds metadata. Website rollout, credentials, authorized Drive readiness and single-owner native job wiring remain admission gates.
-- **Cloud setup has a concrete handoff.** [PR 13](https://github.com/NetRxn/Inertia/pull/13) specifies one authenticated private Paperclip host, durable PostgreSQL and the existing Buzz service. Owner-approved target/origin, relay thread, native company/identity pairing and signing-secret reference are still required. No deployment, credentials or live call are implied by the plan.
-- **Public grant grounding is a review reference.** [PR 15](https://github.com/NetRxn/Inertia/pull/15) pins organization-published facts and provenance. It does not import applicant records or clear eligibility. Legal/tax claims need primary verification; conflicting constitutional and proposed governance rules need authenticated canonical holdings and ratification evidence.
-- **Native comment mirroring is merged and tested.** [PR 17](https://github.com/NetRxn/Inertia/pull/17), head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, passed 248 combined tests, typecheck/build and package verification. It merged into develop as `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`. First-publication mirroring is default-off and per-binding, with explicit `audienceAcknowledged` approval and `notBefore` history cutoff. It reuses the existing outbox/reconcile job. Delivered posts have no edit/delete propagation; suppression cannot retract uncertain prior relay acceptance. Non-expiring publication claims remain visible as `inFlightPublications`; exceptional token-matched recovery requires proving all prior workers stopped. General status mirroring remains future work.
-- **The exact candidate passed native-service qualification.** [Receipt and reproduction](docs/qualification/combined-native-services/README.md) bind archive SHA-256 `19e67c88a8de52404412e49312cebfd6db42c462de3378cf3397966250add76c` to source tree `8039b3e5f54e49c302b4751445f382403381ab91`: six migrations, eight tables, three job RPCs, expected disabled health, real SQL binding and clean shutdown against unmodified Paperclip 2026.1012.0/PostgreSQL 18.1. A host array-binding regression was found and fixed before this pass. This is native-service evidence, not full HTTP/UI or live integration qualification. Earlier HTTP evidence remains historical.
-- **Native CEO setup uses existing controls.** [PR 16](https://github.com/NetRxn/Inertia/pull/16) adds an operator checklist, not a bootstrap engine or live setup. Select the existing CEO by native ID and give it a bounded assigned intake issue. The shipped heartbeat does not discover arbitrary unassigned work. Use native run policy, budgets and hiring approvals; choose one native recurring mechanism rather than overlapping routine/heartbeat loops. Record the admitted run and delegated issue IDs during the authorized pilot.
-
-
+Qualification: 248 combined tests; exact archive passed native-service RPC checks with six migrations. [Testing evidence](testing.md#qualification-record) identifies the artifact and acceptance scope. Live deployment and domain admission are pending. Website server contract: [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md), [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md).
 
 ## Reproducible connected walkthrough
 
@@ -53,7 +39,7 @@ Y2 watches support the connected loop. Helix is de-prioritized. Form 990 enrichm
 
 ## 2. Operating model
 
-### One authoritative work system
+### Native ownership
 
 Deploy Paperclip as part of Inertia and connect the existing target Buzz instance. Website API/schema changes remain a proposal for the user’s rollout. Roundtable output belongs behind the members-only portal.
 
@@ -82,7 +68,7 @@ A Buzz mention or workflow event must resolve to one Paperclip wake/issue operat
 
 Paperclip controls policy and accepted state. The selected runner and existing execution-hardening integration control execution isolation and workspace lifecycle. Member results are candidate evidence. A trusted domain adapter validates them and performs authorized external writes. Member runtimes receive only the task's authorized data and never receive shared publisher or grant-submission credentials.
 
-Plugins execute trusted extension code. Runtime isolation, credential boundaries and host networking need qualification against the selected integration; an API surface or worktree alone is not the isolation boundary. Native budget admission is used together with bounded runtime/tool requests.
+Plugins execute trusted code. Qualify runtime isolation, credentials and host networking separately from workspace isolation. Combine native budget admission with bounded runtime/tool requests.
 
 ## 3. Buzz–Paperclip bridge contract
 
@@ -99,13 +85,13 @@ Plugins execute trusted extension code. Runtime isolation, credential boundaries
 | Audience | Preserve source and destination audience restrictions. Reject cross-company or cross-channel privilege expansion. |
 | Execution | Exactly one scheduler/checkout owner controls each admitted job. Buzz ACP launch is a transport/runtime option, not a competing scheduler. |
 
-Selected first route: a bounded TypeScript plugin bridge using the pinned SDK's paired-user comments and accept/reject interaction APIs. This avoids an upstream upgrade merely to obtain the newer native chat-provider framework. Preserve native IDs and authority; do not build a second task or decision ledger. Buzz owner attestations do not turn agent output into a human approval.
+Selected route: a TypeScript plugin using the qualified SDK’s paired-user comment and accept/reject APIs. Retain native task/decision IDs and authority. Agent messages remain agent-authored, including messages with owner attestations.
 
 ## 4. Domain requirements
 
 ### Meetings: R-M01–R-M04
 
-Current DAO meeting actions verify a Privy login rather than active DAO membership. The required target is members-only portal publication, not public posting. Add and test explicit active-membership authorization and audience readback before publishing. Inertia supplies the website API/schema/contracts proposal; the user owns its rollout.
+Website reads currently require Privy login. Members-only publication requires active-membership checks and audience readback. Inertia supplies the API/schema proposal; the user owns website rollout.
 
 Current core uses source-grounded extractive quotes. It rejects model-supplied owners and labels model classifications unverified. The caller-side website publisher/readback adapter is merged and contract-tested. The website server contract remains proposed and source readiness, durable native job wiring and live admission are still pending; the contracts below define the complete target.
 
@@ -116,11 +102,11 @@ Current core uses source-grounded extractive quotes. It rejects model-supplied o
 
 Action-item extraction proposes native work with explicit source references. Unassigned names or ambiguous commitments stay unresolved rather than fabricated. Keep meeting text out of logs where not needed; retrieved text is data, never an instruction to change permissions or execute arbitrary actions.
 
-The [public DAO integration map](docs/implementation/public-dao-integration-map.md) distinguishes existing meeting-mode scaffolding, the externally linked DeGov/Vocdoni service and proposed governance. Reuse verified interfaces and vocabulary without assuming deployed ballot support or ratified thresholds. Publication and motion approval remain separate workflows.
+The [public integration map](docs/implementation/public-dao-integration-map.md) records Meeting Mode, linked DeGov/Vocdoni services and proposed governance. Verify deployed ballot support and operative thresholds. Keep publication and motion approval separate.
 
 ### Grants: R-G01–R-G04
 
-Vocdoni is selected, and the user will provide an example. The documented FWTX route suggests possible Aragon/final-action stages; verify which stages apply to the actual setup rather than mandating another platform. The configured verifier must establish the effective final result and exact packet binding. Confirm network and completed proposal evidence through U06.
+Vocdoni is selected, and the user will provide an example. The [documented FWTX route](https://documentation.robsrulesdao.com/aragon) suggests possible Aragon/final-action stages; verify which stages apply to the actual setup rather than mandating another platform. The configured verifier must establish the effective final result and exact packet binding. Confirm network and completed proposal evidence through U06.
 
 The merged grant core reads a trusted export of engine-owned records and verifies artifact bytes before freezing the packet, version, review and hashes together. It requires a fresh source re-read and exact network/proposal/action/packet match from an injected governance verifier. Production integration supplies a consistent-read exporter, chain-specific verification and transactional acceptance on the native work item. The engine retains its existing review and manual submission handoff.
 
@@ -129,7 +115,7 @@ The merged grant core reads a trusted export of engine-owned records and verifie
 - R-G03: Freeze packet ID, version, canonical content hash, attachments and review record. A blockchain vote references exactly this immutable packet and its proposed action.
 - R-G04: Validate chain/network, proposal identity, eligible result, finality and packet binding before applying voted authority. Changed content needs renewed authority. Actual funder submission is a separately controlled step.
 
-Ordinary authorized research, drafts and website maintenance operate without a vote. The optional shortlist vote is not a dependency of the required final packet vote. Application assertions must be supported by approved DAO information. The DAO website is the intended authoritative organizational knowledge source, including governance rules and formation documents. The deployed agent retrieves these through authorized authenticated access before asking the user to re-enter facts. Preserve source URL/document ID, version or content hash, retrieval time, exact supporting passage and access classification with each claim. A page unavailable publicly is not evidence that the DAO lacks the record. Request only gaps that remain after authorized retrieval; restricted source material stays out of public artifacts and is not automatically shared with contributing agents.
+Ordinary authorized research, drafts and website maintenance need no vote. The required final packet vote is independent of an optional shortlist vote. Application assertions must be supported by approved DAO information. The DAO website is the intended authoritative organizational knowledge source, including governance rules and formation documents. The deployed agent retrieves these through authorized authenticated access before asking the user to re-enter facts. Preserve source URL/document ID, version or content hash, retrieval time, exact supporting passage and access classification with each claim. Establish source gaps through authorized retrieval. Keep restricted material out of public artifacts and outside contributors’ authorized data scope.
 
 ### Member contribution: R-C01–R-C05
 
@@ -159,9 +145,9 @@ The demo evidence package contains: source-to-publication trace and readback; cu
 
 ## 7. Design progression
 
-The settled choices in decisions.md stand. Build the thin bridge now using signed fixtures and public SDK contracts. Resolve live access/admission separately while domain adapters proceed against explicit contracts. Existing hardened execution remains the reuse path; the bridge does not implement a sandbox or scheduler.
+The bridge is merged. Complete live admission and domain adapters against the contracts below, reusing native scheduling and the existing hardened execution integration.
 
-## 8. First build: a real, small bridge
+## 8. Bridge implementation
 
 ### Experience
 
@@ -171,15 +157,15 @@ The initial executable delivers signed Buzz ingress → native human comment or 
 
 ### Regular Paperclip upgrades
 
-Target the latest Paperclip release that passes qualification. Version pins identify a reproducible security/build evaluation and release artifact, rather than a permanent platform constraint. Maintain a small version manifest with host/SDK versions, source/package integrity, plugin version and schema state. For each candidate, run compatibility tests, clean package installation, native-service checks and full-host smoke tests in a disposable environment. Review changed capabilities and migrations, exercise the existing database upgrade path, then promote the tested artifact through the normal deployment process.
+Target the latest Paperclip release that passes qualification. Version pins identify reproducible evaluation and release artifacts. Maintain a small version manifest with host/SDK versions, source/package integrity, plugin version and schema state. For each candidate, run compatibility tests, clean package installation, native-service checks and full-host smoke tests in a disposable environment. Review changed capabilities and migrations, exercise the existing database upgrade path, then promote the tested artifact through the normal deployment process.
 
-Keep the previous artifact and a verified pre-upgrade database backup. Rehearse recovery by restoring the compatible backup and previous runtime together; binary downgrade alone cannot reverse database migrations. Record the upgrade result and one useful operator action if qualification fails. The implemented checker and isolated qualification commands are described in [Paperclip upgrades](docs/qualification/paperclip-upgrades.md): `node scripts/paperclip-upgrade.mjs` refreshes release metadata, and `node scripts/paperclip-upgrade.mjs --qualify` runs the disposable SDK/package qualification. Native/full-host candidate checks and tested database recovery remain promotion gates. No live auto-upgrade or recurring schedule has been enabled.
+Keep the previous artifact and a verified pre-upgrade database backup. Rehearse recovery by restoring the compatible backup and previous runtime together; binary downgrade alone cannot reverse database migrations. Record the upgrade result and one useful operator action if qualification fails. The implemented checker and isolated qualification commands are described in [Paperclip upgrades](docs/qualification/paperclip-upgrades.md): `node scripts/paperclip-upgrade.mjs` refreshes release metadata, and `node scripts/paperclip-upgrade.mjs --qualify` runs the disposable SDK/package qualification. Native/full-host candidate checks and tested database recovery remain promotion gates. Live auto-upgrades: disabled.
 
 ### Baseline and implementation
 
 Use TypeScript ESM on Node 24.11+, npm lockfile, Vitest, and nostr-tools for Nostr cryptography. Compile the plugin manifest and native adapter against the public Paperclip SDK from v2026.1012.0, commit bba6a45f0d364cfd962ac59b3bdf2426a8222adb. Use the public registry package @paperclipai/plugin-sdk@2026.1012.0 and record its integrity; its release version differs from the source package.json version 1.0.0. Compile against the published artifact and audit compatibility with the source pin rather than assuming byte identity. Upgrade the host/SDK together through the qualification process; keep each tested build reproducible and avoid copying private vendor trees. Keep the source pin and package integrity together in docs/bridge-state-contract.md. Buzz wire baseline is dc25198d530acc6237a0320b697365f29daf0ea6.
 
-Reuse ctx.issues.createComment, listComments, listInteractions and respondInteraction. The host checks current human company membership. A human-attributed comment already participates in native assignee wakes; the bridge adds no extra wake. Initial direct decisions support accept/reject for immutable plain confirmations. Target-bound or structured decisions open their native Paperclip UI. Structured question answers, hiring decisions and blockchain ratification remain distinct adapters, not guessed meanings of an emoji. The plugin exports a real SDK manifest and worker entrypoint with capability declarations and native health reporting.
+Reuse ctx.issues.createComment, listComments, listInteractions and respondInteraction. The host checks current human company membership. A human-attributed comment already participates in native assignee wakes; the bridge adds no extra wake. Initial direct decisions support accept/reject for immutable plain confirmations. Target-bound or structured decisions open their native Paperclip UI. Structured questions, hiring and blockchain ratification require their own typed adapters. The plugin exports a real SDK manifest and worker entrypoint with capability declarations and native health reporting.
 
 ### Wire and identity
 
@@ -202,7 +188,7 @@ Inbox key is (relay, eventId). States are received, applying, applied, rejected,
 
 Native comments have no assumed idempotency key: include a stable source-event correlation marker in the comment and reconcile listComments after a lost response. If a matching comment exists, save its native ID; if the previous request may still complete, retain uncertain and do not issue a second create. Native interactions return applied=false when already resolved; render the authoritative result, never claim the requested opposite action won. Before resolving, reread the interaction and enforce card binding. Use the host's atomic resolution as final authority. If the chosen host allows pending interaction content mutation without compare-and-set, disable direct resolution for that case and link to the native card until a safe API exists.
 
-Outbox states are pending, delivered and blocked. A lost publish response retries the same signed event; relay event-ID deduplication converges. Use bounded exponential backoff with jitter for transport failures and 429/5xx, respect Retry-After, and surface permanent 4xx/configuration failures once. Native plugin jobs/events drive reconciliation; do not create a job scheduler. Cursors advance only after each fetched event has a durable disposition. Recheck a bounded recent lookback for delayed events, deduplicate by event ID, and persist resumable historical backfill. Isolate future-dated events so they cannot move the checkpoint beyond legitimate traffic. Scope health and recovery to the configured company; addressed confirmation cards stay with their authorized audience. Source edits/deletes become linked correction/tombstone evidence; they never retroactively reverse an accepted native decision.
+Delivery states include pending, publishing, delivered, blocked and suppressed. Native comments use non-expiring publication claims; see [comment recovery](docs/native-comment-mirroring.md#concurrency-and-interrupted-publication). A lost publish response retries the same signed event; relay event-ID deduplication converges. Use bounded exponential backoff with jitter for transport failures and 429/5xx, respect Retry-After, and surface permanent 4xx/configuration failures once. Native plugin jobs/events drive reconciliation; do not create a job scheduler. Cursors advance only after each fetched event has a durable disposition. Recheck a bounded recent lookback for delayed events, deduplicate by event ID, and persist resumable historical backfill. Isolate future-dated events so they cannot move the checkpoint beyond legitimate traffic. Scope health and recovery to the configured company; addressed confirmation cards stay with their authorized audience. Source edits/deletes become linked correction/tombstone evidence; they never retroactively reverse an accepted native decision.
 
 ### Boundary contracts for following slices
 
@@ -215,7 +201,7 @@ These contracts preserve the full product while the first executable establishes
 
 ## Source baseline
 
-Source inspection on 22 October 2026 established these native capabilities. Deployment qualification is the next evidence gate.
+Source inspection baselines, 22 October 2026. Exact runtime qualification is recorded in [testing.md](testing.md#qualification-record).
 
 - Paperclip: [341b622604b639b056fc58b10e2dd3312d40385c](https://github.com/paperclipai/paperclip/tree/341b622604b639b056fc58b10e2dd3312d40385c).
 - Buzz: [dc25198d530acc6237a0320b697365f29daf0ea6](https://github.com/block/buzz/tree/dc25198d530acc6237a0320b697365f29daf0ea6).
@@ -224,9 +210,9 @@ Source inspection on 22 October 2026 established these native capabilities. Depl
 - [Y2](https://y2.dev/) is teammate-owned and remains an integration objective.
 - [Texas Nova](https://texas-nova.labs.fwtx.city/) and [990 Graph](https://990-g2.ntx.labs.fwtx.city/login) are contextual resources; 990 enrichment is stretch.
 
-## Artifact coordination
+## Related artifacts
 
-The synchronized set is [spec.md](spec.md), [testing.md](testing.md), [decisions.md](decisions.md), [plan.md](plan.md), and [Inertia-Architecture.pptx](Inertia-Architecture.pptx). Update the common revision whenever new user decisions change the design. Keep stable filenames and Library identities. The original [product overview](docs/reference/Inertia-beta-product-overview.pdf) remains byte-identical historical material. Current decisions supersede its older sequencing. External configuration questions are centralized in decisions.md.
+[Specification](spec.md) · [Tests](testing.md) · [Decisions](decisions.md) · [Plan](plan.md) · [Editable architecture](Inertia-Architecture.pptx). Original [product overview](docs/reference/Inertia-beta-product-overview.pdf) retained unchanged.
 
 ## Website implementation handoff
 

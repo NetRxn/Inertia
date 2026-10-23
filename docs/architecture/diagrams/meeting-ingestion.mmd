@@ -1,0 +1,20 @@
+sequenceDiagram
+autonumber
+participant D as Drive / Gemini [E]
+participant J as Source job / planned [P]
+participant R as Roundtable / core + client [I]
+participant W as DAO server / API / policy [P]
+participant P as Paperclip / + Buzz [E]
+D-->>J: Ready output: meeting ID · revision · content hash
+J-->>R: Original bytes + provenance
+Note over J,R: Extractive transcript + separate notes [I]<br/>Summary-only source → notes + missing-transcript issue
+R-->>W: GET /api/integrations/v1/roundtables/<br/>operations/{operationId}
+W-->>R: Existing exact receipt OR operation_absent
+opt operation_absent
+R-->>W: POST /api/integrations/v1/roundtables/publications<br/>Exact persisted body · expected prior hash (CAS)
+end
+Note over W,P: Privy + active membership for member reads<br/>Scoped service identity for machine writes
+R-->>W: GET operation: full content / audience readback
+W-->>R: Readback: content · hashes · version · audience=members
+R-->>P: Validated URLs + source/output references
+Note over D,P: Timeout → reconcile operation before retry · correction → CAS · audience/hash mismatch → exception issue

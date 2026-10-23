@@ -1,6 +1,6 @@
 # Buzz transport foundation
 
-Run with Node.js 22 or later:
+Run with Node.js 24.11 or later:
 
 ```sh
 npm ci --ignore-scripts
@@ -10,7 +10,7 @@ npm run build
 npm run demo
 ```
 
-The demo uses a deliberately public fixture key and injected in-process relay. It verifies a signed channel message and demonstrates recovery from a transient relay outage without changing the outgoing event ID. It makes no network requests and creates no Paperclip tasks.
+The offline demo uses a public fixture key and in-process relay. It verifies signed messages and transient-outage recovery with a stable outgoing event ID.
 
 ## Contracts
 
@@ -21,7 +21,7 @@ The demo uses a deliberately public fixture key and injected in-process relay. I
 - Response parsing is streamed and capped at 1 MiB by default, including chunked bodies. Serialized individual events are capped at 64 KiB. Both limits are configurable from 1 byte to 16 MiB. Oversized bodies are cancelled before full buffering.
 - BuzzConfigurationError identifies pre-delivery configuration/signing failures; BuzzRequestRejected identifies a definitive first-attempt 4xx refusal (except 429) or a matching accepted=false receipt. These should be blocked, not blindly retried. A refusal after an earlier ambiguous attempt preserves uncertainty. Malformed/mismatched success receipts are also uncertain.
 - Exhausted publication errors return `BuzzDeliveryUnknown` carrying the stable event ID. Reconcile against the relay or retry the same persisted signed event, never re-sign the message blindly. The caller is responsible for durable outbox storage before `publish`.
-- A valid signature proves the author, not permission to change a native task or approve a decision. Trusted relay/company/member bindings and native authorization belong in the bridge adapter.
+- Signatures establish key ownership. The bridge enforces trusted relay/company/member bindings and native authorization.
 
 ## Reproducible source baseline
 
@@ -32,4 +32,4 @@ Buzz source: `block/buzz` at `dc25198d530acc6237a0320b697365f29daf0ea6`:
 
 Paperclip SDK: public registry `@paperclipai/plugin-sdk@2026.1012.0`, exact dependency and integrity in `package-lock.json`. This is the release baseline selected alongside source pin `bba6a45f0d364cfd962ac59b3bdf2426a8222adb`. The source package version is a publishing placeholder (`1.0.0`); no byte-for-byte source-to-registry equivalence is asserted. The transport itself does not invoke the SDK; subsequent adapters compile against this pinned package.
 
-All fixtures are synthetic. No organization meetings, private plugins, credentials or private implementation details are included.
+Fixtures contain synthetic data only.
