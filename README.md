@@ -40,3 +40,7 @@ The required demo spans automatic Roundtable publication, grant-packet preparati
 The source repository keeps the synchronized [specification](spec.md), [testing plan](testing.md), [decisions](decisions.md), [implementation plan](plan.md) and [editable architecture deck](Inertia-Architecture.pptx). The [original product overview](docs/reference/Inertia-beta-product-overview.pdf) is retained as historical source material.
 
 Work on focused feature branches and merge reviewed changes into `develop`. Keep artifacts synchronized as requirements change. Never commit credentials, private meeting material, local databases or runtime captures. Actual funder submission and live deployment require their separately authorized integrations.
+
+### One-command connected rehearsal
+
+Run `npm run demo:workflow` to follow one synthetic Roundtable-to-grant initiative through the existing cores, native confirmation bridge, and exact packet binding. The command prints a readable walkthrough and saves `runs/workflow-receipt.json`. See [live handoff contracts](docs/implementation/live-handoff-checklist.md) for adapter inputs, outputs, and the remaining connections.

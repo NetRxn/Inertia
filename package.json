@@ -14,7 +14,8 @@
     "demo:transport": "npm run build && node dist/examples/buzz-dry-run.js",
     "prepack": "npm run build",
     "test:package": "node scripts/verify-package.mjs",
-    "demo:roundtable": "npm run build && node dist/examples/roundtable-dry-run.js"
+    "demo:roundtable": "npm run build && node dist/examples/roundtable-dry-run.js",
+    "demo:workflow": "npm run build && node dist/examples/workflow-demo.js"
   },
   "dependencies": {
     "@paperclipai/plugin-sdk": "2026.1012.0",
