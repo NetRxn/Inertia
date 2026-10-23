@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { sha256 as hash, publicationOutputHash as digest, publicationOperationId as operation } from './codec.js';
 
 /** Internal envelope, not a Google Drive/Gemini API response. */
 export interface Source {
@@ -27,7 +27,6 @@ export interface Publisher {
   lookup(operationId: string): Promise<Lookup>;
   upsert(publication: Publication): Promise<void>;
 }
-const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const normalize = (text: string) => text.replace(/\r\n?/g, '\n').trim();
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw Error('Expected structured notes');
@@ -57,12 +56,6 @@ function validateNotes(value: unknown, transcript: string): Notes {
     decisions: excerpts('decisions').map(({text,line,verification}) => ({text,line,verification})),
     actions: excerpts('actions', true),
   };
-}
-function digest(p: Omit<Publication, 'outputHash' | 'operationId'>): string {
-  return hash(JSON.stringify([p.meetingId,p.sourceId,p.revision,p.sourceHash,p.audience,p.transcript,p.notes,p.outputVersion,p.expectedPreviousOutputHash]));
-}
-function operation(p: Pick<Publication,'meetingId'|'sourceId'|'revision'|'sourceHash'|'outputHash'>): string {
-  return hash(JSON.stringify([p.meetingId,p.sourceId,p.revision,p.sourceHash,p.outputHash]));
 }
 export async function prepare(input: Source, transform: Transformer, expectedPreviousOutputHash: string | null = null): Promise<Prepared> {
   const source = structuredClone(input);

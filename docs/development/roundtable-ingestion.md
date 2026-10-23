@@ -32,3 +32,7 @@ The executable uses only synthetic text and deterministic fixture extraction. Ex
 ## Review correction: context and attribution
 
 Extraction now requires the complete unchanged source line, including its speaker label and negation. Every extracted item is explicitly marked verification=unverified; placing a line in a decisions/actions collection does not authorize a decision or create executable work. Owner is always null in this extraction mode; any non-null model attribution is rejected. A future trusted structured-owner input and semantic review policy can add attribution without treating mere name presence as proof. Paraphrases require a separately reviewed semantic validation boundary. Full transcript remains available to contextualize selected lines. The source envelope is cloned before asynchronous transformation so caller mutation cannot redirect private content to another meeting or audience.
+
+## Proposed website caller adapter
+
+The separate [website publication adapter](website-publication-adapter.md) now implements exact-byte preparation/readback against the proposed member-only contract, with explicit auth/conflict/rate-limit/withdrawal outcomes and shared v1 digest vectors. It is not enabled in the worker, does not replace the pending publisher, and has no live credential or endpoint. Caller-owned native persistence and website acceptance remain required before enablement.
