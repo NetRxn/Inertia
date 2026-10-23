@@ -1,6 +1,6 @@
 # Native comment mirroring (opt-in)
 
-The existing native reconciliation job can project first-publication Paperclip comments to a bound Buzz thread. This is transport only: Paperclip still owns tasks, assignments, budgets, author identity and wakes. No additional plugin capability or scheduler is introduced.
+The existing native reconciliation job can project first-publication Paperclip comments to a bound Buzz thread. Paperclip owns tasks, assignments, budgets, author identity and wakes. Mirroring uses existing plugin capabilities and scheduling.
 
 ## Enable only for a verified audience
 
@@ -24,11 +24,11 @@ A stable full-binding/comment-ID receipt key deduplicates scans and restarts in 
 
 Before publishing, the bridge rechecks configuration and reads the native comment. Missing, deleted, edited or no-longer-authorized snapshots become terminal suppressed records. The retry-blocked job cannot resurrect them. A failed native read defers the operation; it does not authorize stale publication or imply deletion. If the comment later returns to the old body, its suppressed first-publication identity remains suppressed.
 
-This is **first-publication mirroring**, not edit synchronization or deletion propagation. A delivered post is not rewritten or recalled. A publish timeout may mean the relay accepted the event; suppressing its retry cannot retract a possible earlier acceptance. Rebinding to a new destination creates a distinct delivery identity and requires fresh audience verification.
+Scope: **first-publication mirroring**. Delivered posts remain unchanged after native edits or deletion. A publish timeout may mean the relay accepted the event; suppressing its retry cannot retract a possible earlier acceptance. Rebinding to a new destination creates a distinct delivery identity and requires fresh audience verification.
 
 The existing once-per-minute reconciliation job enqueues at most 100 new comments per binding per pass. Native reads currently return the complete issue comment list because the inspected SDK has no pagination argument. The outbox's existing bounded delivery and retry behavior applies. Native events are not used as the sole source because the inspected host event bus is in-process and does not provide durable replay.
 
-No live exports, credentials or deployment are part of the fixture tests.
+Test scope: synthetic fixtures; live exports pending.
 
 ## Concurrency and interrupted publication
 
@@ -43,7 +43,7 @@ An interrupted claim remains explicitly uncertain in health (`inFlightPublicatio
 3. Perform one token-matched recovery using `recoverCommentDelivery(receiptKey, token)` through an authorized administrative maintenance context. This helper is not exposed as an automatic or scheduled job. It changes only that still-publishing token's row: suppression requested → suppressed; otherwise → pending. A wrong/stale token is a no-op.
 4. Start/resume the worker. Current source and configuration are revalidated before any new claim. An eligible retry publishes the identical stored event, not a newly signed replacement. A relay may have accepted the earlier request even when its response was lost.
 
-This exceptional recovery requires verified termination; it is not a time-based lease reset. Normal known failures still retry automatically.
+Known failures retry automatically. Uncertain claims require the verified-termination recovery above.
 
 ### Native SQL parameter binding
 

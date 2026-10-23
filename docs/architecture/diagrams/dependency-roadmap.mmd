@@ -1,0 +1,22 @@
+flowchart LR
+ M1["Source + job adapter [P] · Drive readiness / durable native job"]
+ M2["Website server contract [P] · publication API / member ACL / readback"]
+ M3["Meeting acceptance [P] · source → transcript + notes → member URLs"]
+ G1["Engine export adapter [P] · consistent snapshot / artifact bytes"]
+ G2["Governance verifier [P] · canonical rules / completed vote example / network + action + packet binding"]
+ G3["Grant acceptance [P] · reviewed frozen packet / bound result / transactional acceptance"]
+ C1["Member authorization [P] · identity / project / capabilities / budgets"]
+ C2["PPC2 / Runner qualification [P] · isolation / lifecycle / scoped tools"]
+ C3["Member acceptance [P] · second contributor / validated output / denied out-of-scope action"]
+ Y1["Y2 contract + access [P] · interest / update / provenance"]
+ Y2["Watch adapter [P] · deduplicated issue / follow-up"]
+ Y3["Watch acceptance [P] · update → traceable native work"]
+ M1 -.-> M3
+ M2 -.-> M3
+ G1 -.-> G3
+ G2 -.-> G3
+ C1 -.-> C3
+ C2 -.-> C3
+ Y1 -.-> Y2
+ Y2 -.-> Y3
+ note["Shared prerequisite: configured Paperclip / database / authorized relay + identities / exact-artifact qualification"]

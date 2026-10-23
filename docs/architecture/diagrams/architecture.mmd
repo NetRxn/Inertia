@@ -1,0 +1,20 @@
+flowchart TB
+ B["Buzz [E] · conversation / transport data"]
+ PC["Paperclip [E] · agents / issues / runs / operational approvals / budgets / audit · PostgreSQL"]
+ D["Meet / Gemini → Drive [E] · original source + revision"]
+ G["Grant scanner / engine [E] · opportunity / draft / review authority"]
+ W["DAO portal [E] · organization-fact authority · PlanetScale PostgreSQL / Privy · API + member policy [P]"]
+ V["Vocdoni / DAO governance [E] · business-vote authority · verifier contract [P]"]
+ Y["Y2 [E] · watch contract [P]"]
+ subgraph Inertia[Inertia plugin · trusted host extension]
+ BR["Buzz bridge [I] · paired identity / inbox / outbox / dedup / reconcile · outbound comments default-off + audience acknowledgment"]
+ RT["Roundtable + publication client [I] · extractive transcript / notes / hashes / CAS"]
+ GR["Grant packet core [I] · immutable packet / artifact verification / injected ports"]
+ end
+ B <-->|Signed relay / NIP-98| BR
+ BR <-->|Native SDK · comment / accept-reject / receipts| PC
+ D -.->|Ingest P| RT
+ RT -.->|HTTP v1 P| W
+ G -.->|Export P| GR
+ GR -.->|Verify P| V
+ Y -.->|Watch → native issue P| PC

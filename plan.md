@@ -1,10 +1,10 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-23-r9
+Revision: INERTIA-2026-10-23-r10
 Updated: 2026-10-23 (UTC)
-Stage: PR 17 merged into develop; exact runtime archive native-qualified. Live deployment and domain admission remain pending.
+Status: implementation merged; live integration pending.
 
-> Agentic workers: use test-driven implementation in isolated feature branches, followed by focused independent review. The user has authorized autonomous engineering decisions and feature merges into develop while offline.
+Use test-driven implementation, isolated feature branches and independent review. Merge authorized changes into develop.
 
 **Goal:** Deliver a working signed Buzz ↔ native Paperclip interaction loop, then attach automatic meetings, grant/vote/Y2 and member contribution adapters.
 
@@ -15,34 +15,9 @@ Stage: PR 17 merged into develop; exact runtime archive native-qualified. Live d
 **Spec:** [spec.md](spec.md), particularly section 8. Tests and evidence: [testing.md](testing.md). Decisions: [decisions.md](decisions.md).
 
 
-## Implementation evidence at r9
+## Current baseline
 
-| Slice | State | Verified evidence | Next acceptance |
-|---|---|---|---|
-| Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
-| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
-| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR 14; deployed server/source/job admission pending |
-| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
-| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
-| Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
-| Historical native service qualification | Passed for its recorded pre-mirror artifact | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
-| Latest-release qualification | Merged into develop | [PR 11](https://github.com/NetRxn/Inertia/pull/11): official registry discovery, isolated exact-lock qualification, 12 focused tests plus actual 152 runtime tests/typecheck/production package verification | Qualify each new candidate with native/HTTP checks and tested database recovery before promotion |
-| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
-
-Merged baseline: develop `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`, 23 October 2026, through PR 17. PR 14 final verification passed 216 tests, typecheck and build; the original connected workflow and Roundtable demos remain explicitly synthetic. Earlier package/native/HTTP receipts qualify their recorded source baselines, not every later runtime change. No live website, cloud deployment or member integration has been admitted. PR 17 merged at 11:12:50 UTC from exact reviewed head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, with 248 passing combined tests. The merge preserves its reviewed source bytes. The qualified archive/source-tree hashes below remain the evidence identity; this documentation revision does not retroactively qualify a new artifact.
-
-## Overnight integration status
-
-- **Website caller implemented, live publication pending.** [PR 14](https://github.com/NetRxn/Inertia/pull/14) adds exact-body operation persistence, read-before-write reconciliation, CAS corrections, full audience/content readback, bounded HTTP and actionable authentication/rate-limit outcomes. The reviewed final suite passed 216 tests. These are mocked-I/O contract checks, not deployed website acceptance. The existing demos still use `pendingDaoPublisher`.
-- **Website contract remains proposed.** The [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md) and [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md) retain `roundtable-publication-v1` / `extractive-v1`. Metadata-only corrections are explicitly unsupported until a new versioned codec binds metadata. Website rollout, credentials, authorized Drive readiness and single-owner native job wiring remain admission gates.
-- **Cloud setup has a concrete handoff.** [PR 13](https://github.com/NetRxn/Inertia/pull/13) specifies one authenticated private Paperclip host, durable PostgreSQL and the existing Buzz service. Owner-approved target/origin, relay thread, native company/identity pairing and signing-secret reference are still required. No deployment, credentials or live call are implied by the plan.
-- **Public grant grounding is a review reference.** [PR 15](https://github.com/NetRxn/Inertia/pull/15) pins organization-published facts and provenance. It does not import applicant records or clear eligibility. Legal/tax claims need primary verification; conflicting constitutional and proposed governance rules need authenticated canonical holdings and ratification evidence.
-- **Native comment mirroring is merged and tested.** [PR 17](https://github.com/NetRxn/Inertia/pull/17), head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, passed 248 combined tests, typecheck/build and package verification. It merged into develop as `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`. First-publication mirroring is default-off and per-binding, with explicit `audienceAcknowledged` approval and `notBefore` history cutoff. It reuses the existing outbox/reconcile job. Delivered posts have no edit/delete propagation; suppression cannot retract uncertain prior relay acceptance. Non-expiring publication claims remain visible as `inFlightPublications`; exceptional token-matched recovery requires proving all prior workers stopped. General status mirroring remains future work.
-- **The exact candidate passed native-service qualification.** [Receipt and reproduction](docs/qualification/combined-native-services/README.md) bind archive SHA-256 `19e67c88a8de52404412e49312cebfd6db42c462de3378cf3397966250add76c` to source tree `8039b3e5f54e49c302b4751445f382403381ab91`: six migrations, eight tables, three job RPCs, expected disabled health, real SQL binding and clean shutdown against unmodified Paperclip 2026.1012.0/PostgreSQL 18.1. A host array-binding regression was found and fixed before this pass. This is native-service evidence, not full HTTP/UI or live integration qualification. Earlier HTTP evidence remains historical.
-- **Native CEO setup uses existing controls.** [PR 16](https://github.com/NetRxn/Inertia/pull/16) adds an operator checklist, not a bootstrap engine or live setup. Select the existing CEO by native ID and give it a bounded assigned intake issue. The shipped heartbeat does not discover arbitrary unassigned work. Use native run policy, budgets and hiring approvals; choose one native recurring mechanism rather than overlapping routine/heartbeat loops. Record the admitted run and delegated issue IDs during the authorized pilot.
-
-
+Develop `f9423e5`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Global constraints
 
@@ -97,7 +72,7 @@ Core contracts:
 - Durable storage: real namespaced plugin PostgreSQL queries, atomic claims and terminal transitions; no automatic repeat of an uncertain native mutation. Fair recovery scans and keyset outbox paging prevent old uncertainty from starving new work.
 - Evidence: PR 2 and PR 3 merged. The combined baseline passes 60 tests plus typecheck/build and fixture demonstration, as recorded in testing.md.
 
-The checklist below describes the remaining connected-plugin acceptance work. The connected implementation has merged in PR 4. Its reviewed checks are recorded below; domain and live integration acceptance continue separately.
+PR 4 completed the connected-plugin checks below. Domain and live acceptance continue separately.
 
 ## Completed connected loop: tasks 4–5
 
@@ -154,10 +129,6 @@ Oct 22–23: connected-plugin and Roundtable core merges, then domain adapter in
 
 Keep spec.md, testing.md, decisions.md, plan.md and editable Inertia-Architecture.pptx at one revision before publishing the synchronized set. Original overview PDF stays byte-identical. No PDF deck export required. A code task may merge independently with its tests while the artifact sync catches up, but do not claim the deck has been updated until rendered and checked.
 
-## Planner self-review
-
-The first executable covers signed transport, native identity/interaction authority, transport persistence, recovery and plugin packaging. Domain requirements remain explicitly assigned above, not claimed by fixture success. Interfaces share one verified event type and one host adapter; SQL and mutation ambiguity are tested rather than hidden by an exactly-once claim. All five review-focus failures map to task assertions. Live admission and private implementation material remain outside the public first-build deliverable.
-
 ## Organizational knowledge before grant drafting
 
 Connect authorized read access to the DAO website as part of deployment, then retrieve governance, formation and applicant evidence with citations and access labels. Use that source first rather than asking for a manual applicant fact sheet. Resolve only remaining gaps with the user. Keep restricted records in scoped storage and prevent publication or contributor access beyond their audience.
@@ -166,8 +137,10 @@ Connect authorized read access to the DAO website as part of deployment, then re
 
 The [members-only publication and authorized knowledge proposal](docs/integrations/dao-website-member-publication-proposal.md) specifies the website-side API, schema, membership checks, publication readback and grant-evidence retrieval contracts. It is a reviewed implementation proposal; the user owns website rollout.
 
-## Next bounded delivery gates
+## Next delivery gates
 
-PR 17 independent review, 248-test combined verification and exact native-service qualification are complete. Its exact reviewed head merged into develop as `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88` at 11:12:50 UTC. Keep the six-migration archive qualification tied to its recorded hash rather than extending it automatically to future builds. Use PR 16’s existing-CEO operator checklist for assigned intake and native run policy; live setup and general status mirroring are not implied features of comments. Refresh the archived package only through its existing verification flow. Publish all four Markdown documents and the editable deck together after final source reconciliation; update the existing website proposal identity with the complete v1.1 addendum. No PDF export, deployment or new credential is part of this synchronization.
-
-PR 17’s confirmed merge is reflected in this synchronized set. Recheck artifact hashes/links and publish the reviewed document/deck changes through a focused develop-only feature PR. Keep Library identities stable when delivering the synchronized set. No PDF export or live deployment is included.
+1. Complete website/server, source and native job acceptance.
+2. Configure the existing CEO with assigned intake, native run policy and budgets for an authorized pilot.
+3. Complete grant, member and Y2 adapters against the contracts above.
+4. Qualify each changed runtime archive through the package/native/HTTP workflow. Preserve its exact hash and receipts.
+5. Publish synchronized documents and diagrams after independent review.

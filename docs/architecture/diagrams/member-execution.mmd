@@ -1,0 +1,17 @@
+flowchart LR
+ subgraph T[Trusted host / DAO boundary]
+ A["Paperclip admission [E] · pairing / scope / capabilities / budgets / dependencies"]
+ B["Native checkout + Runner [E] · one owner / prepare / submit / reconcile / cleanup"]
+ E["Trusted validation / acceptance [P] · type / size / provenance / revision · one accepted completion"]
+ K["Publisher / submission credentials remain host-side"]
+ F["Follow-up: parent / reason / acceptance criteria / dedup key"]
+ end
+ subgraph M[Member-controlled execution boundary]
+ C["Member agent + PPC2 reuse [P] · qualified isolated workspace / scoped tools · no private vendor-code copy"]
+ D["Candidate contribution [P] · bytes / provenance / task revision"]
+ end
+ A -->|Admitted task| B
+ B -.->|Task-scoped data| C
+ C -.->|Execute| D
+ D -.->|Submit| E
+ E -.->|Accepted native state| B
