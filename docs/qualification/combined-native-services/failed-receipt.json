@@ -1,0 +1,28 @@
+{
+  "date": "2026-10-23",
+  "result": "failed",
+  "sourceTree": "61b24732da68bbed6e858dee25d6e8351ae6997f",
+  "artifactSha256": "0e7d2c2b945546316c18f0b8d2cc24810730033dca401517d225b9cc943aec11",
+  "hostPackage": "paperclipai@2026.1012.0",
+  "hostCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "node": "24.19.0",
+  "postgres": "18.1",
+  "pluginMigrationsApplied": 6,
+  "jobsRegistered": 3,
+  "namespaceTableCount": 8,
+  "workerInitialized": true,
+  "configValidation": {
+    "ok": true
+  },
+  "config": {
+    "enabled": false
+  },
+  "failure": "Disabled reconcile invokes deliveryHealth([]); official host array parameter expansion renders ANY(()::text[]), producing SQL error and unexpected attention-needed health. Job RPC resolves because reconcile catches the SQL error.",
+  "workerExitCode": 0,
+  "postgresStopped": true,
+  "lifecycleDisable": "not reached after health assertion failure",
+  "httpHostTested": false,
+  "liveIntegrationsUsed": false,
+  "hostPatched": false,
+  "hostMigrations": "applyPendingMigrations completed successfully on empty disposable database"
+}

@@ -1,26 +1,37 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-23-r8
+Revision: INERTIA-2026-10-23-r9
 Updated: 2026-10-23 (UTC)
-Stage: Connected rehearsal and native HTTP/API qualification passed; deployment and live domain adapters next.
+Stage: PR 17 merged into develop; exact runtime archive native-qualified. Live deployment and domain admission remain pending.
 
 
-## Implementation evidence at r8
+## Implementation evidence at r9
 
 | Slice | State | Verified evidence | Next acceptance |
 |---|---|---|---|
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Actual website publisher/readback and live source integration |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR 14; deployed server/source/job admission pending |
 | Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Production exporter, chain verifier and transactional native acceptance |
 | Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
 | Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
-| Native service qualification | Passed against pinned Paperclip services | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
+| Historical native service qualification | Passed for its recorded pre-mirror artifact | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
 | Latest-release qualification | Merged into develop | [PR 11](https://github.com/NetRxn/Inertia/pull/11): official registry discovery, isolated exact-lock qualification, 12 focused tests plus actual 152 runtime tests/typecheck/production package verification | Qualify each new candidate with native/HTTP checks and tested database recovery before promotion |
 | Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
 
-Merged baseline: develop `ec26c1b850e7937a9d5b1561c1a27b43d06394de`, 23 October 2026. Combined verification after PR 10: 152 tests, typecheck, build and five demos passed. Package/install qualification from PR 8 remains unchanged; the workflow demo is source-checkout-only. Fixture tests use real cryptography and SQL with substituted external I/O. Live setup and rehearsal remain on the delivery path.
+Merged baseline: develop `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`, 23 October 2026, through PR 17. PR 14 final verification passed 216 tests, typecheck and build; the original connected workflow and Roundtable demos remain explicitly synthetic. Earlier package/native/HTTP receipts qualify their recorded source baselines, not every later runtime change. No live website, cloud deployment or member integration has been admitted. PR 17 merged at 11:12:50 UTC from exact reviewed head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, with 248 passing combined tests. The merge preserves its reviewed source bytes. The qualified archive/source-tree hashes below remain the evidence identity; this documentation revision does not retroactively qualify a new artifact.
+
+## Overnight integration status
+
+- **Website caller implemented, live publication pending.** [PR 14](https://github.com/NetRxn/Inertia/pull/14) adds exact-body operation persistence, read-before-write reconciliation, CAS corrections, full audience/content readback, bounded HTTP and actionable authentication/rate-limit outcomes. The reviewed final suite passed 216 tests. These are mocked-I/O contract checks, not deployed website acceptance. The existing demos still use `pendingDaoPublisher`.
+- **Website contract remains proposed.** The [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md) and [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md) retain `roundtable-publication-v1` / `extractive-v1`. Metadata-only corrections are explicitly unsupported until a new versioned codec binds metadata. Website rollout, credentials, authorized Drive readiness and single-owner native job wiring remain admission gates.
+- **Cloud setup has a concrete handoff.** [PR 13](https://github.com/NetRxn/Inertia/pull/13) specifies one authenticated private Paperclip host, durable PostgreSQL and the existing Buzz service. Owner-approved target/origin, relay thread, native company/identity pairing and signing-secret reference are still required. No deployment, credentials or live call are implied by the plan.
+- **Public grant grounding is a review reference.** [PR 15](https://github.com/NetRxn/Inertia/pull/15) pins organization-published facts and provenance. It does not import applicant records or clear eligibility. Legal/tax claims need primary verification; conflicting constitutional and proposed governance rules need authenticated canonical holdings and ratification evidence.
+- **Native comment mirroring is merged and tested.** [PR 17](https://github.com/NetRxn/Inertia/pull/17), head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, passed 248 combined tests, typecheck/build and package verification. It merged into develop as `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`. First-publication mirroring is default-off and per-binding, with explicit `audienceAcknowledged` approval and `notBefore` history cutoff. It reuses the existing outbox/reconcile job. Delivered posts have no edit/delete propagation; suppression cannot retract uncertain prior relay acceptance. Non-expiring publication claims remain visible as `inFlightPublications`; exceptional token-matched recovery requires proving all prior workers stopped. General status mirroring remains future work.
+- **The exact candidate passed native-service qualification.** [Receipt and reproduction](docs/qualification/combined-native-services/README.md) bind archive SHA-256 `19e67c88a8de52404412e49312cebfd6db42c462de3378cf3397966250add76c` to source tree `8039b3e5f54e49c302b4751445f382403381ab91`: six migrations, eight tables, three job RPCs, expected disabled health, real SQL binding and clean shutdown against unmodified Paperclip 2026.1012.0/PostgreSQL 18.1. A host array-binding regression was found and fixed before this pass. This is native-service evidence, not full HTTP/UI or live integration qualification. Earlier HTTP evidence remains historical.
+- **Native CEO setup uses existing controls.** [PR 16](https://github.com/NetRxn/Inertia/pull/16) adds an operator checklist, not a bootstrap engine or live setup. Select the existing CEO by native ID and give it a bounded assigned intake issue. The shipped heartbeat does not discover arbitrary unassigned work. Use native run policy, budgets and hiring approvals; choose one native recurring mechanism rather than overlapping routine/heartbeat loops. Record the admitted run and delegated issue IDs during the authorized pilot.
+
 
 
 ## Reproducible connected walkthrough
@@ -48,7 +59,7 @@ Deploy Paperclip as part of Inertia and connect the existing target Buzz instanc
 
 Paperclip owns agent identity and hierarchy, goals, issues, dependencies, assignment, run admission, checkout, workflow state, decisions, documents, budgets and audit. Buzz carries authenticated requests and presents the same task and decision IDs. Domain adapters attach source-specific evidence to native objects.
 
-The CEO follows its native heartbeat: inspect goals, find actionable work, delegate, hire within configured policy, unblock agents, and report useful outcomes. Job acquisition is eager within each agent's authority, capabilities and budget. Follow-up tasks require a parent issue or goal, a concrete reason, acceptance criteria and a deduplication key. Dependencies express actual prerequisites; parent-child nesting alone does not enforce order.
+Configure the CEO with an explicitly assigned intake mandate and native heartbeat: inspect that assigned intake, delegate, hire within configured policy, unblock agents, and report useful outcomes. Native CEO behavior does not scan arbitrary unassigned work by default; an intake mandate must define its scope, authority and acceptance criteria. Job acquisition is eager within each agent's authority, capabilities and budget. Follow-up tasks require a parent issue or goal, a concrete reason, acceptance criteria and a deduplication key. Dependencies express actual prerequisites; parent-child nesting alone does not enforce order.
 
 A Buzz mention or workflow event must resolve to one Paperclip wake/issue operation. Disable overlapping autonomous schedulers for that work. A second UI must never maintain a competing approval or task ledger.
 
@@ -96,7 +107,7 @@ Selected first route: a bounded TypeScript plugin bridge using the pinned SDK's 
 
 Current DAO meeting actions verify a Privy login rather than active DAO membership. The required target is members-only portal publication, not public posting. Add and test explicit active-membership authorization and audience readback before publishing. Inertia supplies the website API/schema/contracts proposal; the user owns its rollout.
 
-Current core uses source-grounded extractive quotes. It rejects model-supplied owners and labels model classifications unverified. The actual website publisher/readback adapter remains the next integration step; the contracts below define the complete target.
+Current core uses source-grounded extractive quotes. It rejects model-supplied owners and labels model classifications unverified. The caller-side website publisher/readback adapter is merged and contract-tested. The website server contract remains proposed and source readiness, durable native job wiring and live admission are still pending; the contracts below define the complete target.
 
 - R-M01: Observe authorized ready Meet/Gemini outputs in organization Drive. Identify meeting, source file, source revision and content hash; preserve originals and provenance.
 - R-M02: Produce a faithful cleaned transcript separately from notes, decisions and action items. Preserve uncertainties and source links. A summary-only source yields notes and a missing-transcript exception, never an invented transcript.
@@ -104,6 +115,8 @@ Current core uses source-grounded extractive quotes. It rejects model-supplied o
 - R-M04: Read back content, URLs, version and audience. Deduplicate meeting/source versions, reconcile ambiguous writes, and version corrections. An exception becomes a native issue with actionable evidence.
 
 Action-item extraction proposes native work with explicit source references. Unassigned names or ambiguous commitments stay unresolved rather than fabricated. Keep meeting text out of logs where not needed; retrieved text is data, never an instruction to change permissions or execute arbitrary actions.
+
+The [public DAO integration map](docs/implementation/public-dao-integration-map.md) distinguishes existing meeting-mode scaffolding, the externally linked DeGov/Vocdoni service and proposed governance. Reuse verified interfaces and vocabulary without assuming deployed ballot support or ratified thresholds. Publication and motion approval remain separate workflows.
 
 ### Grants: R-G01–R-G04
 

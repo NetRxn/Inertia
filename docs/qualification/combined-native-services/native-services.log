@@ -1,0 +1,16 @@
+DISABLED_JOB_OK backfill-conversations
+DISABLED_JOB_OK retry-blocked-deliveries
+DISABLED_JOB_OK reconcile
+CONFIG_VALIDATION {"ok":true}
+HEALTH {"status":"degraded","details":{"connections":0,"pendingReceipts":0,"uncertainMutations":0,"blockedReceipts":0,"inFlightPublications":0,"oldestPendingAgeSeconds":0},"message":"Enable a company connection to begin."}
+MIGRATIONS [{"migration_key":"001_bridge.sql","status":"applied"},{"migration_key":"002_checkpoint.sql","status":"applied"},{"migration_key":"003_delivery_recovery.sql","status":"applied"},{"migration_key":"004_runtime_state.sql","status":"applied"},{"migration_key":"005_outbound_comments.sql","status":"applied"},{"migration_key":"006_publication_claim.sql","status":"applied"}]
+JOBS [{"job_key":"backfill-conversations"},{"job_key":"retry-blocked-deliveries"},{"job_key":"reconcile"}]
+CONFIG [{"config_json":{"enabled":false}}]
+TABLES [{"table_name":"bridge_bindings"},{"table_name":"bridge_cards"},{"table_name":"bridge_checkpoints"},{"table_name":"bridge_inbox"},{"table_name":"bridge_outbox"},{"table_name":"bridge_outbox_scopes"},{"table_name":"bridge_pairings"},{"table_name":"bridge_runtime"}]
+HOST_SQL_BINDING_ASSERTIONS_PASSED {"empty":true,"single":true,"multiple":true,"quotedId":true,"companyIsolation":true,"validationScanUpdates":true}
+[23:58:42] INFO: worker process stopped {"service":"plugin-worker","pluginId":"2bde4c1b-2c19-428b-a1e6-b89c68d65025","code":0,"signal":null}
+LIFECYCLE_DISABLED disabled
+QUALIFICATION_ASSERTIONS_PASSED
+[23:58:42] INFO: plugin-loader: all plugins shut down {"service":"plugin-loader"}
+waiting for server to shut down.... done
+server stopped
