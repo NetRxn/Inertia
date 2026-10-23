@@ -1,8 +1,8 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-23-r12
+Revision: INERTIA-2026-10-23-r13
 Updated: 2026-10-23 (UTC)
-Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
+Status: funding enhancement implementation authorized; benchmark in progress. Integrations below remain planned unless recorded as qualified.
 
 
 ## Qualification record
@@ -17,7 +17,7 @@ Status: design only; shared DAO data storage and native grant integration planne
 | HTTP/API | Historical pre-mirror source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`; candidate HTTP/auth/UI acceptance pending |
 | External services | Synthetic demo I/O; live website, Drive, grant/vote, member and Y2 acceptance pending |
 
-[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `85699551`.
+[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `1ac44a7a`.
 
 ### Historical slice evidence
 
@@ -210,3 +210,16 @@ Require default-off configuration, explicit audience approval per binding and st
 The [new receipt](docs/qualification/combined-native-services/native-services-receipt.json) records actual native installation and worker lifecycle for the exact candidate archive, six migrations/eight tables, three disabled-company job RPCs, expected disabled health, empty/single/multiple/quoted-ID SQL binding and company-isolation checks. The superseded artifact failed a real host array-binding check even though its reconcile RPC resolved; tests now assert health and actual database effects. The fixed candidate passed without modifying the official host. Retain the included lock as historical evaluation provenance, not a permanent release pin.
 
 Native-service success does not refresh the old full-HTTP receipt. Requalify actual HTTP/auth/UI and live adapters before deployment. Interrupted publishing claims never expire or get stolen on host RPC timeout: prove all prior workers stopped, then use a token-matched administrative recovery of the same stored signed event. Normal retries and retry-blocked never recover uncertain live claims automatically.
+
+## Funding enhancement qualification (planned)
+
+Detailed [acceptance matrix and scoring protocol](docs/development/funding-enhancement/testing.md) cover R-F01–07 and R-I01–04. The public-current benchmark is being implemented. No grant-quality improvement has been measured yet.
+
+- Separate synthetic contract tests, current public enrichment and exact historical July replay. Historical replay waits for the original inputs; cloud development continues independently.
+- Freeze sponsor requirements, evidence spans, expected genuine gaps and route ownership before scoring. Keep the full denominator; omitted answers and hidden gaps cannot inflate coverage.
+- Run deterministic schema/hash/numeric/scope checks separately from independent semantic review and adjudication. Report supported coverage, unsupported claims, avoidable human requests, correction time, cost and runtime versions.
+- Test draft-to-review hash binding, stale source rejection, transaction-safe human effects, authorization epochs, native revocation freshness and uncertain acknowledgment recovery.
+- Test knowledge admission, scope reuse, corrected minutes, QuickBooks period/basis/currency, ordered intake, withdrawal, audience narrowing and both objective/funding lookup directions.
+- Qualify Codex, Claude and one actual local runtime on the same frozen cases. Preserve legacy tool aliases and accepted state.
+
+DFW CI candidate: [PR 35](https://github.com/NetRxn/DFW-Gov-Fund/pull/35), head `a9e3283f0c3379d202ead47aa2d09093dcd91078`, passed [GitHub run 39987898544](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/39987898544), including full pytest/manifest, audit, build and migration checks. Merged into main at `ac483c309d1df84dec8a8106ec5f13860e080fc0`. This qualification covers the CI candidate, not the planned funding enhancements.

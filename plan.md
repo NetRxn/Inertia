@@ -1,10 +1,10 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-23-r12
+Revision: INERTIA-2026-10-23-r13
 Updated: 2026-10-23 (UTC)
-Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
+Status: funding enhancement implementation authorized; benchmark in progress. Integrations below remain planned unless recorded as qualified.
 
-Use test-driven implementation, isolated feature branches and independent review. Merge authorized changes into develop.
+Use test-driven implementation, isolated feature branches and independent review. Inertia feature branches target develop. DFW-Gov-Fund feature branches target main; apply repository-specific merge authorization.
 
 **Goal:** Deliver a working signed Buzz ↔ native Paperclip interaction loop, then attach automatic meetings, grant/vote/Y2 and member contribution adapters.
 
@@ -17,7 +17,7 @@ Use test-driven implementation, isolated feature branches and independent review
 
 ## Current baseline
 
-Develop `85699551`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `1ac44a7a`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Global constraints
 
@@ -150,3 +150,23 @@ The [members-only publication and authorized knowledge proposal](docs/integratio
 3. Complete grant, member and Y2 adapters against the contracts above.
 4. Qualify each changed runtime archive through the package/native/HTTP workflow. Preserve its exact hash and receipts.
 5. Publish synchronized documents and diagrams after independent review.
+
+## Funding enhancement execution
+
+The [detailed implementation plan](docs/development/funding-enhancement/plan.md) supplies exact files, contracts and acceptance commands. Autonomous cloud execution is authorized. Existing meeting publication, vote, member contribution and Y2 delivery continue in parallel.
+
+| Slice | Work | Current state |
+|---|---|---|
+| 0 | Essential CI, compatible dependency fixes and duplicate-run reduction | DFW PR35 qualified on GitHub; merged into main at `ac483c309d1df84dec8a8106ec5f13860e080fc0` |
+| 1 | Frozen public cases, independent gold review and reproducible scoring | Implementation in progress |
+| 2–3 | Substantive draft candidates and route-aware independent review | Planned; follows benchmark contracts |
+| 4 | Persistent bounded research and source coverage | Planned; can run alongside drafting |
+| 5 | Canonical skill, portable packaging, actual Codex/Claude/local qualification | Planned; follows stable proposal contracts |
+| 6 | Reusable DAO knowledge and sanitized financial snapshot contract | Planned |
+| 7 | Trusted native human decisions, revision/authorization checks and receipts | Planned; follows stable domain contracts |
+| 8 | General intake, durable objective/funding links and DAO meeting brief | Planned; uses knowledge and native mappings |
+| 9 | Current packet, meeting feedback and second-member rehearsal | Planned; requires integrated qualified slices |
+
+Source baseline: Inertia develop `1ac44a7a5c9d8e1376e2c358ee2888b16be58905`; DFW inspected main `859a9f5a7b88bbbdd6eda3cb9c453fb15184a045`, advanced by CI PR35 to `ac483c309d1df84dec8a8106ec5f13860e080fc0`. Refresh each base before implementation. Exact July artifacts are needed only for historical replay. Source access, actual reviewer roles, selected local runtime and website server admission are later integration inputs.
+
+Update the master artifacts and [design source map](docs/development/funding-enhancement/source-map.md) with measured results as each slice lands. No grant-quality gain is recorded at this revision.

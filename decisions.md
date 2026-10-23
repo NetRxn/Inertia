@@ -1,13 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-23-r12
+Revision: INERTIA-2026-10-23-r13
 Updated: 2026-10-23 (UTC)
-Status: design only; shared DAO data storage and native grant integration planned. Runtime unchanged.
+Status: funding enhancement implementation authorized; benchmark in progress. Integrations below remain planned unless recorded as qualified.
 
 
 ## Current baseline
 
-Develop `85699551`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `1ac44a7a`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Settled decisions
 
@@ -114,7 +114,20 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D44: Keep Drizzle responsible for DAO website/meeting tables and Alembic for funding tables, with non-overlapping schema scope and separate migration histories. No shared all-powerful application role or competing migration owner. See [consolidation plan](docs/development/dao-data-consolidation.md).
 - D45: Helix holds derived graph/vector projections, not authoritative facts, review state or approval authority. Preserve source IDs, versions and access restrictions; no new demo dependency without a demonstrated need.
 
+## Funding and objective delivery decisions
+
+- D46: Extend DFW-Gov-Fund's existing evidence, proposal and packet services. A case owner plus independent review coordinates six responsibility contracts, with specialist tasks on demand.
+- D47: Produce useful machine-reviewed candidates before human signoff. Preserve separate accepted facts and role-bound decisions. Researchable gaps stay with agents; members receive grouped decisions and unavailable private-data requests.
+- D48: Compile reusable organization/project/opportunity knowledge from source-backed minutes and existing evidence. Trusted admission controls current status, commitments and scope. QuickBooks supplies read-only financial snapshots.
+- D49: Every website innovation-bounty submission enters the general Paperclip queue. Keep versioned objective/funding links in the funding domain, separate from project status.
+- D50: Use one structured DAO opportunity brief across native documents and permitted portal/Buzz views. Separate application, delivery and reporting effort. Meeting outcomes update knowledge and follow-up work.
+- D51: Package a canonical portable skill for Codex, Claude and a named local runtime; qualify tool execution in each. Keep member evidence/proposal access separate from trusted human-review effects.
+- D52: Continue authorized implementation in cloud. Inertia feature branches target develop; DFW-Gov-Fund feature branches target main. Preserve review, required checks and repository-specific merge authorization.
+- D53: Measure against frozen requirements with independent semantic review and reproducible arithmetic. Keep historical replay separate from current public enrichment. CI candidate qualification precedes runtime qualification; no quality gain is recorded until measured.
+
 ## Change log
+
+- r13: Add funding quality, reusable meeting/financial knowledge, general objective intake, portable runtime contracts and staged implementation/evaluation. CI baseline merged; enhancement results pending.
 
 - r12: Consolidate DAO domain persistence by schema/role, retain separate Paperclip DB, and clarify eventual Helix projection and gated migration. Design only; runtime/qualification unchanged.
 - r11: Adopt native-first grant execution/review, scoped central/member harness and a planned trusted decision adapter. Runtime and qualification evidence unchanged.

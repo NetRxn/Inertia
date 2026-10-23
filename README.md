@@ -44,3 +44,5 @@ Merge reviewed feature branches into `develop`. Keep current artifacts synchroni
 ### One-command connected rehearsal
 
 Run `npm run demo:workflow` to follow one synthetic Roundtable-to-grant initiative through the existing cores, native confirmation bridge, and exact packet binding. The command prints a readable walkthrough and saves `runs/workflow-receipt.json`. See [live handoff contracts](docs/implementation/live-handoff-checklist.md) for adapter inputs, outputs, and the remaining connections.
+
+Funding enhancement: [specification](docs/development/funding-enhancement/spec.md), [execution plan](docs/development/funding-enhancement/plan.md), [acceptance tests](docs/development/funding-enhancement/testing.md) and [source map](docs/development/funding-enhancement/source-map.md). The plan adds general objective intake, reusable meeting/financial knowledge, independent review and portable agent execution.
