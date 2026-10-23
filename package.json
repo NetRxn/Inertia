@@ -36,6 +36,7 @@
     "migrations/*.sql",
     "docs/operations.md",
     "docs/bridge-state-contract.md",
+    "docs/native-comment-mirroring.md",
     "README.md",
     "LICENSE"
   ]

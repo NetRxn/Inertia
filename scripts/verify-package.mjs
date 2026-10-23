@@ -59,11 +59,14 @@ try {
     "dist/src/worker.js",
     "migrations/001_bridge.sql",
     "migrations/004_runtime_state.sql",
+    "migrations/005_outbound_comments.sql",
+    "migrations/006_publication_claim.sql",
+    "docs/native-comment-mirroring.md",
   ])
     assert(files.includes(required), `Missing runtime artifact: ${required}`);
   for (const file of files)
     assert(
-      /^(package\.json|README\.md|LICENSE|dist\/src\/.+\.(js|d\.ts)|migrations\/[^/]+\.sql|docs\/(operations|bridge-state-contract)\.md)$/.test(
+      /^(package\.json|README\.md|LICENSE|dist\/src\/.+\.(js|d\.ts)|migrations\/[^/]+\.sql|docs\/(operations|bridge-state-contract|native-comment-mirroring)\.md)$/.test(
         file,
       ),
       `Unexpected packaged file: ${file}`,

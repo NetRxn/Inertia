@@ -36,6 +36,7 @@ function trusted(
     cards = c.cards as DecisionCard[];
   return {
     relay,
+    companyId,
     bridgePubkey: c.bridgePubkey as string,
     bindings,
     pairings,
@@ -80,12 +81,23 @@ export function createPlugin() {
         let pending = 0,
           uncertain = 0,
           blocked = 0,
+          inFlightPublications = 0,
           oldestPendingAgeSeconds = 0;
         try {
           for (const company of await ctx.companies.list({ limit: 1000 })) {
             try {
               const config = await ctx.config.get(company.id);
-              if (config.enabled !== true) continue;
+              if (config.enabled !== true) {
+                // Disabling revokes unsent snapshots without resolving secrets or making HTTP calls.
+                const store = createBridgeStore(ctx.db);
+                for (const row of await store.listCommentValidation(company.id))
+                  await store.suppressOutbox(row.receiptKey);
+                // An old publisher remains actionable even after the connection is disabled.
+                const pendingClaims = await runtimeState(ctx.db,company.id,"").deliveryHealth([]);
+                inFlightPublications += pendingClaims.publishing ?? 0;
+                if (pendingClaims.publishing) degraded = true;
+                continue;
+              }
               enabled++;
               const cfg = trusted(config, company.id);
               const runtime = runtimeState(ctx.db, company.id, cfg.relay);
@@ -216,6 +228,7 @@ export function createPlugin() {
               pending += result.pending;
               uncertain += result.uncertain;
               blocked += result.blocked ?? 0;
+              inFlightPublications += result.inFlightPublications ?? 0;
               oldestPendingAgeSeconds = Math.max(
                 oldestPendingAgeSeconds,
                 result.oldestPendingAgeSeconds ?? 0,
@@ -231,12 +244,15 @@ export function createPlugin() {
               pendingReceipts: pending,
               uncertainMutations: uncertain,
               blockedReceipts: blocked,
+              inFlightPublications,
               oldestPendingAgeSeconds,
               ...(!degraded && enabled
                 ? { lastSuccessfulSync: new Date().toISOString() }
                 : {}),
             },
-            message: degraded
+            message: inFlightPublications
+              ? "Publication is in flight or interrupted. Verify the prior worker is stopped before targeted same-event recovery."
+              : degraded
               ? "Delivery or native outcome needs attention."
               : enabled
                 ? "Connected and up to date."

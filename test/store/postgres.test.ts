@@ -3,12 +3,12 @@ import { vi, beforeEach, afterEach, it, expect } from 'vitest';
 // startup slow; this fixture-only budget does not change application deadlines.
 vi.setConfig({ hookTimeout: 60000 });
 import { PGlite } from '@electric-sql/pglite';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import type { PluginDatabaseClient } from '@paperclipai/plugin-sdk';
 import { createBridgeStore, BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
 let pg: PGlite;
 let db: PluginDatabaseClient;
-beforeEach(async () => { pg = new PGlite(); await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`); await pg.exec(await readFile(new URL('../../migrations/001_bridge.sql', import.meta.url), 'utf8')); await pg.exec(await readFile(new URL('../../migrations/003_delivery_recovery.sql', import.meta.url), 'utf8')); db = { namespace: BRIDGE_NAMESPACE, query: async <T>(sql: string, params?: unknown[]) => (await pg.query<T>(sql, params)).rows, execute: async (sql, params) => ({ rowCount: (await pg.query(sql, params)).affectedRows ?? 0 }) }; });
+beforeEach(async () => { pg = new PGlite(); await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`); for (const file of (await readdir(new URL('../../migrations/', import.meta.url))).filter(x => x.endsWith('.sql')).sort()) await pg.exec(await readFile(new URL('../../migrations/' + file, import.meta.url), 'utf8')); db = { namespace: BRIDGE_NAMESPACE, query: async <T>(sql: string, params?: unknown[]) => (await pg.query<T>(sql, params)).rows, execute: async (sql, params) => ({ rowCount: (await pg.query(sql, params)).affectedRows ?? 0 }) }; });
 afterEach(async () => { await pg.close(); });
 const key = { relay: 'https://buzz.example', eventId: 'a'.repeat(64) };
 const input = { destination: { relay: key.relay, channelId: 'channel', rootId: 'root', companyId: 'co', issueId: 'issue' }, command: { kind: 'comment', body: 'hello' }, receiptKey: 'receipt-a' };

@@ -28,12 +28,14 @@ export interface OutboxRecord {
     event: unknown;
 }
 export interface OutboxReceipt extends OutboxRecord {
-    state: 'pending' | 'delivered' | 'blocked';
+    state: 'pending' | 'delivered' | 'blocked' | 'suppressed' | 'publishing';
+    publishToken: string | null;
+    suppressionRequested: boolean;
     createdAt: string | Date;
     updatedAt: string | Date;
 }
 const inboxFields = `relay, event_id AS "eventId", state, destination, command, receipt_key AS "receiptKey", outcome, created_at::text AS "createdAt", updated_at::text AS "updatedAt"`;
-const outboxFields = `receipt_key AS "receiptKey", relay, event_id AS "eventId", event, state, created_at::text AS "createdAt", updated_at::text AS "updatedAt"`;
+const outboxFields = `receipt_key AS "receiptKey", relay, event_id AS "eventId", event, state, publish_token AS "publishToken", suppression_requested AS "suppressionRequested", created_at::text AS "createdAt", updated_at::text AS "updatedAt"`;
 /** Only native ctx.db is injected. SQL is compatible with its restricted execute/query APIs. */
 export function createBridgeStore(hostDb: PluginDatabaseClient) {
     const db: PluginDatabaseClient = { namespace: hostDb.namespace,
@@ -61,6 +63,32 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
     const get = async (key: InboxKey) => (await db.query<InboxReceipt>(`SELECT ${inboxFields} FROM ${inbox} WHERE relay=$1 AND event_id=$2`, [key.relay, key.eventId]))[0] ?? null;
     return {
         get,
+        async getOutbox(receiptKey: string) {
+            return (await db.query<OutboxReceipt>(`SELECT ${outboxFields} FROM ${outbox} WHERE receipt_key=$1`, [receiptKey]))[0] ?? null;
+        },
+        async suppressOutbox(receiptKey: string) {
+            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN state='publishing' THEN 'publishing' ELSE 'suppressed' END,suppression_requested=true,updated_at=now() WHERE receipt_key=$1 AND state IN ('pending','blocked','publishing')`, [receiptKey])).rowCount === 1;
+        },
+        async claimCommentDelivery(receiptKey: string, token: string) {
+            return (await db.execute(`UPDATE ${outbox} SET state='publishing',publish_token=$2,updated_at=now() WHERE receipt_key=$1 AND receipt_key LIKE 'comment:%' AND state='pending' AND publish_token IS NULL AND suppression_requested=false AND (next_attempt_at IS NULL OR next_attempt_at<=now())`, [receiptKey,token])).rowCount === 1;
+        },
+        async finishCommentDelivery(receiptKey: string, token: string, state: 'pending' | 'blocked' | 'delivered', retryAfterMs = 0) {
+            if (!Number.isSafeInteger(retryAfterMs) || retryAfterMs < 0) throw Error('Invalid delivery retry delay.');
+            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN suppression_requested=true AND $3<>'delivered' THEN 'suppressed' ELSE $3 END,publish_token=NULL,next_attempt_at=CASE WHEN $4::double precision>0 THEN now()+($4::double precision * interval '1 millisecond') ELSE NULL END,updated_at=now() WHERE receipt_key=$1 AND state='publishing' AND publish_token=$2`, [receiptKey,token,state,retryAfterMs])).rowCount === 1;
+        },
+        /** Administrator recovery only AFTER verifying the prior worker is stopped. Never called by jobs. */
+        async recoverCommentDelivery(receiptKey: string, token: string) {
+            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN suppression_requested THEN 'suppressed' ELSE 'pending' END,publish_token=NULL,next_attempt_at=NULL,updated_at=now() WHERE receipt_key=$1 AND receipt_key LIKE 'comment:%' AND state='publishing' AND publish_token=$2`, [receiptKey,token])).rowCount === 1;
+        },
+        async listCommentValidation(companyId: string, limit = 100) {
+            if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw Error('Invalid validation batch limit.');
+            const rows = await db.query<OutboxReceipt>(`SELECT ${outboxFields} FROM ${outbox} WHERE receipt_key LIKE 'comment:%' AND state IN ('pending','blocked','publishing') AND receipt_key IN (SELECT receipt_key FROM ${table('bridge_outbox_scopes')} WHERE company_id=$1) ORDER BY COALESCE(validation_scanned_at,created_at),created_at,receipt_key LIMIT $2`, [companyId,limit]);
+            if (rows.length) await db.execute(`UPDATE ${outbox} SET validation_scanned_at=now() WHERE receipt_key IN (SELECT jsonb_array_elements_text($1::jsonb))`, [JSON.stringify(rows.map(row => row.receiptKey))]);
+            return rows;
+        },
+        async listCommentIngress(binding: Binding) {
+            return db.query<InboxReceipt>(`SELECT ${inboxFields} FROM ${inbox} WHERE relay=$1 AND destination->>'companyId'=$2 AND destination->>'issueId'=$3 AND command->>'kind'='comment' AND state IN ('applying','uncertain','applied')`, [binding.relay, binding.companyId, binding.issueId]);
+        },
         async claim(key: InboxKey, input: ClaimInput): Promise<'claimed' | InboxReceipt> {
             const result = await db.execute(`INSERT INTO ${inbox} (relay,event_id,state,destination,command,receipt_key) VALUES ($1,$2,'applying',$3::jsonb,$4::jsonb,$5) ON CONFLICT (relay,event_id) DO NOTHING`, [key.relay, key.eventId, JSON.stringify(input.destination), JSON.stringify(input.command), input.receiptKey]);
             if (result.rowCount === 1)

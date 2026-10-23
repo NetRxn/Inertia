@@ -1,4 +1,10 @@
+export interface OutboundComments {
+    enabled: boolean;
+    audienceAcknowledged: boolean;
+    notBefore: string;
+}
 export interface Binding {
+    outboundComments?: OutboundComments;
     relay: string;
     channelId: string;
     rootId: string;
@@ -21,6 +27,7 @@ export interface DecisionCard {
     digest: string;
 }
 export interface TrustedBridgeConfig {
+    companyId?: string;
     relay: string;
     bridgePubkey: string;
     bindings: readonly Binding[];
