@@ -1,6 +1,6 @@
 import type { Db } from '../db/client';
 import { members, loginTokens, sessions } from '../db/schema';
-import { eq, and, gte } from 'drizzle-orm';
+import { eq, and, gte, isNull } from 'drizzle-orm';
 import { randomBytes, createHash } from 'crypto';
 
 export interface Mailer {
@@ -66,38 +66,41 @@ export async function requestLoginLink(
     return;
   }
 
-  // Check rate limit: 5 per rolling hour
+  // Rate limit check and insert in transaction (atomic)
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const recentTokens = await db
-    .select()
-    .from(loginTokens)
-    .where(and(eq(loginTokens.memberId, member.id), gte(loginTokens.createdAt, oneHourAgo)));
-
-  if (recentTokens.length >= 5) {
-    // Rate limit exceeded, silently ignore
-    return;
-  }
-
-  // Generate token and hash
   const { token, hash } = generateToken();
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes
 
-  // Store the token hash
-  await db.insert(loginTokens).values({
-    memberId: member.id,
-    tokenHash: hash,
-    expiresAt,
-    createdAt: now,
-  });
+  await db.transaction(async (tx) => {
+    // Check rate limit: 5 per rolling hour
+    const recentTokens = await tx
+      .select()
+      .from(loginTokens)
+      .where(and(eq(loginTokens.memberId, member.id), gte(loginTokens.createdAt, oneHourAgo)));
 
-  // Send the login link
-  const url = `${opts.baseUrl}/auth/verify?token=${token}`;
-  await mailer.sendLoginLink(lowercaseEmail, url);
+    if (recentTokens.length >= 5) {
+      // Rate limit exceeded, silently ignore
+      return;
+    }
+
+    // Store the token hash
+    await tx.insert(loginTokens).values({
+      memberId: member.id,
+      tokenHash: hash,
+      expiresAt,
+      createdAt: now,
+    });
+
+    // Send the login link
+    const url = `${opts.baseUrl}/auth/verify?token=${token}`;
+    await mailer.sendLoginLink(lowercaseEmail, url);
+  });
 }
 
 /**
  * Consumes a login token and creates a session if valid.
  * Returns the session token on success, or an error reason on failure.
+ * Uses atomic UPDATE to ensure single-use tokens even under concurrency.
  */
 export async function consumeLoginToken(
   db: Db,
@@ -118,11 +121,6 @@ export async function consumeLoginToken(
     return { ok: false, reason: 'invalid' };
   }
 
-  // Check if already used
-  if (loginToken.usedAt) {
-    return { ok: false, reason: 'used' };
-  }
-
   // Check if expired
   if (loginToken.expiresAt < currentTime) {
     return { ok: false, reason: 'expired' };
@@ -139,8 +137,17 @@ export async function consumeLoginToken(
     return { ok: false, reason: 'inactive' };
   }
 
-  // Mark token as used
-  await db.update(loginTokens).set({ usedAt: currentTime }).where(eq(loginTokens.id, loginToken.id));
+  // Atomically mark token as used (race-safe)
+  const updatedRows = await db
+    .update(loginTokens)
+    .set({ usedAt: currentTime })
+    .where(and(eq(loginTokens.id, loginToken.id), isNull(loginTokens.usedAt)))
+    .returning();
+
+  if (updatedRows.length === 0) {
+    // Token was already used by another concurrent request
+    return { ok: false, reason: 'used' };
+  }
 
   // Create session
   const { token: sessionToken, hash: sessionHash } = generateToken();

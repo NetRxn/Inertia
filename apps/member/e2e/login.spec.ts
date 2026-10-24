@@ -20,8 +20,7 @@ test.describe('Login flow', () => {
     await page.click('button[type="submit"]');
 
     // Should see the same confirmation message
-    await expect(page.locator('text=Check your email')).toBeVisible();
-    await expect(page.locator(`text=${unknownEmail}`)).toBeVisible();
+    await expect(page.locator('text=Check your email for a sign-in link')).toBeVisible();
   });
 
   test('reused link shows the expired page', async ({ page }) => {

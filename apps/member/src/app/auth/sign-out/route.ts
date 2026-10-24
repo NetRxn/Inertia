@@ -13,24 +13,8 @@ export async function POST(request: NextRequest) {
     await signOut(db, sessionToken);
   }
 
-  // Clear the cookie
-  const response = NextResponse.json({ ok: true });
-  response.cookies.delete(getSessionCookieName());
-
-  return response;
-}
-
-export async function GET(request: NextRequest) {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(getSessionCookieName())?.value;
-
-  if (sessionToken) {
-    const db = getDb();
-    await signOut(db, sessionToken);
-  }
-
   // Clear the cookie and redirect
-  const response = NextResponse.redirect(new URL('/login', request.url));
+  const response = NextResponse.redirect(new URL('/login', request.url), { status: 303 });
   response.cookies.delete(getSessionCookieName());
 
   return response;

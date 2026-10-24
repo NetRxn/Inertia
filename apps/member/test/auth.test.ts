@@ -142,6 +142,31 @@ describe('consumeLoginToken', () => {
     expect(result2).toEqual({ ok: false, reason: 'used' });
   });
 
+  it('handles concurrent token consumption atomically', async () => {
+    // Request a login link
+    await requestLoginLink(db, 'rob@example.org', mailer, {
+      baseUrl: 'http://localhost:3000',
+      now: FIXTURE_NOW,
+    });
+
+    const url = new URL(mailer.calls[0].url);
+    const token = url.searchParams.get('token')!;
+
+    // Attempt to consume the token concurrently
+    const [result1, result2] = await Promise.all([
+      consumeLoginToken(db, token, FIXTURE_NOW),
+      consumeLoginToken(db, token, FIXTURE_NOW),
+    ]);
+
+    // Exactly one should succeed
+    const successCount = [result1, result2].filter((r) => r.ok).length;
+    expect(successCount).toBe(1);
+
+    // The other should fail with 'used'
+    const failCount = [result1, result2].filter((r) => !r.ok && r.reason === 'used').length;
+    expect(failCount).toBe(1);
+  });
+
   it('rejects a token after 15 minutes', async () => {
     await requestLoginLink(db, 'ana@example.org', mailer, {
       baseUrl: 'http://localhost:3000',

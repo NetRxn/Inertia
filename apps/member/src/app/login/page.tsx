@@ -33,10 +33,7 @@ export default function LoginPage() {
     return (
       <div className={styles.container}>
         <div className={styles.card}>
-          <h1 className={styles.title}>Check your email</h1>
-          <p className={styles.message}>
-            If an account exists for <strong>{email}</strong>, we&apos;ve sent you a sign-in link.
-          </p>
+          <p className={styles.message}>Check your email for a sign-in link.</p>
         </div>
       </div>
     );

@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { connection } from 'next/server';
 import { getDb } from '../db/client';
 import { getMemberForSession } from './auth';
 import type { members } from '../db/schema';
@@ -13,6 +14,7 @@ const SESSION_COOKIE_NAME = 'inertia_session';
  * Redirects to /login if there is no valid session.
  */
 export async function requireMember(): Promise<Member> {
+  await connection();
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 

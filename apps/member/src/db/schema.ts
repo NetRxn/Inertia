@@ -19,7 +19,7 @@ export const members = memberAppSchema.table('members', {
 export const loginTokens = memberAppSchema.table('loginTokens', {
   id: uuid('id').primaryKey().defaultRandom(),
   memberId: uuid('member_id').notNull().references(() => members.id, { onDelete: 'cascade' }),
-  tokenHash: text('token_hash').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
   usedAt: timestamp('used_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -28,7 +28,7 @@ export const loginTokens = memberAppSchema.table('loginTokens', {
 export const sessions = memberAppSchema.table('sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   memberId: uuid('member_id').notNull().references(() => members.id, { onDelete: 'cascade' }),
-  tokenHash: text('token_hash').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });

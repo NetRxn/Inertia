@@ -33,7 +33,8 @@ CREATE TABLE "member_app"."loginTokens" (
 	"token_hash" text NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"used_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "loginTokens_token_hash_unique" UNIQUE("token_hash")
 );
 --> statement-breakpoint
 CREATE TABLE "member_app"."members" (
@@ -63,7 +64,8 @@ CREATE TABLE "member_app"."sessions" (
 	"member_id" uuid NOT NULL,
 	"token_hash" text NOT NULL,
 	"expires_at" timestamp NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "sessions_token_hash_unique" UNIQUE("token_hash")
 );
 --> statement-breakpoint
 CREATE TABLE "member_app"."shares" (

@@ -1,12 +1,20 @@
 import { requireMember } from '../../identity/session';
+import { Suspense } from 'react';
 
-export default async function MemberLayout({
+async function AuthGuard({ children }: { children: React.ReactNode }) {
+  // This will redirect to /login if not authenticated
+  await requireMember();
+  return <>{children}</>;
+}
+
+export default function MemberLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // This will redirect to /login if not authenticated
-  await requireMember();
-
-  return <>{children}</>;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AuthGuard>{children}</AuthGuard>
+    </Suspense>
+  );
 }
