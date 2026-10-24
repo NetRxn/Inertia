@@ -215,3 +215,346 @@
 +    /** Restart full sweeps after every exhausted scan; UUID order is not commit order. */
 +    listAcceptances(db: Db, input: {companyId:string;afterId?:string|null;limit?:number}): Promise<{receipts:FundingAcceptanceReceipt[];nextCursor:string|null}>;
 +};
+--- a/dist/app.js
++++ b/dist/app.js
+@@ -339,6 +339,13 @@
+     };
+ }
+ export async function createApp(db, opts) {
++    // This capability is construction-time trusted host code, never config JSON.
++    const reviewInput = opts.fundingReviewTransport;
++    if (reviewInput !== undefined && (!reviewInput || reviewInput.db !== db
++        || typeof reviewInput.beforeBodyParser !== "function" || typeof reviewInput.router !== "function")) {
++        throw new Error("Invalid trusted funding review host composition or database ownership");
++    }
++    const reviewTransport = reviewInput === undefined ? undefined : Object.freeze({ ...reviewInput });
+     const app = express();
+     const staticUi = express.Router();
+     app.locals.paperclipDb = db;
+@@ -358,6 +365,9 @@
+     // Default is unset → Express trusts nothing, which is the only safe choice
+     // when the server may be reachable without a known reverse proxy in front.
+     applyTrustProxy(app, parseTrustProxyEnv(process.env.TRUST_PROXY));
++    // Only a bodyless framing rejection runs before parsers. Authentication and
++    // receipt access remain after every stock hostname/cloud/standby gate.
++    if (reviewTransport) app.use("/api/funding-review-transport", reviewTransport.beforeBodyParser);
+     app.use(COMPANY_IMPORT_API_PATH, express.json({
+         limit: PORTABLE_JSON_BODY_LIMIT,
+         verify: captureRawBody,
+@@ -411,6 +421,7 @@
+     // REPLACES whatever actor the request otherwise resolved to, and only on
+     // the one endpoint it authorizes (see the middleware for the contract).
+     app.use(cloudControlMiddleware());
++    if (reviewTransport) app.use("/api/funding-review-transport", reviewTransport.router);
+     app.use("/api/auth", authRoutes(db));
+     if (opts.betterAuthHandler) {
+         app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
+@@ -714,6 +725,11 @@
+             const services = buildHostServices(db, pluginId, manifest.id, eventBus, notifyWorker, {
+                 pluginWorkerManager: workerManager,
+                 manifest,
++                // Scope the bound to this opt-in owning-host composition only.
++                // Worker-sent init/config fields cannot change these limits.
++                httpLimits: reviewTransport && manifest.id === "netrxn.inertia"
++                    ? { maxRequestBytes: 8192, maxResponseBytes: 1024 * 1024, timeoutMs: 15000 }
++                    : undefined,
+             });
+             hostServicesDisposers.set(pluginId, () => services.dispose());
+             return createHostClientHandlers({
+--- a/dist/app.d.ts
++++ b/dist/app.d.ts
+@@ -52,6 +52,12 @@
+ }) => Promise<boolean>;
+ export declare function createApp(db: Db, opts: {
+     cloudWarmStandby?: CloudWarmStandby;
++    /** Trusted construction-time capability; absent by default. Never config JSON. */
++    fundingReviewTransport?: {
++        db: Db;
++        beforeBodyParser: express.RequestHandler;
++        router: express.Router;
++    };
+     uiMode: UiMode;
+     serverPort: number;
+     storageService: StorageService;
+--- a/dist/services/plugin-host-services.js
++++ b/dist/services/plugin-host-services.js
+@@ -87,7 +87,8 @@
+         return true;
+     return false;
+ }
+-async function validateAndResolveFetchUrl(urlString) {
++async function validateAndResolveFetchUrl(urlString, signal) {
++    signal?.throwIfAborted();
+     let parsed;
+     try {
+         parsed = new URL(urlString);
+@@ -106,11 +107,19 @@
+     // Race the DNS lookup against a timeout to prevent indefinite hangs
+     // when DNS is misconfigured or unresponsive.
+     const dnsPromise = dnsLookup(originalHostname, { all: true });
++    let dnsTimer;
++    let onAbort;
+     const timeoutPromise = new Promise((_, reject) => {
+-        setTimeout(() => reject(new Error(`DNS lookup timed out after ${DNS_LOOKUP_TIMEOUT_MS}ms for ${originalHostname}`)), DNS_LOOKUP_TIMEOUT_MS);
++        dnsTimer = setTimeout(() => reject(new Error(`DNS lookup timed out after ${DNS_LOOKUP_TIMEOUT_MS}ms for ${originalHostname}`)), DNS_LOOKUP_TIMEOUT_MS);
++    });
++    const abortPromise = new Promise((_, reject) => {
++        onAbort = () => reject(new Error("Plugin HTTP deadline exceeded"));
++        signal?.addEventListener("abort", onAbort, { once: true });
++        if (signal?.aborted) onAbort();
+     });
+     try {
+-        const results = await Promise.race([dnsPromise, timeoutPromise]);
++        const results = await Promise.race([dnsPromise, timeoutPromise, abortPromise]);
++        signal?.throwIfAborted();
+         if (results.length === 0) {
+             throw new Error(`DNS resolution returned no results for ${originalHostname}`);
+         }
+@@ -133,12 +142,17 @@
+         };
+     }
+     catch (err) {
++        if (signal?.aborted) throw new Error("Plugin HTTP deadline exceeded");
+         // Re-throw our own errors; wrap DNS failures
+         if (err instanceof Error && (err.message.startsWith("All resolved IPs") ||
+             err.message.startsWith("DNS resolution returned") ||
+             err.message.startsWith("DNS lookup timed out")))
+             throw err;
+         throw new Error(`DNS resolution failed for ${originalHostname}: ${err.message}`);
++    }
++    finally {
++        clearTimeout(dnsTimer);
++        signal?.removeEventListener("abort", onAbort);
+     }
+ }
+ function buildPinnedRequestOptions(target, init) {
+@@ -175,49 +189,140 @@
+         body,
+     };
+ }
+-async function executePinnedHttpRequest(target, init, signal) {
++/** Optional limits are trusted construction-time host policy, never RPC input. */
++function snapshotPluginHttpLimits(limits) {
++    if (limits === undefined) return undefined;
++    if (!limits || Object.keys(limits).sort().join(",") !== "maxRequestBytes,maxResponseBytes,timeoutMs"
++        || !Number.isSafeInteger(limits.maxRequestBytes) || limits.maxRequestBytes < 1 || limits.maxRequestBytes > 1024 * 1024
++        || !Number.isSafeInteger(limits.maxResponseBytes) || limits.maxResponseBytes < 1 || limits.maxResponseBytes > 1024 * 1024
++        || !Number.isSafeInteger(limits.timeoutMs) || limits.timeoutMs < 1 || limits.timeoutMs > PLUGIN_FETCH_TIMEOUT_MS) {
++        throw new Error("Invalid trusted plugin HTTP limits");
++    }
++    return Object.freeze({ ...limits });
++}
++function assertPluginHttpRequestBound(params, limit) {
++    if (typeof params.url !== "string" || params.url.length > limit) throw new Error("Plugin HTTP request limit exceeded");
++    // Count before constructing Headers, coercing a body, resolving DNS, or
++    // allocating a socket. Reserve native request-line/default-header overhead.
++    let bytes = Buffer.byteLength(params.url) + 512;
++    const add = value => {
++        if (typeof value !== "string" || value.length > limit) throw new Error("Plugin HTTP request limit exceeded");
++        bytes += Buffer.byteLength(value);
++        if (bytes > limit) throw new Error("Plugin HTTP request limit exceeded");
++    };
++    add(params.init?.method ?? "GET");
++    if (params.init?.body != null) add(params.init.body);
++    const addHeader = (key, value) => {
++        add(key); add(value); bytes += 4;
++        if (key.toLowerCase() === "content-length" && (!/^[0-9]+$/.test(value) || Number(value) > limit)) {
++            throw new Error("Plugin HTTP request limit exceeded");
++        }
++    };
++    const headers = params.init?.headers;
++    if (headers instanceof Headers || Array.isArray(headers)) {
++        for (const [key, value] of headers) addHeader(key, value);
++    } else if (headers != null) {
++        if (typeof headers !== "object") throw new Error("Plugin HTTP request limit exceeded");
++        for (const key in headers) {
++            if (Object.hasOwn(headers, key)) addHeader(key, headers[key]);
++        }
++    }
++    if (bytes > limit) throw new Error("Plugin HTTP request limit exceeded");
++    // The raw guard bounds normalization work, but raw Unicode bytes are not
++    // request-target bytes. Reuse the actual native builder before DNS/socket
++    // allocation, including its normalized path/query and generated metadata.
++    const parsedUrl = new URL(params.url);
++    const { options, body } = buildPinnedRequestOptions({
++        parsedUrl, hostHeader: parsedUrl.host, useTls: parsedUrl.protocol === "https:",
++    }, params.init);
++    let nativeBytes = Buffer.byteLength(`${options.method} ${options.path} HTTP/1.1\r\n`) + 2 + 512;
++    for (const [key, value] of Object.entries(options.headers)) {
++        if (key === "authorization" && options.auth && !value) continue;
++        nativeBytes += Buffer.byteLength(key) + Buffer.byteLength(value) + 4;
++    }
++    if (options.auth && !options.headers.authorization) {
++        // Node creates Basic authorization from UTF-8 auth when no header exists.
++        nativeBytes += 23 + 4 * Math.ceil(Buffer.byteLength(options.auth) / 3);
++    }
++    if (body !== undefined) nativeBytes += Buffer.byteLength(body);
++    if (nativeBytes > limit) throw new Error("Plugin HTTP request limit exceeded");
++}
++async function executePinnedHttpRequest(target, init, signal, limits) {
+     const { options, body } = buildPinnedRequestOptions(target, init);
+-    const response = await new Promise((resolve, reject) => {
++    const maxBytes = limits?.maxResponseBytes ?? 200 * 1024 * 1024;
++    return new Promise((resolve, reject) => {
+         const requestFn = target.useTls ? httpsRequest : httpRequest;
+-        const req = requestFn({ ...options, signal }, resolve);
+-        req.on("error", reject);
+-        if (body !== undefined) {
+-            req.write(body);
+-        }
++        let response;
++        let settled = false;
++        const chunks = [];
++        let boundedBody;
++        let totalBytes = 0;
++        const fail = error => {
++            if (settled) return;
++            settled = true;
++            chunks.length = 0;
++            boundedBody = undefined;
++            response?.destroy();
++            req.destroy();
++            reject(error);
++        };
++        const req = requestFn({ ...options, signal, ...(limits ? { maxHeaderSize: 8192 } : {}) }, incoming => {
++            response = incoming;
++            response.on("error", fail);
++            response.on("aborted", () => fail(new Error("Plugin HTTP response aborted")));
++            response.on("close", () => { if (!settled) fail(new Error("Plugin HTTP response incomplete")); });
++            if (limits) {
++                const declared = response.headers["content-length"];
++                if (declared !== undefined && (typeof declared !== "string" || !/^[0-9]+$/.test(declared) || Number(declared) > maxBytes)) {
++                    fail(new Error("Plugin HTTP response limit exceeded"));
++                    return;
++                }
++                const encoding = response.headers["content-encoding"];
++                if (encoding !== undefined && (typeof encoding !== "string" || encoding.trim().toLowerCase() !== "identity")) {
++                    fail(new Error("Plugin HTTP response encoding rejected"));
++                    return;
++                }
++            }
++            // Fixed storage for the opt-in bound also avoids a tiny-chunk array
++            // growing to one allocation/reference per response byte.
++            if (limits) boundedBody = Buffer.allocUnsafe(maxBytes);
++            response.on("data", chunk => {
++                if (settled) return;
++                const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
++                if (buf.length > maxBytes - totalBytes) {
++                    fail(new Error("Plugin HTTP response limit exceeded"));
++                    return;
++                }
++                if (boundedBody) buf.copy(boundedBody, totalBytes);
++                else chunks.push(buf);
++                totalBytes += buf.length;
++            });
++            response.on("end", () => {
++                if (settled) return;
++                let text;
++                try {
++                    const bytes = boundedBody ? boundedBody.subarray(0, totalBytes) : Buffer.concat(chunks, totalBytes);
++                    text = limits ? new TextDecoder("utf-8", { fatal: true }).decode(bytes) : bytes.toString("utf8");
++                } catch {
++                    fail(new Error("Plugin HTTP response UTF-8 encoding rejected"));
++                    return;
++                }
++                boundedBody = undefined;
++                chunks.length = 0;
++                settled = true;
++                const headers = {};
++                for (const [key, value] of Object.entries(response.headers)) {
++                    if (Array.isArray(value)) headers[key] = value.join(", ");
++                    else if (value !== undefined) headers[key] = value;
++                }
++                resolve({status: response.statusCode ?? 500, statusText: response.statusMessage ?? "", headers,
++                    body: text});
++            });
++        });
++        req.on("error", fail);
++        if (body !== undefined) req.write(body);
+         req.end();
+     });
+-    const MAX_RESPONSE_BODY_BYTES = 200 * 1024 * 1024; // 200 MB
+-    const chunks = [];
+-    let totalBytes = 0;
+-    await new Promise((resolve, reject) => {
+-        response.on("data", (chunk) => {
+-            const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+-            totalBytes += buf.length;
+-            if (totalBytes > MAX_RESPONSE_BODY_BYTES) {
+-                chunks.length = 0;
+-                response.destroy(new Error(`Response body exceeded ${MAX_RESPONSE_BODY_BYTES} bytes`));
+-                return;
+-            }
+-            chunks.push(buf);
+-        });
+-        response.on("end", resolve);
+-        response.on("error", reject);
+-    });
+-    const headers = {};
+-    for (const [key, value] of Object.entries(response.headers)) {
+-        if (Array.isArray(value)) {
+-            headers[key] = value.join(", ");
+-        }
+-        else if (value !== undefined) {
+-            headers[key] = value;
+-        }
+-    }
+-    return {
+-        status: response.statusCode ?? 500,
+-        statusText: response.statusMessage ?? "",
+-        headers,
+-        body: Buffer.concat(chunks).toString("utf8"),
+-    };
+ }
+ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ const PATH_LIKE_PATTERN = /[\\/]/;
+@@ -550,6 +655,7 @@
+     });
+ }
+ export function buildHostServices(db, pluginId, pluginKey, eventBus, notifyWorker, options = {}) {
++    const httpLimits = snapshotPluginHttpLimits(options.httpLimits);
+     const registry = pluginRegistryService(db);
+     const stateStore = pluginStateStore(db);
+     const pluginDb = pluginDatabaseService(db);
+@@ -1317,12 +1423,17 @@
+             async fetch(params) {
+                 // SSRF protection: validate protocol whitelist + block private IPs.
+                 // Resolve once, then connect directly to that IP to prevent DNS rebinding.
+-                const target = await validateAndResolveFetchUrl(params.url);
++                if (httpLimits) assertPluginHttpRequestBound(params, httpLimits.maxRequestBytes);
++                // An opt-in bound includes DNS and the entire socket operation.
++                // Default plugins retain their existing DNS + socket budgets.
+                 const controller = new AbortController();
+-                const timeout = setTimeout(() => controller.abort(), PLUGIN_FETCH_TIMEOUT_MS);
++                let timeout;
++                if (httpLimits) timeout = setTimeout(() => controller.abort(), httpLimits.timeoutMs);
+                 try {
+-                    const init = params.init;
+-                    return await executePinnedHttpRequest(target, init, controller.signal);
++                    const target = await validateAndResolveFetchUrl(params.url, httpLimits ? controller.signal : undefined);
++                    controller.signal.throwIfAborted();
++                    if (!httpLimits) timeout = setTimeout(() => controller.abort(), PLUGIN_FETCH_TIMEOUT_MS);
++                    return await executePinnedHttpRequest(target, params.init, controller.signal, httpLimits);
+                 }
+                 finally {
+                     clearTimeout(timeout);
+--- a/dist/services/plugin-host-services.d.ts
++++ b/dist/services/plugin-host-services.d.ts
+@@ -44,10 +44,17 @@
+     startTimeMs?: unknown;
+     endTimeMs?: unknown;
+ }, context: WorkerHostCallContext | undefined): void;
++/** Trusted construction-time limits, snapshotted before plugin code runs. */
++export interface PluginHttpLimits {
++    maxRequestBytes: number;
++    maxResponseBytes: number;
++    timeoutMs: number;
++}
+ export declare function buildHostServices(db: Db, pluginId: string, pluginKey: string, eventBus: PluginEventBus, notifyWorker?: (method: string, params: unknown) => void, options?: {
+     pluginWorkerManager?: PluginWorkerManager;
+     manifest?: import("@paperclipai/shared").PaperclipPluginManifestV1;
+     heartbeatRuntimeEnv?: Record<string, string | undefined>;
++    httpLimits?: PluginHttpLimits;
+ }): HostServices & {
+     dispose(): void;
+ };

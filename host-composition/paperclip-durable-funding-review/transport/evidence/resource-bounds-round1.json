@@ -1,0 +1,40 @@
+{
+  "reviewBaseCommit": "206315bb7d1957feb63fa479d504268ec4aa9233",
+  "correction": "R1: validate normalized native HTTP request bytes before DNS/socket allocation, not only raw URL bytes",
+  "productionActivated": false,
+  "scope": [
+    "Retain a cheap raw-input guard before URL/header processing.",
+    "Reuse the existing native request builder to measure normalized pathname/search, request-line framing, generated Host/content-length/Basic authorization metadata, body and the existing metadata reserve.",
+    "Leave original DNS/IP pinning, private-address, redirect, TLS, response, deadline and default-host behavior unchanged."
+  ],
+  "regressions": [
+    "A 4,023-byte raw Unicode URL normalizes to a 12,001-byte request target and is rejected before DNS/socket allocation.",
+    "A boundary-valid ASCII request is admitted; one additional normalized request byte is rejected.",
+    "Small Unicode and already-encoded URLs preserve the same native request target.",
+    "Generated Basic metadata is counted, including native replacement of an empty Authorization header.",
+    "Default hosts do not acquire the optional request bound."
+  ],
+  "passed": {
+    "resourceTests": 17,
+    "nativeRoutesAndOwningHost": 15,
+    "reconcilerAndResourceTests": 31,
+    "nativeCapturePostgres": 36,
+    "strictConsumerTypecheck": "passed with the existing skipLibCheck qualification limit",
+    "coldLockedInstallAndZeroFuzzBootstrap": "passed with all eight exact pinned files",
+    "coldResourceTests": 17,
+    "coldDriftPartialRejectionAndIdempotence": "passed before any writes on rejected inputs",
+    "packagedUpstreamInteractionRegression": 13,
+    "package": "123 production-only runtime files; private and host-composition files excluded"
+  },
+  "lineage": {
+    "originalCandidateAndReviewPackagePreserved": true,
+    "originalUpstreamFingerprintsPreserved": 8,
+    "changedNativeFunctionOnly": "assertPluginHttpRequestBound"
+  },
+  "unchangedLimitations": [
+    "Full native activity-row allocation remains a separate gate.",
+    "The 1 MiB raw response bound is not a total RPC/process-memory bound.",
+    "Synthetic latency does not qualify arbitrary production lifecycle callbacks.",
+    "This correction does not grant capabilities, schedule work or activate production."
+  ]
+}

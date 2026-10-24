@@ -9,3 +9,16 @@ issueThreadInteractionService(db,{captureItemVerdictsInTransaction:capture.captu
 const receipt=capture.readAcceptance(db,'00000000-0000-4000-8000-000000000000');
 const scan=capture.listAcceptances(db,{companyId:binding.companyId,limit:100});
 void [receipt,scan];
+
+import {buildHostServices} from '../node_modules/@paperclipai/server/dist/services/plugin-host-services.js';
+import {createPluginEventBus} from '../node_modules/@paperclipai/server/dist/services/plugin-event-bus.js';
+import {createApp} from '../node_modules/@paperclipai/server/dist/app.js';
+declare const appOptions: Parameters<typeof createApp>[1];
+buildHostServices(db, 'synthetic', 'netrxn.inertia', createPluginEventBus(), undefined,
+  {httpLimits: {maxRequestBytes: 8192, maxResponseBytes: 1048576, timeoutMs: 15000}});
+declare const transportCapability: NonNullable<Parameters<typeof createApp>[1]['fundingReviewTransport']>;
+createApp(db, {...appOptions, fundingReviewTransport: transportCapability});
+// @ts-expect-error A bare database reference cannot install trusted route/parser capabilities.
+createApp(db, {...appOptions, fundingReviewTransport: {db}});
+// @ts-expect-error HTTP limits are numeric trusted host options, not a plugin config flag.
+buildHostServices(db, 'synthetic', 'netrxn.inertia', createPluginEventBus(), undefined, {httpLimits: true});

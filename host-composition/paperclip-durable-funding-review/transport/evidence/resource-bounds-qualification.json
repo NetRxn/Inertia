@@ -1,0 +1,80 @@
+{
+  "status": "qualified source candidate on verified merged develop content; independent review required",
+  "productionActivated": false,
+  "sourceBaseCommit": "7c191711cfd87f1e3a10b36d862c530c385feeb6",
+  "sourceBaseTree": "d1537a818dd4ef835e3268dff6648c03c42a902d",
+  "upstreamPackage": "2026.1012.0",
+  "upstreamBuildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "checks": {
+    "rootTests": "566 passed in 45 files",
+    "rootTypecheck": "passed",
+    "rootBuild": "passed",
+    "nativeCapturePostgres": "36 passed",
+    "nativeRoutesAndOwningHost": "15 passed",
+    "reconcilerAndActualHostSdkRpcBounds": "27 passed",
+    "nativeLauncherSafety": "5 passed",
+    "packagedUpstreamInteractionRegression": "13 passed",
+    "strictConsumerDeclarations": "passed with skipLibCheck, matching the qualified dependency installation; full upstream type workspace not supplied",
+    "coldLockedInstall": "passed offline with scripts disabled",
+    "coldEightFileZeroFuzzBootstrap": "passed",
+    "coldNativeCapturePostgres": "36 passed",
+    "coldRoutesAndOwningHost": "15 passed",
+    "coldReconcilerAndResourceBounds": "27 passed",
+    "coldConsumerDeclarations": "passed",
+    "bootstrapDriftAndPartialRejection": "passed before any file mutation; idempotent exact candidate passed",
+    "package": "passed: 123 production-only runtime files; private and host-composition files excluded"
+  },
+  "nativeManualFixture": {
+    "actualNativeCapture": true,
+    "actualSpawnedWorkerAndSdk": true,
+    "actualPostgresStateAndJobStore": true,
+    "recurringSchedule": false,
+    "nonManualInvocationRejected": true,
+    "requestsPerInvocation": 5,
+    "committedResponseLossAndTerminalReadback": true,
+    "terminalOnlyIdempotentSyntheticAcknowledgement": true,
+    "nativeStateDeleteAndWorkerRestart": true,
+    "syntheticOperationDelayMilliseconds": 10,
+    "observedJobDurationMilliseconds": [
+      171,
+      176
+    ],
+    "nativeJobTimeoutMilliseconds": 300000,
+    "productionCallbackLatencyGuarantee": false
+  },
+  "bounds": {
+    "requestBytesBeforeSdkHttpRpc": 8192,
+    "requestAndNativeResponseHeaderParserBytes": 8192,
+    "rawResponseBodyBytes": 1048576,
+    "absoluteDnsAndSocketMilliseconds": 15000,
+    "rpcEncoding": "bounded JSON escaping overhead, not a 1 MiB whole-RPC claim",
+    "fixedResponseStorage": true,
+    "compressionAndInvalidUtf8Rejected": true,
+    "unchangedPolicies": [
+      "resolved IP pinning",
+      "private target restriction",
+      "single-request redirect behavior",
+      "native TLS verification"
+    ]
+  },
+  "redToGreen": [
+    "actual pinned host declared/chunked/request/timeout/compression limits",
+    "pre-SDK HTTP request metadata cap",
+    "invalid UTF-8 and response-header cap",
+    "default-disabled owning-host assembly and manual worker-local registration",
+    "actual native NOT NULL cursor reset failure corrected with existing state.delete; bounded JSON marker for get/set-only adapters"
+  ],
+  "remainingGates": [
+    "Full native activity rows materialize before validation; trusted binding strings and arrays lack per-row byte caps. Page/reason/response caps are not total source allocation bounds.",
+    "The optional outbound caps are plugin-wide only while the trusted Inertia owning-host composition is explicitly enabled. Qualify other enabled plugin uses.",
+    "Native exact company access and state/http/secret capabilities must already be approved; no grants or manifest expansion supplied.",
+    "Production approved lifecycle/retention, writer policy, network reachability, scheduling decision and real authenticated human walkthrough remain.",
+    "No live keys, credentials, services, production settings, archival or deployment were changed.",
+    "Cross-domain functional rehearsals and production integration are separate from the synthetic SDK/network-edge resource fixtures."
+  ],
+  "baseReconciliation": {
+    "reviewedFixturePathsPreserved": 4,
+    "originalPostgresLauncherExecutableModePreserved": true,
+    "ownSourceChangesOnlyInQualifiedHostSubtree": true
+  }
+}
