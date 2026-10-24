@@ -1,0 +1,45 @@
+✖ actual native verdict transaction calls trusted capture and commits its activity atomically (85.017889ms)
+✖ capture failure rolls back actual native verdict transaction (22.937713ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2548.448063
+
+✖ failing tests:
+
+test at tests/native-hook.test.mjs:9:1
+✖ actual native verdict transaction calls trusted capture and commits its activity atomically (85.017889ms)
+  AssertionError [ERR_ASSERTION]: native transaction must persist exactly one capture
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/native-hook.test.mjs:18:9)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/native-hook.test.mjs:21:1
+✖ capture failure rolls back actual native verdict transaction (22.937713ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/native-hook.test.mjs:24:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /capture refused/,
+    operator: 'rejects',
+    diff: 'simple'
+  }

@@ -1,0 +1,11 @@
+
+ RUN  v4.0.18 /workspace/shared/native-durable-capture-20261024
+
+ ✓ host/node_modules/@paperclipai/server/dist/services/issue-thread-interactions.test.js (13 tests) 1887ms
+     ✓ resolves ask_user_questions requested/default/cap policy snapshots  1863ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  19:18:18
+   Duration  2.27s (transform 3ms, setup 0ms, import 194ms, tests 1.89s, environment 0ms)
+

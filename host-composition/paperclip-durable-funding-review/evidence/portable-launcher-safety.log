@@ -1,0 +1,10 @@
+test_direct_fixture_without_launcher_refuses_database_access (test_launcher_safety.LauncherSafety.test_direct_fixture_without_launcher_refuses_database_access) ... ok
+test_inherited_database_environment_rejected_before_launch (test_launcher_safety.LauncherSafety.test_inherited_database_environment_rejected_before_launch) ... ok
+test_never_started_fixture_removed (test_launcher_safety.LauncherSafety.test_never_started_fixture_removed) ... ok
+test_uncertain_start_retains_workspace (test_launcher_safety.LauncherSafety.test_uncertain_start_retains_workspace) ... ok
+test_unrelated_live_process_is_not_signalled_or_deleted (test_launcher_safety.LauncherSafety.test_unrelated_live_process_is_not_signalled_or_deleted) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.119s
+
+OK

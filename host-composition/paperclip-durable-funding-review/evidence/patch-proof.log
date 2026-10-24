@@ -1,0 +1,4 @@
+patching file dist/services/issue-thread-interactions.js
+patching file dist/services/issue-thread-interactions.d.ts
+patching file dist/services/funding-review-capture.js
+patching file dist/services/funding-review-capture.d.ts

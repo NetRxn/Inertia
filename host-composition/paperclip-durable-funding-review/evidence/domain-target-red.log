@@ -1,0 +1,28 @@
+✔ native withdrawal before acceptance prevents command capture (57.791996ms)
+✔ partial-card withdrawal preserves already resolved native item and receipt while unresolved items cannot accept (53.845918ms)
+✔ stale document revision expires native card without creating acceptance (14.783535ms)
+✔ changed native card content rejects and rolls back human verdict (17.190421ms)
+✔ caller mutations of trusted registration object cannot change captured command (19.072337ms)
+✔ agent or different human cannot mint bound human acceptance (16.741656ms)
+✔ malformed command identity or checksum is never a replayable receipt (20.59856ms)
+✖ DFW target discriminator allowlist is preserved, not misinterpreted as target UUIDs (6.156577ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2288.940655
+
+✖ failing tests:
+
+test at tests/lifecycle.test.mjs:20:1
+✖ DFW target discriminator allowlist is preserved, not misinterpreted as target UUIDs (6.156577ms)
+  Error: Invalid trusted funding review registration
+      at requireValue (file:///workspace/shared/native-durable-capture-20261024/host/node_modules/@paperclipai/server/dist/services/funding-review-capture.js:17:67)
+      at createFundingReviewCapture (file:///workspace/shared/native-durable-capture-20261024/host/node_modules/@paperclipai/server/dist/services/funding-review-capture.js:44:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/lifecycle.test.mjs:22:16)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)

@@ -1,0 +1,22 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/services/issue-thread-interactions.js": {
+      "original_sha256": "9e1e07cd5a2127a153d0f07ed4bfc073752f9e49640616a673c64a22d460e2be",
+      "candidate_sha256": "8cee2b10c3a6acf78a604436427431cd29e412f89c6d04c7e07b5b4b122a2f9e"
+    },
+    "dist/services/issue-thread-interactions.d.ts": {
+      "original_sha256": "e55e51f668c479aeec3a07be5acf3201f30f0bc56e9f9b02698912ed57036e06",
+      "candidate_sha256": "e1d5aba6394dd01ece36e30ac4cb14f9c940bbd79295a782c00632647fa8912b"
+    },
+    "dist/services/funding-review-capture.js": {
+      "original_sha256": null,
+      "candidate_sha256": "0b32ae9742072c2a37eae65f16d869e611f59c2b6a6a32e28758845d55df436c"
+    },
+    "dist/services/funding-review-capture.d.ts": {
+      "original_sha256": null,
+      "candidate_sha256": "d44da630f0740ffd317805cf8daa2930985fee6da8f026f29e4d9cee40db774c"
+    }
+  }
+}
