@@ -1,21 +1,17 @@
 flowchart TB
- subgraph P[Agent preparation]
- direction LR
- I["Public grant sources<br/>DAO projects and finances"] --> D["Research and draft<br/>Query saved partners first<br/>Research missing or stale evidence"]
- D --> R{"Independent agent review<br/>Claims, route and gaps"}
- R -->|More agent work| D
- end
- R -->|Decision ready| M["DAO meeting<br/>Prepared brief<br/>Project and next steps"]
- M -->|Further preparation| D
- M -->|Ready for signoff| H["Authenticated human decisions<br/>Proposal review, then packet-role signoffs"]
- H -.->|Required signoffs approved| A["Human decision adapter disabled<br/>Production activation next"]
- A -.-> F[("Frozen direct-application packet<br/>Exact artifacts and review references")]
- F --> V["Required final-packet vote<br/>Vocdoni"]
- V -.-> Q["Verify vote authority<br/>Exact packet, action and final result"]
- Q -.->|Verified approval| S["Authorized manual submission<br/>Human submitter"]
- S -.-> C["Record submission receipt"]
- class F store
- class A,Q planned
+ S["Current sources and permitted SQL evidence"] --> D["Actual system preparation<br/>Near-complete draft and source support"]
+ D --> Q{"Independent agent quality review"}
+ Q --> D
+ Q --> H["Any eligible current DAO member<br/>Current application action access<br/>V2 exact-version confirmation in progress"]
+ H -.-> P[("Immutable packet/version<br/>Exact artifacts and actual review state")]
+ P -.-> G["Actual sponsor or DAO requirements<br/>Only when the real case requires them"]
+ P -.-> A["Mark submitted or authenticated Buzz intent<br/>Selected immutable packet and actual date"]
+ X["Human external submission<br/>Outside this record action"] -.-> A
+ A -.-> R[("Retained submitted record<br/>Reporter and evidence level<br/>Missing approvals remain missing")]
+ E["Optional later receipt<br/>Image, email or reference"] -.-> R
+ class D,Q core
+ class H,A planned
+ class P,R store
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
  classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4

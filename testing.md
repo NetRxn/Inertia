@@ -1,71 +1,52 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-24-r18
+Revision: INERTIA-2026-10-24-r21
 Updated: 2026-10-24 (UTC)
-Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Meeting source/native composition is merged in PR34 and independently qualified, default-disabled. The discovery foundation and source-bound funding facts are merged in Inertia PR35/36 and DFW PR51/52; live activation remains pending. The member candidate-only boundary is merged in PR37 and independently qualified. Daily recurring scouting remains disabled.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 current-member review/submission policy is in progress, not merged or deployed. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Qualification record
 
-Current merged-runtime evidence: Independent one-command cloud rehearsal passed DFW PostgreSQL 17.11/PostGIS 3.5.2 domain qualification (65 tests), Paperclip 2026.1012.0 native PostgreSQL 18 services and real PG-to-embedded-Helix reuse/writeback. Native inbox/outbox race fixes and cloud tooling are merged. Full HTTP/UI remains blocked by `os.networkInterfaces` / `uv_interface_addresses`; PPC2/VPS executor admission, live-member enrollment and production deployment remain future gates.
+Chosen Wednesday scope: existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred. The selected v2 current-member exact-version confirmation/Mark submitted policy is in progress, not merged/deployed. Existing legacy v1 role-bound receipts/freeze behavior remains historical/regression scope, not a universal new approval requirement. Source/fixture qualification is distinct from actual generated output and live integration.
 
-Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is merged in Inertia PR29.
+The merged core retains independently reviewed PostgreSQL/native-service and historical embedded-Helix evidence. Controlled source/relay/human fixtures are not live-source, model-quality or human-delivery evidence. Exact source/configuration identities and historical test counts remain in the linked qualification records and repository history, rather than being repeated throughout this plan. No tests are rerun by this editorial revision.
 
-Native review: The durable successor captures authority for one exact command/version atomically with the native verdict. Later native role/membership changes, document edits, card withdrawal or disconnect do not revoke that instruction. Explicit cancellation takes effect only when DFW confirms it; an already-applied effect is not undone. Current DFW authorization, evidence, head and artifact checks still block stale effects, and submission authority remains separate. The core is implemented and independently reviewed; production route/transport, lifecycle-compatible retention/archive, real role/binding/source access, qualified writer fencing and a human correction/cancel walkthrough remain activation gates. The legacy adapter stays default-disabled. DFW deadline consistency is merged in [PR49](https://github.com/NetRxn/DFW-Gov-Fund/pull/49) at `21792a6ca2fa6f5bca2a791c40558d872be82eda`. Durable acceptance is merged in [PR50](https://github.com/NetRxn/DFW-Gov-Fund/pull/50) at `331416c015c83d20ea2d6834e5b4dd53aaeea320`, tree `6149f5e5ce3408b7ba62534dbd34a59eb5cef61b`; [exact-head CI 40045687718](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40045687718) and [post-merge CI 40046050158](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40046050158) passed. The 55-path non-live host bundle is merged in [Inertia PR31](https://github.com/NetRxn/Inertia/pull/31) at `901414612a032e44839ba33fe39163e0e9c28ee1`, tree `da97acb1c1223061bc53e9cf47278d9910940016`, preserving all 187 PR30 files.
-
-Independent durable review passed 36 native PostgreSQL cases, 13 upstream interaction tests, five launcher safety tests, 20 separate DFW PostgreSQL cases and three native-to-DFW rehearsals. The rehearsals use actual native PostgreSQL verdict transactions, synthetic human fixtures and local-file receipt transport into the actual DFW SQLite service; they are not production transport or all-PostgreSQL cross-service evidence. Proposal apply, packet-role apply and cancel-before-apply survive later native role/document changes and offline replay. DFW migration 0013→0016→0013→0016 and verified zero-leak/shutdown cleanup passed. Receipt retention must preserve accepted instructions until terminal DFW acknowledgement or qualified durable transfer, then permit ordinary archival under domain audit policy; no indefinite company-deletion lock is approved.
+| Capability | Established scope | Open gate |
+|---|---|---|
+| Bridge and package | Signed transport, typed native APIs, durable replay/recovery and clean package/native-service checks | Actual relay/pairing/audience and selected live host |
+| Knowledge/finance | Existing SQL/evidence and sanitized financial core; embedded-Helix checks remain historical | Actual authorized SQL/application/source binding and current-case writeback/reuse; selected financial source compatibility. Helix is deferred |
+| Objective/meeting loop | Independently reviewed synthetic meeting-answer/knowledge/follow-up/brief loop | Actual approved Drive/member-portal readback and system-generated application preparation |
+| Current full host | Native service/cloud lanes passed | Full HTTP/UI remains blocked by environment network-interface enumeration; selected executor/production admission remains open |
 
 ### Meeting source and native composition
 
-[PR34](https://github.com/NetRxn/Inertia/pull/34) merged at `600827473e4be392dd819ccb89a81749c0a2cb30`, tree `d56109ffca61baa250947e0adec767f7ce12e17b`. Final author verification passed 449 tests in 33 files, typecheck, build and standard package verification. Independent review passed the frozen 446-test suite and separately checked three later source cases; the final formatted production hashes were rebuilt and requalified against the pinned native host.
-
-Actual Paperclip 2026.1012.0/PostgreSQL checks passed disabled-job RPC, exclusive ownership, summary-only missing-transcript work, transcript readmission/correction, website/native acknowledgment recovery and immediate-stop/WAL restart preservation. Enabled composition used actual SQL/issues services with synthetic Google/website HTTP, secrets and configuration, not full worker HTTP transport or live sources. R-M02 notes-only website publication remains partial. [Admission gates](docs/development/meeting-source-native-composition.md#admission-checklist) include real source/website access, installation capability review, retention, stopped-owner recovery and host transport bounds.
+[PR34](https://github.com/NetRxn/Inertia/pull/34) passed independent native PostgreSQL/WAL qualification for disabled-job behavior, exclusive ownership, summary-only missing-transcript work, transcript readmission/correction and ambiguous-acknowledgement recovery. External Google/website I/O was synthetic. The final candidate's build/package/native qualification retains its original identity in the [source/native contract](docs/development/meeting-source-native-composition.md#admission-checklist). Real source/server access, installation capabilities, retention/recovery and host transport bounds remain gates. R-M02 notes-only website publication remains partial.
 
 ### Discovery foundation
 
-[Inertia PR35](https://github.com/NetRxn/Inertia/pull/35) merged at `da902be0b7e0dcce935c8d4bc4cc0f6e9ede30c0`, tree `669f28ede5d5d9878fb8dd8f6c9e77265a249bf4`. Author and independent suites passed 505 tests in 42 files; typecheck, build and the 111-file/seven-migration production package passed. No Inertia CI checks were reported. [DFW PR51](https://github.com/NetRxn/DFW-Gov-Fund/pull/51) merged at `0e73407926c71f2203bfb36e8d3495187c004ced`, tree `b47d3e48c8dfbcc59b68fbd50e9b32d3212c1ed4`, after [exact-head CI 40052112703](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40052112703) passed.
-
-Independent qualification exercised actual native PostgreSQL/worker services, 16 native documents, four successful wakeups, cold DFW identity admission/reuse, lost acknowledgements, signed Buzz HTTP fixtures and immediate PostgreSQL restart recovery. These fixtures do not establish live search/model quality, a real relay or human reading. Wake policy needs a host-resolvable active responsible member on scout/diligence/urgent issues; `responsible_user_unresolved` leaves the wake pending. Source-bound funding-facts admission is now merged in PR36/DFW PR52; [foundation scope and activation inputs](docs/development/funding-enhancement/discovery-host-composition.md) define the boundary.
+[PR35](https://github.com/NetRxn/Inertia/pull/35) qualified actual native PostgreSQL/worker services, cold funding-domain admission/reuse, native documents/wakes, controlled signed-relay transport and restart recovery. A missing active responsible-member mapping leaves a wake pending. Live search/model quality, actual relay/human receipt and recurrence remain open under the [discovery composition contract](docs/development/funding-enhancement/discovery-host-composition.md). No Inertia CI-pass claim is inferred from private-domain checks.
 
 ### Source-bound funding facts
 
-[Inertia PR36](https://github.com/NetRxn/Inertia/pull/36) merged at `e52e16e3bfe54eab073c928230bc4b660deab52a`, tree `1e2d6dbad933c03967c00cff4b398908925d3275`. [DFW PR52](https://github.com/NetRxn/DFW-Gov-Fund/pull/52) merged at `e81d7a0ece03bbe951e5b1ae3727c26a3c86068a`, tree `94f971b5a0c66e1e99dae13f5c411bc015175774`; [post-merge CI 40053808354](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40053808354) passed. Host verification passed 516 tests in 43 files, typecheck/build and the 113-file/seven-migration package. Independent actual-native qualification passed with 22 documents, eight queued wake responses and the cold DFW process; receipt SHA-256 `24ea229340a89ea07d907efeceeb944a983d34d74bb2f3ac83492bf704df783d`.
+[PR36](https://github.com/NetRxn/Inertia/pull/36) qualified exact source/identity/span bindings, actor separation, durable reviewer budgets, conservative conditional deadline/benefit facts, supersession and replay with captured HTML and controlled agent calls. Unknown eligibility and fit stay unknown without separate evidence. Live model/search/delivery qualification is distinct.
 
-Exact current source/identity/span binding, actor separation, persistent reviewer budgets, conservative deadline/benefit interpretation, supersession and alert replay are covered. Controlled captured HTML and agent calls are distinct from live model/search, actual relay delivery or human reading. Eligibility and fit remain unknown unless independently established.
+### Review-service transport
+
+Merged transport remains default-disabled. The [implementation](host-composition/paperclip-durable-funding-review/transport/README.md) and [independent review](host-composition/paperclip-durable-funding-review/transport/REVIEW.md) cover authenticated scoped receipt routes, ID-only delivery/readback, keyset pagination/replay, exact terminal acknowledgement, changed mappings and revoked transport access. Earlier local-file and cross-HTTP SQLite lanes retain their narrower scope. The independently reviewed all-PostgreSQL cross-service reproduction fixture is published in [PR52](https://github.com/NetRxn/Inertia/pull/52).
+
+[PR53](https://github.com/NetRxn/Inertia/pull/53) adds source-qualified, default-disabled owning-host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete cursor reset; independent functional review passed. This is not a deployment or live activation. Source-row database allocation, remaining adapter/deployment/state/secret-latency compatibility, approved lifecycle/authentication/network bindings, retention/archive, actual role/source mappings, production writer fencing and the live human walkthrough remain gates. Exact-version authority survives later native changes/disconnect; cancellation requires DFW confirmation and cannot undo an already-applied effect. Current domain authorization/evidence/head/artifact checks still reject stale effects. Preserve accepted receipts through terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival. No indefinite deletion lock is approved.
 
 ### Member candidate boundary
 
-[PR37](https://github.com/NetRxn/Inertia/pull/37) merged the independently approved candidate-only boundary at `3064018359e986a0b69bb5c860c01bb18dd7f5b9`, tree `5a96320bd034c8dc6309390ae6709289dfdb57cd`. Combined verification passed 566 tests, typecheck/build and a 123-file/seven-migration package. Actual native member and unchanged funding-facts rehearsals passed, including cleanup/recovery. Native tests cover scoped reads, hostile artifacts, current membership/checkout rejection, concurrent replay and lost receipt acknowledgements. Tasks remain in progress; native review dispatch and authoritative completion remain to implement. Engineering must qualify authenticated ingress and non-reusable attempt authority, live enrollment/provider execution, native review and atomic completion before the second-member demonstration.
+[PR37](https://github.com/NetRxn/Inertia/pull/37) independently qualified scoped candidate inputs, hostile-artifact denial, membership/checkout rejection, concurrent immutable receipt replay and lost-acknowledgement recovery. [Draft PR51](https://github.com/NetRxn/Inertia/pull/51) proposes authenticated ingress/per-attempt authority. Source-only correction review passed; independent runtime security and full-host qualification remain open. It is unmerged and inactive. Native review/completion, live enrollment/provider execution and R-C05 follow-up remain engineering work.
 
 ### Historical PR17 archive
 
-| Evidence | Identity and scope |
-|---|---|
-| Reviewed runtime | PR 17 head `2a90ce24e16a72f446a7402560bd53d22f00ca38`, merged 2026-10-23 11:12:50 UTC at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`; reviewed source bytes preserved |
-| Test/build/package | 248 tests in 16 files; typecheck and build; 54-file production package with six migrations |
-| Exact native-qualified archive SHA-256 | `19e67c88a8de52404412e49312cebfd6db42c462de3378cf3397966250add76c` |
-| Archive source tree | `8039b3e5f54e49c302b4751445f382403381ab91` |
-| Native host | Unmodified Paperclip 2026.1012.0 and PostgreSQL 18.1; six migrations, eight tables, three disabled job RPCs, expected disabled health, SQL binding/company isolation and clean lifecycle |
-| HTTP/API | Historical pre-mirror source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`; candidate HTTP/auth/UI acceptance pending |
-| External services | Synthetic demo I/O; live website, Drive, grant/vote, member and Y2 acceptance pending |
-
-[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Current runtime/documentation baseline: develop `30640183` (PR37); the runtime receipt above retains its original source identity.
+The exact historical archive and native-service receipt remain in [combined native qualification](docs/qualification/combined-native-services/README.md). They do not qualify a later candidate automatically. Historical HTTP/API checks used an earlier pre-mirroring source and synthetic disabled configuration; browser UI and live external integrations remained separate. Preserve the original receipts and source/package identities unchanged.
 
 ### Historical slice evidence
 
-| Slice | State | Verified evidence | Next acceptance |
-|---|---|---|---|
-| Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
-| Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
-| Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR14 and source/native composition in PR34; live source/server admission pending |
-| Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Trusted domain/human-decision adapter, chain verifier and native receipt acceptance |
-| Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
-| Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
-| Historical native service qualification | Passed for its recorded pre-mirror artifact | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
-| Latest-release qualification | Merged into develop | [PR 11](https://github.com/NetRxn/Inertia/pull/11): official registry discovery, isolated exact-lock qualification, 12 focused tests plus actual 152 runtime tests/typecheck/production package verification | Qualify each new candidate with native/HTTP checks and tested database recovery before promotion |
-| Member participation | Candidate-only boundary merged in PR37; independently qualified | 566 combined tests, package and native member/facts rehearsals passed | Authenticated ingress/attempt authority, live enrollment/provider execution, native review and completion |
-| Y2 | Planned required product slice | Existing system and public interface identified | Qualify adapter and complete the three-outcome rehearsal |
+Earlier signed bridge, native persistence, Roundtable, grant binding, package/setup and portable-skill slices are merged. Their dated results remain in repository history and existing qualification records. The old snapshot's missing pre-existing PPTX manifest failure and private-snapshot skips remain failures/skips, not converted passes. Historical acquisition counts, July replay and newer source enrichment are separate from current quality acceptance. A clean later package or passing focused suite never erases an earlier failure.
 
 ## Strategy and evidence
 
@@ -77,47 +58,47 @@ Design acceptance only; none of these checks has run against deployed DAO storag
 
 | ID | Check | Required result |
 |---|---|---|
-| T-D01 | Provider/schema compatibility and migration dry run | Actual version, schema/role support, PostGIS and backup restore verified; funding PostgreSQL types/constraints and schema-qualified SQL pass; SQLite success alone is insufficient. |
+| T-D01 | Provider/tool compatibility | Verify the actual existing PostgreSQL/domain-tool binding and required types/constraints/restore behavior. Check extensions only where the selected tool needs them. Existing SQL access is not proof of deployed application integration; SQLite-only success is not PostgreSQL qualification. |
 | T-D02 | Migration ownership/collisions | Drizzle touches only website/meeting-owned objects; Alembic only funding-owned objects/history. Existing table/ID names, indexes and foreign keys cannot collide or be silently dropped. |
 | T-D03 | Cross-schema and row/audience isolation | Meeting role cannot read/write funding tables; funding role cannot read membership or unrestricted meeting data. Test direct SQL, unsafe search paths, new-table default grants, revoked roles, cross-applicant/company and expired membership. Narrow authorized API/view access works without widening grants. |
 | T-D04 | Backfill and consistent-read reconciliation | Counts, stable IDs/FKs, JSON/time values, hashes, immutable versions, reviews and publication readbacks match; concurrent edits cannot produce a mixed-version packet or duplicate decision. |
 | T-D05 | Cutover/rollback rehearsal | Pause/delta/switch/readback sequence and restore pass in isolation; reconcile post-cutover writes and external effects before resuming. No dual authoritative writers, lost reviews or duplicate publication/submission. |
-| T-D06 | Core Helix projection safety | Evidence/history/outbox commit atomically in DAO PostgreSQL; projection replay/rebuild converges by canonical ID/revision. Read-time source/access checks deny stale/revoked records immediately, including during projector failure. Bounded indexed PostgreSQL fallback preserves useful reads; authoritative-state failure withholds affected results. Detailed release gates: T-K01–12. |
+| T-D06 | SQL knowledge consistency and later adapter isolation | Current authoritative SQL evidence/history writes, expected revisions and payload replay must preserve useful writeback/reuse and current access denial. Helix/outbox recovery is a deferred adapter lane; its old implementation/tests remain historical, not a Wednesday prerequisite. |
 
 ## Operational partner graph acceptance (live qualification pending)
 
-The graph core is merged. Independent real PostgreSQL/PostGIS and PG-to-embedded-Helix cloud rehearsal passed. Production acceptance still requires authenticated source/host adapters, admitted inventory/backfill, deployed-service and representative performance qualification. Historical local core evidence recorded 332 passing TypeScript tests and 650 passing Python tests, four skips and one inherited missing-PPTX manifest failure. The matrix below retains the release requirements; broader 990 and vectors remain later extensions.
+Stable T-K IDs now separate Wednesday PostgreSQL knowledge from deferred graph-adapter work. Reuse authorized SQL tools; qualify the actual selected application/source/action scope and system run. Existing graph qualification remains historical. Deferring Helix changes the critical path, not future source/access/fencing/removal guarantees.
 
 | ID | Requirement | Fixture and required result |
 |---|---|---|
-| T-K01 | R-K01–02 | Seed DAO, MADE → TechFW, disambiguated Moonshot and LiquidAcre, plus HackFW. Preserve accepted collaborator evidence separately from candidate name aliases; unrelated same-name organizations/people stay separate. Audited merge/split preserves history and reprojects. |
-| T-K02 | R-K01 | Every inventoried partner, relevant contact/role, project/event, contribution and relationship owner has a stable ID or explicit unresolved disposition tied to its processed source revision. Re-run creates no duplicates; private member fields outside scope are absent. |
-| T-K03 | R-K02 | Prospects, public employees, coattendees and evidenced collaborators yield distinct results. Planned/started/completed activity requires its own evidence; October 30 passing cannot complete a host role. Unknown relationship owners stay unassigned. |
-| T-K04 | R-K02,06 | Cross-tenant/audience/project/opportunity attempts fail at lookup, each path hop and contact/quote hydration. Source revision, role end-date and access revocation invalidate retrieval immediately with the projector stalled. Unavailable authoritative checks fail closed. |
-| T-K05 | R-K03,08 | Instrument a scan to prove saved evidence is queried before external discovery. Reuse current evidence, research only gaps, commit useful findings from an accepted and a rejected opportunity, then retrieve both on the next run. An explained zero delta completes without a graph write; a silently lost useful delta fails. |
-| T-K06 | R-K04 | Crash before/after PG commit; concurrent identical delta keys; same key with changed payload; corroborating source and semantic conflict. One atomic evidence/history/outbox commit, replayed receipt, payload conflict and separate scoped source bindings result. |
-| T-K07 | R-K04–05 | Helix outage, lost write response, duplicate/out-of-order delivery, lease loss/restart and old-worker resume after a newer deletion converge. Target-side fence/revision guards reject the old write; no durable delta is lost and no tombstone resurrects. |
-| T-K08 | R-K01,05 | Backfill overlaps incremental ingestion, interrupted keyset pages resume and an uncommitted lower sequence arrives late. Coverage has no gaps. Rebuild a new generation from PG plus a gap-safe high-water mark; reconcile canonical IDs/revision counts/hashes before switching. |
-| T-K09 | R-K02,04 | Same quote with altered triple/resolved identity cannot reuse admission. Differently worded equivalent typed values corroborate; overlapping single-valued contradictions dispute; multiple capabilities/affiliations coexist without scope widening. Legacy dao-knowledge-v1 comparison behavior is preserved. |
-| T-K10 | R-K06–07 | Bounded capability, partner context and ≤3-hop introduction queries return cited evidence and gaps. A coattendee is not a promised introduction. Helix outage/lag uses indexed PG fallback with explicit degraded coverage; filtering cannot turn partial coverage into “no partner exists.” |
-| T-K11 | R-K08 | On the documented initial target fixture of 10,000 entities/100,000 assertions, verify active indexes and indexed query starts. Measure top-20 queries including PG revalidation p95 <1 second and update visibility p95 <60 seconds; record actual version/hardware/results rather than asserting these targets already passed. |
-| T-K12 | R-K01–08 | Real disposable PostgreSQL concurrent admission/source changes and schema/role denials, plus pinned actual Helix API transactions/fencing/indexes/deletion, pass before the October 30 end-to-end rehearsal is accepted. IRS EIN/status evidence, uncollected determination letter and distinct service geography remain correctly labeled. |
+| T-K01 | R-K01–02 | Bounded SQL/source inventory disambiguates programs, legal entities, names, people and reviewed aliases. Mapped/unresolved outcomes retain source revision and permission scope. |
+| T-K02 | R-K01 | Every processed item needed for the selected application has a stable identity or explicit unresolved disposition. Re-run is stable; out-of-scope/private member fields are absent. Full graph backfill is not required for Wednesday. |
+| T-K03 | R-K02 | Prospects, public roles, coattendance and evidenced collaboration stay distinct. Planned/started/completed/cancelled/unknown work requires its own evidence; dates alone prove no delivery. |
+| T-K04 | R-K02,06 | Current application/source/audience checks deny SQL contacts/quotes/results and writes after revocation. Public visibility or generic native/Buzz/repository role grants no action access. Unavailable authoritative checks fail closed. |
+| T-K05 | R-K03,08 | Instrument the actual system querying saved authorized SQL evidence before research, researching gaps, persisting useful findings and retrieving them next run. Include a rejected opportunity/no-change reason where appropriate. Reference packets are not generated outputs. |
+| T-K06 | R-K04 | Concurrent identical writes/replay, changed payload, stale revision and interrupted writes converge through authoritative expected-version/idempotency/history semantics. No lost useful delta or silent conflicting overwrite. |
+| T-K07 | R-K05 | Deferred future derived adapter: outage/lost response, ordering, lease takeover and stale worker require atomic target-side fencing/revision guards. No tombstone resurrection. This is not a Wednesday gate. |
+| T-K08 | R-K05 | Deferred future adapter backfill/rebuild is gap-safe with durable dispositions, snapshot/high-water mark and reconciled IDs/revisions/counts/hashes before switch. Preserve legacy tests/history. |
+| T-K09 | R-K02,06 | Actual SQL correction/revocation invalidates dependent drafts and denies retrieval immediately. Later caches/projections/vectors must obey the same authoritative denial/removal rules. |
+| T-K10 | R-K01–08 | Run the bounded current application through SQL reuse/research/writeback/reuse and correction/replay/denial. Show actual scope/coverage and unresolved source failures, not a manually prepared reference packet. |
+| T-K11 | R-K08 | Measure actual system/query elapsed time, active human time, known cost, corrections and evidence coverage with sample size. Prior graph size/p95 targets remain unmeasured future targets, not entry requirements. |
+| T-K12 | R-K01–08 | Qualify real selected PostgreSQL/domain tools and current membership/application/source access. Graph runtime/deployed performance is deferred. Legal/tax status, document availability, geography and opportunity eligibility remain independent claims. |
 
 ## Connected-loop verification details
 
-Reviewed integration commit: `ee5dcfeaeb710f5de6f8cc9eef7b15c29ad67063`. The 85-test suite adds same-thread signed receipts, restart/replay recovery, persistent retry windows, delayed-event lookback/backfill, future-event isolation, paired command guidance, addressed-card privacy and company-scoped health. `npm test -- --maxWorkers=1` limits concurrent PGlite fixture startup. Runtime concurrency is qualified separately. Typecheck, build, fixture demo and diff checks pass. The historical combined result after PR 5 was 108 passing tests, with typecheck, build and synthetic connected demo also passing.
+Qualification covers same-thread signed receipts, restart/replay, persisted retry windows, delayed-event lookback/backfill, future-event isolation, addressed-card privacy and company-scoped health. Use `npm test -- --maxWorkers=1` to avoid fixture startup contention; qualify runtime concurrency separately. Existing records retain their tested candidate identities.
 
 ## Package and setup verification
 
-Reviewed packaging commit `f68e8bb98df0bb05f9a946340d885e0bcfc6e188`: 149 of 149 tests pass, plus typecheck, build, clean package installation and a native JSON-RPC worker handshake. Archive verification checks compiled entrypoints and migrations, installs production dependencies into a fresh directory, then loads the actual worker. Configuration tests cover required nested fields, ambiguous mappings and redacted field-path errors. Node 24.11.0 or newer satisfies the selected SDK requirement. The packaged archive is an installable deliverable; deployment and live connection acceptance follow operator setup.
+Qualify the exact candidate with typecheck/build, clean production-only installation and actual native JSON-RPC worker handshake. Verify compiled entrypoints/migrations, redacted configuration errors and Node/SDK compatibility. Archive qualification is distinct from deployment/live admission; earlier candidate results remain in their original records.
 
 ## Native service qualification
 
-The pinned Paperclip plugin loader, PostgreSQL migration runner and worker services ran against a real ephemeral database. Four plugin migrations created eight tables, the worker initialized, and three jobs registered. Disabled configuration validated successfully; degraded health was expected while disabled. The full HTTP server could not start because `os.networkInterfaces` returned `ERR_SYSTEM_ERROR` / `uv_interface_addresses` under the cloud sandbox. No shim or policy bypass was used. Test processes were stopped after verification. A subsequent authorized isolated Docker fallback passed full HTTP/API qualification on the same baseline; this closes host/API qualification while the cloud restriction remains environment-specific.
+The pinned public plugin loader, migration runner and native workers passed disposable real-PostgreSQL checks with disabled configuration and expected disabled health. Historical cloud full-host startup failed on network-interface enumeration; no shim or restriction bypass was used. An authorized isolated Docker fallback later passed HTTP/API checks only for its recorded earlier source. Neither receipt qualifies the current full host or live integrations automatically.
 
 ## Full HTTP/API qualification
 
-The [Docker HTTP receipt](docs/qualification/docker-http-receipt.json) identifies the source-built package by source/image/version. The delivered archive retains its separate SHA-bound package/native-service qualification. The authorized Docker fallback exercised the unmodified official Paperclip 2026.1012.0 host with Inertia source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`: HTTP health, synthetic company creation, plugin installation, disabled configuration, actual worker validation/health, jobs and scheduled/manual disabled reconciliation passed. The database applied 304 host migrations and four plugin migrations, with eight plugin tables and three jobs. The non-root container used a read-only filesystem, no network/ports/host mounts, dropped capabilities and no-new-privileges, bounded to 2 CPU/4 GiB/256 PIDs. No OOM or source patch/shim occurred. Test containers were stopped and removed. This qualifies HTTP/API behavior with synthetic disabled configuration; browser UI and live external integrations remain separate acceptance work.
+The [historical Docker HTTP receipt](docs/qualification/docker-http-receipt.json) retains the exact source/image/package identity. It exercised the unmodified pinned host with synthetic disabled configuration in a bounded, non-root isolated container, then cleaned up. Browser UI and live external integration remained separate. PR53 source qualification covers owning-host assembly and early SDK byte/deadline checks. Actual deployment/authentication/network/lifecycle compatibility, source-row allocation and the live walkthrough still need qualification; earlier native RPC or HTTP fixtures are insufficient.
 
 ## Connected workflow rehearsal verification
 
@@ -173,25 +154,26 @@ Pin all integrations; compare required SDK APIs and enabled serving routes separ
 
 ## Grant-core verification
 
-PR 7 adds 37 tests covering currentness, deadlines, signoffs, artifact integrity, packet/review mutation, wrong proposal/network/action, finality, conflict/replay and simulation labeling. Trusted policy snapshots precede asynchronous reads; impossible ISO dates fail without normalizing into accepted evidence. The 145-test combined suite at PR 7 and grant fixture demo passed. Live chain proofs and transactional acceptance remain integration tests.
+Preserve currentness/deadline/signoff checks, exact artifact bytes, packet/review mutation, proposal/network/action binding, finality, replay/conflict and simulation labels. Invalid dates must fail without normalization. The merged core's original qualification remains historical; live chain proof and transactional acceptance require candidate-specific integration evidence.
 
 ## Native grant review acceptance (default-disabled)
 
-The legacy native adapter remains default-disabled. The durable successor is implemented and independently reviewed: 36 native PostgreSQL cases, 20 separate DFW PostgreSQL cases and three synthetic-transport native-to-DFW rehearsals passed. DFW PR50 and Inertia host PR31 are merged. Retain the [pinned release and funding source](docs/reference/native-grant-workflow.md) and the requirements below, distinguishing native authority at acceptance from current DFW checks at application. Production route/transport, lifecycle-compatible retention/archive, real roles/bindings/source access, writer fencing and a human correction/cancel walkthrough remain gates.
+Chosen v2 is in progress, not merged/deployed: any authenticated, currently verified DAO member with current application action access may contribute and approve the exact immutable version. No named human owner or default five-specialist gates. Agents perform quality review, never human approval. Actual sponsor/DAO requirements remain case-specific. Existing v1 default-disabled source and its role/capture/cancellation records stay isolated and historically intact.
 
 | ID | Fixture | Required result |
 |---|---|---|
-| T-G06 | Agent resolver, wrong addressed human, wrong role or forged actor/decision ID | Explicit human-only policy plus authenticated native readback and configured role mapping deny application. |
-| T-G07 | Native document/role change before or after acceptance; changed DFW workspace, packet, evidence, review or artifact bytes | Reject invalid native authority/revision at acceptance. Later native changes or disconnect do not revoke accepted exact-version authority; changed DFW inputs block stale effects. Corrections generate new proposals/reviews; changed frozen content needs a new vote. |
-| T-G08 | Duplicate/multi-item/partially resolved card; crash before/after write or receipt | Item decision identity = interaction ID + item ID. Reconcile with proposal/packet ID + version + action; distinct items do not collide. Apply once using each item’s actor/verdict; hold unknown outcomes. |
-| T-G09 | Proposal/role reject, defer, or partner N/A action | Proposal reject → rejected; role reject → changes_requested. Defer has no write; none advances review. Only an explicit partner action can record not_applicable, never inferred from reject/defer. |
-| T-G10 | Cross-company/applicant read; member requests privileged tools or credentials | Deny access; member receives only authorized evidence and proposal tools, no database/admin keys or portal credentials. |
-| T-G11 | Native approval, packet readiness, passed vote or submission-record request | No portal submission side effect. Manual-submission receipt requires the domain-approved state and separately authorized human action. |
-| T-G12 | Real packet with one correction; central and member draft paths | Native task/doc/cards remain one workflow; edit → regenerate → new review works without a custom panel or duplicate scheduler. |
+| T-G06 | Authenticated current member with application action access; agent, forged identity, public-only/view-only or unavailable current access | One eligible member can confirm the exact version without named-owner/specialist grants. Trusted identity/membership/application action checks deny the other paths; public visibility alone is insufficient. |
+| T-G07 | Packet/policy/source/artifact change or revoked current action access before confirmation | Reject stale/unauthorized approval. Exact external artifact bytes matter, not only a native document revision. A new version needs its own confirmation. Preserve old v1 accepted-command/cancellation meaning separately. |
+| T-G08 | Duplicate/reordered action, concurrent successors, crash or lost acknowledgement | Exact action/packet/version/content replay returns one authoritative result. Changed content conflicts. Hold unknown outcomes for authoritative readback; do not duplicate effects or reinterpret v1 receipts. |
+| T-G09 | Request for changes/reject/defer and any actual sponsor-specific extra requirement | No invented approval. Preserve the true version/state and actual case requirements. Do not fan one confirmation into five specialist records or infer sponsor/DAO approval from agent quality review. |
+| T-G10 | Cross-application/source read/write or attempt to use privileged credentials/human actions as an agent | Deny; scope tools server-side and keep broad database/publisher/portal credentials out of contributor inputs. Current application action rights are distinct from read visibility. |
+| T-G11 | Mark submitted or equivalent authenticated Buzz intent | Record the selected immutable packet/date, reporter and actual review/evidence state only. No portal submission, vote, payment or invented prior approval. A real historical fact can be recorded without fabricating missing approvals. |
+| T-G12 | Actual system-generated draft, agent critique, human correction and exact-version confirmation | Preserve one shared packet workflow in Buzz/native views. Keep reference/answer keys separate. V2 live acceptance is pending until its actual action/access path is qualified. |
+| T-G13 | Optional later image/email/reference or corrected submitted date/packet | Append audited evidence/correction to the selected immutable record. Preserve reporter versus claimed submitter and attestation/reference/image/email versus genuinely provider-verified level. Never overwrite meaningful original records or silently retarget a selection. |
+| T-G14 | v1 records/source and v2 actions coexist | V1 approvals, immutable packets, receipts and cancellation state retain their original meaning. V2 is distinct/versioned and cannot loosen legacy fences, manufacture specialist approvals or reuse old records as new approvals. |
+| T-G15 | Case with actual required sponsor signature or DAO/Vocdoni decision, versus a case without it | Apply the genuine requirement and exact packet/action/finality evidence where applicable; do not impose a universal named-owner, five-human or final-vote ceremony. No automatic extra submission. |
 
-Also prove atomic verdict/receipt capture, restart sweeps after missing notifications, duplicate/offline readback, forged/plugin-authored authority denial and apply-first/cancel-first serialization. Cancellation is effective only on DFW confirmation; already-applied effects remain applied. Retention preserves receipts through terminal DFW acknowledgement or qualified durable transfer, then supports ordinary archival.
-
-Also prove each route’s required roles: direct application has five; partner contribution four; next-cycle readiness program/fiscal; monitor-only none. Native document freshness never substitutes for exact external artifact-byte verification.
+Retain v1 exact-command authority/cancellation/replay and terminal-acknowledgement/qualified-transfer regressions. Settled retention planning does not enable deletion. Actual v2 current membership/application ACL, guarded writes, source-row allocation, remaining deployment/latency/lifecycle/authentication/network compatibility, production fencing and human walkthrough remain gates. Source-qualified PR53 is not deployed v2.
 
 ## Domain suite
 
@@ -202,15 +184,15 @@ Also prove each route’s required roles: direct application has five; partner c
 | T-M03 | R-M02 | Summary-only source produces notes plus missing-transcript exception. Partial: native missing-transcript work is implemented; notes-only website output awaits a server contract and real de-identified Gemini example. |
 | T-M04 | R-M03–04 | Automatic upsert readback matches content, audience, URLs and version. |
 | T-M05 | R-M04 | Duplicate, corrected and interrupted source updates reconcile and version once. |
-| T-G01 | R-G01–02 | Current grant has cited deadline, applicant route and eligibility; expired candidate excluded. |
-| T-G02 | R-G02–03 | Review/signoffs preserved; frozen packet manifest and hash reproducible. |
-| T-G03 | R-G03–04 | Final valid vote matches exact packet, network and action; applied once. |
-| T-G04 | R-G04 | Wrong hash/network, unfinalized/replayed vote or changed packet rejected. |
-| T-Y01 | R-Y01 | Registered interest update creates/updates one linked task with provenance. |
-| T-C01 | R-C01–02 | Second member acquires permitted eligible work; competing claim loses cleanly. |
-| T-C02 | R-C03 | Server validates candidate artifact before trusted write; no shared credentials in member bundle. |
-| T-C03 | R-C04 | Interrupted/stale run reconciles through selected lifecycle; obsolete result rejected. |
-| T-C04 | R-C05 | Follow-up has parent/reason/acceptance/dedup key; repeats and limits controlled. |
+| T-G01 | R-G01–02 | Recheck current backup deadline/route/eligibility. Clearly labeled NSF/closed-cycle exemplary preparation can be retained without claiming current eligibility or submitting it. |
+| T-G02 | R-G02–03 | Immutable packet/artifact/policy and actual review state are reproducible. V2 needs one eligible member exact-version confirmation by default; v1 historical signoffs remain intact, not invented for new work. |
+| T-G03 | R-G03–04 | When actual DAO governance requires a vote, verify final effective packet/network/proposal/action binding and apply once. Otherwise record the real requirement state without a fake vote. |
+| T-G04 | R-G04 | Reject mismatched packet/action/finality whenever governance is applicable. Preserve no-governance cases without an invented universal ceremony. |
+| T-Y01 | R-Y01 | Deferred: later Y2 interest/update mapping preserves provenance, scope and deduplicated native work. Not a Wednesday demo gate. |
+| T-C01 | R-C01–02 | Qualify the existing authorized Buzz agent/member application path and native exclusive execution owner. Do not require or claim untrusted member-owned enrollment as the Wednesday proof. |
+| T-C02 | R-C03 | Validate the actual authorized path inputs/output and deny out-of-scope action. Full hostile/untrusted member runtime isolation remains a separate future qualification, not implied by trusted Buzz execution. |
+| T-C03 | R-C04 | Interrupted/stale/duplicate work reconciles truthfully. Candidate staging is not completion; full member-native review/authoritative completion remains pending. |
+| T-C04 | R-C05 | Current-path follow-up has reason/context/acceptance/deduplication and limits. Broader member-runner follow-up remains explicit pending work. |
 | T-O01 | R-O01 | Source, issue, run, artifact, decision and receipt trace accessible in both UIs. |
 | T-X01 | R-X01 | Optional 990 enrichment preserves filing provenance and reviewed relevance. |
 
@@ -219,9 +201,9 @@ Also prove each route’s required roles: direct application has five; partner c
 - T-S01: Malicious source text cannot change permissions, destinations or execution policy.
 - T-S10: Repository-admin access alone grants no DAO application or control-plane authority; verify separate scoped enrollment and cross-member denial.
 - T-S09: A valid Privy login without active membership cannot access material configured for members only. Verify the actual website audience and reject unauthorized narrowing claims.
-- T-G05: Use the user’s Vocdoni example to determine required final-action stages. Any required but incomplete settlement remains pending; wrong chain/action/hash or missing effective authority is rejected. FWTX verifier implementation and adapter acceptance remain pending.
+- T-G05: Use the actual operative Vocdoni example only where governance is required. Incomplete required settlement or wrong chain/action/hash cannot confer authority. Do not infer that every packet needs a vote; verifier/live adapter acceptance remains pending where used.
 - T-S02: Foreign company/task IDs, guessed artifacts and revoked identities fail server authorization.
-- T-S03: Actual selected sandbox blocks prohibited filesystem, network and process behavior; worktree isolation is tested separately.
+- T-S03: Qualify the actual authorized runtime/tool boundary used. Full untrusted member sandbox/filesystem/network/process isolation is a separate pending lane; a trusted Buzz run or worktree alone does not qualify it.
 - T-S04: Oversized, wrong-type, traversal and executable output payloads are rejected or quarantined.
 - T-S05: Cancellation, timeout and lost connection follow lifecycle policy; ambiguous external writes reconcile before retry.
 - T-S06: Secrets and restricted content stay out of public logs, task descriptions and Buzz channels.
@@ -233,7 +215,7 @@ Also prove each route’s required roles: direct application has five; partner c
 1. Unit fixtures: hashes, normalization, deduplication, audience mapping, echo markers and follow-up limits.
 2. Contract tests: pinned issue, interaction, runner and Buzz interfaces.
 3. Integration: controlled services, real auth, injected conflicts/disconnects and authorized test targets.
-4. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution and operational partner query → research → durable delta → next-run reuse.
+4. Rehearsal: actual meeting publication/readback, system-generated current application preparation including agent contribution/member review, and SQL query/research/writeback/reuse. Governance is case-specific; Helix/Y2 and full untrusted member isolation are deferred.
 
 G1 establishes compatible interfaces and execution qualification. G2 reviews concrete design/configuration. G3 passes required contracts and domain acceptance. G4 reviews end-to-end evidence. Failures block their affected flow until repaired or explicitly re-scoped.
 
@@ -257,39 +239,47 @@ Website-side real-PostgreSQL transaction/concurrency, active-membership/resource
 
 ## Reviewed native outbound-comment acceptance; PR 17 merged
 
-Require default-off configuration, explicit audience approval per binding and start-time cutoff. Verify native author attribution, company/issue scoping, durable echo suppression, replay/restart, exact signed-event retry and configuration revocation without adding a scheduler or work ledger. Before first publication, re-read the native snapshot and suppress deleted/edited/ineligible comments; read failure defers publication until the native snapshot can be retrieved. Suppressed records must not revive through retry-blocked. Delivered posts have no edit/deletion propagation, and uncertain prior relay acceptance cannot be recalled by suppression. The combined PR 17 candidate passed 248 tests in 16 test files, plus typecheck/build and a 54-file/six-migration production package check. These results qualify the exact reviewed archive. PR 17 is now merged, but neither merge nor test success proves a live export. General status updates and CEO/work-intake flows are outside this transport slice.
+The selected outbound slice mirrors eligible native comments only, default-off with explicit binding audience approval/start cutoff. Use its existing public contract and exact historical receipt. General status mirroring remains planned; a current comment, its first publication and later correction/retraction must retain their documented semantics and audience checks.
 
 ## Exact combined native-service qualification
 
-The [new receipt](docs/qualification/combined-native-services/native-services-receipt.json) records actual native installation and worker lifecycle for the exact candidate archive, six migrations/eight tables, three disabled-company job RPCs, expected disabled health, empty/single/multiple/quoted-ID SQL binding and company-isolation checks. The superseded artifact failed a real host array-binding check even though its reconcile RPC resolved; tests now assert health and actual database effects. The fixed candidate passed without modifying the official host. Retain the included lock as historical evaluation provenance and qualify newer releases separately.
-
-The full-HTTP receipt remains historical; requalify HTTP/auth/UI against the current artifact. Requalify actual HTTP/auth/UI and live adapters before deployment. Interrupted publishing claims never expire or get stolen on host RPC timeout: prove all prior workers stopped, then use a token-matched administrative recovery of the same stored signed event. Normal retries and retry-blocked never recover uncertain live claims automatically.
+The exact combined historical native-service archive and receipts remain in [combined qualification](docs/qualification/combined-native-services/README.md). Preserve their package/source identities, expected disabled behavior and external-fixture limits. A later candidate needs its own complete checks; this editorial revision does not extend a prior receipt to new runtime bytes.
 
 ## Funding enhancement qualification
 
 The approved discovery loop adds actual-agent/search, unseeded official opportunity, deadline amendment, failed-source triage, budget/coverage, alert deduplication/recovery and second-run reuse checks in [discovery-loop.md](docs/development/funding-enhancement/discovery-loop.md#acceptance). The narrow foundation is merged and independently qualified with controlled external I/O; source-bound funding facts are merged, while actual research/model behavior and human delivery remain pending. The daily schedule remains disabled.
 
-Detailed [acceptance requirements](docs/development/funding-enhancement/testing.md) cover R-F01–08 and R-I01–04. Current merged DFW main is `e81d7a0ece03bbe951e5b1ae3727c26a3c86068a` (PR52); Inertia develop is `3064018359e986a0b69bb5c860c01bb18dd7f5b9` (PR37), including the non-live durable host bundle, meeting source/native composition, discovery/facts and member candidate boundary. Public drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8 are merged. Historical discovery and portable-skills CI records below remain scoped to their exact heads; live model/tool qualification remains pending.
+Detailed [acceptance requirements](docs/development/funding-enhancement/testing.md) cover R-F01–08 and R-I01–04. The [public source map](docs/development/funding-enhancement/source-map.md) separates implementation ownership, published fixtures and current open gates.
 
-Public drafting and actionable-gap continuation are merged. Historical pre-merge qualification: the combined candidate passed 451 tests with one manifest failure caused by the snapshot's missing pre-existing PPTX; the manifest entry is preserved. Independent focused review passed 125 tests. Ruff, mypy (100 source files), compileall and build passed. Current production host/model qualification remains an activation gate.
+- Benchmark v3 requires supported preparation, a precise remaining decision and independent agreement that useful agent work is complete. Earlier v2 scores are historical and need reassessment. Five cases/eight captured requirements are partial; complete sponsor inventories and independent gold admission remain open.
+- Verify scoped proposal persistence, restart/replay, checkpoint conflicts, wrong-plan rejection, source/contact provenance and preparation retained in Markdown/DOCX. Missing independent reviewer capability keeps work agent-owned.
+- Wednesday qualifies actual system output from the existing authorized Buzz agent and SQL/domain tools. Broader Codex/Claude/local/untrusted runtime portability remains a separate lane, not a Wednesday prerequisite.
+- Keep synthetic, current-public, October discovery and exact July tracks separate. Dated discovery confidence/manual-source limits and current owner priorities remain visible; current availability requires a fresh check.
+- Actual SQL/source/financial compatibility, current DAO/application action access, writer fencing, ordered intake and the selected live rehearsal remain gates. Historical missing-PPTX failures/skips remain in their original evidence, not hidden by later passing checks.
 
-- Benchmark v3 requires source-bound preparation, a precise remaining decision and independent agreement that no useful agent work remains. The earlier v2 result of 5/5 useful fields and 14 genuine requests is historical only and requires reassessment. Five partial cases cover eight captured requirements; full sponsor inventories and independent gold admission remain incomplete.
-- Verify actual scoped MCP persistence, restart/replay, checkpoint conflicts, wrong-plan rejection, source/contact provenance and preparation retained in Markdown/DOCX. A missing reviewer capability must keep the task agent-owned.
-- Qualify actual Codex, Claude, a named local runtime and configured Paperclip adapters on the same frozen evidence. Evaluate live semantic quality with the selected models in addition to controlled reviewer fixtures.
-- Keep current public enrichment, synthetic contracts and exact July replay separate. Qualify PostgreSQL concurrency, knowledge/financial scope, native authorization/revocation, ordered intake and live deployment independently.
 
-Task 6 (`dao-knowledge-v1`) is merged. Historical pre-merge evidence: DFW: 55 knowledge and 118 financial tests; full suite 624 passed with the same missing-baseline-PPTX manifest failure, Ruff, strict mypy (102 files), compileall, build, locked audit and SQLite 0014 up/down/up passed. Inertia: 50 new knowledge tests, 298/298 total, typecheck/build, clean production package and module smoke passed. Independent review ran 254 DFW focused/integration tests and the Inertia checks. Real disposable PostgreSQL qualification subsequently passed. Production roles, trusted importer and actual financial-source compatibility remain pending.
+## HackFW submission and demo verification
 
-October discovery is complete and merged in PR42. Final validation recorded 608 tests passed and one skip; post-merge CI passed. All eight selected scopes completed acquisition: 222 documents, 220 representations and 216 routed rows (208 monitor, eight reject). The exact confidence overlay is preserved. These scanner dispositions are separate from the human-reviewed [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md), which is delivered for actionable preparation. Temporary live jobs are removed. Historical repair evidence (558 passed, one private-snapshot skip and the missing-PPTX failure), the initial DNS-failed attempt, manual findings and dated replay retain their own labels; July improvement scores retain their separate evidence track.
+The official deadline is October 30, 2026 at 11:00am CDT (16:00 UTC). These are submission-readiness and demonstration checks, not a claim that any entry is submitted or administrator-approved. Use protected references for actual participants and permissions.
 
-Exact implementation references and remaining gates: [source map](docs/development/funding-enhancement/source-map.md).
+| ID | Required proof |
+|---|---|
+| T-J01 | Exact tested public source revision, reproducible setup and end-to-end video links are accessible to judges without private operational records; the submission owner confirms the deadline and entry state. |
+| T-J02 | Recognized track, public working repository and running-demo video have the app's administrator verification; changing those inputs triggers renewed verification as required. Open Forum is supported, but entry selection remains the owner's decision. |
+| T-J03 | Actual nonempty roster, each participant's talent registration, administrator attendance confirmation and Demo Day check-in are confirmed. Roster/team changes are rechecked. A provided roster/link alone is not verification. |
+| T-J04 | Actual system-generated substantial research and near-complete current application draft, agent contribution/critique within that packet, current-member exact-version review state, SQL reuse/writeback/reuse and qualified meeting readback are evidenced. Helix/Y2 are deferred; trusted Buzz execution is not PR51/untrusted isolation qualification. References are not generated outputs. |
+| T-J05 | Measure actual system elapsed time, active human time, known cost, corrections and evidence/requirement coverage with sample size. Park Place approximately one hour is user-reported historical elapsed context, not measured active time or deployed automation. Keep references/answer keys separate; no invented savings or extra submission. |
+| T-J06 | Judging-fit material names the five source-default axes and distinguishes configurable/unverified live weights from checked-in equal-20 defaults. A continuing pilot/operator/economics proposal remains a hypothesis until validated. No forecast score is inferred. |
 
+Sources checked 2026-10-24: [official Devpost deadline/rules](https://hackfw.devpost.com/rules), [event site](https://hack.fwtx.city/), [public judging criteria defaults](https://github.com/FWTX-DAO/hackfw-judging-app/blob/dec471a234893c323a79a71a381956bbd192875a/hackathon.config.ts) and [submission gates](https://github.com/FWTX-DAO/hackfw-judging-app/blob/dec471a234893c323a79a71a381956bbd192875a/src/shared/submissions.ts). The inspected source is not verification of the deployed app version or live settings.
 
 ## Team integration handoffs
 
+NTF01–15 consolidates actual operational references once. Helix/Y2 and named-owner/five-role setup are deferred/superseded; do not request settled architecture/retention/governance decisions again.
+
 Track concrete owner inputs, minimal handoffs and qualification status in [Needed from team](Needed-from-team.md). Stable NTF IDs map to the existing setup, requirement and test contracts. Update affected entries alongside these artifacts; receipt of an input does not establish live qualification.
 
-Artifact checks also verify unique NTF IDs, linked contracts/tests, explicit input versus live-qualification status, protected-data boundaries, and reciprocal links from the maintained artifact inventory. Checklist-only changes preserve the unchanged deck and original PDF bytes.
+Artifact checks also verify unique NTF IDs, linked contracts/tests, explicit input versus live-qualification status, protected-data boundaries, and reciprocal links from the maintained artifact inventory. Artifact updates keep the deck and HTML/diagram labels synchronized; the original PDF stays unchanged.
 
 
 ### Team handoff trace map
@@ -299,16 +289,17 @@ The shareable checklist keeps requests concise; this map retains existing contra
 | Handoff | Setup and requirement | Acceptance |
 |---|---|---|
 | NTF01 Website publication | U05; R-M03–04 | T-M04–05, T-S09 |
-| NTF02 Objective/knowledge reads | U15; R-I01–04, R-F04 | Objective intake and funding enhancement acceptance |
+| NTF02 Existing data/current application access | U13/U15; R-G02–04, R-I01–04, R-K06 | T-G06–15, T-K04/T-K12; objective/funding acceptance |
 | NTF03 Drive sources | U04; R-M01–04 | T-M01–05, T-B09, T-S01/S06 |
 | NTF04 Deployment/storage | U10/U14 | T-D01–06 |
 | NTF05 Runtime/tools | U01/U09/U10; R-F07–08 | G1, T-S07–08 |
-| NTF06 Durable retention | U13/U14 | T-G06–12; owning-host activation contract |
+| NTF06 Durable retention | D63; U14 | T-G06–15; legacy transport and v2 action activation, immutable pairing, lifecycle/archive and owning-host contract |
 | NTF07 Buzz | U03 | T-B01–12, T-S06 |
 | NTF08 Governance | U06; R-G03–04 | T-G03–05 |
-| NTF09 Reviewer roles | U11/U13; R-G02–04 | T-G06–12 |
-| NTF10 Y2 | U07; R-Y01 | T-Y01 |
-| NTF11 Member pilot | U02/U08; R-C01–05 | T-C01–04, T-S02–05/S10 |
-| NTF12 Knowledge inventory | U15; R-F04/R-K01–08 | T-K01–12 |
+| NTF09 Current access walkthrough; role setup superseded | U11/U13; R-G02–04 | T-G06–15 |
+| NTF10 Y2 deferred | U07; R-Y01 | Deferred T-Y01 |
+| NTF11 Authorized Buzz contribution; broader enrollment deferred | U02/U08; R-C01–05 | Current-path T-C01–04, T-S02–05/S10 |
+| NTF12 Bounded SQL evidence inventory | U15; R-F04/R-K01–08 | SQL T-K01–06/T-K09–12; graph T-K07–08 deferred |
 | NTF13 Financial source | R-F05 | Financial-snapshot contract and funding acceptance |
+| NTF15 Submission/logistics | HackFW entry readiness | T-J01–06 |
 | NTF14 Discovery/rehearsal | U09/U12; R-F03/R-F06/R-K03/R-I04 | Discovery-loop acceptance and connected demo acceptance |
