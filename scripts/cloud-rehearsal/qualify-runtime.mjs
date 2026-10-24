@@ -1,3 +1,5 @@
+import {checkMemberBoundary} from './check-member-boundary.mjs';
+import {manifest} from './plugin/dist/src/manifest.js';
 import {checkNativeMembers} from './check-native-members.mjs';
 import {issueService} from './node_modules/@paperclipai/server/dist/services/issues.js';
 import {checkHostBinding} from './check-host-binding.mjs';
@@ -30,7 +32,7 @@ try{
  const company=await m.companyService(db).create({name:'Inertia synthetic native qualification',description:'Disposable test data only'});
  await registry.upsertConfig(p.id,company.id,{companyId:company.id,configJson:{enabled:false}});
  const loaded=await loader.loadSingle(p.id);console.log('ACTIVATION',JSON.stringify(loaded));if(!loaded.success)throw new Error(loaded.error);
- for(const jobKey of ['backfill-conversations','retry-blocked-deliveries','reconcile']){await wm.call(p.id,'runJob',{job:{jobKey,runId:randomUUID(),trigger:'manual',scheduledAt:new Date().toISOString()}});console.log('DISABLED_JOB_OK',jobKey);}
+ for(const jobKey of manifest.jobs.map(j=>j.jobKey)){await wm.call(p.id,'runJob',{job:{jobKey,runId:randomUUID(),trigger:'manual',scheduledAt:new Date().toISOString()}});console.log('DISABLED_JOB_OK',jobKey);}
  console.log('CONFIG_VALIDATION',JSON.stringify(await wm.call(p.id,'validateConfig',{config:{enabled:false},companyId:company.id})));
  console.log('HEALTH',JSON.stringify(await wm.call(p.id,'health',{})));
  console.log('REGISTRY',JSON.stringify(await sql`select plugin_key,version,status from plugins`));
@@ -39,7 +41,7 @@ try{
  console.log('CONFIG',JSON.stringify(await sql`select config_json from plugin_config`));
  const migrations=await sql`select migration_key,status from plugin_migrations`;
  assertMigrationInventory(migrations,await readdir(root+'/plugin/migrations'));
- const jobs=await sql`select job_key from plugin_jobs`;assert.equal(jobs.length,3);
+ const jobs=await sql`select job_key from plugin_jobs`;assert.deepEqual(jobs.map(j=>j.job_key).sort(),manifest.jobs.map(j=>j.jobKey).sort());
  const tables=await sql`select table_name from information_schema.tables where table_schema='plugin_netrxn_inertia_e936d62b87' order by table_name`;console.log('TABLES',JSON.stringify(tables));
  assert.ok((await sql`select config_json from plugin_config`).every(x=>x.config_json.enabled===false));
  assert.deepEqual(await wm.call(p.id,'validateConfig',{config:{enabled:false},companyId:company.id}),{ok:true});
@@ -47,6 +49,7 @@ try{
  const memberServices=m.buildHostServices(db,p.id,'netrxn.inertia',eb,()=>{},{});
  disposers.push(()=>memberServices.dispose());
  await checkNativeMembers({db,sql,companyId:company.id,services:memberServices,issueService});
+ await checkMemberBoundary({db,sql,companyId:company.id,services:memberServices,issueService,pluginDatabase:m.pluginDatabaseService(db),pluginId:p.id});
  await checkHostBinding(m.pluginDatabaseService(db),p.id,company.id);
  const disabled=await lc.disable(p.id,'Synthetic disabled lifecycle qualification');assert.equal(disabled.status,'disabled');console.log('LIFECYCLE_DISABLED',disabled.status);
  console.log('QUALIFICATION_ASSERTIONS_PASSED');
