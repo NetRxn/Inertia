@@ -2,6 +2,10 @@
 
 Inertia connects DAO conversations, meeting records, grant packets and member agents. Paperclip owns operational tasks and approvals; Buzz presents the same work. DAO governance authority requires separate packet-bound evidence.
 
+## Join the sprint
+
+Use the [sprint index](https://github.com/NetRxn/Inertia/issues/40) for current priorities, claims, dependencies and ready work. The [contributor quickstart](docs/SPRINT-COORDINATION.md) covers claiming a bounded slice, verification and PR handoff without adding another project-management platform.
+
 ## Run the fixtures
 
 Use Node.js 24.11.0 or newer. From a source checkout:
