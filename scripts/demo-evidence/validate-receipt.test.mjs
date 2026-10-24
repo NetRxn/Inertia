@@ -17,6 +17,7 @@ const expected = {
   'conflicting-version': ['VERSION_CONFLICT'],
   'unknown-measurement': [],
   'unknown-as-zero': ['TOTAL_INCOMPLETE', 'UNKNOWN_COERCED'],
+  'silence-as-rejection': ['NO_RESPONSE_COERCED'],
   'manual-packet-as-system': ['CLASS_MISMATCH'],
   'partial-as-complete': ['SCOPE_OVERCLAIM'],
   'private-field-leak': ['PRIVATE_FIELD', 'PRIVATE_VALUE'],
@@ -109,6 +110,33 @@ test('every linked record must carry its own reference', () => {
   delete r.artifacts[0].version;
   const paths = validateReceipt(r).errors.filter(e => e.code === 'SHAPE').map(e => e.path).sort();
   assert.deepEqual(paths, ['admittedSources[0].sourceRef', 'artifacts[0].version', 'runs[1].agentRef']);
+});
+
+test('corrections are required and an unknown count is never zero', () => {
+  const r = load('valid-synthetic');
+  delete r.measurements.corrections;
+  assert.deepEqual(validateReceipt(r).errors.map(e => `${e.code} ${e.path}`), ['MEASUREMENT_FIELD measurements.corrections']);
+  r.measurements.corrections = {status: 'unknown', count: 0, boundary: 'review history', reason: 'not exported'};
+  assert.deepEqual(codes(validateReceipt(r).errors), ['UNKNOWN_COERCED']);
+});
+
+test('ask metrics are optional, but when measured every offered ask has exactly one state', () => {
+  const r = load('valid-synthetic');
+  delete r.measurements.asks;
+  assert.deepEqual(validateReceipt(r).errors, []);
+  const a = load('valid-synthetic');
+  a.measurements.asks.accepted = 3;
+  a.measurements.asks.completed = 4;
+  assert.deepEqual(validateReceipt(a).errors.map(e => e.path).sort(),
+    ['measurements.asks', 'measurements.asks.completed']);
+  assert.ok(validateReceipt(a).errors.every(e => e.code === 'MEASUREMENT_INCONSISTENT'));
+});
+
+test('a response time needs at least one response to time', () => {
+  const r = load('valid-synthetic');
+  Object.assign(r.measurements.asks, {accepted: 0, declined: 0, noResponse: 4, completed: 0});
+  assert.deepEqual(validateReceipt(r).errors.map(e => `${e.code} ${e.path}`),
+    ['MEASUREMENT_INCONSISTENT measurements.asks.responseTime']);
 });
 
 test('usage needs a unit and cost needs a currency', () => {

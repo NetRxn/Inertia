@@ -52,6 +52,12 @@ Historical human-submitted receipts omit `runs`, `contributions`, `toolInvocatio
 - `usage` and `cost` each need at least one entry. If a figure is not known, record it explicitly.
 - Unknown values use `status: unknown` or `not-measured` with a `reason` and no `seconds`/`value`/`amount`. Unknown is never zero.
 - `totals` is `null` unless every usage and cost entry is measured with complete coverage. A total must equal the sum of its components.
+- `corrections` is required: a measured `count` with a `boundary` and `source`, or an explicit unknown.
+- `asks` is optional (secondary measures from the [PR59 answer](https://github.com/NetRxn/Inertia/pull/59#issuecomment-6388561995)). When measured, `offered`, `accepted`, `declined`, `noResponse`, `pending` and `completed` are non-negative integers.
+  - Every offered ask has exactly one state: `accepted + declined + noResponse + pending = offered`.
+  - `completed` cannot exceed `accepted`.
+  - `noResponse` is required, because silence is never counted as a rejection.
+  - An optional `responseTime` (`statistic`: `median`, `mean` or `max`, plus `seconds` and `boundary`) times responded asks only, and needs at least one response.
 - A `savings` field is always rejected.
 
 ## Error codes
@@ -71,6 +77,7 @@ Historical human-submitted receipts omit `runs`, `contributions`, `toolInvocatio
 | `QUALIFICATION_OVERCLAIM` | Qualification is claimed for non-system evidence |
 | `UNKNOWN_COERCED` | An unknown carries a value, or a measured figure has no coverage |
 | `TOTAL_INCOMPLETE` | A total is given over incomplete components |
+| `NO_RESPONSE_COERCED` | Measured asks omit `noResponse`, so silence cannot be told apart from a decline |
 | `MEASUREMENT_FIELD`, `MEASUREMENT_INCONSISTENT` | A measurement field is missing, or values do not add up |
 | `SAVINGS_INFERRED` | A `savings` field is present |
 | `PRIVATE_FIELD`, `PRIVATE_VALUE` | A raw/private key (`arguments`, `result`, `content`, `packet`, …), or an email-, URL- or secret-shaped value |
@@ -88,6 +95,7 @@ All fixtures are synthetic and contain no real run, member or source data.
 | `conflicting-version` | `VERSION_CONFLICT`: contribution version, run head and duplicate artifact digest |
 | `unknown-measurement` | Valid with warnings. Unknowns are stated explicitly and there is no total |
 | `unknown-as-zero` | `UNKNOWN_COERCED` and `TOTAL_INCOMPLETE` |
+| `silence-as-rejection` | `NO_RESPONSE_COERCED`: unanswered asks folded into `declined` |
 | `manual-packet-as-system` | `CLASS_MISMATCH` |
 | `partial-as-complete` | `SCOPE_OVERCLAIM` |
 | `private-field-leak` | `PRIVATE_FIELD` and `PRIVATE_VALUE` |

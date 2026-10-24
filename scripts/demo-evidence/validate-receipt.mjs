@@ -21,7 +21,7 @@ const PRIVATE_KEYS = new Set(['arguments', 'args', 'result', 'results', 'raw', '
 const PRIVATE_VALUES = [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, /[a-z][a-z0-9+.-]*:\/\//i, /-----BEGIN/,
   /\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/];
 const UNKNOWN = new Set(['unknown', 'not-measured']);
-const VALUE_KEYS = ['seconds', 'value', 'amount'];
+const VALUE_KEYS = ['seconds', 'value', 'amount', 'count', 'offered', 'accepted', 'declined', 'noResponse', 'pending', 'completed'];
 
 const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const nonEmpty = v => typeof v === 'string' && v.trim() !== '';
@@ -249,6 +249,18 @@ function checkMeasurements(m, err, warn) {
     coverage(c, p);
   });
 
+  // Corrections are a primary measure; ask metrics are optional secondary measures.
+  const corrections = m.corrections, cp = 'measurements.corrections';
+  if (!isObj(corrections)) fieldErr(cp, 'required, even if unknown');
+  else {
+    if (!nonEmpty(corrections.boundary)) fieldErr(`${cp}.boundary`, 'state what the count covers');
+    if (status(corrections, cp)) {
+      if (!Number.isInteger(corrections.count) || corrections.count < 0) fieldErr(`${cp}.count`, 'expected a non-negative integer');
+      if (!nonEmpty(corrections.source)) fieldErr(`${cp}.source`, 'state where the count came from');
+    }
+  }
+  if (m.asks !== undefined) checkAsks(m.asks, err, fieldErr, status);
+
   // Totals only over complete, measured components, and they must add up.
   const t = m.totals;
   if (t === null || t === undefined) return;
@@ -267,6 +279,29 @@ function checkMeasurements(m, err, warn) {
     if (!parts.length || !num(u.value) || Math.abs(u.value - parts.reduce((s, x) => s + x.value, 0)) > 1e-9)
       err('MEASUREMENT_INCONSISTENT', `measurements.totals.usage[${i}]`, 'total does not equal the sum of matching usage entries');
   });
+}
+
+// Every offered ask is accepted, declined, pending or unanswered; silence is never folded into declined.
+function checkAsks(a, err, fieldErr, status) {
+  const p = 'measurements.asks';
+  if (!isObj(a)) return fieldErr(p, 'expected an object');
+  if (!nonEmpty(a.boundary)) fieldErr(`${p}.boundary`, 'state which asks are counted');
+  if (!status(a, p)) return;
+  if (!('noResponse' in a)) return err('NO_RESPONSE_COERCED', `${p}.noResponse`, 'record unanswered asks separately; silence is not a rejection');
+  const keys = ['offered', 'accepted', 'declined', 'noResponse', 'pending', 'completed'];
+  const bad = keys.filter(k => !Number.isInteger(a[k]) || a[k] < 0);
+  if (bad.length) return bad.forEach(k => fieldErr(`${p}.${k}`, 'expected a non-negative integer'));
+  if (a.accepted + a.declined + a.noResponse + a.pending !== a.offered)
+    err('MEASUREMENT_INCONSISTENT', p, 'accepted + declined + noResponse + pending must equal offered');
+  if (a.completed > a.accepted) err('MEASUREMENT_INCONSISTENT', `${p}.completed`, 'completed asks cannot exceed accepted asks');
+  const rt = a.responseTime, rp = `${p}.responseTime`;
+  if (rt === undefined) return;
+  if (!isObj(rt)) return fieldErr(rp, 'expected an object');
+  if (!nonEmpty(rt.boundary)) fieldErr(`${rp}.boundary`, 'state which responses are timed');
+  if (!status(rt, rp)) return;
+  if (!['median', 'mean', 'max'].includes(rt.statistic)) fieldErr(`${rp}.statistic`, 'expected median, mean or max');
+  if (!num(rt.seconds)) fieldErr(`${rp}.seconds`, 'expected non-negative seconds');
+  if (a.accepted + a.declined === 0) err('MEASUREMENT_INCONSISTENT', rp, 'no responses to time; record responseTime as unknown');
 }
 
 if (import.meta.main) {
