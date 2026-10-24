@@ -1,22 +1,28 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-24-r21
+Revision: INERTIA-2026-10-24-r22
 Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 current-member review/submission policy is in progress, not merged or deployed. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 packet core source is merged; native/Buzz actions and live authority integration remain unqualified. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Qualification record
 
-Chosen Wednesday scope: existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred. The selected v2 current-member exact-version confirmation/Mark submitted policy is in progress, not merged/deployed. Existing legacy v1 role-bound receipts/freeze behavior remains historical/regression scope, not a universal new approval requirement. Source/fixture qualification is distinct from actual generated output and live integration.
+Chosen Wednesday scope: existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred. The v2 packet core is merged; end-to-end confirmation/Mark submitted through native/Buzz remains unqualified. Existing legacy v1 role-bound receipts/freeze behavior remains historical/regression scope, not a universal new approval requirement. Source/fixture qualification is distinct from actual generated output and live integration.
 
 The merged core retains independently reviewed PostgreSQL/native-service and historical embedded-Helix evidence. Controlled source/relay/human fixtures are not live-source, model-quality or human-delivery evidence. Exact source/configuration identities and historical test counts remain in the linked qualification records and repository history, rather than being repeated throughout this plan. No tests are rerun by this editorial revision.
 
 | Capability | Established scope | Open gate |
 |---|---|---|
 | Bridge and package | Signed transport, typed native APIs, durable replay/recovery and clean package/native-service checks | Actual relay/pairing/audience and selected live host |
-| Knowledge/finance | Existing SQL/evidence and sanitized financial core; embedded-Helix checks remain historical | Actual authorized SQL/application/source binding and current-case writeback/reuse; selected financial source compatibility. Helix is deferred |
+| Knowledge/finance | Named SQL tool facade and local PostgreSQL checks now qualify the owning-domain source; embedded-Helix remains historical | Actual authorized SQL/application/source binding and current-case writeback/reuse; selected financial source compatibility. Helix is deferred |
 | Objective/meeting loop | Independently reviewed synthetic meeting-answer/knowledge/follow-up/brief loop | Actual approved Drive/member-portal readback and system-generated application preparation |
 | Current full host | Native service/cloud lanes passed | Full HTTP/UI remains blocked by environment network-interface enumeration; selected executor/production admission remains open |
+
+### Packet-v2 and named SQL tools
+
+[PR56](https://github.com/NetRxn/Inertia/pull/56) merged the additive member packet-v2 contract/freeze core: one authenticated member review binds the exact packet under trusted policy, formal obligations remain separate and no submission authority is granted. Owning-domain packet-v2 and named SQL knowledge tools are also merged, with local PostgreSQL facade qualification. Native capture is the current bounded task in [#40](https://github.com/NetRxn/Inertia/issues/40); UI/signed-human Buzz wiring, real current-authority resolver/transport, provider execution and the end-to-end human run remain unqualified.
+
+Public packet-v2 source/synthetic tests and owning-domain CI/local PostgreSQL facade checks passed within their recorded scope. Recorded skipped lanes are not qualification evidence. These checks do not establish real membership/application authorization, native/Buzz wiring or actual provider output. Runtime tests were not rerun for this status-only artifact revision.
 
 ### Meeting source and native composition
 
@@ -158,7 +164,7 @@ Preserve currentness/deadline/signoff checks, exact artifact bytes, packet/revie
 
 ## Native grant review acceptance (default-disabled)
 
-Chosen v2 is in progress, not merged/deployed: any authenticated, currently verified DAO member with current application action access may contribute and approve the exact immutable version. No named human owner or default five-specialist gates. Agents perform quality review, never human approval. Actual sponsor/DAO requirements remain case-specific. Existing v1 default-disabled source and its role/capture/cancellation records stay isolated and historically intact.
+V2 packet primitives are merged, while real native/Buzz action integration remains pending: any authenticated, currently verified DAO member with current application action access may contribute and approve the exact immutable version. No named human owner or default five-specialist gates. Agents perform quality review, never human approval. Actual sponsor/DAO requirements remain case-specific. Existing v1 default-disabled source and its role/capture/cancellation records stay isolated and historically intact.
 
 | ID | Fixture | Required result |
 |---|---|---|

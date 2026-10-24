@@ -1,11 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-24-r21
+Revision: INERTIA-2026-10-24-r22
 Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 current-member review/submission policy is in progress, not merged or deployed. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 packet core source is merged; native/Buzz actions and live authority integration remain unqualified. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Current baseline
+
+[PR56](https://github.com/NetRxn/Inertia/pull/56) merged the additive member packet-v2 contract/freeze core: one authenticated member review binds the exact packet under trusted policy, formal obligations remain separate and no submission authority is granted. Owning-domain packet-v2 and named SQL knowledge tools are also merged, with local PostgreSQL facade qualification. Native capture is the current bounded task in [#40](https://github.com/NetRxn/Inertia/issues/40); UI/signed-human Buzz wiring, real current-authority resolver/transport, provider execution and the end-to-end human run remain unqualified.
 
 Public Inertia develop includes [PR53](https://github.com/NetRxn/Inertia/pull/53) with source-qualified, default-disabled owning-host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete cursor reset. The independently reviewed all-PostgreSQL reproduction is published in [PR52](https://github.com/NetRxn/Inertia/pull/52). Live admission still requires source-row database allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live human walkthrough. [Draft PR51](https://github.com/NetRxn/Inertia/pull/51) is outside that baseline. [Implementation status](spec.md#implementation-status) and the [qualification record](testing.md#qualification-record) distinguish merged, fixture-qualified and live states.
 
@@ -44,7 +46,7 @@ Paperclip supplies operations, scheduling, task/approval state, credentials and 
 | P02 | Route Buzz task triggers into one native execution owner | Duplicate-trigger and checkout tests. |
 | P03 | Reuse existing execution hardening through native runner/plugin interfaces | Version, license, lifecycle and isolation qualification. |
 | P04 | Use native connection profiles and tool policy | Domain credential scopes and call-time authorization tests. |
-| P05 | Preserve actual domain correctness through native/Buzz member actions | Chosen v2 allows any currently verified DAO member with current application action access. No named owner or default five specialist human gates. Implementation is in progress; v1 remains historical. |
+| P05 | Preserve actual domain correctness through native/Buzz member actions | Chosen v2 allows any currently verified DAO member with current application action access. No named owner or default five specialist human gates. Packet core source is merged; native/Buzz integration remains pending and v1 remains historical. |
 
 ## Central configuration and compatibility register
 
@@ -109,7 +111,7 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D39: The selected native outbound slice mirrors eligible comments only, default-off with explicit binding audience approval/start time, using the existing durable outbox/reconciler. PR 17 is reviewed/tested and merged into develop. PR 16 supplies the native operator setup checklist; automatic intake still needs an explicitly assigned mandate and authorized live setup. General status mirroring remains future.
 
 - D40: Use the shared funding harness for substantial research and application preparation. Native/Buzz views expose the same packet and member actions. Any verified member with current application action access may contribute; agents perform quality review, never human approval.
-- D41: Use an explicit versioned v2 member-confirmation policy for new work, with current identity/membership/application action access and exact immutable packet/artifact binding. No named owner or default specialist-human gates. V2 is in progress, not merged; preserve v1 approvals, receipts and cancellation history unchanged.
+- D41: Use an explicit versioned v2 member-confirmation policy for new work, with current identity/membership/application action access and exact immutable packet/artifact binding. No named owner or default specialist-human gates. V2 packet core is merged; native/Buzz action integration remains pending; preserve v1 approvals, receipts and cancellation history unchanged.
 - D42: Corrections produce a new exact packet/version and confirmation. Mark submitted records a selected immutable packet/date and reporter/evidence level, with optional later receipt evidence. It records a past fact, not an external submission or fabricated prior approval.
 
 - D43: Consolidate funding and meeting relational data in one existing DAO PostgreSQL database, with separate domain schemas and least-privilege roles. Keep Paperclip native persistence independent. Choose physical server placement during deployment and qualify provider capabilities before migration.
@@ -138,7 +140,7 @@ Alternatives considered: latest native chat-provider implementation offers broad
 
 - D61: Run bounded query-first research and useful writeback through existing authorized SQL/domain tools for Wednesday. Operational recurrence, broader discovery automation and Y2 remain later live-admission work; the daily schedule remains disabled.
 
-- D62: Legacy v1 durable acceptance keeps its exact-command authority, current domain checks and DFW-confirmed cancellation semantics. New v2 member review is a distinct policy in progress, with current DAO/application action access and exact-version binding. Do not reinterpret legacy records or claim v2 capture/transport is already merged.
+- D62: Legacy v1 durable acceptance keeps its exact-command authority, current domain checks and DFW-confirmed cancellation semantics. New v2 member review has distinct merged packet primitives, with current DAO/application action access and exact-version binding. Do not reinterpret legacy records or claim v2 capture/transport is already merged.
 - D63: Retention planning choices are settled: recordings after validated transcript/minutes, expendable drafts and operational logs use 90-day defaults; security logs one year. Meaningful reviewed/final/submitted and authoritative records remain retained under archive/grant rules and holds. Binding, record owner and grant-specific schedule are operational inputs. No deletion is enabled.
 
 - D64: Use explicit trusted Meet/Drive bindings, verified FILE_GENERATED readiness and unchanged Drive versions for meeting sources. Persist exact publication operations before I/O and reuse native intake for reference-only follow-up. Summary-only sources never become transcripts; notes-only website output remains R-M02 partial. The merged job stays default-disabled pending source/server and installation admission.
@@ -168,7 +170,7 @@ Keep legacy accepted receipts through terminal acknowledgement or qualified dura
 
 ## Change log
 
-r21 records the finalized Wednesday PostgreSQL/Buzz path, explicit Helix/Y2 deferral, current-member exact-version v2 policy, simple submission attestation, settled retention defaults and actual-system measurement. V2 implementation remains in progress, not merged. Stable IDs and legacy records are preserved; prior review/minimization and source-qualified PR53 status remain valid history.
+r22 records merged packet-v2 and named SQL-tool source milestones, with native capture/live integration still pending. r21 recorded the finalized Wednesday PostgreSQL/Buzz path, explicit Helix/Y2 deferral, current-member exact-version v2 policy, simple submission attestation, settled retention defaults and actual-system measurement. V2 packet core has since merged; native/Buzz and real authority integration remain pending. Stable IDs and legacy records are preserved; prior review/minimization and source-qualified PR53 status remain valid history.
 
 ## Source baseline
 

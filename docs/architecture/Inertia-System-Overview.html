@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Inertia technical architecture</title><style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f3f5f7;color:#182b42;font:15px/1.5 Arial,sans-serif}main{max-width:1280px;margin:auto;padding:36px 28px 52px}h1{font-size:32px;letter-spacing:-.7px;margin:0 0 6px}h2{font-size:20px;margin:0}a{color:#285a91;text-decoration:none}a:hover{text-decoration:underline}.meta{margin:0;color:#506278;font-size:13px}.legend{display:flex;gap:24px;flex-wrap:wrap;margin:22px 0 12px}.legend span:before{content:"";display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:7px;border:1.4px solid #4e79a9;background:#eff6ff}.legend .planned:before{border:1.4px dashed #b1853e;background:#fffaf0}.legend .reviewed:before{border:1.4px dashed #8064a2;background:#f5f0ff}.legend .external:before{border-color:#8798aa;background:#f1f5f9}nav{display:flex;gap:18px;flex-wrap:wrap;margin:20px 0 28px;font-size:13px}section{background:white;border:1px solid #d9e1e9;border-radius:8px;margin:22px 0;overflow:hidden;scroll-margin-top:16px}section header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:22px 24px;border-bottom:1px solid #e8edf2}header label{display:flex;gap:8px;align-items:center;color:#506278;font-size:12px}input{width:90px;accent-color:#285a91}.viewport{overflow:auto;padding:14px 12px}.viewport svg{display:block;width:100%;min-width:1000px;height:auto}details{padding:12px 24px;border-top:1px solid #e8edf2;color:#506278;font-size:12px}summary{cursor:pointer}textarea{display:block;width:100%;min-height:240px;resize:vertical;margin:14px 0 10px;padding:12px;border:1px solid #cbd5e1;font:12px/1.6 monospace;color:#182b42;background:#f8fafc}button{border:1px solid #cbd5e1;border-radius:4px;background:white;color:#285a91;padding:6px 12px;cursor:pointer}.source-note{margin-left:14px}footer{font-size:12px;color:#506278}@media(max-width:600px){main{padding:22px 12px}h1{font-size:28px}section header{padding:16px;align-items:start}h2{font-size:17px}header label{display:none}.legend{gap:12px;font-size:12px}}@media print{body{background:white}main{max-width:none;padding:0}nav,details,header label{display:none}section{break-inside:avoid;border:0;page-break-after:always}.viewport svg{min-width:0;width:100%}.viewport{padding:0}}
 
-.caption{margin:0;padding:14px 24px 2px;color:#4a6572;font-size:14px}.legend .core:before{background:#e7f1ee;border-color:#157d80}.legend .planned:before{background:#fffaf0;border-color:#b1853e}.legend .reviewed:before{background:#f5f0ff;border-color:#8064a2}.viewport svg{min-width:800px}.meta a{font-size:inherit}</style></head><body><main><h1>Inertia technical architecture</h1><p class="meta">Technical partner view · 24 October 2026</p><p>Wednesday October 28 target: substantial system-generated application preparation through existing authorized SQL and Buzz tools. Helix and Y2 deferred; v2 member actions in progress, not deployed.</p><div class="legend" aria-label="Diagram legend"><span class="core">Implemented core</span><span class="planned">Live integration pending</span></div><p class="meta">Solid arrows show workflow or existing component relationships. Dotted arrows show planned connections. Cylinders hold saved records; diamonds show review or conditional checks.</p><nav><a href="#architecture">System overview</a><a href="#task-lifecycle">Task lifecycle</a><a href="#meeting-ingestion">Roundtable meeting flow</a><a href="#grant-review-governance">Application review and submitted record</a><a href="#funding-objectives">Actionable funding gaps</a><a href="#member-execution">Authorized agent contribution</a><a href="#data-ownership">Data ownership and reuse</a><a href="#partner-graph-research">PostgreSQL knowledge and research writeback</a><a href="#bridge-recovery">Bridge delivery and recovery</a><a href="#dependency-roadmap">Current operational inputs</a><a href="#funding-roadmap">Wednesday goal and Friday entry</a></nav><section id="architecture"><header><h2>System overview</h2><label>Zoom <input type="range" min="75" max="175" value="100" step="5" aria-label="System overview zoom"></label></header><p class="caption">Wednesday target: existing authorized Buzz agent and PostgreSQL domain tools. SQL/application wiring and v2 member actions still need qualification. Helix and Y2 are deferred; this is not a deployment claim.</p><div class="viewport"><svg xmlns="http://www.w3.org/2000/svg" width="874pt" height="683pt" viewBox="0.00 0.00 873.80 682.80" id="diagram-architecture" role="img" aria-label="System overview">
+.caption{margin:0;padding:14px 24px 2px;color:#4a6572;font-size:14px}.legend .core:before{background:#e7f1ee;border-color:#157d80}.legend .planned:before{background:#fffaf0;border-color:#b1853e}.legend .reviewed:before{background:#f5f0ff;border-color:#8064a2}.viewport svg{min-width:800px}.meta a{font-size:inherit}</style></head><body><main><h1>Inertia technical architecture</h1><p class="meta">Technical partner view · 24 October 2026</p><p>Wednesday October 28 target: substantial system-generated application preparation through existing authorized SQL and Buzz tools. Helix and Y2 deferred. Packet-v2 and named SQL-tool source are merged; live action bindings remain pending.</p><div class="legend" aria-label="Diagram legend"><span class="core">Implemented core</span><span class="planned">Live integration pending</span></div><p class="meta">Solid arrows show workflow or existing component relationships. Dotted arrows show planned connections. Cylinders hold saved records; diamonds show review or conditional checks.</p><nav><a href="#architecture">System overview</a><a href="#task-lifecycle">Task lifecycle</a><a href="#meeting-ingestion">Roundtable meeting flow</a><a href="#grant-review-governance">Application review and submitted record</a><a href="#funding-objectives">Actionable funding gaps</a><a href="#member-execution">Authorized agent contribution</a><a href="#data-ownership">Data ownership and reuse</a><a href="#partner-graph-research">PostgreSQL knowledge and research writeback</a><a href="#bridge-recovery">Bridge delivery and recovery</a><a href="#dependency-roadmap">Current operational inputs</a><a href="#funding-roadmap">Wednesday goal and Friday entry</a></nav><section id="architecture"><header><h2>System overview</h2><label>Zoom <input type="range" min="75" max="175" value="100" step="5" aria-label="System overview zoom"></label></header><p class="caption">Wednesday target: existing authorized Buzz agent and PostgreSQL domain tools. Packet-v2 and named SQL-tool source are merged; actual SQL/application and native/Buzz wiring still need qualification. Helix and Y2 are deferred; this is not a deployment claim.</p><div class="viewport"><svg xmlns="http://www.w3.org/2000/svg" width="874pt" height="683pt" viewBox="0.00 0.00 873.80 682.80" id="diagram-architecture" role="img" aria-label="System overview">
 <g id="diagram-architecture-graph" class="graph" transform="scale(1 1) rotate(0) translate(14.4 668.4)">
 <title>G</title>
 
@@ -88,8 +88,8 @@
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="562.5,-90 298.5,-90 298.5,0 562.5,0 562.5,-90"/>
 <text text-anchor="middle" x="430.5" y="-68.2" font-family="Arial" font-size="16.00" fill="#132e38">Current DAO member</text>
 <text text-anchor="middle" x="430.5" y="-50.2" font-family="Arial" font-size="16.00" fill="#132e38">Current application action access</text>
-<text text-anchor="middle" x="430.5" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">Exact-version v2 action in</text>
-<text text-anchor="middle" x="430.5" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">progress</text>
+<text text-anchor="middle" x="430.5" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 packet core merged</text>
+<text text-anchor="middle" x="430.5" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">Action wiring pending</text>
 </g>
 
 <g id="diagram-architecture-edge-5" class="edge">
@@ -125,7 +125,7 @@
  UI[&quot;Dashboard&lt;br/&gt;Same permitted work and results&quot;] &lt;--&gt; PC
  PC -.-&gt; A[&quot;Authorized domain tools&lt;br/&gt;PostgreSQL evidence and writeback&quot;]
  A -.-&gt; F[&quot;Funding preparation&lt;br/&gt;Substantial generated draft and agent critique&quot;]
- F -.-&gt; H[&quot;Current DAO member&lt;br/&gt;Current application action access&lt;br/&gt;Exact-version v2 action in progress&quot;]
+ F -.-&gt; H[&quot;Current DAO member&lt;br/&gt;Current application action access&lt;br/&gt;V2 packet core merged&lt;br/&gt;Action wiring pending&quot;]
  M[&quot;Approved meeting sources and website&quot;] -.-&gt; PC
  L[&quot;Helix and Y2&lt;br/&gt;Deferred, not Wednesday prerequisites&quot;]
  class PC,BR core
@@ -388,7 +388,7 @@
  classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
  classDef store fill:#edf2f7,stroke:#61788b,color:#132e38
 </textarea><button class="copy" type="button">Copy source</button><span class="source-note">Edits change source only.</span></details></section>
-<section id="grant-review-governance"><header><h2>Application review and submitted record</h2><label>Zoom <input type="range" min="75" max="175" value="100" step="5" aria-label="Application review and submitted record zoom"></label></header><p class="caption">The actual system prepares the draft and agents review quality. Any currently verified DAO member with current application action access can confirm the exact version under v2, which is in progress, not merged. Real sponsor/DAO requirements apply only when genuine. Mark submitted records a selected immutable packet/date and reporter/evidence level; it never submits or invents prior approvals.</p><div class="viewport"><svg xmlns="http://www.w3.org/2000/svg" width="955pt" height="893pt" viewBox="0.00 0.00 955.30 892.80" id="diagram-grant-review-governance" role="img" aria-label="Application review and submitted record">
+<section id="grant-review-governance"><header><h2>Application review and submitted record</h2><label>Zoom <input type="range" min="75" max="175" value="100" step="5" aria-label="Application review and submitted record zoom"></label></header><p class="caption">The actual system prepares the draft and agents review quality. Any currently verified DAO member with current application action access can confirm the exact version under v2; its packet core is merged while native/Buzz action wiring remains pending. Real sponsor/DAO requirements apply only when genuine. Mark submitted records a selected immutable packet/date and reporter/evidence level; it never submits or invents prior approvals.</p><div class="viewport"><svg xmlns="http://www.w3.org/2000/svg" width="955pt" height="893pt" viewBox="0.00 0.00 955.30 892.80" id="diagram-grant-review-governance" role="img" aria-label="Application review and submitted record">
 <g id="diagram-grant-review-governance-graph" class="graph" transform="scale(1 1) rotate(0) translate(14.4 878.4)">
 <title>G</title>
 
@@ -436,8 +436,8 @@
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="394.5,-522 129.5,-522 129.5,-432 394.5,-432 394.5,-522"/>
 <text text-anchor="middle" x="262" y="-500.2" font-family="Arial" font-size="16.00" fill="#132e38">Any eligible current DAO member</text>
 <text text-anchor="middle" x="262" y="-482.2" font-family="Arial" font-size="16.00" fill="#132e38">Current application action access</text>
-<text text-anchor="middle" x="262" y="-464.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 exact-version confirmation in</text>
-<text text-anchor="middle" x="262" y="-446.2" font-family="Arial" font-size="16.00" fill="#132e38">progress</text>
+<text text-anchor="middle" x="262" y="-464.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 core merged; action wiring</text>
+<text text-anchor="middle" x="262" y="-446.2" font-family="Arial" font-size="16.00" fill="#132e38">pending</text>
 </g>
 
 <g id="diagram-grant-review-governance-edge-3" class="edge">
@@ -535,7 +535,7 @@
  S[&quot;Current sources and permitted SQL evidence&quot;] --&gt; D[&quot;Actual system preparation&lt;br/&gt;Near-complete draft and source support&quot;]
  D --&gt; Q{&quot;Independent agent quality review&quot;}
  Q --&gt; D
- Q --&gt; H[&quot;Any eligible current DAO member&lt;br/&gt;Current application action access&lt;br/&gt;V2 exact-version confirmation in progress&quot;]
+ Q --&gt; H[&quot;Any eligible current DAO member&lt;br/&gt;Current application action access&lt;br/&gt;V2 core merged; action wiring pending&quot;]
  H -.-&gt; P[(&quot;Immutable packet/version&lt;br/&gt;Exact artifacts and actual review state&quot;)]
  P -.-&gt; G[&quot;Actual sponsor or DAO requirements&lt;br/&gt;Only when the real case requires them&quot;]
  P -.-&gt; A[&quot;Mark submitted or authenticated Buzz intent&lt;br/&gt;Selected immutable packet and actual date&quot;]
@@ -638,7 +638,7 @@
 <title>U</title>
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="367.5,-54 132.5,-54 132.5,0 367.5,0 367.5,-54"/>
 <text text-anchor="middle" x="250" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">Exact-version member action</text>
-<text text-anchor="middle" x="250" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 in progress, not merged</text>
+<text text-anchor="middle" x="250" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 core merged; wiring pending</text>
 </g>
 
 <g id="diagram-funding-objectives-edge-7" class="edge">
@@ -669,7 +669,7 @@
  Q --&gt; H[&quot;Prepared member request&lt;br/&gt;Private document, access or actual authority&quot;]
  P --&gt; A[(&quot;Saved preparation and attempts&lt;br/&gt;Sources, options and next action&quot;)]
  A --&gt; O[&quot;Actual generated Markdown or DOCX&lt;br/&gt;Separate from reference and answer key&quot;]
- H -.-&gt; U[&quot;Exact-version member action&lt;br/&gt;V2 in progress, not merged&quot;]
+ H -.-&gt; U[&quot;Exact-version member action&lt;br/&gt;V2 core merged; wiring pending&quot;]
  class K,R,P,Q,A,O core
  class H,U planned
 
@@ -747,8 +747,8 @@
 <title>V</title>
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="360,-72 122,-72 122,0 360,0 360,-72"/>
 <text text-anchor="middle" x="241" y="-50.2" font-family="Arial" font-size="16.00" fill="#132e38">Exact-version v2 confirmation</text>
-<text text-anchor="middle" x="241" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">In progress, not merged or</text>
-<text text-anchor="middle" x="241" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">deployed</text>
+<text text-anchor="middle" x="241" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">Packet core merged</text>
+<text text-anchor="middle" x="241" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">Action wiring pending</text>
 </g>
 
 <g id="diagram-member-execution-edge-4" class="edge">
@@ -790,7 +790,7 @@
  A --&gt; C[&quot;Generated contribution&lt;br/&gt;Sources, draft and prepared work&quot;]
  C --&gt; Q[&quot;Independent agent quality critique&lt;br/&gt;Not human approval&quot;]
  Q -.-&gt; H[&quot;Any eligible current DAO member&lt;br/&gt;Current membership and application access&quot;]
- H -.-&gt; V[&quot;Exact-version v2 confirmation&lt;br/&gt;In progress, not merged or deployed&quot;]
+ H -.-&gt; V[&quot;Exact-version v2 confirmation&lt;br/&gt;Packet core merged&lt;br/&gt;Action wiring pending&quot;]
  V -.-&gt; T
  D[&quot;Broader untrusted member runtime&lt;br/&gt;PR51 draft ingress only&quot;] -.-&gt; F[&quot;Isolation and native authoritative completion&lt;br/&gt;Separate unqualified engineering work&quot;]
  class C,Q core
@@ -904,7 +904,7 @@
  classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
  classDef store fill:#edf2f7,stroke:#61788b,color:#132e38
 </textarea><button class="copy" type="button">Copy source</button><span class="source-note">Edits change source only.</span></details></section>
-<section id="partner-graph-research"><header><h2>PostgreSQL knowledge and research writeback</h2><label>Zoom <input type="range" min="75" max="175" value="100" step="5" aria-label="PostgreSQL knowledge and research writeback zoom"></label></header><p class="caption">Wednesday knowledge is PostgreSQL-native: query first, research gaps, persist useful evidence and retrieve it next run. Revalidate current source/application access and withhold denied or unavailable material. Future Helix/Y2 adapters remain reversible and deferred.</p><div class="viewport"><svg xmlns="http://www.w3.org/2000/svg" width="870pt" height="907pt" viewBox="0.00 0.00 869.80 907.05" id="diagram-partner-graph-research" role="img" aria-label="PostgreSQL knowledge and research writeback">
+<section id="partner-graph-research"><header><h2>PostgreSQL knowledge and research writeback</h2><label>Zoom <input type="range" min="75" max="175" value="100" step="5" aria-label="PostgreSQL knowledge and research writeback zoom"></label></header><p class="caption">Wednesday knowledge is PostgreSQL-native: query first, research gaps, persist useful evidence and retrieve it next run. Revalidate current source/application access and withhold denied or unavailable material. Future Helix/Y2 adapters remain reversible and deferred. Named SQL tools are merged/local-PostgreSQL-qualified; real authority resolver/transport/provider execution remains unqualified.</p><div class="viewport"><svg xmlns="http://www.w3.org/2000/svg" width="870pt" height="907pt" viewBox="0.00 0.00 869.80 907.05" id="diagram-partner-graph-research" role="img" aria-label="PostgreSQL knowledge and research writeback">
 <g id="diagram-partner-graph-research-graph" class="graph" transform="scale(1 1) rotate(0) translate(14.4 892.65)">
 <title>G</title>
 
@@ -1268,7 +1268,7 @@
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="609.5,-161 336.5,-161 336.5,-89 609.5,-89 609.5,-161"/>
 <text text-anchor="middle" x="473" y="-139.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 exact-version confirmation</text>
 <text text-anchor="middle" x="473" y="-121.2" font-family="Arial" font-size="16.00" fill="#132e38">Mark submitted and later evidence</text>
-<text text-anchor="middle" x="473" y="-103.2" font-family="Arial" font-size="16.00" fill="#132e38">In progress, not merged</text>
+<text text-anchor="middle" x="473" y="-103.2" font-family="Arial" font-size="16.00" fill="#132e38">Core merged; wiring pending</text>
 </g>
 
 <g id="diagram-dependency-roadmap-edge-2" class="edge">
@@ -1307,7 +1307,7 @@
 </svg></div><details><summary>Mermaid source</summary><textarea spellcheck="false" aria-label="Mermaid source for Current operational inputs">flowchart LR
  SQL[&quot;Existing authorized PostgreSQL tools&lt;br/&gt;Data and protected source bindings&quot;] -.-&gt; RUN[&quot;Actual system run&lt;br/&gt;Substantial draft and agent critique&quot;]
  B[&quot;Existing authorized Buzz agent and relay&quot;] -.-&gt; RUN
- ACL[&quot;Current verified DAO membership&lt;br/&gt;Application action ACL&quot;] -.-&gt; V[&quot;V2 exact-version confirmation&lt;br/&gt;Mark submitted and later evidence&lt;br/&gt;In progress, not merged&quot;]
+ ACL[&quot;Current verified DAO membership&lt;br/&gt;Application action ACL&quot;] -.-&gt; V[&quot;V2 exact-version confirmation&lt;br/&gt;Mark submitted and later evidence&lt;br/&gt;Core merged; wiring pending&quot;]
  W[&quot;Approved Drive and member website&lt;br/&gt;Actual publication and readback&quot;] -.-&gt; DEMO[&quot;Wednesday October 28 Roundtable&lt;br/&gt;Measured connected application proof&quot;]
  RUN -.-&gt; DEMO
  V -.-&gt; DEMO
@@ -1326,7 +1326,7 @@
 <g id="diagram-funding-roadmap-node-I" class="node">
 <title>I</title>
 <polygon fill="#e7f1ee" stroke="#157d80" stroke-width="1.7" points="283,-780 0,-780 0,-672 283,-672 283,-780"/>
-<text text-anchor="middle" x="141.5" y="-758.2" font-family="Arial" font-size="16.00" fill="#132e38">Merged source baseline PR53</text>
+<text text-anchor="middle" x="141.5" y="-758.2" font-family="Arial" font-size="16.00" fill="#132e38">Merged host baseline PR53</text>
 <text text-anchor="middle" x="141.5" y="-740.2" font-family="Arial" font-size="16.00" fill="#132e38">Default-disabled assembly and SDK</text>
 <text text-anchor="middle" x="141.5" y="-722.2" font-family="Arial" font-size="16.00" fill="#132e38">bounds</text>
 <text text-anchor="middle" x="141.5" y="-704.2" font-family="Arial" font-size="16.00" fill="#132e38">Controlled fixtures, not</text>
@@ -1368,7 +1368,7 @@
 <title>V</title>
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="270,-330 13,-330 13,-240 270,-240 270,-330"/>
 <text text-anchor="middle" x="141.5" y="-308.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 exact-version member action</text>
-<text text-anchor="middle" x="141.5" y="-290.2" font-family="Arial" font-size="16.00" fill="#132e38">In progress, not merged</text>
+<text text-anchor="middle" x="141.5" y="-290.2" font-family="Arial" font-size="16.00" fill="#132e38">Core merged; wiring pending</text>
 <text text-anchor="middle" x="141.5" y="-272.2" font-family="Arial" font-size="16.00" fill="#132e38">Submitted fact and optional later</text>
 <text text-anchor="middle" x="141.5" y="-254.2" font-family="Arial" font-size="16.00" fill="#132e38">evidence</text>
 </g>
@@ -1432,10 +1432,10 @@
 </g>
 </g>
 </svg></div><details><summary>Mermaid source</summary><textarea spellcheck="false" aria-label="Mermaid source for Wednesday goal and Friday entry">flowchart TB
- I[&quot;Merged source baseline PR53&lt;br/&gt;Default-disabled assembly and SDK bounds&lt;br/&gt;Controlled fixtures, not deployment&quot;]
+ I[&quot;Merged host baseline PR53&lt;br/&gt;Default-disabled assembly and SDK bounds&lt;br/&gt;Controlled fixtures, not deployment&quot;]
  I -.-&gt; A[&quot;Qualify existing SQL and Buzz tools&lt;br/&gt;Current membership/application/source access&quot;]
  A -.-&gt; D[&quot;Actual generated research and near-complete draft&lt;br/&gt;Agent contribution, critique and correction&quot;]
- D -.-&gt; V[&quot;V2 exact-version member action&lt;br/&gt;In progress, not merged&lt;br/&gt;Submitted fact and optional later evidence&quot;]
+ D -.-&gt; V[&quot;V2 exact-version member action&lt;br/&gt;Core merged; wiring pending&lt;br/&gt;Submitted fact and optional later evidence&quot;]
  V -.-&gt; W[&quot;Wednesday October 28 operational goal&lt;br/&gt;Measure actual time, cost, corrections and coverage&quot;]
  W -.-&gt; F[&quot;Friday October 30 entry deadline&lt;br/&gt;11:00am CDT, 16:00 UTC&quot;]
  P[&quot;Park Place human-submitted history&lt;br/&gt;About one hour, user-reported elapsed&lt;br/&gt;Not deployed automation&quot;]
@@ -1448,6 +1448,6 @@
  classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4
  classDef reviewed fill:#f5f0ff,stroke:#8064a2,color:#132e38
  classDef store fill:#edf2f7,stroke:#61788b,color:#132e38
-</textarea><button class="copy" type="button">Copy source</button><span class="source-note">Edits change source only.</span></details></section><footer><p class="caption">HackFW submission deadline: October 30, 2026 at 11:00am CDT (16:00 UTC). Entry readiness includes administrator-verified track, public source, running-demo video, participant registration and attendance/check-in. Live judging weights remain unverified. See <a href="../../plan.md#hackfw-submission-and-demo-preparation">proposed demo-week preparation</a> and <a href="../../testing.md#hackfw-submission-and-demo-verification">verification gates</a>. No entry is submitted by these artifacts.</p>Source contracts: <a href="https://github.com/NetRxn/Inertia/blob/develop/Needed-from-team.md">Needed from team</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/spec.md">Specification</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/testing.md">Testing</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/plan.md">Plan</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/docs/development/native-grant-workflow.md">Grant authority</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/docs/development/dao-data-consolidation.md">Data ownership</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/discovery-loop.md">Funding discovery loop</a></footer></main><script>
+</textarea><button class="copy" type="button">Copy source</button><span class="source-note">Edits change source only.</span></details></section><footer><p class="caption">Source status: <a href="https://github.com/NetRxn/Inertia/pull/56">packet-v2 core merged</a>. <a href="https://github.com/NetRxn/Inertia/issues/40">Current bounded native-capture work</a> and actual authority/Buzz/provider qualification remain separate.</p><p class="caption">HackFW submission deadline: October 30, 2026 at 11:00am CDT (16:00 UTC). Entry readiness includes administrator-verified track, public source, running-demo video, participant registration and attendance/check-in. Live judging weights remain unverified. See <a href="../../plan.md#hackfw-submission-and-demo-preparation">proposed demo-week preparation</a> and <a href="../../testing.md#hackfw-submission-and-demo-verification">verification gates</a>. No entry is submitted by these artifacts.</p>Source contracts: <a href="https://github.com/NetRxn/Inertia/blob/develop/Needed-from-team.md">Needed from team</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/spec.md">Specification</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/testing.md">Testing</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/plan.md">Plan</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/docs/development/native-grant-workflow.md">Grant authority</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/docs/development/dao-data-consolidation.md">Data ownership</a> · <a href="https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/discovery-loop.md">Funding discovery loop</a></footer></main><script>
 for(const s of document.querySelectorAll("section")){s.querySelector("input").addEventListener("input",e=>{const svg=s.querySelector("svg");svg.style.width=e.target.value+"%";svg.style.minWidth=(800*e.target.value/100)+"px"});s.querySelector("button").addEventListener("click",async e=>{const t=s.querySelector("textarea");try{await navigator.clipboard.writeText(t.value);e.target.textContent="Copied"}catch{t.focus();t.select();e.target.textContent="Source selected"}})}
 </script></body></html>

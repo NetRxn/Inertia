@@ -1,11 +1,11 @@
 # Funding enhancement acceptance
 
-Revision: FUNDING-2026-10-24-r9. This test specification separates implementation evidence from remaining quality and deployment gates.
+Revision: FUNDING-2026-10-24-r10. This test specification separates implementation evidence from remaining quality and deployment gates.
 Updated: 2026-10-24 (UTC)
 
 ## Evaluation tracks
 
-Wednesday uses actual system-generated current preparation through the existing authorized Buzz agent and PostgreSQL tools. Helix/Y2 are deferred; v2 current-member review/Mark submitted is in progress, not merged. References/answer keys stay separate from generated output. Park Place approximately one hour is user-reported historical elapsed context only. NSF exemplary preparation plus an achievable current backup is sufficient; no automatic extra submission.
+Wednesday uses actual system-generated current preparation through the existing authorized Buzz agent and PostgreSQL tools. Helix/Y2 are deferred; v2 packet core is merged, while native/Buzz action integration remains unqualified. References/answer keys stay separate from generated output. Park Place approximately one hour is user-reported historical elapsed context only. NSF exemplary preparation plus an achievable current backup is sufficient; no automatic extra submission.
 
 | Track | Inputs | What the result measures |
 |---|---|---|
@@ -101,9 +101,9 @@ Wednesday uses the selected authorized PostgreSQL/domain knowledge path; existin
 
 ## Recorded implementation evidence
 
-[PR53](https://github.com/NetRxn/Inertia/pull/53) remains the current public source baseline with source-qualified/default-disabled host assembly, early SDK byte/deadline bounds, manual invocation and native state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Earlier SQL/native/embedded-Helix checks retain their recorded scope; they do not deploy the chosen SQL/Buzz path or implement v2.
+[PR56](https://github.com/NetRxn/Inertia/pull/56) adds the packet-v2 core to the source baseline. [PR53](https://github.com/NetRxn/Inertia/pull/53) retains source-qualified/default-disabled host assembly, early SDK byte/deadline bounds, manual invocation and native state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Named owning-domain SQL tools now have merged source/local PostgreSQL facade qualification. Earlier native/embedded-Helix checks retain their recorded scope; no recorded lane establishes the actual production resolver/transport/provider run or deployed SQL/Buzz member actions.
 
-V2 current-member exact-version confirmation and Mark submitted/evidence recording are in progress, not merged. Legacy v1 role/capture/cancellation records remain intact. Draft PR51 is unmerged/inactive ingress/per-attempt authority only; full untrusted execution/native authoritative completion remains separate unqualified work. Existing authorized Buzz contribution is the Wednesday path, not proof of that isolation boundary. Notes-only website output remains partial. Daily recurring scouting stays disabled.
+V2 packet primitives are merged; real native/Buzz confirmation and Mark submitted/evidence actions remain unqualified. Legacy v1 role/capture/cancellation records remain intact. Draft PR51 is unmerged/inactive ingress/per-attempt authority only; full untrusted execution/native authoritative completion remains separate unqualified work. Existing authorized Buzz contribution is the Wednesday path, not proof of that isolation boundary. Notes-only website output remains partial. Daily recurring scouting stays disabled.
 
 Source-row allocation, actual SQL/source/current-application access, remaining deployment/latency/lifecycle/authentication/network compatibility, writer fencing and live human walkthrough remain gates. Settled retention defaults do not enable deletion. Preserve meaningful reviewed/final/submitted records and v1 terminal-acknowledgement/qualified-transfer history. No test is rerun by this document revision.
 
@@ -131,7 +131,7 @@ Root R identifiers and funding F identifiers are different namespaces. This map 
 1. Use the actual system and selected authorized Buzz/SQL tools to generate substantial current research/preparation and a near-complete draft. Keep reference packets/answer keys outside generated-output evidence. NSF exemplary preparation is sufficient; choose a current achievable backup.
 2. Have an agent contribute and independently critique within that packet. Preserve sources, supported claim spans, unknowns, prepared next decisions and correction output. Do not substitute dot's manually polished packet.
 3. Query saved SQL knowledge before research, persist useful scoped findings and retrieve them on the next run. Prove correction/replay and denied access on the actual selected path. Helix/Y2 are deferred.
-4. Exercise an eligible current member's exact-version confirmation under the qualified v2 path when implemented. Deny agent/public-only/stale/revoked actions. Actual sponsor/DAO requirements apply only where genuine. Do not claim v2 is merged/deployed now.
+4. Exercise an eligible current member's exact-version confirmation under the v2 path when its actual action/authority bindings are qualified. Deny agent/public-only/stale/revoked actions. Actual sponsor/DAO requirements apply only where genuine. Merged packet primitives are not a deployed native/Buzz action claim.
 5. Exercise Mark submitted/equivalent authenticated Buzz intent for a selected immutable packet/date, preserving reporter, actual review state and evidence level. Attach optional later evidence without creating provider verification or fake prior approvals. No external submission occurs.
 6. Demonstrate approved meeting source/publication/readback as qualified and shared native/Buzz links. Label partial/pending connections honestly. Existing Buzz execution does not qualify full untrusted member-owned isolation or PR51.
 7. Capture actual system elapsed and active human time, known cost, corrections and coverage with sample size. Park Place's user-reported elapsed hour remains historical context only. Prepare the Wednesday October 28 run and Friday October 30 11:00am CDT event package; no automatic extra submission.
