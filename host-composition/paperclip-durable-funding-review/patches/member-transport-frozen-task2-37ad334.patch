@@ -1,0 +1,30 @@
+--- a/dist/app.js
++++ b/dist/app.js
+@@ -349,2 +349,8 @@
+     // This capability is construction-time trusted host code, never config JSON.
++    const memberInput = opts.memberPacketTransport;
++    if (memberInput !== undefined && (!memberInput || memberInput.db !== db || typeof db.rollback === "function"
++        || typeof memberInput.beforeBodyParser !== "function" || typeof memberInput.router !== "function")) {
++        throw new Error("Invalid trusted member packet transport root database composition");
++    }
++    const memberTransport = memberInput === undefined ? undefined : Object.freeze({ ...memberInput });
+     const reviewInput = opts.fundingReviewTransport;
+@@ -381,2 +387,3 @@
+     if (reviewTransport) app.use("/api/funding-review-transport", reviewTransport.beforeBodyParser);
++    if (memberTransport) app.use("/api/member-packet-transport", memberTransport.beforeBodyParser);
+     app.use(COMPANY_IMPORT_API_PATH, express.json({
+@@ -436,2 +443,3 @@
+     if (reviewTransport) app.use("/api/funding-review-transport", reviewTransport.router);
++    if (memberTransport) app.use("/api/member-packet-transport", memberTransport.router);
+     app.use("/api/auth", authRoutes(db));
+@@ -743,3 +751,3 @@
+                 // Worker-sent init/config fields cannot change these limits.
+-                httpLimits: reviewTransport && manifest.id === "netrxn.inertia"
++                httpLimits: (reviewTransport || memberTransport) && manifest.id === "netrxn.inertia"
+                     ? { maxRequestBytes: 8192, maxResponseBytes: 1024 * 1024, timeoutMs: 15000 }
+--- a/dist/app.d.ts
++++ b/dist/app.d.ts
+@@ -58,2 +58,3 @@
+     memberPacketReviewCapture?: import("./services/member-packet-capture.js").MemberPacketReviewCapability;
++    memberPacketTransport?: { db: Db; beforeBodyParser: express.RequestHandler; router: express.Router };
+     fundingReviewTransport?: {

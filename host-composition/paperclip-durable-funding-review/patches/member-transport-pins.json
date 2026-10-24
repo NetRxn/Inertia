@@ -1,0 +1,34 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "variants": {
+    "merged-member-capture": {
+      "patch": "member-transport-merged-member-capture.patch",
+      "patch_sha256": "292287934866b83151d10c7819bdd2065ba1bf31713411703ab8c52c7574cdf6",
+      "files": {
+        "dist/app.js": {
+          "base_sha256": "4742bf802330f3238cd08d92fc7ba053567cae1957e45e5f38bf357021351d78",
+          "candidate_sha256": "00d4e9ef3872360c390209cf7d84c83e78056769762593656ba1dd13722b4109"
+        },
+        "dist/app.d.ts": {
+          "base_sha256": "d77865281600281cef77461e2a6166fa348c19a9057765fb5fc4dbb9045229c7",
+          "candidate_sha256": "7fce155906085efcfa47f93809f73297c97bf4149b9e1cc9034d6a07e972f5e0"
+        }
+      }
+    },
+    "frozen-task2-37ad334": {
+      "patch": "member-transport-frozen-task2-37ad334.patch",
+      "patch_sha256": "31a6acae3fa84a45be2a21c81ab8a6cdcc352ca4b024f90a566312a607ed2e34",
+      "files": {
+        "dist/app.js": {
+          "base_sha256": "ac5577a16f22cabce8d82dea88e4e3a7fffeafe8e6db64df401f230126cd23f9",
+          "candidate_sha256": "d04f611a3327d641bbd96d957fcdf1263b6942a122adcdc9363081bdf1050b5e"
+        },
+        "dist/app.d.ts": {
+          "base_sha256": "a11397b0f6e6ff786351fc53ce16204c8093f304d25d48418dcfabc337f0ae69",
+          "candidate_sha256": "ef9dcbbec79d6b442d68df5ba26e40c7f58584094d077302e6d2ab5f0077f86d"
+        }
+      }
+    }
+  }
+}

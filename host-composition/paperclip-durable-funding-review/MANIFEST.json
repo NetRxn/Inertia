@@ -89,7 +89,20 @@
     "tests/member-capture.test.mjs": "0a02d34ae61968db89945d7d40407947ce602639466e33dadb84924b1b10efee",
     "tests/member-route-hook.test.mjs": "28c01304b64cce2bef6ded7a4a6b894f45f0b517cb8b9ed6c67f21ae730c3d2b",
     "transport/native/member-outcome.mjs": "744b88cf97d0cf87dbd8271667625e698e8415ee1141f0409fe251a00406365f",
-    "transport/tests/member-outcome.test.mjs": "2d314dd6cc0fd182f88901901daf1d63e4550480254555d76842bdf2aeb7128e"
+    "transport/tests/member-outcome.test.mjs": "2d314dd6cc0fd182f88901901daf1d63e4550480254555d76842bdf2aeb7128e",
+    "patches/member-transport-frozen-task2-37ad334.patch": "31a6acae3fa84a45be2a21c81ab8a6cdcc352ca4b024f90a566312a607ed2e34",
+    "patches/member-transport-merged-member-capture.patch": "292287934866b83151d10c7819bdd2065ba1bf31713411703ab8c52c7574cdf6",
+    "patches/member-transport-pins.json": "b2a952c17a47776bfb49704b1a7fd493fc278ad237c5a470bb09e126a350b8b8",
+    "scripts/apply-member-transport.mjs": "de886dd853982946fe8dbf0f2f3a3fd71e406715cb02de1d78af83fb66c297f1",
+    "transport/MEMBER-DELIVERY.md": "4d858307ce41957515cf470f04707c731e6cc77c3a386ae94d1139db70ac29e0",
+    "transport/native/member-delivery.mjs": "3745f75d8de68fbb9ce520d38f8d3a2589e634b71d2324dcc3dd5742b73164a6",
+    "transport/native/member-protocol.mjs": "0057f21724b04e9cb8c9798ebb42d67fec50003895a4d09c4f094c0c7f580ffc",
+    "transport/native/member-source.mjs": "aa01123922464a0cb0ce3d77c28c8e6201051c6116ae44770a7633f2979796d6",
+    "transport/tests/member-cross-domain.mjs": "8dad2a2b12b3ad9b54ccf653471b79ab03401be8bd9533fafec763a695668f5c",
+    "transport/tests/member-delivery.test.mjs": "b61a0a32e8072ee120274644c382fb12487286f783ddd3504d726733407af4d3",
+    "transport/tests/member-mount.test.mjs": "4312a58ac851e50867c310b20483c544903748fdae3caaeec1213c936679bb0b",
+    "transport/tests/member-source.test.mjs": "ec998379981f2b23651e062a645430b00d41dfbfc47812bdaf490aad8a70ce3d",
+    "transport/tests/run-member-cross-domain-postgres.sh": "b65cb972233eaa2f0f3c791809956724aab26fff8f3e66c0198f12d38a60afde"
   },
   "memberPacketCapture": {
     "state": "source-only Task 1; synthetic admission; independent review pending",
