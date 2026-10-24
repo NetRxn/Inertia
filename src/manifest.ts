@@ -1,3 +1,4 @@
+import { roundtableJobDeclaration } from "./roundtable/host.js";
 import { configurationSchema } from "./config.js";
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 export const manifest: PaperclipPluginManifestV1 = {
@@ -12,6 +13,9 @@ export const manifest: PaperclipPluginManifestV1 = {
   minimumHostVersion: "2026.1012.0",
   capabilities: [
     "companies.read",
+    "issues.read",
+    "issues.create",
+    "issues.update",
     "issue.comments.read",
     "issue.comments.create",
     "issue.comments.create_human_attributed",
@@ -27,6 +31,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   entrypoints: { worker: "dist/src/worker.js" },
   database: { migrationsDir: "migrations" },
   jobs: [
+    roundtableJobDeclaration,
     {
       jobKey: "backfill-conversations",
       displayName: "Backfill connected conversations",

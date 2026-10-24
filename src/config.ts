@@ -1,3 +1,4 @@
+import { roundtableSchema } from "./roundtable/host.js";
 import { validOutboundComments } from "./bridge/outbound-comments.js";
 import type { JsonSchema } from "@paperclipai/plugin-sdk";
 const text = { type: "string", minLength: 1 };
@@ -16,6 +17,7 @@ const object = (properties: Record<string, unknown>, required: string[]) => ({
 export const configurationSchema: JsonSchema = {
   type: "object",
   properties: {
+    roundtable: roundtableSchema,
     enabled: { type: "boolean", default: false },
     relayUrl: relay,
     bridgePubkey: hex,

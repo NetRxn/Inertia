@@ -1,3 +1,4 @@
+import { registerRoundtableJobs, type RoundtableStatus } from "./roundtable/host.js";
 import {
   definePlugin,
   runWorker,
@@ -44,6 +45,7 @@ function trusted(
   };
 }
 export function createPlugin() {
+  let roundtableStatus: () => RoundtableStatus = () => ({state:"disabled",results:[]});
   let health: PluginHealthDiagnostics = {
     status: "degraded",
     message: "Enable a company connection to begin.",
@@ -51,6 +53,7 @@ export function createPlugin() {
   return definePlugin({
     multiCompanyConfig: true,
     async setup(ctx) {
+      roundtableStatus = registerRoundtableJobs(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
           const config = await ctx.config.get(company.id);
@@ -271,7 +274,7 @@ export function createPlugin() {
       return validateConfiguration(config);
     },
     async onHealth() {
-      return health;
+      return {...health, details: {...health.details, roundtable: roundtableStatus()}};
     },
   });
 }
