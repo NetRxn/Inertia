@@ -29,7 +29,7 @@ Develop `90141461` (PR31) includes the published PR30 artifacts, cumulative core
 | D14 | Reuse native/existing hardening first | Qualify existing execution hardening against the selected Paperclip release. |
 | D15 | Maintained Helix partner/people graph and query-first research writeback are core | Require indexed partner reuse and durable knowledge growth in the demo. Broader 990 and optional semantic/vector enrichment follow later. |
 | D16 | Cloudflare is available | Select services only when deployment needs justify them. |
-| D17 | Keep four Markdown files and deck synchronized | Preserve original PDF; use focused Git commits and existing PR. |
+| D17 | Keep the specification, tests, decisions, plan, team handoff checklist and architecture artifacts synchronized | Preserve original PDF; use focused Git commits and existing PR. |
 
 ## Superseded proposals
 
@@ -180,3 +180,8 @@ Grant/native-review source pins, 23 October 2026: [Paperclip v2026.1012.0 and DF
 ## Publication gate
 
 Publish the reviewed Markdown, editable deck and visual diagrams together. Preserve qualification receipts, runtime archive and original PDF. Live deployment and credential setup require separate authorization.
+
+
+## Team integration handoffs
+
+Track concrete owner inputs, minimal handoffs and qualification status in [Needed from team](Needed-from-team.md). Stable NTF IDs map to the existing setup, requirement and test contracts. Update affected entries alongside these artifacts; receipt of an input does not establish live qualification.
