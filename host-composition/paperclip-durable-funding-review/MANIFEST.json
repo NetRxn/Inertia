@@ -60,7 +60,7 @@
     "tests/with-disposable-pg.sh": "84121fdcce5a5c3a8de981840b7f0509d3539069a2b9530a752689000d164e16",
     "tests/with-pg.sh": "ce4002b440653b486e37f57a3547dbb5cf259e2d1308071ebaf12eb2307e8dc8",
     "transport/NEEDED-FROM-TEAM.md": "a4e3c95f612675971ada6c38093d0ead4ce17e8b3325fb98bd3eeb0780a1b79e",
-    "transport/README.md": "d3dc5a6b2036af175ff64dc2c1e8bf710b7fe67141a6fc432a673b1bf0eb7328",
+    "transport/README.md": "c38f48b8892b9dc51c29fc68316cdebb29f4c544657b139e46c703a95b6ba75f",
     "transport/REVIEW.md": "f3ee2af15473a13ad11cec532421a7e367f63133dc834376380bed23c006065e",
     "transport/evidence/budget-red.log": "2e3b145c2c2a11e8814508664f009b80d2b16b2adb70a7bcaf620095e9c9cc18",
     "transport/evidence/cross-domain-final.log": "398d538eb6c7522a624b645db1d3f1be7a0117a9e00f7b0faf88999f2c81be2d",
@@ -73,10 +73,11 @@
     "transport/native/acceptance-routes.mjs": "da42f4bc52059974678cd4d620041958a468b10e64a360a64e3f282aa6a5fb99",
     "transport/native/reconcile.mjs": "a14d92d25cc13d12ea09db72ca7b31fc9c109c2142a6ea731f595b5c0efdd302",
     "transport/source-inspection.json": "40485788bb16dca6ac80300805487b651631302ad8919c8cf9db2e35be3a7852",
-    "transport/tests/cross-domain.mjs": "987d1c2348e3ac5323a873d32f2a6f02cea9b8d259757d5b9dc20759c7f4e996",
+    "transport/tests/cross-domain.mjs": "81049c1f92bfa2efca0a5be4fd704f6949d169c50deacc14521ea18bc2efeed3",
     "transport/tests/native-routes.test.mjs": "452adf639b206cebf567f4c7ae89ccc0cdf8fdb540c6bfb668cb04c74dc091d9",
     "transport/tests/reconcile.test.mjs": "347656d1e491002d76fc795a6a421b7581812d6c8eba41fa3e07835a5d664d99",
     "transport/tests/run-cross-domain.sh": "82fbb119b87e52b1d6880935806daf1c49acd810e7ec8e3e9e75c03464e4a8e7",
-    "transport/tests/run-native.sh": "f11a2145b5ff6ee1f410313f17da5dca10c6a264d75e44fb049dc0ca1781dfb9"
+    "transport/tests/run-native.sh": "f11a2145b5ff6ee1f410313f17da5dca10c6a264d75e44fb049dc0ca1781dfb9",
+    "transport/tests/run-cross-domain-postgres.sh": "f2edc0d0b003cd9b185df14a105a9821de0c02d14492cd0726a6a3ad80b30278"
   }
 }
