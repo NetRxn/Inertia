@@ -1,14 +1,16 @@
 # Inertia connected application delivery plan
 
-Revision: INERTIA-2026-10-24-r21
+Revision: INERTIA-2026-10-24-r22
 Updated: 2026-10-24 (UTC)
-Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 member confirmation/submission recording is in progress, not merged or deployed. Legacy source/records remain intact; PR51 is draft/inactive.
+Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 packet core source is merged; end-to-end member actions remain unqualified. Legacy source/records remain intact; PR51 is draft/inactive.
 
 ## Current baseline
 
+[PR56](https://github.com/NetRxn/Inertia/pull/56) merged the additive member packet-v2 contract/freeze core: one authenticated member review binds the exact packet under trusted policy, formal obligations remain separate and no submission authority is granted. Owning-domain packet-v2 and named SQL knowledge tools are also merged, with local PostgreSQL facade qualification. Native capture is the current bounded task in [#40](https://github.com/NetRxn/Inertia/issues/40); UI/signed-human Buzz wiring, real current-authority resolver/transport, provider execution and the end-to-end human run remain unqualified.
+
 Public [PR53](https://github.com/NetRxn/Inertia/pull/53) provides source-qualified, default-disabled host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled reproduction fixture. Source-row allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates.
 
-The existing source still contains v1 named/specialist-role review and packet-freeze paths. The chosen versioned v2 policy is being implemented, not merged. New work must not reinterpret v1 approvals, accepted instructions, cancellation state or historical packets. Documentation decisions are not evidence of a deployed change.
+The existing source still contains v1 named/specialist-role review and packet-freeze paths. The additive v2 packet contract/freeze core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56); native capture and live authority integration remain pending. New work must not reinterpret v1 approvals, accepted instructions, cancellation state or historical packets. Documentation decisions are not evidence of a deployed change.
 
 ## Chosen delivery sequence
 
@@ -18,7 +20,7 @@ Goal: operational at the **Wednesday October 28 Roundtable**. Friday event submi
 2. Run the actual system on current sources. Produce substantial research/preparation and a near-complete application draft, with claim-specific evidence, honest unknowns and prepared next decisions. Exemplary NSF preparation is sufficient for that case; select an achievable current backup too. Keep reference packets and answer keys separate from generated outputs.
 3. Have the existing authorized Buzz agent contribute within the same packet outcome and provide independent quality critique. Show source/version/task links, a correction and query-first SQL reuse/writeback/next-run retrieval. This is not qualification of PR51 or a full untrusted member-owned runtime.
 4. Qualify one exact-version human confirmation from any authenticated, currently verified DAO member with current application review access. No named human application owner or default five-specialist gates. Agents never provide human approval. Apply real sponsor signatures or DAO/Vocdoni governance only when actually required.
-5. Add Mark submitted or equivalent authenticated Buzz intent to record the selected immutable packet/date, reporter and evidence level. Optional receipt image/email/reference may follow later. Missing prior approvals remain missing. This records what happened externally; it does not submit an application or invent provider verification.
+5. Connect and qualify Mark submitted or equivalent authenticated Buzz intent to record the selected immutable packet/date, reporter and evidence level. Optional receipt image/email/reference may follow later. Missing prior approvals remain missing. This records what happened externally; it does not submit an application or invent provider verification.
 6. Demonstrate authorized meeting source/publication/readback and the actual connected application experience. Capture the exact qualified build, measured results, limitations and recording before the Friday deadline. Label unqualified segments as pending/fixtures, never equivalent completion.
 
 Park Place is a real historical human-submitted case. The approximately one-hour figure is user-reported elapsed time, not measured active time or deployed automation. Use it honestly as historical context, not as a generated-output or performance claim. No automatic extra submission is planned.
@@ -27,13 +29,13 @@ Park Place is a real historical human-submitted case. The approximately one-hour
 
 ### Current member review and submitted record
 
-Engineering implements v2 as an explicit new policy/version with trusted current identity, verified DAO membership and application action access. Public visibility or a generic native/Buzz/repository role alone grants no contribution or review authority. Preserve immutable packet/artifact/evidence/policy binding, stale/conflict denial, idempotent replay and audited corrections. Preserve v1 source/records and their original cancellation semantics.
+Engineering connects the merged v2 packet primitives to native capture and real authorization, preserving an explicit policy/version with trusted current identity, verified DAO membership and application action access. Public visibility or a generic native/Buzz/repository role alone grants no contribution or review authority. Preserve immutable packet/artifact/evidence/policy binding, stale/conflict denial, idempotent replay and audited corrections. Preserve v1 source/records and their original cancellation semantics.
 
 Record submission as member attestation/reference/image/email evidence without automatically upgrading it to provider-verified. Preserve reporter separately from a claimed actual submitter. A historical selected packet/date can be recorded honestly without manufacturing old approvals or forcing the old current-readiness ceremony. Qualify the exact native/Buzz action and current access at each new action. Missing trusted access integration fails closed. No broad new permission system or manual reviewer-role setup is a demo prerequisite.
 
 ### PostgreSQL knowledge and preparation
 
-Use existing authorized SQL/domain tools and canonical IDs. Admit source-bound facts with current audience/application scope; query them before external research; persist useful findings, prepared work and history with expected-version/idempotency controls; retrieve them on a second run. Unknown/source-failed/revoked evidence stays unavailable or explicitly pending. Qualify the actual selected connection and writeback path; existing SQL tools do not by themselves prove live application integration.
+The owning-domain named SQL tools are merged and locally PostgreSQL-qualified; production resolver/transport/provider execution remains unqualified. Use those authorized tools and canonical IDs. Admit source-bound facts with current audience/application scope; query them before external research; persist useful findings, prepared work and history with expected-version/idempotency controls; retrieve them on a second run. Unknown/source-failed/revoked evidence stays unavailable or explicitly pending. Qualify the actual selected connection and writeback path; existing SQL tools do not by themselves prove live application integration.
 
 Helix and Y2 are deferred from Wednesday, not silently erased. Keep their stable IDs, legacy source and future reversible adapter contracts. A future derived index must retain fencing, revision, tombstone/removal, scope and rebuild/recovery guarantees before activation. Full graph inventory/backfill, a new graph architecture and Y2 setup are not current demo gates.
 

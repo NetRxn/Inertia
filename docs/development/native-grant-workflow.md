@@ -1,8 +1,10 @@
 # Native and Buzz application review contract
 
-The chosen v2 member policy below supersedes the earlier named-owner/default specialist-human review design for new work. It is in progress, not merged or deployed. Existing source remains the legacy v1 path plus source-qualified default-disabled host assembly in [PR53](https://github.com/NetRxn/Inertia/pull/53). Preserve v1 approvals, immutable packets, receipts, cancellation state and historical meaning without reinterpretation.
+The chosen v2 member policy below supersedes the earlier named-owner/default specialist-human review design for new work. Its additive packet primitives are merged in [PR56](https://github.com/NetRxn/Inertia/pull/56), while native/Buzz and live authority integration remain pending. Legacy v1 and default-disabled host assembly remain as recorded in [PR53](https://github.com/NetRxn/Inertia/pull/53). Preserve v1 approvals, immutable packets, receipts, cancellation state and historical meaning without reinterpretation.
 
 ## Current member target
+
+The public packet-v2 contract/freeze core and owning-domain packet-v2 source are merged. Native action capture is being implemented under [#40](https://github.com/NetRxn/Inertia/issues/40); real identity/application authority, UI/signed-human Buzz and end-to-end live action qualification remain pending.
 
 Any authenticated, currently verified DAO member with current application action access can contribute and approve the exact version. No named human application owner or default five-specialist gates. Agents do preparation and independent quality review, never human approval. Public visibility, a repository/native role, Buzz pairing or forwarded actor flag alone establishes neither current DAO membership nor application action access.
 

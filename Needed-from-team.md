@@ -1,10 +1,10 @@
 # Needed from team
 
-Updated 2026-10-24 · INERTIA-2026-10-24-r21
+Updated 2026-10-24 · INERTIA-2026-10-24-r22
 
 Please consolidate the remaining operational inputs once, using protected references rather than posting credentials, member records or private documents here. Reply with **NTF ID · reference/ready/missing · operational contact · next action**. Existing data/connections should be reused before asking for new copies.
 
-The Wednesday October 28 path is PostgreSQL-native knowledge plus the existing authorized Buzz agent. Helix/Y2 are deferred. Any authenticated, currently verified DAO member with current application action access may contribute/approve an exact version under the v2 policy being implemented. No named application owner or default five-specialist reviewer setup is needed. Retention defaults and conditional actual governance are settled; do not re-ask those decisions.
+The Wednesday October 28 path is PostgreSQL-native knowledge plus the existing authorized Buzz agent. Helix/Y2 are deferred. Any authenticated, currently verified DAO member with current application action access may contribute/approve an exact version under the explicit v2 policy, whose packet core is merged while live action integration remains pending. No named application owner or default five-specialist reviewer setup is needed. Retention defaults and conditional actual governance are settled; do not re-ask those decisions.
 
 ## Consolidated current inputs
 
@@ -42,7 +42,7 @@ Provide the existing operative DAO/Vocdoni example/rules only for a decision tha
 
 ### NTF09 Superseded role setup; P0 current access walkthrough
 
-The earlier named-reviewer/five-specialist setup request is superseded by the chosen v2 policy. Use NTF02's trusted membership/application ACL and one available verified member for exact-version confirmation, correction and Mark submitted/readback. Engineering implements/qualifies v2; it is not merged or deployed. V1 history stays intact. No new duplicate input form or reviewer-admin UI is required.
+The earlier named-reviewer/five-specialist setup request is superseded by the chosen v2 policy. Use NTF02's trusted membership/application ACL and one available verified member for exact-version confirmation, correction and Mark submitted/readback. V2 packet primitives are merged; engineering is implementing native capture and must qualify actual current-access/Buzz bindings before a live claim. V1 history stays intact. No new duplicate input form or reviewer-admin UI is required.
 
 ### NTF10 Deferred Y2
 
@@ -54,7 +54,7 @@ Use the existing authorized Buzz agent for the achievable Wednesday contribution
 
 ### NTF12 P0 Organizational and partner evidence
 
-Existing authorized SQL/domain knowledge routes, source owners/references, canonical IDs and application/audience scopes for the bounded case. Supply actual organizational/governance/formation and partner records not publicly obtainable through protected access. Engineering performs inventory/research/writeback; the team need not manually build a graph. Helix deployment/backfill is deferred.
+Named SQL knowledge tools are merged and local PostgreSQL facade checks passed; actual authority resolver/transport/provider and generated-run qualification remain pending. Existing authorized SQL/domain knowledge routes, source owners/references, canonical IDs and application/audience scopes for the bounded case. Supply actual organizational/governance/formation and partner records not publicly obtainable through protected access. Engineering performs inventory/research/writeback; the team need not manually build a graph. Helix deployment/backfill is deferred.
 
 ### NTF13 P0 Where the case needs financial facts
 

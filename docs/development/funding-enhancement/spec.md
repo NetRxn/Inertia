@@ -1,6 +1,6 @@
 # Funding agents and DAO intake
 
-Revision: FUNDING-2026-10-24-r9
+Revision: FUNDING-2026-10-24-r10
 Updated: 2026-10-24 (UTC)
 
 ## Outcome and current source
@@ -11,7 +11,9 @@ The operational target is Wednesday October 28 Roundtable using existing authori
 
 Paperclip owns native work/scheduling/budgets/documents; Buzz exposes the same work. DFW owns funding evidence, proposals, immutable packets, knowledge and domain history. Reuse the existing DAO PostgreSQL domain ownership and keep Paperclip native persistence separate. Do not create a parallel task/approval ledger or expose broad database credentials to contributors.
 
-Public [PR53](https://github.com/NetRxn/Inertia/pull/53) source-qualified default-disabled host assembly, early SDK byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes controlled cross-service fixtures. Source-row allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates. New v2 member review/submission policy is in progress, not merged or deployed. Legacy v1 records/source retain their historical meaning. Draft PR51 remains unmerged/inactive ingress/per-attempt authority; full untrusted member execution and native authoritative completion remain open.
+Public [PR53](https://github.com/NetRxn/Inertia/pull/53) source-qualified default-disabled host assembly, early SDK byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes controlled cross-service fixtures. Source-row allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates. The v2 packet core is merged; native/Buzz and real authority integration remain pending. Legacy v1 records/source retain their historical meaning. Draft PR51 remains unmerged/inactive ingress/per-attempt authority; full untrusted member execution and native authoritative completion remain open.
+
+The additive packet-v2 core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56). Named owning-domain SQL tools and local PostgreSQL facade qualification are complete; real authority resolver/transport/provider execution and native/Buzz member-action wiring remain unqualified.
 
 ## Preparation workflow
 
@@ -62,7 +64,7 @@ Actual financial/organizational documents not publicly obtainable require protec
 
 ## Collaborative confirmation and submitted record
 
-V2 is an explicit versioned policy in progress. Trusted native/Buzz action handling must resolve the real authenticated human, current verified DAO membership and current application action access. Bind the exact immutable packet/version/artifact bytes and policy. Deny stale, public-only, forged, agent or out-of-scope actions. A correction creates a new version and confirmation. Do not fan one member confirmation into fabricated specialist approvals.
+V2 is an explicit versioned policy with merged packet primitives; live action integration remains pending. Trusted native/Buzz action handling must resolve the real authenticated human, current verified DAO membership and current application action access. Bind the exact immutable packet/version/artifact bytes and policy. Deny stale, public-only, forged, agent or out-of-scope actions. A correction creates a new version and confirmation. Do not fan one member confirmation into fabricated specialist approvals.
 
 Legacy v1 approvals, receipts, cancellation state and historical packets remain untouched. Their accepted-command timing and DFW-confirmed cancellation semantics are not silently reinterpreted as v2. No cross-database atomicity or live v2 transport is claimed. Qualify the actual new guarded action/capture path before activation; missing trusted current-access integration fails closed.
 

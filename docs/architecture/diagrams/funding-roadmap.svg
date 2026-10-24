@@ -5,7 +5,7 @@
 <g id="diagram-funding-roadmap-node-I" class="node">
 <title>I</title>
 <polygon fill="#e7f1ee" stroke="#157d80" stroke-width="1.7" points="283,-780 0,-780 0,-672 283,-672 283,-780"/>
-<text text-anchor="middle" x="141.5" y="-758.2" font-family="Arial" font-size="16.00" fill="#132e38">Merged source baseline PR53</text>
+<text text-anchor="middle" x="141.5" y="-758.2" font-family="Arial" font-size="16.00" fill="#132e38">Merged host baseline PR53</text>
 <text text-anchor="middle" x="141.5" y="-740.2" font-family="Arial" font-size="16.00" fill="#132e38">Default-disabled assembly and SDK</text>
 <text text-anchor="middle" x="141.5" y="-722.2" font-family="Arial" font-size="16.00" fill="#132e38">bounds</text>
 <text text-anchor="middle" x="141.5" y="-704.2" font-family="Arial" font-size="16.00" fill="#132e38">Controlled fixtures, not</text>
@@ -47,7 +47,7 @@
 <title>V</title>
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="270,-330 13,-330 13,-240 270,-240 270,-330"/>
 <text text-anchor="middle" x="141.5" y="-308.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 exact-version member action</text>
-<text text-anchor="middle" x="141.5" y="-290.2" font-family="Arial" font-size="16.00" fill="#132e38">In progress, not merged</text>
+<text text-anchor="middle" x="141.5" y="-290.2" font-family="Arial" font-size="16.00" fill="#132e38">Core merged; wiring pending</text>
 <text text-anchor="middle" x="141.5" y="-272.2" font-family="Arial" font-size="16.00" fill="#132e38">Submitted fact and optional later</text>
 <text text-anchor="middle" x="141.5" y="-254.2" font-family="Arial" font-size="16.00" fill="#132e38">evidence</text>
 </g>

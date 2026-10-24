@@ -1,13 +1,13 @@
 # Funding application implementation plan
 
-Revision: FUNDING-2026-10-24-r9
+Revision: FUNDING-2026-10-24-r10
 Updated: 2026-10-24 (UTC)
 
 ## Target and source boundary
 
 Make the actual system operational for Wednesday October 28 Roundtable using existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. It must produce substantial research/preparation and a near-complete current application draft, with agent contribution and independent quality critique within that outcome. Helix and Y2 are deferred. Full untrusted member-owned execution is separate and unqualified.
 
-Public source remains PR53's source-qualified/default-disabled host assembly, SDK byte/deadline bounds, manual invocation and state-delete reset. V2 current-member confirmation/Mark submitted is in progress, not merged or deployed. Preserve legacy v1 records/approval/cancellation meaning. No implementation step here authorizes deployment, permission/credential change, deletion or external submission.
+Public source includes [PR56](https://github.com/NetRxn/Inertia/pull/56) packet-v2 primitives plus PR53's source-qualified/default-disabled host assembly, SDK byte/deadline bounds, manual invocation and state-delete reset. V2 packet core is merged; native/Buzz confirmation/Mark submitted remains unqualified. Preserve legacy v1 records/approval/cancellation meaning. No implementation step here authorizes deployment, permission/credential change, deletion or external submission.
 
 ## Task 0 Baseline and essential checks
 
@@ -35,7 +35,7 @@ Acceptance: F01–03/F06, Q01–04, S01–03.
 
 - [x] Existing route/owner completeness and source-bound independent gap-plan framework are merged. Sponsor obligation ownership is distinct from a named human application owner.
 - [ ] Qualify independent agent critique against exact requirements/evidence. Reject premature human requests with useful next agent work.
-- [ ] Implement/qualify v2: any authenticated, currently verified DAO member with current application action access can contribute/approve the exact version. No named owner or default five specialist human gates. Agents never approve.
+- [ ] Connect/qualify the merged v2 packet core to real action/authority bindings: any authenticated, currently verified DAO member with current application action access can contribute/approve the exact version. No named owner or default five specialist human gates. Agents never approve.
 - [ ] Retain real sponsor signatures and actual DAO/Vocdoni governance only when genuinely applicable. Do not alter v1 historical records or turn one confirmation into fabricated specialist approvals.
 
 Acceptance: F04–05/F08, Q04–06/Q12–14, A01–06 and root T-G06–15.
@@ -60,7 +60,8 @@ Acceptance: current-path Q09–10/S01–03, R-C01–05; broader portable/untrust
 ## Task 6 SQL knowledge and private documents
 
 - [x] Existing evidence/admission/history and sanitized financial foundation is merged.
-- [ ] Reuse actual authorized PostgreSQL domain tools, canonical IDs and current application/source/audience access. Qualify bounded query-first research, transactional useful writeback and next-run retrieval.
+- [x] Named SQL knowledge-tool facade is merged and locally PostgreSQL-qualified.
+- [ ] Qualify actual production authority resolver/transport/provider execution using authorized PostgreSQL domain tools, canonical IDs and current application/source/audience access. Qualify bounded query-first research, transactional useful writeback and next-run retrieval.
 - [ ] Use protected existing organizational/financial documents where public sources cannot supply them. Qualify actual provider/export format and amount period/basis/currency/source binding without exposing records publicly.
 
 Acceptance: K01–07, D01/S01–03, root T-D01–06 and current SQL T-K.
@@ -86,13 +87,14 @@ Prove actual SQL query/research/writeback/reuse with correction/replay/denial an
 ## Task 7 Versioned member review and submitted record
 
 - [x] Legacy v1 capture/transport and source-qualified PR53 assembly remain merged/default-disabled, with their original checks and historical records intact.
-- [ ] Implement distinct v2 current DAO-membership/application action authorization and exact immutable packet/version/policy confirmation. Native/Buzz views must resolve real humans; agents, forwarded flags and public-only access cannot approve.
+- [x] Additive packet-v2 contract/freeze core and owning-domain packet primitives are merged; v1 remains unchanged.
+- [ ] Connect trusted native capture and real current DAO-membership/application action authorization to exact packet/version/policy confirmation. Native/Buzz views must resolve real humans; agents, forwarded flags and public-only access cannot approve.
 - [ ] Add Mark submitted/equivalent authenticated Buzz intent selecting the actual immutable packet/date, reporter and evidence level. Permit later optional receipt reference/image/email. Preserve missing prior approvals, actual review/readiness state and reporter versus claimed submitter. Do not require fabricated approvals to record a real past fact.
 - [ ] Use audited append-only corrections/evidence and idempotent exact-action replay. No automatic portal submission, vote, payment or permission expansion.
 - [ ] Qualify current source/access, guarded writes, source-row allocation, remaining deployment/latency compatibility, approved lifecycle/authentication/network bindings and live walkthrough before activation.
 - [ ] Retain meaningful reviewed/final/submitted records, authoritative evidence, v1 receipts and holds. Settled 90-day/one-year planning defaults do not enable deletion.
 
-Acceptance: A01–06 and root T-G06–15. Existing legacy cancellation/receipt behavior remains a regression lane, not an invented v2 role ceremony. V2 is in progress, not merged.
+Acceptance: A01–06 and root T-G06–15. Existing legacy cancellation/receipt behavior remains a regression lane, not an invented v2 role ceremony. V2 packet core is merged; native/Buzz action integration remains pending.
 
 ## Task 8 Meetings, objectives and shared views
 
