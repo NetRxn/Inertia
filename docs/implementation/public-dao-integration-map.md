@@ -1,10 +1,10 @@
 # Public DAO integration boundaries
 
-Reference revision 3, 2026-10-23. Scope: pinned public sources. Deployment and operative governance verification are pending. See [grant-draft evidence](public-dao-grant-grounding.md).
+Reference revision 4, 2026-10-24. Scope: pinned public sources. Deployment and operative governance verification are pending. See [grant-draft evidence](public-dao-grant-grounding.md).
 
 ## Shared storage boundary
 
-Target one existing DAO managed PostgreSQL database for funding and meeting records, isolated by owned schemas and least-privilege roles; keep Paperclip native persistence independent. Existing Meeting Mode/website tables require read-only inventory and identifier mapping, not assumed duplication or automatic migration. Drizzle owns website/meeting changes; funding Alembic owns its own schema. Helix is the core indexed partner graph under implementation, fed by query-first research writeback and the DAO PostgreSQL evidence/history outbox. Queries revalidate source/access/version, with bounded PG fallback during outages. Broader 990 and optional semantic/vector enrichment follow later; review and governance retain their domain owners. See [source compatibility and migration gates](../development/dao-data-consolidation.md). This changes design, not deployed storage.
+Target one existing DAO managed PostgreSQL database for funding and meeting records, isolated by owned schemas and least-privilege roles; keep Paperclip native persistence independent. Existing Meeting Mode/website tables require read-only inventory and identifier mapping, not assumed duplication or automatic migration. Drizzle owns website/meeting changes; funding Alembic owns its own schema. Helix is the core indexed partner graph, with query-first research writeback and the evidence/history outbox merged and independently reviewed. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal passed. Production source/host/service integration, admitted inventory/backfill and qualification remain pending. Queries revalidate source/access/version, with bounded PG fallback during outages. Broader 990 and optional semantic/vector enrichment follow later; review and governance retain their domain owners. See [source compatibility and migration gates](../development/dao-data-consolidation.md). Deployment qualification remains pending.
 
 ## Meeting source reuse
 

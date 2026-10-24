@@ -1,27 +1,27 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-23-r15
-Updated: 2026-10-23 (UTC)
-Status: DFW foundations merged; drafting/gap and Task 6 knowledge/financial contracts independently reviewed locally, awaiting publication. Core Helix partner-graph implementation is underway. October discovery draft PR42 is published; CI is running and source qualification is in review. Final scout and live integrations remain pending.
+Revision: INERTIA-2026-10-23-r16
+Updated: 2026-10-24 (UTC)
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
 
 
 ## Implementation status
 
-Documentation baseline: develop `1ac44a7a`. Runtime: PR 17 merged at `4841f7ade1510acf93e43ce1dbd16b91ae7bcd88`.
+Runtime/documentation base: develop `6f93cfef486b017afccda7b275837e09213aa189` (PR25/26/27 core and PR28 default-disabled native adapter). The historical PR17 archive retains its exact qualification record.
 
 | Component | Verified state | Remaining integration |
 |---|---|---|
 | Buzz bridge | Signed transport, native comments/confirmations, durable recovery | Approved relay, pairing and live admission |
 | Native comment export | First-publication mirroring, default-off | Per-binding audience approval and history cutoff; status mirroring planned |
 | Roundtable | Source/hash core and website caller contract-tested | Website server, authorized Drive source and single-owner native job |
-| Grants | Inertia packet/review/vote binding; DFW candidates, route review and portable skills 3.4.1 merged | Reviewed public drafting/gap bridge awaits publication; live harness, human-decision adapter, effective-authority verifier and receipt acceptance remain pending |
-| Reusable knowledge and finance | Task 6 exact-evidence extraction, scoped SQL reuse and sanitized financial fixture contracts implemented and independently approved locally | Publish both repository slices; qualify real PostgreSQL, trusted importer and chosen financial adapter |
-| Partner graph | Implementation underway; official SDK/embedded runtime installed and a real query passed | Typed assertions, writeback/outbox, projection, scoped queries and end-to-end acceptance remain pending |
-| October discovery | Current profile, discovery repairs, manual research and dated replay independently reviewed | Draft PR42 published; CI and source qualification in review; final fresh scout pending |
-| CEO | Native operator checklist | Assigned intake mandate, native run policy, budgets and authorized pilot |
+| Grants | Public drafting/actionable gaps and packet/review/vote binding merged; native-review transaction service and adapter tested, default-disabled | Complete DFW native-review publication; implement/qualify approved acceptance and cancellation semantics, production writer composition, actual model harness and effective-authority verification |
+| Reusable knowledge and finance | Task 6 evidence/SQL reuse and sanitized financial contracts merged; real PostgreSQL domain qualification passed | Configure trusted production import/admission, roles and the selected financial adapter |
+| Partner graph | Typed assertions, writeback/outbox and scoped projection/query core merged; real PG-to-embedded-Helix rehearsal passed | Qualify authenticated production adapters, admitted inventory/backfill, deployed Helix and operational discovery |
+| October discovery | Selected-scope acquisition complete; PR42 merged with passing post-merge CI; priority diligence queue delivered | Select preparation under current owner priorities and deferrals from the [reviewed queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md), preserving confidence and source limits |
+| CEO | Objective intake, funding links and meeting-ready brief core merged; synthetic meeting-answer loop passed | Assign the live intake/research mandate, source access, tools, budgets and delivery policy |
 | Member agents and Y2 | Interfaces identified | Enrollment, execution isolation and live adapters |
 
-Qualification: 248 combined tests; exact archive passed native-service RPC checks with six migrations. [Testing evidence](testing.md#qualification-record) identifies the artifact and acceptance scope. Live deployment and domain admission are pending. Website server contract: [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md), [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md).
+Historical PR17 qualification: 248 combined tests; its exact archive passed native-service RPC checks with six migrations. Current cloud and Task 8 evidence is recorded separately. [Testing evidence](testing.md#qualification-record) identifies the artifact and acceptance scope. Live deployment and domain admission are pending. Website server contract: [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md), [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md).
 
 ## Reproducible connected walkthrough
 
@@ -113,7 +113,9 @@ Vocdoni is selected, and the user will provide an example. The [documented FWTX 
 
 **Native-first target; integration pending.** Scout and application-drafting agents run in Paperclip using the existing funding skill and CLI/MCP harness, centrally or in scoped member environments. Paperclip owns tasks, documents, questions and human review cards. The funding backend retains evidence, validated proposals, immutable packets, eligibility and review audit. Its web UI remains an optional specialist/admin fallback.
 
-Use native per-item verdicts with explicit `resolverPolicy: human_only`, configured addressees and current document-revision targets. A **planned trusted server adapter** verifies the authenticated human, designated role, company/applicant, workspace and packet version, then applies existing funding-domain review operations. Current funding MCP exposes evidence and proposal tools only. Proposal acceptance and packet signoff require authorized human decisions through trusted domain services. Initially, corrections use document edit → regenerated proposal → new review. Add a structured grant panel only if a real packet walkthrough proves that path insufficient.
+Use native per-item verdicts with explicit `resolverPolicy: human_only`, configured addressees and current document-revision targets. A **tested, default-disabled trusted server adapter** verifies the authenticated human, designated role, company/applicant, workspace and packet version, then applies existing funding-domain review operations. Current funding MCP exposes evidence and proposal tools only. Proposal acceptance and packet signoff require authorized human decisions through trusted domain services. Initially, corrections use document edit → regenerated proposal → new review. Add a structured grant panel only if a real packet walkthrough proves that path insufficient.
+
+The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation.
 
 The merged packet core already verifies exact artifact bytes and freezes packet, version and reviews. `ReviewedGrantSource` reads engine-owned domain data through a trusted adapter. Production still needs consistent reads, durable decision/domain reconciliation, chain-specific verification and native receipt acceptance. Native review, DAO ratification and funder submission have separate authority steps. See the [source-pinned mapping](docs/reference/native-grant-workflow.md) and [adapter contract](docs/development/native-grant-workflow.md).
 
@@ -138,9 +140,11 @@ The [detailed funding specification](docs/development/funding-enhancement/spec.m
 
 - R-F08: A human handoff includes prepared work and the exact remaining authority, access or private-record decision. A trusted reviewer independently assesses the source-bound gap plan. Rejected plans return concrete agent work; missing review capability keeps work agent-owned. Markdown and DOCX retain current preparation. Reassess the five examples against benchmark v3 preparation and handoff criteria.
 
-### Maintained partner knowledge: R-K01–R-K08 (core, implementation underway)
+### Maintained partner knowledge: R-K01–R-K08 (core, merged)
 
-Task 6 provides the locally reviewed evidence/SQL foundation. Helix ingestion and retrieval are under implementation. Reuse existing member, project and evidence identities. Paperclip owns work and decisions; the graph supplies indexed knowledge.
+Current delivery: the core is merged. The approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md) connects query-first knowledge, bounded new-source research, official validation, useful writeback, briefs and urgent alerts. Host wiring and recurring activation remain pending.
+
+Task 6 provides the merged evidence/SQL foundation. The Helix projection, retrieval and research-writeback core is merged and independently reviewed; real PostgreSQL-to-embedded-Helix rehearsal passed. Production adapters, admitted inventory/backfill and live qualification remain pending. Reuse existing member, project and evidence identities. Paperclip owns work and decisions; the graph supplies indexed knowledge.
 
 - R-K01: Inventory and index every relevant partner organization, work contact and role, program/project/event, contribution history and DAO relationship owner in authorized existing records, website sources and meeting material. Each inventoried item has a stable identity or explicit unresolved disposition, with source revision and coverage receipt.
 - R-K02: Preserve source ID/revision/hash, exact locator, observation time, effective interval when known, audience, project/opportunity scope and trusted admission history. Keep prospect/collaborator, candidate/current/disputed, and planned/started/completed/cancelled/unknown delivery stages separate. Dates alone never establish completed delivery or a relationship.
@@ -153,7 +157,9 @@ Task 6 provides the locally reviewed evidence/SQL foundation. Helix ingestion an
 
 Seed DAO, TechFW/MADE, Moonshot, LiquidAcre and HackFW, then cover the complete bounded source inventory. MADE is a TechFW program. Moonshot and LiquidAcre are existing collaborators; individual roles and work retain their own evidence and stage. October 30 closing-host work remains planned until delivery evidence exists. Preserve the spoken “Liquid Acres” mention separately until its candidate mapping is admitted. Exact IRS records verify DAO EIN 41-2815082 and public-charity status; the determination-letter attachment, filing address versus service geography, and opportunity-specific eligibility are separate facts. [Source evidence and status](docs/development/funding-enhancement/source-map.md).
 
-### General objective intake: R-I01–R-I04 (planned)
+### General objective intake: R-I01–R-I04 (core merged)
+
+Objective intake, versioned funding links and brief rendering are merged. The actual-service synthetic meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review. Production source/member exports, native visibility and assigned live intake remain activation requirements.
 
 - R-I01: Every website innovation-bounty submission enters the general Paperclip backlog. Preserve original text, submitter, visibility and source identity. The CEO prioritizes within its assigned mandate.
 - R-I02: One durable source-to-native mapping reconciles retries and unknown creates. Trusted ordering and compare-and-swap prevent stale updates. Withdrawal retains an audit record; audience narrowing suppresses derived output until permissions converge.
@@ -180,7 +186,7 @@ The user will arrange repository-admin access for a second rehearsal participant
 
 Default to **one relational database on the existing DAO managed PostgreSQL service** for grant funding and meeting information, with domain-owned schemas/tables and least-privilege service roles. Preserve the funding data model and DAO website/Drizzle ownership. Explicit service roles govern cross-domain reads and writes. Deployment determines physical server placement while domains retain logical ownership.
 
-Paperclip keeps its **independent native database**, including plugin transport state. Buzz retains existing transport storage. Funding services own evidence, validated proposals, immutable packets and domain review audit in the DAO database; meeting services own publication versions and audience enforcement there. Native authenticated decisions remain in Paperclip and reconcile through the planned adapter. Reconcile changes through durable receipts across the separate stores.
+Paperclip keeps its **independent native database**, including plugin transport state. Buzz retains existing transport storage. Funding services own evidence, validated proposals, immutable packets and domain review audit in the DAO database; meeting services own publication versions and audience enforcement there. Native authenticated decisions remain in Paperclip and reconcile through the tested, default-disabled adapter. Its live source/writer-fence composition remains pending the approved acceptance/reconciliation seam and production writer qualification. Reconcile changes through durable receipts across the separate stores.
 
 Helix is the **core derived indexed partner graph**. DAO PostgreSQL owns evidence, typed facts, history and the transactional projection outbox; Paperclip owns native work and decisions in its separate database. Helix is rebuildable and every returned fact is revalidated against current source/access state. Priority removals and read-time denial make revocations effective even during projection outages. Broader 990 and vector enrichment come later. Partner capability and relationship evidence support opportunity-specific diligence; packet-bound review and governance retain authority.
 

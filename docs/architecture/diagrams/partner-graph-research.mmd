@@ -13,7 +13,7 @@ flowchart TB
  PG -.-> O["Answer and durable receipt<br/>Graph refresh status stays visible"]
  PG -.->|Changed assertions| P["Project and reconcile<br/>Retry safely with stable identities and revisions"]
  P -.->|Confirmed indexed update| HX
- class HX,Q,F,V,C,P planned
+ class HX,Q,F,V,C,P core
  class PG store
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px

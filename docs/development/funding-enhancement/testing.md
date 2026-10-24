@@ -1,6 +1,7 @@
 # Funding enhancement acceptance
 
-Revision: FUNDING-2026-10-23-r3. This test specification separates implementation evidence from remaining quality and deployment gates.
+Revision: FUNDING-2026-10-23-r4. This test specification separates implementation evidence from remaining quality and deployment gates.
+Updated: 2026-10-24 (UTC)
 
 ## Evaluation tracks
 
@@ -77,9 +78,9 @@ Initial qualification target (engineering choice): every demonstrably answerable
 | D01 | DAO shared-schema migration has one owner per schema, isolation tests and tested rollback | 6,9 |
 | C01 | Exact-lock audit and essential full checks execute successfully on qualification commit | 0,9 |
 
-## Core partner graph acceptance before implementation
+## Core partner graph acceptance
 
-The graph acceptance tests below remain pending. The corresponding detailed fixtures and performance targets are [T-K01–12](../../../testing.md#operational-partner-graph-acceptance-planned). Task 6 unit/SQL results are recorded separately; graph acceptance awaits implementation and qualification.
+The graph core is merged, with independent real PostgreSQL/PostGIS and PG-to-embedded-Helix cloud rehearsal passed. The matrix below retains production and end-to-end release requirements. Detailed fixtures and performance targets are [T-K01–12](../../../testing.md#operational-partner-graph-acceptance-live-qualification-pending). Authenticated source/host/service adapters, admitted inventory/backfill and deployed-service/live workflow qualification remain pending.
 
 | ID | Required proof | Owning plan task |
 |---|---|---|
@@ -98,14 +99,25 @@ The graph acceptance tests below remain pending. The corresponding detailed fixt
 
 ## Recorded implementation evidence
 
-- Merged: DFW PR35/37/38/39/40. Version 3.4.1 main `c615525291a656f9abd4da1262c23fa8ae97290c` passed all steps in GitHub CI 39999694731. Codex offline install/cache checks pass; live model execution is pending.
-- Reviewed, awaiting publication: public drafting plus actionable gaps. Combined patch SHA-256 `aae99bc899ca7805d6d8f5092efc77ccb58bcb06b766f8dae7350cdeeb0c8483`. Local full suite: 451 passed, one manifest failure for the missing pre-existing PPTX. The entry remains in the manifest. Independent focused review: 125 passed. Ruff, mypy (100 source files), compileall and build passed.
-- Task 6, unpublished/not live: independently approved `dao-knowledge-v1` evidence/SQL and sanitized financial fixture implementation. DFW 55 knowledge/118 financial tests; full suite 624 passed with the missing-baseline-PPTX failure. Ruff, strict mypy (102 files), compileall, build, exact-lock audit and SQLite 0014 up/down/up passed. Inertia 50 new tests, 298/298 total, typecheck/build, production package and module smoke passed. Independent review ran 254 DFW tests and the Inertia checks. Real PG concurrency/schema roles, trusted importer and actual financial adapter remain unqualified.
-- October discovery repair: 558 passed, one private-snapshot skip and the missing-PPTX manifest failure; private replay/receipt checks 8 passed. Actual first scanner attempt failed DNS with zero acquisition/candidates. The 33 manual findings and dated replay are separate evidence. Draft PR42 is published; CI is running and source qualification is in review and final scout and complete-tree CI remain pending.
+Current qualification: Independent one-command cloud rehearsal passed DFW PostgreSQL 17.11/PostGIS 3.5.2 domain qualification (65 tests), Paperclip 2026.1012.0 native PostgreSQL 18 services and real PG-to-embedded-Helix reuse/writeback. Native inbox/outbox race fixes and cloud tooling are merged. Full HTTP/UI remains blocked by `os.networkInterfaces` / `uv_interface_addresses`; PPC2/VPS executor admission, live-member enrollment and production deployment remain future gates.
+
+Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is being packaged.
+
+Native review: Inertia native adapter is merged/default-disabled in PR28; the tested DFW transaction service is reviewed/in CI for PR47. PR47 CI found one UTC-versus-Chicago deadline-date boundary failure; repair is underway and merge requires green CI. The approved acceptance/reconciliation seam and production writer qualification remain pending. Durable exact-version authority-at-acceptance is approved; implementation must preserve funding-confirmed cancellation, stale-evidence rejection and separate submission authority.
+
+### Historical slice evidence
+
+- Historical discovery baseline: DFW PR35/37/38/39/40/42. Its main `e5a146398e4aa2e808e445be102a255f04f5265d` passed post-merge CI 40036012817. Historical portable-skills 3.4.1 main `c615525291a656f9abd4da1262c23fa8ae97290c` passed CI 39999694731. Codex offline install/cache checks pass; live model execution is pending.
+- Public drafting/gaps, now merged: historical pre-merge qualification. Combined patch SHA-256 `aae99bc899ca7805d6d8f5092efc77ccb58bcb06b766f8dae7350cdeeb0c8483`. Local full suite: 451 passed, one manifest failure for the missing pre-existing PPTX. The entry remains in the manifest. Independent focused review: 125 passed. Ruff, mypy (100 source files), compileall and build passed.
+- Task 6, now merged: historical independently approved `dao-knowledge-v1` evidence/SQL and sanitized financial fixture implementation. DFW 55 knowledge/118 financial tests; full suite 624 passed with the missing-baseline-PPTX failure. Ruff, strict mypy (102 files), compileall, build, exact-lock audit and SQLite 0014 up/down/up passed. Inertia 50 new tests, 298/298 total, typecheck/build, production package and module smoke passed. Independent review ran 254 DFW tests and the Inertia checks. Real disposable PG qualification subsequently passed; production roles, trusted importer and actual financial adapter remain pending.
+- October discovery complete: PR42 merged; final validation 608 passed and one skip; post-merge CI passed. All eight selected scopes completed: 222 documents, 220 representations and 216 routed rows (208 monitor, eight reject), with the exact confidence overlay preserved. The delivered [human-reviewed priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md) is separate from those scanner dispositions. Temporary live jobs are removed. Historical repair evidence retains 558 passed, one private-snapshot skip and the missing-PPTX failure, plus eight private replay/receipt checks; the initial DNS failure, manual findings and dated replay stay separately labeled.
+- Partner-graph core, now merged: historical local implementation/review evidence; final TypeScript suite 332 passed, Python suite 650 passed, four skipped and one inherited missing-PPTX manifest failure. Actual Helix SDK 3.1.0/embedded runtime 0.3.3 and Python SQLite rehearsal passed. Real disposable PostgreSQL qualification subsequently passed; authenticated production adapters, admitted inventory/backfill and deployed-service/live workflow remain pending.
 - Current quality gate: benchmark v3. The historical v2 result recorded 5/5 useful fields and 14 genuine requests. Reassess all five examples against v3 preparation and handoff criteria. Five cases/eight captured requirements remain partial; complete sponsor inventories, independently admitted gold and v3 reassessment are required.
-- Unexecuted: actual Codex/Claude/local/Paperclip model qualification, deployed reviewer authorization, PostgreSQL concurrency and live rehearsal. Controlled reviewer fixtures test protocol behavior; qualify model quality with live model runs.
+- Remaining: actual Codex/Claude/local/Paperclip model qualification, deployed reviewer authorization/source fences, production writer composition and complete live rehearsal. Controlled reviewer fixtures test protocol behavior; qualify model quality with live model runs.
 
 ## Rehearsal
+
+Operational discovery must also pass the [declared detection and delivery tests](discovery-loop.md#acceptance), including an unseeded near-deadline source, official validation, useful writeback, urgent delivery and next-run reuse. Recurring execution remains disabled until the agreed host/cadence gates pass.
 
 1. Ingest a public objective and current public grant evidence.
 2. Produce a cited draft and concise meeting brief without privileged DAO access.

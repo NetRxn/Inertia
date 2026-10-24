@@ -1,11 +1,19 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-23-r15
-Updated: 2026-10-23 (UTC)
-Status: DFW foundations merged; drafting/gap and Task 6 knowledge/financial contracts independently reviewed locally, awaiting publication. Core Helix partner-graph implementation is underway. October discovery draft PR42 is published; CI is running and source qualification is in review. Final scout and live integrations remain pending.
+Revision: INERTIA-2026-10-23-r16
+Updated: 2026-10-24 (UTC)
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
 
 
 ## Qualification record
+
+Current merged-runtime evidence: Independent one-command cloud rehearsal passed DFW PostgreSQL 17.11/PostGIS 3.5.2 domain qualification (65 tests), Paperclip 2026.1012.0 native PostgreSQL 18 services and real PG-to-embedded-Helix reuse/writeback. Native inbox/outbox race fixes and cloud tooling are merged. Full HTTP/UI remains blocked by `os.networkInterfaces` / `uv_interface_addresses`; PPC2/VPS executor admission, live-member enrollment and production deployment remain future gates.
+
+Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is being packaged.
+
+Native review: The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation. Its Inertia adapter is merged/default-disabled; the tested DFW transaction service is reviewed/in CI for PR47. PR47 CI found one UTC-versus-Chicago deadline-date boundary failure; repair is underway and merge requires green CI.
+
+### Historical PR17 archive
 
 | Evidence | Identity and scope |
 |---|---|
@@ -17,7 +25,7 @@ Status: DFW foundations merged; drafting/gap and Task 6 knowledge/financial cont
 | HTTP/API | Historical pre-mirror source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`; candidate HTTP/auth/UI acceptance pending |
 | External services | Synthetic demo I/O; live website, Drive, grant/vote, member and Y2 acceptance pending |
 
-[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Documentation baseline: develop `1ac44a7a`.
+[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Current runtime/documentation baseline: develop `6f93cfef`; the runtime receipt above retains its original source identity.
 
 ### Historical slice evidence
 
@@ -49,11 +57,11 @@ Design acceptance only; none of these checks has run against deployed DAO storag
 | T-D03 | Cross-schema and row/audience isolation | Meeting role cannot read/write funding tables; funding role cannot read membership or unrestricted meeting data. Test direct SQL, unsafe search paths, new-table default grants, revoked roles, cross-applicant/company and expired membership. Narrow authorized API/view access works without widening grants. |
 | T-D04 | Backfill and consistent-read reconciliation | Counts, stable IDs/FKs, JSON/time values, hashes, immutable versions, reviews and publication readbacks match; concurrent edits cannot produce a mixed-version packet or duplicate decision. |
 | T-D05 | Cutover/rollback rehearsal | Pause/delta/switch/readback sequence and restore pass in isolation; reconcile post-cutover writes and external effects before resuming. No dual authoritative writers, lost reviews or duplicate publication/submission. |
-| T-D06 | Core Helix projection safety | Evidence/history/outbox commit atomically in DAO PostgreSQL; projection replay/rebuild converges by canonical ID/revision. Read-time source/access checks deny stale/revoked records immediately, including during projector failure. Bounded indexed PostgreSQL fallback preserves useful reads; authoritative-state failure withholds affected results. Detailed pre-implementation gates: T-K01–12. |
+| T-D06 | Core Helix projection safety | Evidence/history/outbox commit atomically in DAO PostgreSQL; projection replay/rebuild converges by canonical ID/revision. Read-time source/access checks deny stale/revoked records immediately, including during projector failure. Bounded indexed PostgreSQL fallback preserves useful reads; authoritative-state failure withholds affected results. Detailed release gates: T-K01–12. |
 
-## Operational partner graph acceptance (planned)
+## Operational partner graph acceptance (live qualification pending)
 
-Define each fixture before its corresponding implementation. Task 6's evidence/SQL tests pass locally; Helix and end-to-end writeback acceptance remain planned. The graph is core release work; vector retrieval and broader 990 enrichment are later extensions. Official Helix SDK 3.1.0/embedded runtime 0.3.3 are installed and a real embedded query passed; the full graph acceptance matrix remains pending.
+The graph core is merged. Independent real PostgreSQL/PostGIS and PG-to-embedded-Helix cloud rehearsal passed. Production acceptance still requires authenticated source/host adapters, admitted inventory/backfill, deployed-service and representative performance qualification. Historical local core evidence recorded 332 passing TypeScript tests and 650 passing Python tests, four skips and one inherited missing-PPTX manifest failure. The matrix below retains the release requirements; broader 990 and vectors remain later extensions.
 
 | ID | Requirement | Fixture and required result |
 |---|---|---|
@@ -142,9 +150,9 @@ Pin all integrations; compare required SDK APIs and enabled serving routes separ
 
 PR 7 adds 37 tests covering currentness, deadlines, signoffs, artifact integrity, packet/review mutation, wrong proposal/network/action, finality, conflict/replay and simulation labeling. Trusted policy snapshots precede asynchronous reads; impossible ISO dates fail without normalizing into accepted evidence. The 145-test combined suite at PR 7 and grant fixture demo passed. Live chain proofs and transactional acceptance remain integration tests.
 
-## Native grant review acceptance (planned)
+## Native grant review acceptance (default-disabled)
 
-Implementation and execution of these adapter tests remain pending. Qualify against the [pinned release and funding source](docs/reference/native-grant-workflow.md).
+The native adapter is merged/default-disabled in Inertia PR28; the tested DFW transaction service is reviewed/in CI for PR47. Live activation requires the approved acceptance/reconciliation seam and production PostgreSQL writer composition. Durable exact-version authority-at-acceptance is approved; funding-confirmed cancellation, stale-evidence rejection and separate submission authority are required. Retain the [pinned release and funding source](docs/reference/native-grant-workflow.md) and the frozen-slice requirements below. Successor qualification must distinguish native acceptance time from funding application time.
 
 | ID | Fixture | Required result |
 |---|---|---|
@@ -232,17 +240,19 @@ The full-HTTP receipt remains historical; requalify HTTP/auth/UI against the cur
 
 ## Funding enhancement qualification
 
-Detailed [acceptance requirements](docs/development/funding-enhancement/testing.md) cover R-F01–08 and R-I01–04. DFW PR35, PR37, PR38, PR39 and PR40 are merged. Portable skills 3.4.1 main is `c615525291a656f9abd4da1262c23fa8ae97290c`; [exact-head CI 39999694731](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/39999694731) passed all steps. Codex offline installation and cache refresh are verified. Next, qualify live model/tool execution.
+The approved discovery loop adds actual-agent/search, unseeded official opportunity, deadline amendment, failed-source triage, budget/coverage, alert deduplication/recovery and second-run reuse checks in [discovery-loop.md](docs/development/funding-enhancement/discovery-loop.md#acceptance). The daily schedule remains disabled pending host wiring and acceptance.
 
-Public drafting and actionable-gap continuation are independently reviewed local work, awaiting publication. The combined candidate passed 451 tests with one manifest failure caused by the snapshot's missing pre-existing PPTX; the manifest entry is preserved. Independent focused review passed 125 tests. Ruff, mypy (100 source files), compileall and build passed. Complete-tree remote CI remains a publication gate.
+Detailed [acceptance requirements](docs/development/funding-enhancement/testing.md) cover R-F01–08 and R-I01–04. Current merged DFW main is `16e96b22d55caaa0c19513e121028ab78c3aa1c7` (PR46), with Inertia develop `6f93cfef486b017afccda7b275837e09213aa189` (PR28). Public drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8 are merged. Historical discovery and portable-skills CI records below remain scoped to their exact heads; live model/tool qualification remains pending.
+
+Public drafting and actionable-gap continuation are merged. Historical pre-merge qualification: the combined candidate passed 451 tests with one manifest failure caused by the snapshot's missing pre-existing PPTX; the manifest entry is preserved. Independent focused review passed 125 tests. Ruff, mypy (100 source files), compileall and build passed. Current production host/model qualification remains an activation gate.
 
 - Benchmark v3 requires source-bound preparation, a precise remaining decision and independent agreement that no useful agent work remains. The earlier v2 result of 5/5 useful fields and 14 genuine requests is historical only and requires reassessment. Five partial cases cover eight captured requirements; full sponsor inventories and independent gold admission remain incomplete.
 - Verify actual scoped MCP persistence, restart/replay, checkpoint conflicts, wrong-plan rejection, source/contact provenance and preparation retained in Markdown/DOCX. A missing reviewer capability must keep the task agent-owned.
 - Qualify actual Codex, Claude, a named local runtime and configured Paperclip adapters on the same frozen evidence. Evaluate live semantic quality with the selected models in addition to controlled reviewer fixtures.
 - Keep current public enrichment, synthetic contracts and exact July replay separate. Qualify PostgreSQL concurrency, knowledge/financial scope, native authorization/revocation, ordered intake and live deployment independently.
 
-Task 6 (`dao-knowledge-v1`) is locally implemented and independently approved, unpublished and not live. DFW: 55 knowledge and 118 financial tests; full suite 624 passed with the same missing-baseline-PPTX manifest failure, Ruff, strict mypy (102 files), compileall, build, locked audit and SQLite 0014 up/down/up passed. Inertia: 50 new knowledge tests, 298/298 total, typecheck/build, clean production package and module smoke passed. Independent review ran 254 DFW focused/integration tests and the Inertia checks. Real PostgreSQL concurrency/schema roles, trusted importer and actual financial-source compatibility remain unexecuted.
+Task 6 (`dao-knowledge-v1`) is merged. Historical pre-merge evidence: DFW: 55 knowledge and 118 financial tests; full suite 624 passed with the same missing-baseline-PPTX manifest failure, Ruff, strict mypy (102 files), compileall, build, locked audit and SQLite 0014 up/down/up passed. Inertia: 50 new knowledge tests, 298/298 total, typecheck/build, clean production package and module smoke passed. Independent review ran 254 DFW focused/integration tests and the Inertia checks. Real disposable PostgreSQL qualification subsequently passed. Production roles, trusted importer and actual financial-source compatibility remain pending.
 
-October discovery is a separate branch and evidence track. The reviewed repair suite recorded 558 passed, one private-snapshot skip and the missing-PPTX manifest failure; private page replay/receipt checks passed 8. The first actual scout failed public DNS before acquisition and yielded zero candidates. Manual research (33 findings), dated parser replay and live acquisition have separate evidence records. Draft PR42 is published; CI is running and source qualification is in review. Final source review/scout and complete-tree CI remain pending. Keep fresh October leads and results separate from July improvement scores.
+October discovery is complete and merged in PR42. Final validation recorded 608 tests passed and one skip; post-merge CI passed. All eight selected scopes completed acquisition: 222 documents, 220 representations and 216 routed rows (208 monitor, eight reject). The exact confidence overlay is preserved. These scanner dispositions are separate from the human-reviewed [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md), which is delivered for actionable preparation. Temporary live jobs are removed. Historical repair evidence (558 passed, one private-snapshot skip and the missing-PPTX failure), the initial DNS-failed attempt, manual findings and dated replay retain their own labels; July improvement scores retain their separate evidence track.
 
 Exact implementation references and remaining gates: [source map](docs/development/funding-enhancement/source-map.md).

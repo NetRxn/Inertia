@@ -1,6 +1,7 @@
 # Funding enhancement implementation plan
 
-Revision: FUNDING-2026-10-23-r3.
+Revision: FUNDING-2026-10-23-r4.
+Updated: 2026-10-24 (UTC)
 
 > **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans to implement task-by-task. Steps use checkbox syntax.
 
@@ -39,11 +40,11 @@ DFW paths below are relative to `government-funding-dfw/`; Inertia paths are rep
 - [x] Use PR checks, the repository integration-branch pushes and manual dispatch; cancel superseded runs per PR/ref. Keep essential checks. Avoid path filters until their required-check behavior is proven.
 - [x] Review and commit this separately. Current evidence identifies duplicated push/PR runs and dependency audit failures.
 
-Current status: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact-head run 39987898544 passed. Subsequent merged work is included in version 3.4.1 main `c615525291a656f9abd4da1262c23fa8ae97290c`, qualified by run 39999694731.
+Historical baseline: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact-head run 39987898544 passed. Subsequent merged work is included in version 3.4.1 main `c615525291a656f9abd4da1262c23fa8ae97290c`, qualified by run 39999694731.
 
 ## Task 1: Freeze measurable public-only cases
 
-**State:** benchmark implementation merged in PR37. Five public cases cover eight captured requirements. Sponsor inventories remain partial and independent gold admission is pending. The reviewed actionable-gap candidate upgrades the rubric to v3. Next, reassess the five examples against its preparation and handoff criteria.
+**State:** benchmark implementation merged in PR37. Five public cases cover eight captured requirements. Sponsor inventories remain partial and independent gold admission is pending. The merged actionable-gap implementation supplies rubric v3. Next, reassess the five examples against its preparation and handoff criteria.
 
 **Files:** `src/dfw_incentives/quality_benchmark.py`, `tests/test_funding_quality_benchmark.py`, `tests/fixtures/funding_quality/`.
 
@@ -54,19 +55,20 @@ Current status: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact
 
 ## Task 2: Produce useful, scoped draft candidates
 
-**State:** useful candidate/review rendering merged in PR38. Scoped public drafting, independent review, targeted repair and durable continuation are reviewed, awaiting publication.
+**State:** candidate/review rendering, scoped public drafting, independent review, targeted repair and durable continuation are merged. Qualify actual host/model behavior next.
 
 **Files:** `src/dfw_incentives/{draft_candidates,codex_agents,public_drafting}.py`, existing drafting/artifact services; `tests/test_draft_candidates.py`, `tests/test_public_drafting.py` and regression suites.
 
 - [x] Bind candidate claims to exact requirements and source spans; render them separately from accepted applicant facts and retain numeric evidence validation.
 - [x] Review the scoped `PublicDraftingService`/`create_public_funding_mcp` bridge. Host-owned identities and public-source admission exclude private fields, credentials and signoff tools. Save unaccepted suggestions; freeze review inputs; allow at most two targeted repairs.
 - [x] Verify checkpointed suggestions/reviews/repairs, interruption recovery, replay deduplication and current-source rejection with controlled trusted adapters.
-- [ ] Publish the reviewed candidate and pass full complete-tree CI. Configure actual host reviewer/repair adapters and evaluate live semantic quality before claiming runtime qualification.
+- [x] Merge the reviewed public drafting candidate with its complete-tree checks.
+- [ ] Configure actual host reviewer/repair adapters and evaluate live semantic quality.
 - [ ] Preserve `tests/test_grounded_drafting.py`, `tests/test_codex_agents.py` and actual Markdown/DOCX rendering checks.
 
 ## Task 3: Route-aware completeness and independent review
 
-**State:** structured route/ownership assessment merged in PR39. The reviewed bridge supports trusted independent candidate and source-bound gap-plan review.
+**State:** structured route/ownership assessment merged in PR39. The merged bridge supports trusted independent candidate and source-bound gap-plan review.
 
 **Files:** `src/dfw_incentives/requirement_review.py`, existing `agents/review.py`, `packet_handoff.py`, `public_drafting.py`; `tests/test_requirement_review.py`, `tests/test_public_drafting.py`.
 
@@ -77,7 +79,7 @@ Current status: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact
 
 ## Task 4: Persist research and prepared handoffs
 
-**State:** reviewed actionable-gap pipeline, awaiting publication. Reuse `WorkbenchAuditEvent`; no new research scheduler, parallel approval ledger or dedicated migration is required for this slice.
+**State:** actionable-gap pipeline merged and independently reviewed. Reuse `WorkbenchAuditEvent`; no new research scheduler, parallel approval ledger or dedicated migration is required for this slice.
 
 **Files:** `src/dfw_incentives/gap_actions.py`, `public_drafting.py`, existing artifact/rendering services; `tests/test_gap_actions.py`, `test_public_drafting.py`; `docs/actionable-funding-gaps.md`, `docs/public-drafting-continuation.md` in DFW.
 
@@ -88,10 +90,13 @@ Current status: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact
 - [x] Persist preparation into normal Markdown/DOCX output, including options, evidence needs, prepared work and next actions.
 - [x] Independently review prepared handoffs. Rejected plans return a concrete agent step; a human request requires a precise remaining authority/access/private-record decision and no useful agent work remaining.
 - [x] Verify actual scoped MCP save, SQLite persistence, restart/replay, checkpoint race, wrong-plan rejection, source changes and renderer persistence in focused tests.
-- [ ] Publish and qualify the combined candidate. Exercise PostgreSQL concurrency and actual reviewer behavior in the selected host.
+- [x] Merge the combined candidate and pass real disposable PostgreSQL domain qualification.
+- [ ] Qualify actual reviewer behavior in the selected host.
 - [ ] Rehearse bounded research without confusing coverage limits with exhaustion. Six attempts trigger coverage review by default. Handoff requires independent plan review; host budgets remain configurable.
 
 ## Task 5: Portable skill and runtime qualification
+
+Operational discovery extension: assign one native research agent authorized objectives, search/browser tools, source access and a bounded query/page/time/cost budget. Verify actual tool execution against an unseeded official opportunity and a near-deadline case. Portable discovery/meeting supplement packaging is underway; the daily schedule remains disabled.
 
 **State:** PR40 merged, version 3.4.1. Exact remote CI 39999694731 passed all steps. Offline Codex marketplace installation and cache refresh are verified. Live model qualification remains pending.
 
@@ -105,7 +110,7 @@ Current status: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact
 
 ## Task 6: Reusable DAO knowledge and financial snapshot contracts
 
-**State:** implemented and independently approved locally under `dao-knowledge-v1`; unpublished and not live. Task 6 supplies source-backed SQL reuse and financial fixture normalization. Helix projection and retrieval remain planned.
+**State:** Task 6 and the Helix projection/retrieval core are merged. Real disposable PostgreSQL domain and PG-to-embedded-Helix rehearsal passed independently. Production source/importer, role and financial-adapter activation remain pending.
 
 **Files:** DFW `src/dfw_incentives/{organization_knowledge,financial_snapshots}.py`, existing applicant document/drafting/rendering services, `models.py`, migration 0014 and tests; Inertia `src/roundtable/knowledge.ts` and `test/roundtable/knowledge.test.ts`. Existing meeting ingestion/publication source files remain unchanged.
 
@@ -116,66 +121,84 @@ Current status: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; exact
 - [x] Preserve exact Decimal amounts and financial period/basis/currency/hash. Cash, grant budget and spending authority retain their separate evidence requirements.
 - [x] Run 55 DFW knowledge and 118 financial tests; full DFW suite 624 passed with one missing-baseline-PPTX manifest failure. Ruff, strict mypy (102 files), compileall, build, locked audit and SQLite 0014 upgrade/downgrade/re-upgrade passed.
 - [x] Run Inertia 50 new knowledge tests, 298/298 total, typecheck/build, clean production package and module smoke. Independent review approved both slices and ran 254 DFW focused/integration tests plus Inertia checks.
-- [ ] Reapply reviewed patches to refreshed real repository heads, publish each slice separately and run complete-tree CI with the existing PPTX present.
-- [ ] Qualify concurrent admission/source changes and schema/role isolation on disposable PostgreSQL. Configure the actual trusted importer and semantic admission policy; qualify the selected sanitized financial export and production adapter separately.
+- [x] Integrate and merge the reviewed Task 6 repository slices; retain complete-tree and historical qualification receipts.
+- [x] Qualify domain behavior on real disposable PostgreSQL/PostGIS through the cloud rehearsal.
+- [ ] Configure production roles, trusted importer and semantic admission policy; qualify the selected financial export and production adapter.
 
 ## Tasks 6A–6D: Core operational partner graph
 
-These required implementation slices extend Task 6. Define failing fixtures in [T-K01–12](../../../testing.md#operational-partner-graph-acceptance-planned) and the funding graph matrix before implementing each slice. The graph must be useful in the October 30 demo; broader 990 and optional semantic/vector search follow later.
+These required slices extend merged Task 6. The graph core is merged, and independent cloud rehearsal passed real PostgreSQL/PostGIS domain, native PostgreSQL and PG-to-embedded-Helix lanes. Production source/host/service adapters, admitted inventory/backfill and live acceptance remain pending. Checked items record completed implementation and bounded qualification; open items retain [T-K01–12](../../../testing.md#operational-partner-graph-acceptance-live-qualification-pending). Broader 990 and optional semantic/vector search follow later.
 
 ### 6A Source inventory and compatibility
 
 - [x] Install official Helix TypeScript SDK 3.1.0 and embedded runtime 0.3.3; run a real embedded query.
 - [ ] Pin Task 6 and the selected Helix deployment/API. Qualify conditional transaction/fencing semantics, indexes and writer readback; reuse an existing adapter if one becomes available.
 - [ ] Inventory authorized website/meeting/existing partner sources, revisions, permissions and canonical member/project IDs. Seed DAO, TechFW/MADE, Moonshot, LiquidAcre and HackFW; map every relevant partner/contact/activity/owner or retain an explicit unresolved disposition.
-- [ ] Define stable entity/alias bindings, identity resolution evidence and reversible merge/split behavior. Keep program/legal-entity, prospect/collaborator and planned/started/completed distinctions in fixtures.
+- [x] Implement stable entity/alias bindings and identity-resolution evidence, preserving program/legal-entity, prospect/collaborator and activity-stage distinctions in local fixtures.
+- [ ] Qualify the actual inventory and reversible merge/split workflow before admitting source identities.
 
 ### 6B Typed evidence and transactional research deltas
 
-- [ ] Add a separately versioned typed assertion envelope alongside Task 6 evidence, binding exact identities, semantic value, qualifiers, scope and source revision/hash into trusted admission.
-- [ ] Add predicate cardinality/validity-aware semantic conflict handling while preserving legacy exact-quote semantics and each source binding's restrictions.
-- [ ] In one DAO PG transaction, commit permitted evidence, assertions/history and projection outbox. Add run/key/payload idempotency receipts, uniqueness/CAS, explicit no-change reasons and candidate/conflict dispositions.
-- [ ] Verify rejected-opportunity writeback and later reuse, same-key changed-payload rejection, concurrent replay and no lost delta around PG commit. Keep organization-wide and project/opportunity scope distinct.
+- [x] Add a separately versioned typed assertion envelope alongside Task 6 evidence, binding exact identities, semantic value, qualifiers, scope and source revision/hash into trusted admission.
+- [x] Add predicate cardinality/validity-aware semantic conflict handling while preserving legacy exact-quote semantics and each source binding's restrictions.
+- [x] Implement one SQL transaction for permitted evidence, assertions/history and projection outbox, with run/key/payload idempotency receipts, uniqueness/CAS, explicit no-change reasons and candidate/conflict dispositions. Real disposable PostgreSQL qualification passed; production writer composition remains open.
+- [x] Verify rejected-opportunity writeback and later reuse, changed-payload rejection, replay and atomic local SQL persistence. Keep organization-wide and project/opportunity scope distinct; retain the real PostgreSQL cloud receipt and qualify production writer composition separately.
 
 ### 6C Helix projection and useful queries
 
-- [ ] Implement stable projection keys, monotonic revisions, target-side lease-epoch fencing, atomic batch/receipt writes, lost-response reconciliation and tombstones. Qualify guards against the actual API before enabling takeover.
-- [ ] Build scoped partner-by-capability, context and evidenced introduction queries; active secondary indexes start bounded traversals. Revalidate source/access/revision/freshness in PG before hydration. Add bounded indexed PG outage fallback and operator health.
-- [ ] Connect scout/diligence to query first, research gaps only and return answer plus durable useful delta. Project useful new contacts/programs/capabilities from rejected opportunities without converting prospects to collaborators.
+Operational discovery extension: connect due-source rechecks and open-ended coverage-gap search to official evidence capture, existing candidate/enrichment services and trusted research-delta persistence. Keep reusable source-adapter admission separate from validating a useful candidate. See [discovery-loop.md](discovery-loop.md).
+
+- [x] Implement and locally verify stable projection keys, monotonic revisions, target-side lease-epoch fencing, atomic batch/receipt writes, lost-response reconciliation and tombstones against the actual embedded Helix API. Deployed service qualification remains open.
+- [x] Build scoped partner-by-capability, context and evidenced introduction queries, active indexes, authoritative source/access/revision/freshness revalidation, bounded indexed SQL fallback and operator health. Bind these local modules to authenticated production sources before live use.
+- [x] Implement the query-first research contract and durable useful-delta/no-change receipts; the local rehearsal retains rejected-opportunity knowledge without converting prospects to collaborators.
+- [ ] Connect actual scout/diligence services through authenticated source ports and qualify the complete live workflow.
 
 ### 6D Backfill recovery and live qualification
 
+Operational discovery extension: prove restart/uncertain-delivery recovery, changed deadlines, source failure, bounded coverage, useful rejected-opportunity writeback and next-run reuse. Measure detection-to-alert latency and missed cases on a declared set; retain unresolved coverage as durable native work.
+
 - [ ] Backfill the complete bounded source inventory with durable coverage dispositions; overlap incremental refresh without gaps. Rebuild a fresh generation from a gap-safe committed high-water mark and reconcile identities/revisions before switch.
-- [ ] Exercise outage/restart, duplicate/out-of-order writes, source correction/revocation, old-worker resume after deletion and access denial while the projector is stalled. No lost durable delta or resurrected tombstone is acceptable.
-- [ ] Qualify real disposable PG concurrency/schema roles and pinned Helix transactions/indexes/deletion. Measure the documented performance targets; record actual results and any blocker.
+- [x] Exercise core outage/replay, source correction/revocation, stale-worker denial and tombstone protection in local tests and actual embedded Helix/Python rehearsal.
+- [ ] Qualify deployed multi-process failover and recovery. No lost durable delta or resurrected tombstone is acceptable.
+- [x] Pass independent real PostgreSQL/PostGIS domain, native PG18 and PG-to-embedded-Helix cloud rehearsal.
+- [ ] Qualify production roles, deployed Helix transactions/indexes/deletion and representative performance targets.
 - [ ] Rehearse known-partner reuse → useful research → durable delta → next-run indexed retrieval, including a rejected opportunity and an immediate revoked-contact denial. Verify every inventoried item has a stable mapping or explicit unresolved outcome.
 
 ## Task 7: Trusted native review application
 
-**Files:** existing DFW `src/dfw_incentives/codex_agents.py`, `src/dfw_incentives/packet_handoff.py`, `src/dfw_incentives/models.py`; new `src/dfw_incentives/review_effects.py`, migration and `tests/test_review_effects.py`; Inertia new `src/grants/native-review.ts`, `test/grants/native-review.test.ts`; existing `src/grants/contracts.ts`.
+**State:** Inertia native adapter is merged/default-disabled in PR28; the tested DFW transaction service is reviewed/in CI for PR47. The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation. The checklist below records the frozen adapter; successor qualification must implement the approved acceptance, cancellation and current-domain-evidence rules.
 
-**Interfaces:** DFW new `apply_review_effect(session: Session, decision: TrustedReviewDecision) -> ReviewEffectReceipt`. TrustedReviewDecision is constructed server-side, never accepted from member MCP: company/applicant, principal_id/type, domain_authorization_epoch, native_verification_time, interaction_id, item_id, target_kind/id/version/hash, workspace_hash, action, evidence_revisions. Receipt includes effect_key, result (`applied`, `replayed`, `stale`, `unauthorized`, `conflict`) and domain IDs. Inertia new `applyNativeGrantDecision(ref: NativeDecisionRef, deps: NativeReviewDependencies): Promise<ReviewEffectReceipt>` reads the authoritative native actor and result. NativeDecisionRef contains companyId, issueId, interactionId, itemId; dependencies are trusted native read and domain effect ports.
+**Files:** existing DFW `src/dfw_incentives/codex_agents.py`, `src/dfw_incentives/packet_handoff.py`, `src/dfw_incentives/models.py`; new `src/dfw_incentives/native_review.py`, `packet_review_context.py` and `tests/test_native_funding_review.py`; Inertia new `src/grants/native-review.ts`, `test/grants/native-review.test.ts`; existing `src/grants/contracts.ts`.
+
+**Original design interfaces:** The implementation exports `NativeFundingReviewService` in DFW and `createNativeFundingReviewAdapter` in Inertia; the following design names describe the retained contract. DFW planned `apply_review_effect(session: Session, decision: TrustedReviewDecision) -> ReviewEffectReceipt`. TrustedReviewDecision is constructed server-side, never accepted from member MCP: company/applicant, principal_id/type, domain_authorization_epoch, native_verification_time, interaction_id, item_id, target_kind/id/version/hash, workspace_hash, action, evidence_revisions. Receipt includes effect_key, result (`applied`, `replayed`, `stale`, `unauthorized`, `conflict`) and domain IDs. Inertia new `applyNativeGrantDecision(ref: NativeDecisionRef, deps: NativeReviewDependencies): Promise<ReviewEffectReceipt>` reads the authoritative native actor and result. NativeDecisionRef contains companyId, issueId, interactionId, itemId; dependencies are trusted native read and domain effect ports.
 
 - [ ] Tests cover agent/system actor, wrong/revoked human role, partial card, defer, duplicate/reordered event, wrong company, changed document/packet/source, simultaneous accept/reject, and a source update racing the transaction.
-- [ ] Run `uv run --locked pytest tests/test_review_effects.py tests/test_codex_agents.py -q` and `npm test -- test/grants/native-review.test.ts --maxWorkers=1`; confirm failures.
+- [ ] Run `uv run --locked pytest tests/test_native_funding_review.py tests/test_draft_review.py -q` and `npm test -- test/grants/native-review.test.ts --maxWorkers=1`; confirm failures.
 - [ ] Make the domain service authoritative for grant-review capabilities: an administrator-admitted organization/principal/scope grant with a monotonic authorization epoch, stored with domain data. Lock/recheck this grant and epoch in the same effect transaction; a role string from an event or agent is never authority. Native human identity and current membership are freshly read before application; timeout/unknown membership fails closed. Native membership and domain grants live in separate stores, with asynchronous native revocation propagation. Configure a short explicit verification-age limit, invalidate pending decisions when revocation is received, and require domain-grant revocation for immediate transactional denial. Deployment acceptance must choose and test that bound and revocation path.
-- [ ] Move final revision validation and mutation into one domain transaction using locked revision rows or equivalent CAS. Record unique effect_key in the same transaction. Recheck the workspace inside that transaction. Native receipt retry reconciles saved effect.
+- [x] Implement final revision validation, guarded effect and exact-command replay receipt in one domain transaction; test the native adapter.
+- [ ] Implement the approved durable exact-version acceptance seam, funding-confirmed cancellation and changed-evidence rejection; qualify production PostgreSQL writer composition before activation.
 - [ ] Preserve accepted/corrected/rejected proposal operations and packet changes_requested semantics. Preserve partner-only N/A and required role mapping. Native review never submits externally or infers a DAO vote.
 - [ ] Run concurrency tests on real isolated PostgreSQL, full suites, commit `feat: apply authenticated native grant review safely`.
 
 ## Task 8: General objective intake and opportunity brief
 
-**Files:** Inertia new `src/intake/contracts.ts`, `src/intake/service.ts`, `src/grants/brief.ts`, `test/intake/service.test.ts`, `test/grants/brief.test.ts`; existing `src/paperclip/adapter.ts`, `src/worker.ts`, `src/manifest.ts`; DFW new `src/dfw_incentives/opportunity_brief.py`, `src/dfw_incentives/objective_links.py`, model/migration and tests; extend the website integration proposal; production server rollout remains with its owner.
+**State:** merged in Inertia PR27 and DFW PR46. Objective intake, versioned funding links and briefs passed independent review. The synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal also passed; portable supplement packaging is underway. Production source/member exports, native visibility and assigned live intake remain activation work.
+
+Operational discovery extension: render a short benefit/effort brief with source/as-of, deadline, exact action and owner. Deliver validated urgent findings separately with opportunity/cycle/material-event deduplication. Persist due rechecks in native work, then rehearse and agree cadence/alert targets before enabling recurring execution.
+
+**Files:** merged Inertia `src/intake/contracts.ts`, `src/intake/service.ts`, `src/grants/brief.ts`, `test/intake/service.test.ts`, `test/grants/brief.test.ts`; existing `src/paperclip/adapter.ts`, `src/worker.ts`, `src/manifest.ts`; merged DFW `src/dfw_incentives/opportunity_brief.py`, `src/dfw_incentives/objective_links.py`, model/migration and tests; extend the website integration proposal; production server rollout remains with its owner.
 
 **Interfaces:** define `ObjectiveSubmission` in intake/contracts.ts: sourceId, revision, sourceHash, organizationId, authorRef, audience, title, text, withdrawn. `ingestObjective(input: ObjectiveSubmission, deps: IntakeDependencies): Promise<IntakeReceipt>` resolves trusted source authority and existing native mapping; receipt has status, sourceId, revision, nativeIssueId. Dependencies expose source readback, scoped native issue operations and durable mapping/reconciliation. Add trusted source ordering token or expectedPreviousHash, a unique mapping key (organization, source system, sourceId), and mapping-version CAS. Never lexically compare opaque revision strings. Serialize a pending create operation per key and reconcile unknown outcomes before any retry; if native lookup cannot establish presence/absence, remain pending. Apply only authoritative current revisions; retain a withdrawal tombstone. Audience narrowing suppresses derived output until native permissions converge; widening requires trusted source authority. `OpportunityBrief` is the spec's explicit presentation fields plus opportunity_id, project_ids, packet/version/hash, sources and gaps; DFW `build_opportunity_brief(context: dict[str, Any]) -> OpportunityBrief`; Inertia `renderOpportunityBrief(brief: OpportunityBrief): string` creates concise native-document Markdown.
 
-**Durable funding links:** new domain `ObjectiveFundingLink` with organization_id, objective_source_system/id, opportunity_id, revision, fit_rationale, requirement_refs, proposed_contribution, packet_id/version/hash, status and provenance. Unique (organization, objective source/id, opportunity); links retain version history. `upsert_objective_funding_link(..., expected_revision)` owns updates in DFW; `list_funding_for_objective(...)` and `list_objectives_for_funding(...)` expose both directions with audience filtering. Paperclip owns task state, website owns submitted objective content, DFW owns funding/fit/link state. Buzz and website views call these owners and reconcile versioned projections.
+**Durable funding links:** merged domain `ObjectiveFundingLink` with organization_id, objective_source_system/id, opportunity_id, revision, fit_rationale, requirement_refs, proposed_contribution, packet_id/version/hash, status and provenance. Unique (organization, objective source/id, opportunity); links retain version history. `upsert_objective_funding_link(..., expected_revision)` owns updates in DFW; `list_funding_for_objective(...)` and `list_objectives_for_funding(...)` expose both directions with audience filtering. Paperclip owns task state, website owns submitted objective content, DFW owns funding/fit/link state. Buzz and website views call these owners and reconcile versioned projections.
 
-- [ ] Tests: one submission delivered twice creates one issue; changed revision updates its linked issue; ambiguous creation reconciles without duplicate; withdrawal retains history; same text from two submitters stays attributable; hidden intake cannot appear in public output; revision 2 before 1, concurrent initial creates, audience narrowing and withdrawal racing an update cannot regress state. Test both funding-link lookup directions and conflicting link edits.
-- [ ] Run `npm test -- test/intake/service.test.ts test/grants/brief.test.ts --maxWorkers=1` and `uv run --locked pytest tests/test_opportunity_brief.py -q`; confirm failures.
-- [ ] Implement durable source/native identity mapping and explicit CEO intake assignment. Correlate retries using verified native primitives and reconciliation. Link multiple opportunities/projects without duplicating project state.
-- [ ] Render the brief with separate application, delivery and reporting effort ranges and estimation basis; show evidence gaps and concrete meeting decisions. Native questions/documents/cards remain the review UI.
-- [ ] Test meeting answer → scoped knowledge update → follow-up work → revised brief, then commit `feat: connect DAO objectives to funding preparation`.
+- [x] Tests: one submission delivered twice creates one issue; changed revision updates its linked issue; ambiguous creation reconciles without duplicate; withdrawal retains history; same text from two submitters stays attributable; hidden intake cannot appear in public output; revision 2 before 1, concurrent initial creates, audience narrowing and withdrawal racing an update cannot regress state. Test both funding-link lookup directions and conflicting link edits.
+- [x] Run focused intake/brief and combined suites; retain exact final results in [testing.md](testing.md).
+- [x] Implement durable source/native identity mapping, retry reconciliation and versioned objective/funding links.
+- [ ] Configure explicit CEO intake assignment and admitted production source/member visibility.
+- [x] Render the brief with separate application, delivery and reporting effort ranges and estimation basis; retain evidence gaps and concrete meeting decisions. Native questions/documents/cards remain the review UI.
+- [x] Independently verify the synthetic actual-service meeting answer → scoped knowledge update → follow-up work → revised-brief rehearsal.
+- [ ] Finish portable supplement packaging and qualify actual production source/host delivery.
 
 ## Task 9: Integration rehearsal and synchronized artifacts
 
@@ -187,10 +210,10 @@ These required implementation slices extend Task 6. Define failing fixtures in [
 
 ## Dependency order and stopping points
 
-The CI, benchmark, candidate, route-review and portable-package foundations are merged. Publish and qualify the reviewed public drafting/gap continuation before host rehearsal. Independent v3 quality assessment and actual runtime qualification remain distinct from passing contract tests.
+The CI, benchmark, candidate, route-review, public drafting/gap and portable-package foundations are merged. Qualify actual host/model behavior against the merged contracts. Independent v3 quality assessment and actual runtime qualification remain distinct from passing contract tests.
 
-Task 6 evidence/SQL and sanitized financial contracts are independently approved local implementation awaiting publication and real PG/source qualification. Core partner graph/writeback slices 6A–6D are under implementation; tasks 7 (trusted native human effects) and 8 (general intake/brief) remain planned. Task 9 integrates proven slices. Use exact July archives for historical comparison; October discovery is a separate current-evidence track.
+Task 6, partner graph and Task 8 intake/link/brief are merged. Independent cloud and synthetic meeting-answer rehearsals passed. Task 7 has its Inertia adapter merged/default-disabled and DFW service reviewed/in CI for PR47; the approved acceptance/reconciliation seam and production writer qualification remain pending. The approved discovery loop extends Tasks 5, 6C/6D and 8; daily execution remains disabled until host wiring, end-to-end rehearsal and cadence agreement. Task 9 retains HTTP/UI, PPC2/VPS and production activation gates. Exact July replay and October discovery remain separate evidence tracks.
 
-October discovery is published in draft PR42 on `discovery/2026-10-23-refresh`; CI is running and source qualification is in review. Inspect exact per-source results, admit only reviewed sources, run the authorized bounded scan and remove temporary CI before merge. The first DNS-failed scout, 33 manual findings and dated replay remain distinct; final scout success is pending.
+October discovery is complete and PR42 is merged with passing post-merge CI; temporary live jobs are removed. Select preparation under current owner priorities and deferrals from the dated [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md). Preserve the exact confidence overlay, automated routing dispositions and manual-source limits; the first DNS-failed scout, manual findings and dated replay remain historical evidence, separate from July improvement.
 
 External inputs: admitted source access, actual Helix compatibility, selected local runtime, actual human-role mapping, website server admission and production migration plan. Unfinished permitted research stays with agents. Ask people only for prepared, independently reviewed decisions or unavailable records/access. Keep artifacts synchronized as each status changes.
