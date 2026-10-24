@@ -87,7 +87,9 @@
     "transport/tests/run-native.sh": "7307c8b78766008266695e581898e48a1f0faaaa9a337d40e74cb57dffe9f8e4",
     "transport/tests/sdk-fixture.mjs": "6766001c28aa716fee2611fa341ef331d46b9c3469c7db6a06da4fe5af0f8749",
     "tests/member-capture.test.mjs": "0a02d34ae61968db89945d7d40407947ce602639466e33dadb84924b1b10efee",
-    "tests/member-route-hook.test.mjs": "28c01304b64cce2bef6ded7a4a6b894f45f0b517cb8b9ed6c67f21ae730c3d2b"
+    "tests/member-route-hook.test.mjs": "28c01304b64cce2bef6ded7a4a6b894f45f0b517cb8b9ed6c67f21ae730c3d2b",
+    "transport/native/member-outcome.mjs": "744b88cf97d0cf87dbd8271667625e698e8415ee1141f0409fe251a00406365f",
+    "transport/tests/member-outcome.test.mjs": "2d314dd6cc0fd182f88901901daf1d63e4550480254555d76842bdf2aeb7128e"
   },
   "memberPacketCapture": {
     "state": "source-only Task 1; synthetic admission; independent review pending",
