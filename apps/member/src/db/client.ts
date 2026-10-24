@@ -5,10 +5,12 @@ import { Pool } from 'pg';
 import { schema } from './schema';
 
 export type Db = ReturnType<typeof drizzlePg<typeof schema>> | ReturnType<typeof drizzlePglite<typeof schema>>;
+export type DbDriver = 'node-postgres' | 'pglite';
 
 // Memoize on globalThis per R3
 declare global {
   var __memberAppDb: Db | undefined;
+  var __memberAppDbDriver: DbDriver | undefined;
   var __memberAppPglite: PGlite | undefined;
 }
 
@@ -24,6 +26,7 @@ export function getDb(): Db {
     const pool = new Pool({ connectionString: databaseUrl });
     const db = drizzlePg({ client: pool, schema });
     globalThis.__memberAppDb = db;
+    globalThis.__memberAppDbDriver = 'node-postgres';
     return db;
   } else {
     // Use PGlite
@@ -35,6 +38,15 @@ export function getDb(): Db {
 
     const db = drizzlePglite({ client: globalThis.__memberAppPglite, schema });
     globalThis.__memberAppDb = db;
+    globalThis.__memberAppDbDriver = 'pglite';
     return db;
   }
+}
+
+export function getDbDriver(): DbDriver {
+  if (globalThis.__memberAppDbDriver) {
+    return globalThis.__memberAppDbDriver;
+  }
+  // Check DATABASE_URL to determine driver without creating the db
+  return process.env.DATABASE_URL ? 'node-postgres' : 'pglite';
 }

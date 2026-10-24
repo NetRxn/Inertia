@@ -30,10 +30,25 @@ describe('Database', () => {
     ]);
   });
 
-  it('enforces unique lowercase member email', async () => {
+  it('rejects a mixed-case email', async () => {
     const db = await createTestDb();
 
-    // Insert first member with mixed case email
+    // Attempt to insert member with mixed-case email
+    // This should fail due to the lowercase check constraint
+    await expect(
+      db.insert(members).values({
+        externalId: 'ext-1',
+        email: 'Ana@Example.org',
+        displayName: 'Ana',
+        status: 'active',
+      })
+    ).rejects.toThrow();
+  });
+
+  it('enforces unique email', async () => {
+    const db = await createTestDb();
+
+    // Insert first member with lowercase email
     await db.insert(members).values({
       externalId: 'ext-1',
       email: 'ana@example.org',
@@ -41,12 +56,12 @@ describe('Database', () => {
       status: 'active',
     });
 
-    // Attempt to insert second member with same email (different case)
-    // This should fail due to the unique constraint and lowercase check
+    // Attempt to insert second member with same email
+    // This should fail due to the unique constraint
     await expect(
       db.insert(members).values({
         externalId: 'ext-2',
-        email: 'Ana@Example.org',
+        email: 'ana@example.org',
         displayName: 'Ana 2',
         status: 'active',
       })

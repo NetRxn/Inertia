@@ -22,7 +22,7 @@ CREATE TABLE "member_app"."files" (
 	"name" text NOT NULL,
 	"path" text NOT NULL,
 	"mime_type" text NOT NULL,
-	"size" text NOT NULL,
+	"size" integer NOT NULL,
 	"uploaded_by" uuid NOT NULL,
 	"uploaded_at" timestamp DEFAULT now() NOT NULL
 );

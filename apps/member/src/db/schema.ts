@@ -1,4 +1,4 @@
-import { pgSchema, uuid, text, timestamp, check, jsonb } from 'drizzle-orm/pg-core';
+import { pgSchema, uuid, text, timestamp, check, jsonb, integer } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import type { SourceRef } from '../adapters/types';
 
@@ -38,7 +38,7 @@ export const files = memberAppSchema.table('files', {
   name: text('name').notNull(),
   path: text('path').notNull(),
   mimeType: text('mime_type').notNull(),
-  size: text('size').notNull(),
+  size: integer('size').notNull(),
   uploadedBy: uuid('uploaded_by').notNull().references(() => members.id),
   uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
 });
