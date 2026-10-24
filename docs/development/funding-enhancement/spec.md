@@ -1,9 +1,11 @@
 # Funding agents and DAO intake
 
-Revision: FUNDING-2026-10-24-r10
+Revision: FUNDING-2026-10-24-r12
 Updated: 2026-10-24 (UTC)
 
 ## Outcome and current source
+
+The [two-provider scenarios](../../../testing.md#two-provider-scenarios-for-existing-requirements) exercise existing funding, knowledge, general objective and member-contribution requirements. Provider/role assignments remain configurable across research, partner discovery, assembly and review; Paperclip supplies native coordination. No new requirement or dispatcher is introduced.
 
 The system must generate substantial research/preparation and a near-complete current application draft before asking members for remaining decisions. Reuse authorized PostgreSQL knowledge before external research, persist useful findings and preparation, and retrieve them on the next run. Agents perform independent quality review, never human approval. A manually polished reference packet from dot is not a substitute for actual generated output.
 
@@ -11,9 +13,9 @@ The operational target is Wednesday October 28 Roundtable using existing authori
 
 Paperclip owns native work/scheduling/budgets/documents; Buzz exposes the same work. DFW owns funding evidence, proposals, immutable packets, knowledge and domain history. Reuse the existing DAO PostgreSQL domain ownership and keep Paperclip native persistence separate. Do not create a parallel task/approval ledger or expose broad database credentials to contributors.
 
-Public [PR53](https://github.com/NetRxn/Inertia/pull/53) source-qualified default-disabled host assembly, early SDK byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes controlled cross-service fixtures. Source-row allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates. The v2 packet core is merged; native/Buzz and real authority integration remain pending. Legacy v1 records/source retain their historical meaning. Draft PR51 remains unmerged/inactive ingress/per-attempt authority; full untrusted member execution and native authoritative completion remain open.
+Public [PR53](https://github.com/NetRxn/Inertia/pull/53) source-qualified default-disabled host assembly, early SDK byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes controlled cross-service fixtures. Bounded receipt-read allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates. The v2 packet core is merged; native/Buzz and real authority integration remain pending. Legacy v1 records/source retain their historical meaning. Draft PR51 remains unmerged/inactive ingress/per-attempt authority; full untrusted member execution and native authoritative completion remain open.
 
-The additive packet-v2 core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56). Named owning-domain SQL tools and local PostgreSQL facade qualification are complete; real authority resolver/transport/provider execution and native/Buzz member-action wiring remain unqualified.
+Packet-v2 core and native exact-action capture are merged in [PR56](https://github.com/NetRxn/Inertia/pull/56)/[PR58](https://github.com/NetRxn/Inertia/pull/58). Reviewed [draft PR62](https://github.com/NetRxn/Inertia/pull/62) Packet UI/attestation is not merged/live and needs browser/mutual recovery agreement. Named owning-domain SQL tools and local PostgreSQL facade qualification are complete; real authority resolver/transport/provider execution and native/Buzz member-action wiring remain unqualified.
 
 ## Preparation workflow
 

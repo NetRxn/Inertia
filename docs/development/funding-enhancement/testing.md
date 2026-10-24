@@ -1,11 +1,11 @@
 # Funding enhancement acceptance
 
-Revision: FUNDING-2026-10-24-r10. This test specification separates implementation evidence from remaining quality and deployment gates.
+Revision: FUNDING-2026-10-24-r12. This test specification separates implementation evidence from remaining quality and deployment gates.
 Updated: 2026-10-24 (UTC)
 
 ## Evaluation tracks
 
-Wednesday uses actual system-generated current preparation through the existing authorized Buzz agent and PostgreSQL tools. Helix/Y2 are deferred; v2 packet core is merged, while native/Buzz action integration remains unqualified. References/answer keys stay separate from generated output. Park Place approximately one hour is user-reported historical elapsed context only. NSF exemplary preparation plus an achievable current backup is sufficient; no automatic extra submission.
+Wednesday uses actual system-generated current preparation through the existing authorized Buzz agent and PostgreSQL tools. Helix/Y2 are deferred; v2 packet core is merged, while draft UI and real authority/runtime/domain/Buzz remain unqualified. References/answer keys stay separate from generated output. Park Place approximately one hour is user-reported historical elapsed context only. NSF exemplary preparation plus an achievable current backup is sufficient; no automatic extra submission.
 
 | Track | Inputs | What the result measures |
 |---|---|---|
@@ -34,6 +34,8 @@ Persist per-case JSON with fixture/rubric/candidate/evidence hashes, determinist
 Track supported factual claims / all factual claims; material unsupported claims; current requirement coverage; avoidable human requests; unresolved genuine decisions; route errors; human correction time; elapsed time; runtime/model/tool versions; token/tool cost when observable. A second reviewer independently checks all five cases and resolves scoring disagreements before comparison.
 
 Initial qualification target (engineering choice): every demonstrably answerable field has a useful draft; every material factual assertion has claim-specific support; zero invented achievements, commitments or eligibility; zero avoidable human requests where existing current evidence directly answers the question. Report partial compliance and retain every safety failure as a blocking result. Quantitative comparison requires paired inputs and outputs.
+
+The [two-provider scenario mapping](../../../testing.md#two-provider-scenarios-for-existing-requirements) reuses these existing acceptance IDs for funding and general member objectives. Local test preparation is not evidence of model execution or native coordination success.
 
 ## Acceptance matrix
 
@@ -101,11 +103,13 @@ Wednesday uses the selected authorized PostgreSQL/domain knowledge path; existin
 
 ## Recorded implementation evidence
 
+[PR58](https://github.com/NetRxn/Inertia/pull/58) native capture is merged source/synthetic qualification. Reviewed [draft PR62](https://github.com/NetRxn/Inertia/pull/62) Packet UI passed recorded source/focused/package checks after retries; earlier fixture timeout/relation collision and dependency-install failure remain evidence with unproven causes. Browser, mutual #48 recovery/workflow agreement and real authority/runtime/domain/Buzz remain pending. See the [current root qualification record](../../../testing.md#native-capture-and-draft-packet-ui).
+
 [PR56](https://github.com/NetRxn/Inertia/pull/56) adds the packet-v2 core to the source baseline. [PR53](https://github.com/NetRxn/Inertia/pull/53) retains source-qualified/default-disabled host assembly, early SDK byte/deadline bounds, manual invocation and native state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Named owning-domain SQL tools now have merged source/local PostgreSQL facade qualification. Earlier native/embedded-Helix checks retain their recorded scope; no recorded lane establishes the actual production resolver/transport/provider run or deployed SQL/Buzz member actions.
 
-V2 packet primitives are merged; real native/Buzz confirmation and Mark submitted/evidence actions remain unqualified. Legacy v1 role/capture/cancellation records remain intact. Draft PR51 is unmerged/inactive ingress/per-attempt authority only; full untrusted execution/native authoritative completion remains separate unqualified work. Existing authorized Buzz contribution is the Wednesday path, not proof of that isolation boundary. Notes-only website output remains partial. Daily recurring scouting stays disabled.
+V2 core/native capture are merged; reviewed draft UI still needs browser, mutual recovery agreement and real authority/domain/Buzz qualification. Legacy v1 role/capture/cancellation records remain intact. Draft PR51 is unmerged/inactive ingress/per-attempt authority only; full untrusted execution/native authoritative completion remains separate unqualified work. Existing authorized Buzz contribution is the Wednesday path, not proof of that isolation boundary. Notes-only website output remains partial. Daily recurring scouting stays disabled.
 
-Source-row allocation, actual SQL/source/current-application access, remaining deployment/latency/lifecycle/authentication/network compatibility, writer fencing and live human walkthrough remain gates. Settled retention defaults do not enable deletion. Preserve meaningful reviewed/final/submitted records and v1 terminal-acknowledgement/qualified-transfer history. No test is rerun by this document revision.
+Bounded receipt-read allocation, actual SQL/source/current-application access, remaining deployment/latency/lifecycle/authentication/network compatibility, writer fencing and live human walkthrough remain gates. Settled retention defaults do not enable deletion. Preserve meaningful reviewed/final/submitted records and v1 terminal-acknowledgement/qualified-transfer history. No test is rerun by this document revision.
 
 ## Requirement and acceptance trace
 

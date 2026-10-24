@@ -1,17 +1,17 @@
 # Funding integration source ownership and status
 
-Revision: FUNDING-2026-10-24-r10
+Revision: FUNDING-2026-10-24-r12
 Updated: 2026-10-24 (UTC)
 
 ## Chosen target and current source
 
 Wednesday October 28 uses PostgreSQL-native knowledge through existing authorized SQL/domain tools and the existing authorized Buzz agent. Helix and Y2 are explicitly deferred. Preserve reversible future adapters and canonical data/access ownership. This choice does not establish that actual SQL/application integration is deployed.
 
-The chosen v2 policy permits any authenticated, currently verified DAO member with current application action access to contribute and approve the exact version, with no named owner/default five-specialist gates. Mark submitted records a selected immutable packet/date, reporter and evidence level; optional receipt evidence may follow later. V2 packet primitives are merged; native/Buzz and live authority integration remain unqualified. Actual sponsor signatures and DAO/Vocdoni governance apply only when required by the real policy.
+The chosen v2 policy permits any authenticated, currently verified DAO member with current application action access to contribute and approve the exact version, with no named owner/default five-specialist gates. Mark submitted records a selected immutable packet/date, reporter and evidence level; optional receipt evidence may follow later. V2 core/native capture are merged; reviewed draft Packet UI and production authority/domain/Buzz integration remain pending. Actual sponsor signatures and DAO/Vocdoni governance apply only when required by the real policy.
 
-Host/resource qualification remains [PR53](https://github.com/NetRxn/Inertia/pull/53): source-qualified/default-disabled host assembly, early SDK byte/deadline bounds, manual invocation and state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Source-row allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live walkthrough remain gates. Draft PR51 remains unmerged/inactive ingress/per-attempt authority; full untrusted runtime/native authoritative completion remains unqualified.
+Host/resource qualification remains [PR53](https://github.com/NetRxn/Inertia/pull/53): source-qualified/default-disabled host assembly, early SDK byte/deadline bounds, manual invocation and state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Bounded receipt-read allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live walkthrough remain gates. Draft PR51 remains unmerged/inactive ingress/per-attempt authority; full untrusted runtime/native authoritative completion remains unqualified.
 
-The additive packet-v2 core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56), alongside owning-domain packet-v2/named SQL-tool source and local PostgreSQL facade qualification. Native capture is the current [bounded #40 task](https://github.com/NetRxn/Inertia/issues/40); real authority resolver/transport/provider, UI/Buzz and actual system-run qualification remain open.
+The additive packet-v2 core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56), alongside owning-domain packet-v2/named SQL-tool source and local PostgreSQL facade qualification. Native capture is merged in [PR58](https://github.com/NetRxn/Inertia/pull/58); Packet UI/attestation is reviewed [draft PR62](https://github.com/NetRxn/Inertia/pull/62), not merged/live. Browser, mutual #48 recovery/workflow agreement, real authority/runtime/domain/Buzz and actual-run qualification remain open.
 
 ## Source ownership
 

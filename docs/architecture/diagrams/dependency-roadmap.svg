@@ -63,7 +63,7 @@
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="609.5,-161 336.5,-161 336.5,-89 609.5,-89 609.5,-161"/>
 <text text-anchor="middle" x="473" y="-139.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 exact-version confirmation</text>
 <text text-anchor="middle" x="473" y="-121.2" font-family="Arial" font-size="16.00" fill="#132e38">Mark submitted and later evidence</text>
-<text text-anchor="middle" x="473" y="-103.2" font-family="Arial" font-size="16.00" fill="#132e38">Core merged; wiring pending</text>
+<text text-anchor="middle" x="473" y="-103.2" font-family="Arial" font-size="16.00" fill="#132e38">Capture merged; UI draft</text>
 </g>
 
 <g id="diagram-dependency-roadmap-edge-2" class="edge">

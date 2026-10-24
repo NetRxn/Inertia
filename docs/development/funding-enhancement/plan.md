@@ -1,13 +1,15 @@
 # Funding application implementation plan
 
-Revision: FUNDING-2026-10-24-r10
+Revision: FUNDING-2026-10-24-r12
 Updated: 2026-10-24 (UTC)
 
 ## Target and source boundary
 
 Make the actual system operational for Wednesday October 28 Roundtable using existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. It must produce substantial research/preparation and a near-complete current application draft, with agent contribution and independent quality critique within that outcome. Helix and Y2 are deferred. Full untrusted member-owned execution is separate and unqualified.
 
-Public source includes [PR56](https://github.com/NetRxn/Inertia/pull/56) packet-v2 primitives plus PR53's source-qualified/default-disabled host assembly, SDK byte/deadline bounds, manual invocation and state-delete reset. V2 packet core is merged; native/Buzz confirmation/Mark submitted remains unqualified. Preserve legacy v1 records/approval/cancellation meaning. No implementation step here authorizes deployment, permission/credential change, deletion or external submission.
+Public source includes [PR56](https://github.com/NetRxn/Inertia/pull/56) packet-v2 primitives plus PR53's source-qualified/default-disabled host assembly, SDK byte/deadline bounds, manual invocation and state-delete reset. V2 core/native capture are merged; Packet UI/attestation is reviewed draft source, not merged/live. Preserve legacy v1 records/approval/cancellation meaning. No implementation step here authorizes deployment, permission/credential change, deletion or external submission.
+
+The [recommended remaining work](../../../plan.md#recommended-remaining-work) puts actual generated funding work and SQL reuse first. Two-provider funding/member-objective scenarios exercise existing requirements with configurable roles and native coordination; they are test preparation, not an actual run or a new framework.
 
 ## Task 0 Baseline and essential checks
 
@@ -88,13 +90,14 @@ Prove actual SQL query/research/writeback/reuse with correction/replay/denial an
 
 - [x] Legacy v1 capture/transport and source-qualified PR53 assembly remain merged/default-disabled, with their original checks and historical records intact.
 - [x] Additive packet-v2 contract/freeze core and owning-domain packet primitives are merged; v1 remains unchanged.
-- [ ] Connect trusted native capture and real current DAO-membership/application action authorization to exact packet/version/policy confirmation. Native/Buzz views must resolve real humans; agents, forwarded flags and public-only access cannot approve.
+- [x] Trusted native exact-action capture is merged in PR58, synthetic/default-disabled without actual authority/retention callbacks.
+- [ ] Qualify reviewed draft PR62 Packet UI, mutually agreed #48 recovery and real current DAO-membership/application-action/domain/Buzz bindings. Native/Buzz views must resolve real humans; agents, forwarded flags and public-only access cannot approve.
 - [ ] Add Mark submitted/equivalent authenticated Buzz intent selecting the actual immutable packet/date, reporter and evidence level. Permit later optional receipt reference/image/email. Preserve missing prior approvals, actual review/readiness state and reporter versus claimed submitter. Do not require fabricated approvals to record a real past fact.
 - [ ] Use audited append-only corrections/evidence and idempotent exact-action replay. No automatic portal submission, vote, payment or permission expansion.
-- [ ] Qualify current source/access, guarded writes, source-row allocation, remaining deployment/latency compatibility, approved lifecycle/authentication/network bindings and live walkthrough before activation.
+- [ ] Qualify current source/access, guarded writes, bounded receipt-read allocation, remaining deployment/latency compatibility, approved lifecycle/authentication/network bindings and live walkthrough before activation.
 - [ ] Retain meaningful reviewed/final/submitted records, authoritative evidence, v1 receipts and holds. Settled 90-day/one-year planning defaults do not enable deletion.
 
-Acceptance: A01–06 and root T-G06–15. Existing legacy cancellation/receipt behavior remains a regression lane, not an invented v2 role ceremony. V2 packet core is merged; native/Buzz action integration remains pending.
+Acceptance: A01–06 and root T-G06–15. Existing legacy cancellation/receipt behavior remains a regression lane, not an invented v2 role ceremony. V2 core/native capture are merged; draft UI and live authority/domain/Buzz integration remain pending.
 
 ## Task 8 Meetings, objectives and shared views
 
