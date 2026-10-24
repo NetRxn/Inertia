@@ -67,8 +67,8 @@
 <title>V</title>
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="360,-72 122,-72 122,0 360,0 360,-72"/>
 <text text-anchor="middle" x="241" y="-50.2" font-family="Arial" font-size="16.00" fill="#132e38">Exact-version v2 confirmation</text>
-<text text-anchor="middle" x="241" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">Packet core merged</text>
-<text text-anchor="middle" x="241" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">Action wiring pending</text>
+<text text-anchor="middle" x="241" y="-32.2" font-family="Arial" font-size="16.00" fill="#132e38">Native capture merged</text>
+<text text-anchor="middle" x="241" y="-14.2" font-family="Arial" font-size="16.00" fill="#132e38">UI/Buzz/live pending</text>
 </g>
 
 <g id="diagram-member-execution-edge-4" class="edge">

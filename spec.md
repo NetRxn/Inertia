@@ -1,24 +1,26 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-24-r22
+Revision: INERTIA-2026-10-24-r24
 Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 packet core source is merged; native/Buzz actions and live authority integration remain unqualified. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core and native capture source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Implementation status
 
-[PR56](https://github.com/NetRxn/Inertia/pull/56) merged the additive member packet-v2 contract/freeze core: one authenticated member review binds the exact packet under trusted policy, formal obligations remain separate and no submission authority is granted. Owning-domain packet-v2 and named SQL knowledge tools are also merged, with local PostgreSQL facade qualification. Native capture is the current bounded task in [#40](https://github.com/NetRxn/Inertia/issues/40); UI/signed-human Buzz wiring, real current-authority resolver/transport, provider execution and the end-to-end human run remain unqualified.
+[PR58](https://github.com/NetRxn/Inertia/pull/58) adds merged trusted native exact-action capture to the [packet-v2 core](https://github.com/NetRxn/Inertia/pull/56). Source/synthetic checks passed; missing trusted authority/retention callbacks keep the path disabled. Owning-domain packet-v2 and named SQL tools retain their recorded local PostgreSQL qualification.
+
+[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. Browser walkthrough, mutually agreed #48 recovery/workflow, production authority/runtime/domain/Buzz and the actual system run remain pending. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
 
 Chosen target: operational at the Wednesday October 28 Roundtable, using authorized PostgreSQL domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred from the demo critical path. These are architecture and delivery decisions, not a claim that the SQL/application integration is deployed.
 
-The host/resource milestone remains [Inertia PR53](https://github.com/NetRxn/Inertia/pull/53): default-disabled source-qualified host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Source-row allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live walkthrough remain gates.
+The host/resource milestone remains [Inertia PR53](https://github.com/NetRxn/Inertia/pull/53): default-disabled source-qualified host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled cross-service reproduction. Bounded receipt-read allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live walkthrough remain gates.
 
 | Capability | Current source or evidence | Chosen next result |
 |---|---|---|
 | Buzz and native work | Signed bridge, native comments/confirmations and durable recovery are merged | Qualify the existing authorized agent/relay and return the same work/results to members |
 | Meeting publication | Source/native composition is merged and qualified with controlled source/website I/O, default-disabled | Real approved Drive-to-member-portal transcript/notes/readback; summary-only website output remains partial |
 | Funding preparation | Existing acquisition, scoped candidates, gap preparation and independent agent review are merged | Actual system-generated substantial research and a near-complete current application draft |
-| Human packet review | Additive v2 packet contract/freeze core merged; v1 remains intact | Connect native/Buzz exact-version confirmation under current verified membership/application access; live integration remains pending |
+| Human packet review | V2 packet core and native exact-action capture merged; v1 intact | Packet UI/attestation is reviewed draft PR62; browser, current authority and domain/Buzz qualification remain pending |
 | Submission record | Legacy source conflates readiness/authorization with recording a past fact | V2 Mark submitted or equivalent authenticated Buzz intent records the selected immutable packet/date and reporter/evidence level; no external submission |
 | Knowledge | SQL/evidence core and named owning-domain tool facade merged; older Helix core remains historical | Wednesday uses existing authorized PostgreSQL domain tools for query-first reuse and durable writeback; live SQL wiring still requires qualification |
 | Agent contribution | PR37 stages scoped inert candidates; PR51 ingress/per-attempt authority is draft, unmerged and inactive | Use the existing authorized Buzz agent for the achievable contribution path within the packet outcome. Full untrusted member-owned isolation, review and authoritative completion remain unqualified engineering work |
@@ -26,11 +28,13 @@ The host/resource milestone remains [Inertia PR53](https://github.com/NetRxn/Ine
 
 Legacy v1 approvals, receipts, cancellation state and meaningful historical records remain historically intact. The chosen v2 policy must use a distinct version and must not reinterpret legacy records. Actual DAO/Vocdoni decisions and sponsor signatures remain required only when the real applicable policy requires them. Daily recurring scouting remains disabled. [Testing](testing.md) separates source checks, controlled fixtures, historical proof and live acceptance.
 
+[#42 assessment](https://github.com/NetRxn/Inertia/issues/42#issuecomment-6389560049) narrows the remaining receipt-reader allocation work to early SQL filtering and bounded field projection, retaining pending identity for reconciliation. No implementation or approved new paging interface is claimed.
+
 ## Reproducible connected walkthrough
 
 From a development checkout with Node 24.11+ and dependencies installed, `npm run demo:workflow` prints the connected journey and writes `runs/workflow-receipt.json`. The receipt links the meeting revision/output hash, fixture-seeded native work, exact packet version/hash, paired acknowledgment and signed receipt. Reconstructing the bridge and replaying the same reply creates no second native mutation. External I/O is synthetic; ordinary acknowledgment remains separate from the grant governance evaluation. Website publication and unfinished live adapters remain explicitly pending.
 
-Cloud is the default development and verification environment. Use the laptop only for a specific cloud blocker or required platform check; local Docker checks are reserved for a specific authorized fallback. Exact live-adapter inputs, outputs and acceptance checks are in [live handoff checklist](docs/implementation/live-handoff-checklist.md).
+Cloud remains the default development and verification environment. Laptop Docker is sufficient for authorized local development with the user’s own credentials; the shared runtime is planned for deployment before Wednesday. Local development is not shared-runtime qualification. Exact live-adapter inputs, outputs and acceptance checks are in [live handoff checklist](docs/implementation/live-handoff-checklist.md).
 
 ## 1. Product outcome
 
@@ -54,6 +58,8 @@ Deploy Paperclip as part of Inertia and connect the existing target Buzz instanc
 Paperclip owns agent identity and hierarchy, goals, issues, dependencies, assignment, run admission, checkout, workflow state, decisions, documents, budgets and audit. Buzz carries authenticated requests and presents the same task and decision IDs. Domain adapters attach source-specific evidence to native objects.
 
 Configure the CEO with an explicitly assigned intake mandate and native heartbeat: inspect that assigned intake, delegate, hire within configured policy, unblock agents, and report useful outcomes. The CEO operates within an assigned intake mandate defining scope, authority and acceptance criteria. Job acquisition is eager within each agent's authority, capabilities and budget. Follow-up tasks require a parent issue or goal, a concrete reason, acceptance criteria and a deduplication key. Explicit dependencies enforce prerequisite order; parent-child links organize related work.
+
+Provider and role assignments are configurable. The existing native coordinator decomposes objectives and acquires work by role, capability and capacity; research, partner discovery, packet assembly and quality review can use complementary agents. Funding and general member/bounty objectives exercise the same native work model. Two-provider scenarios test these existing requirements, not new scope or a new dispatcher. Two agents owned by one member do not count as two independent humans or human approvals.
 
 A Buzz mention or workflow event must resolve to one Paperclip wake/issue operation. Disable overlapping autonomous schedulers for that work. A second UI must never maintain a competing approval or task ledger.
 
@@ -116,7 +122,7 @@ The [public integration map](docs/implementation/public-dao-integration-map.md) 
 
 The chosen v2 policy is collaborative, not a named-owner or five-specialist approval workflow. Any authenticated, currently verified DAO member with current application action access may contribute and approve the exact version. Public visibility, a Buzz pairing or a generic native role alone does not establish that access. Agents prepare and assess quality; they never provide human approval. Resolve current identity, DAO membership and application action access through trusted services, not actor flags in source text.
 
-V2 packet primitives are merged; native/Buzz and live authority integration remain unqualified. Existing source still contains legacy v1 role-gated review/freeze paths and default-disabled transport. Keep those historical records and their authority/cancellation meaning intact; do not silently loosen v1 or fabricate five approvals from one member decision. The [native contract](docs/development/native-grant-workflow.md) separates the chosen target from legacy behavior.
+V2 core/native capture are merged; reviewed draft Packet UI and production authority/domain/Buzz integration remain pending. Existing source still contains legacy v1 role-gated review/freeze paths and default-disabled transport. Keep those historical records and their authority/cancellation meaning intact; do not silently loosen v1 or fabricate five approvals from one member decision. The [native contract](docs/development/native-grant-workflow.md) separates the chosen target from legacy behavior.
 
 - R-G01: Reuse the existing scanner, eligibility, matching, evidence and drafting interfaces. Recheck current opportunity availability, route, retrieval time, deadline and source before preparation.
 - R-G02: Generate cited useful drafts and independent agent quality review, then accept one exact-version human confirmation from any authenticated, currently verified DAO member with current application review access. No named owner or default five-specialist human gates. Current access and immutable artifact/evidence/policy bindings must be checked through trusted services; actual additional sponsor or DAO requirements remain visible.
@@ -185,7 +191,7 @@ The broader untrusted member-owned execution path is separate. PR37 only stages 
 
 Use the existing DAO PostgreSQL domain tools for authorized knowledge, funding and meeting evidence. Preserve domain ownership, least-privilege access, canonical identities and separate migration histories. Paperclip retains its independent native database for work/decisions and bridge transport. Physical binding, deployed tool access, compatible source reads, restore/holds and live activation remain operational inputs, not a reason to reopen the chosen SQL architecture.
 
-Current DAO membership plus current application action access controls new v2 contributions, confirmations and submission-record actions. A public issue, generic native role, repository role or actor-supplied claim is insufficient. New v2 policy and exact artifact/version bindings must be explicit and default-deny when current authorization cannot be established. V2 packet core is merged; native/Buzz action integration remains pending. Legacy v1 receipts, approvals, cancellation semantics and historical audit remain unchanged and cannot be reinterpreted as v2 approvals.
+Current DAO membership plus current application action access controls new v2 contributions, confirmations and submission-record actions. A public issue, generic native role, repository role or actor-supplied claim is insufficient. New v2 policy and exact artifact/version bindings must be explicit and default-deny when current authorization cannot be established. V2 core/native capture are merged; draft UI and live authority/domain/Buzz integration remain pending. Legacy v1 receipts, approvals, cancellation semantics and historical audit remain unchanged and cannot be reinterpreted as v2 approvals.
 
 Mark submitted records a real member's attestation about a selected immutable packet/date. Preserve reporter separately from any claimed submitter and label evidence as attestation/reference/image/email or independently verified only when established. Missing earlier approvals remain missing. Later evidence/corrections append audited history rather than overwriting the original record. No record action performs an external submission.
 
