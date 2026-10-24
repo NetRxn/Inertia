@@ -1,16 +1,17 @@
 flowchart TB
- D["Meet and Gemini<br/>Original outputs in organization Drive"] -.-> J["Source job<br/>Ready source and revision"]
- J -.-> R["Roundtable core and publication client<br/>Transcript when supplied<br/>Separate notes and actions"]
+ D["Meet and Gemini<br/>Original outputs in organization Drive"] -.-> J["Source job<br/>Readiness and exact Drive version"]
+ J -->|Verified transcript| R["Roundtable core and publication client<br/>Transcript when supplied<br/>Separate notes and actions"]
  R -.->|Publish exact content| W["Website service<br/>Publication API and member policy"]
  W -.->|Read back content and audience| R
  W -.-> P["Member website<br/>Transcript and notes<br/>Active membership required"]
  R -.->|Verified publication links| T["Paperclip task and Buzz thread"]
- R -.-> A["Proposed action intake<br/>Source-linked work"]
- A -.-> T
+ R --> A["Native meeting follow-up<br/>Protected source reference"]
+ J -->|Summary-only source| A
+ A --> T
  R -.-> K["Trusted knowledge admission<br/>Reviewed facts and adopted decisions<br/>Source version and access scope"]
  K -.-> DB[("Reusable DAO knowledge")]
- class R,A,K core
- class J,W planned
+ class J,R,A,K core
+ class W planned
  class DB store
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px

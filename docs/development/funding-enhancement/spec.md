@@ -1,6 +1,6 @@
 # Funding agents and DAO intake
 
-Revision: FUNDING-2026-10-24-r5. Implementation status and remaining contracts for DFW-Gov-Fund and Inertia.
+Revision: FUNDING-2026-10-24-r6. Implementation status and remaining contracts for DFW-Gov-Fund and Inertia.
 Updated: 2026-10-24 (UTC)
 
 ## Outcome
@@ -17,7 +17,7 @@ Agents turn public opportunities and DAO objectives into useful, evidence-backed
 
 ## Baseline
 
-DFW main `331416c015c83d20ea2d6834e5b4dd53aaeea320` (PR50) and Inertia develop `901414612a032e44839ba33fe39163e0e9c28ee1` (PR31) include merged public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs. Independent real-PG/native/Helix cloud rehearsal and the synthetic actual-service meeting-answer loop passed. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Exact receipts and activation gates are in [source-map.md](source-map.md).
+DFW main `e81d7a0ece03bbe951e5b1ae3727c26a3c86068a` (PR52) and Inertia develop `3064018359e986a0b69bb5c860c01bb18dd7f5b9` (PR37) include merged public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs. Independent real-PG/native/Helix cloud rehearsal and the synthetic actual-service meeting-answer loop passed. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Meeting source/native composition is merged and independently qualified, default-disabled; notes-only website output remains partial. The narrow discovery foundation is merged and independently qualified; source-bound funding facts are merged in PR36/DFW PR52 and live activation remains pending. The inactive member candidate boundary is merged in PR37; authenticated ingress/attempt authority, live provider execution and native review/completion remain next. Exact receipts and activation gates are in [source-map.md](source-map.md).
 
 July's five retained opportunity packets had 27 requirement rows with no supported answers and no named DAO programs in core narratives. The saved audit found 8 proposed-plan drafting opportunities, 6 partially answerable requirements, 10 genuine information gaps and 3 lead-only requirements. Evaluate those classifications as audit hypotheses. That historical run predates evaluation of the Codex proposal service.
 
@@ -25,7 +25,7 @@ Existing services already provide acquisition, matching, evidence, draft packets
 
 ## Workflow
 
-The approved [operational discovery loop](discovery-loop.md) extends this workflow through Tasks 5, 6C/6D and 8. It combines due-source rechecks and bounded new-source search with official validation, benefit-versus-effort assessment, durable writeback, prioritized briefs, deduplicated urgent alerts and native follow-ups. Host wiring remains planned and the daily profile schedule remains disabled.
+The approved [operational discovery loop](discovery-loop.md) extends this workflow through Tasks 5, 6C/6D and 8. It combines due-source rechecks and bounded new-source search with official validation, benefit-versus-effort assessment, durable writeback, prioritized briefs, deduplicated urgent alerts and native follow-ups. The merged foundation provides same-plugin context/URL tools, durable budgets/frontier, known-source preliminary briefs before packets, independently corroborated new-source identity and existing Buzz transport. Merged PR36/DFW PR52 assess exact source-bound program/deadline/benefit evidence without a site-specific adapter. Conditional facts retain unknown cutoff, eligibility and fit where unsupported. Active responsible-member wake mapping, actual research/model quality and human delivery need qualification; the daily profile schedule remains disabled.
 
 ```mermaid
 flowchart TD

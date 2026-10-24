@@ -1,6 +1,6 @@
 # Needed from team
 
-Inertia integration checklist · Updated 2026-10-24 · Baseline INERTIA-2026-10-24-r17
+Inertia integration checklist · Updated 2026-10-24 · Baseline INERTIA-2026-10-24-r18
 
 Start with P0 for the connected demo; P1 enables ongoing operation. John owns website rollout, a teammate owns Y2, and Inertia engineering deploys Paperclip and connects the existing Buzz instance. Other owner labels below are roles to assign.
 
@@ -28,9 +28,9 @@ All handoffs initially remain **needed**. Update an entry to **received**, **qua
 
 ### NTF03 P0 Real Gemini sources
 
-- [ ] Share protected references to approved folders, the read principal and actual transcript-plus-notes and corrected-source examples. Include a summary-only example if produced. Supply existing DAO meeting identifiers/date and separate Gemini-notes references. Engineering derives Meet-to-Drive mappings and FILE_GENERATED readiness from the API; provide an explicit mapping only where the API lacks it. Confirm permitted member-portal publication and retention/withdrawal rules for originals, derived records and private operation state. See [source contract](https://github.com/NetRxn/Inertia/blob/develop/docs/development/roundtable-ingestion.md).
+- [ ] Share protected references to approved folders, the read principal and actual transcript-plus-notes and corrected-source examples. Include a summary-only example if produced. Supply existing DAO meeting identifiers/date and separate Gemini-notes references. Engineering derives Meet-to-Drive mappings and FILE_GENERATED readiness from the API; provide an explicit mapping only where the API lacks it. Confirm permitted member-portal publication and retention/withdrawal rules for originals, derived records and private operation state. See [source/native contract](https://github.com/NetRxn/Inertia/blob/develop/docs/development/meeting-source-native-composition.md).
 
-**Unlocks:** Real source ingestion, fidelity checks and versioned publication. Preparation and website caller are tested.
+**Unlocks:** Real source ingestion, fidelity checks and versioned publication. Source/native composition is merged and qualified with fixtures. Summary-only native follow-up exists; notes-only website output still needs a server contract and real example.
 
 ## Platform and database operator with domain owners
 
@@ -42,7 +42,7 @@ All handoffs initially remain **needed**. Update an entry to **received**, **qua
 
 ### NTF05 P0 Runtime and tool access
 
-- [ ] Provide approved existing model/runtime and browser/search/domain-tool access with scoped connection references. Engineering verifies the tool inventory and creates/configures the research agent. Identify the intended DAO company/admin and existing CEO if present. Confirm pilot spend limits and native hiring-approval policy. Engineering prepares the deployment and [native intake setup](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#native-ceo-intake).
+- [ ] Provide approved existing model/runtime and browser/search/domain-tool access with scoped connection references. Engineering verifies the tool inventory and creates/configures the research agent. Identify the intended DAO company/admin and existing CEO if present. Name an active responsible DAO member for scout, diligence and urgent-work issues; engineering configures and verifies the native wake mapping. Confirm pilot spend limits and native hiring-approval policy. The installation owner must approve the meeting plugin’s declared issues.read/create/update capabilities for the selected live instance before activation. Engineering prepares the deployment and [native intake setup](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#native-ceo-intake).
 
 **Unlocks:** Actual research, drafting and independent review through native tasks. Runtime/model quality is qualified after access is configured.
 
@@ -88,7 +88,7 @@ All handoffs initially remain **needed**. Update an entry to **received**, **qua
 
 - [ ] Identify a willing participant, their chosen supported agent/runtime and protected membership reference. Agree one permitted company/project/task, data classes and enrollment/revocation authority. Arrange successful contribution, denied unauthorized access, interrupted-run recovery and revocation checks using the [member runner handoff](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#adapter-acceptance-checklist). Repository-admin access and DAO enrollment are separate.
 
-**Unlocks:** The required second-member demonstration. Engineering owns runtime, sandbox/workspace and artifact qualification.
+**Unlocks:** The required second-member demonstration. Candidate admission and artifact/receipt handling are merged in PR37 and independently qualified. Engineering owns authenticated ingress, non-reusable per-attempt authority, runtime isolation, native review handoff and authoritative completion.
 
 ## DAO knowledge and finance source owners
 
@@ -100,7 +100,7 @@ All handoffs initially remain **needed**. Update an entry to **received**, **qua
 
 ### NTF13 P1 Read only financial source
 
-- [ ] Choose the read-only QuickBooks export/API route and finance owner. Provide a sanitized representative Profit & Loss report with period, basis, currency, totals and source revision/hash; confirm permitted scope and refresh policy. Identify different report/currency needs against the [financial contract](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/financial-snapshot-contract.md).
+- [ ] Choose the read-only QuickBooks export/API route and finance owner. Provide a sanitized representative Profit & Loss report with company/reference, period, cash/accrual basis, currency, totals, retrieval time and source revision/hash; confirm permitted scope and refresh policy. Identify different report/currency needs against the [public financial-source summary](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/spec.md#reusable-knowledge-and-financial-sources).
 
 **Unlocks:** Supported financial facts. Sanitized USD P&L normalization exists; actual provider format needs qualification. This becomes P0 if the selected demo packet needs those facts.
 
@@ -108,9 +108,9 @@ All handoffs initially remain **needed**. Update an entry to **received**, **qua
 
 ### NTF14 P0 Pilot and P1 recurring operation
 
-- [ ] Confirm prioritized objectives/geography/applicant scope and the brief/urgent-alert audiences. Supply an existing DFW service/runtime identity and access reference if deployed; otherwise engineering deploys within the approved NTF04 target. Confirm engineering’s proposed source-admission policy (official identity validation and safe fetch; ambiguous authority goes to review), plus a distinct urgent human-delivery destination/recipient policy. Before the pilot, confirm engineering’s proposed query/page/time/cost limits and test destination. After the measured rehearsal, confirm its proposed cadence, urgency thresholds and recheck/alert targets. Identify the operational owner and whether automatic alerts are authorized. Engineering verifies actual human alert delivery and routes unverified source authority through candidate admission. Also confirm rehearsal coordinator, required participants/delegates, availability and agreed demonstration window. See [discovery activation](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/discovery-loop.md) and [demo acceptance](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#demo-acceptance).
+- [ ] Confirm prioritized objectives/geography/applicant scope and the brief/urgent-alert audiences. Supply an existing DFW service/runtime identity and access reference if deployed; otherwise engineering deploys within the approved NTF04 target. Confirm engineering’s proposed source-admission policy (official identity validation and safe fetch; ambiguous authority goes to review), plus the existing Buzz destination, actual human audience and recipient policy for urgent alerts. Before the pilot, confirm engineering’s proposed query/page/time/cost limits and test destination. After the measured rehearsal, confirm its proposed cadence, urgency thresholds and recheck/alert targets. Identify the operational owner and whether automatic alerts are authorized. Engineering verifies actual human alert delivery, the responsible-member wake mapping from NTF05 and source admission. Also confirm rehearsal coordinator, required participants/delegates, availability and agreed demonstration window. See [discovery activation](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/discovery-loop.md) and [demo acceptance](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#demo-acceptance).
 
-**Unlocks:** Search → official validation → durable knowledge → brief/alert → next-run reuse, then approved recurrence. The daily schedule is currently disabled.
+**Unlocks:** Search → official validation → durable knowledge → brief/alert → next-run reuse, then approved recurrence. Discovery and source-bound funding facts are merged and qualified with controlled captures; actual research/model quality remains to qualify. Missing responsible-member mapping leaves wakes pending. Live research, human delivery and recurrence still need admission; the daily schedule stays disabled.
 
 ## Engineering ownership and later work
 
@@ -122,4 +122,4 @@ Keep NTF01–NTF14 stable. Update the same entry when an input arrives, ownershi
 
 Synchronize with the [specification](https://github.com/NetRxn/Inertia/blob/develop/spec.md), [tests](https://github.com/NetRxn/Inertia/blob/develop/testing.md), [decisions](https://github.com/NetRxn/Inertia/blob/develop/decisions.md) and [plan](https://github.com/NetRxn/Inertia/blob/develop/plan.md). Preserve the same scope/status in the [deck](https://github.com/NetRxn/Inertia/blob/develop/Inertia-Architecture.pptx) and [HTML overview](https://github.com/NetRxn/Inertia/blob/develop/docs/architecture/Inertia-System-Overview.html); checklist-only changes can preserve the unchanged deck.
 
-Source baseline: [Inertia 338fb528](https://github.com/NetRxn/Inertia/tree/338fb528263a3c105f9ff677daa170ff0593f1eb), [DFW 331416c0](https://github.com/NetRxn/DFW-Gov-Fund/tree/331416c015c83d20ea2d6834e5b4dd53aaeea320).
+Source baseline: [Inertia 30640183](https://github.com/NetRxn/Inertia/tree/3064018359e986a0b69bb5c860c01bb18dd7f5b9). The [public source map](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/source-map.md) records the DFW baseline; linked private DFW implementation details require owner access.

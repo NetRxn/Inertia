@@ -18,6 +18,12 @@ Helix queries enforce tenant/audience/project/opportunity scope at every hop and
 
 Task 6 evidence/SQL, sanitized financial contracts and the typed graph/outbox/query core are merged. Independent cloud rehearsal passed real PostgreSQL/PostGIS domain checks and PG-to-embedded-Helix reuse/writeback. Production schema/role and writer-fence composition, trusted source/host adapters, admitted inventory/backfill and live activation remain pending. The independently qualified durable native acceptance core is merged in DFW PR50 and Inertia host PR31. Native verdict and exact receipt commit atomically in Paperclip; DFW effect and audit commit atomically in DFW, with no cross-database transaction. Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival under domain audit retention. Production retention/archive and writer composition remain gates; the legacy adapter stays default-disabled.
 
+Meeting source/native composition is merged in PR34. Prepared exact-byte publication operations and protected source references live in private Paperclip runtime state; member-facing native work is reference-only. Actual PostgreSQL/WAL recovery passed with synthetic external I/O. Production retention, stopped-owner recovery and real source/website admission remain gates; website publication records stay website-owned.
+
+The PR35/DFW PR51 discovery foundation stores its bounded frontier and continuation in native issue documents and reuses DFW evidence/admission records. No new ledger or migration is added. Actual native PostgreSQL restart and cold DFW reuse passed with controlled source/relay I/O; production document-history costs and live source/runtime admission remain qualification work.
+
+PR36/DFW PR52 add exact-source funding-facts receipts through existing evidence/knowledge records. The merged PR37 member boundary uses immutable candidate receipts in private native runtime storage. Native review and authoritative completion remain separate integration work.
+
 ## Source compatibility and migration ownership
 
 Inspected public source pins, not deployed-storage acceptance:
