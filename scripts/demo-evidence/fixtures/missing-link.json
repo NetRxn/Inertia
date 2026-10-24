@@ -189,6 +189,7 @@
       "declined": 1,
       "noResponse": 1,
       "pending": 0,
+      "withdrawn": 0,
       "completed": 2,
       "boundary": "prepared member asks for this application only",
       "responseTime": {

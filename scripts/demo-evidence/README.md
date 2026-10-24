@@ -13,9 +13,13 @@ node --test scripts/demo-evidence/validate-receipt.test.mjs
 node scripts/demo-evidence/validate-receipt.mjs scripts/demo-evidence/fixtures/valid-synthetic.json
 ```
 
-The command prints a JSON array with one report per file. Exit codes: `0` if every receipt is valid, `1` if any is invalid, `2` for a usage or JSON parse error. Each report has `valid`, `evidenceClass`, `claimScope`, `qualificationClaimed`, `qualificationEligible`, `errors[]` and `warnings[]` (each `{code, path, message}`) and the fixed `nonClaims`.
+The command prints a JSON array with one report per file. Exit codes: `0` if every receipt is valid, `1` if any is invalid, `2` for a usage, read, size or JSON parse error. Each report has `valid`, `receiptFormat`, `evidenceClass`, `claimScope`, `qualificationClaimed`, `qualificationEligible`, `errors[]` and `warnings[]` (each `{code, path, message}`) and the fixed `nonClaims`.
 
-`qualificationEligible` is true only for a valid `system-produced`, `complete-application-outcome` receipt. Even then it means the receipt is eligible for qualification review, not that qualification happened.
+`qualificationEligible` is true only for a valid `system-produced`, `complete-application-outcome` receipt. It means the receipt is structurally ready for qualification review, not that qualification happened. Whether a run covers the #54/#48 demonstration (run, tool, source, artifact and member-event evidence, plus useful incorporated output) is tracked in those issues, not by this flag.
+
+**Diagnostics never echo receipt content.** Messages are fixed text. Paths name schema keys and array indexes only; any other key appears as `<unrecognized>`. Report metadata (`receiptFormat`, `evidenceClass`, `claimScope`) is returned only when it is an allowed value, otherwise `null`. CLI read and parse errors are fixed messages without parser snippets or stack traces.
+
+**Limits.** The CLI accepts at most 64 files of 1 MiB each. A receipt may nest at most 16 levels, hold at most 10,000 values and use strings of at most 4,096 characters; beyond that it is rejected with `RESOURCE_LIMIT` rather than partially checked. A report keeps at most 200 errors and 200 warnings, de-duplicated by code and path; a final `RESOURCE_LIMIT` entry marks a truncated list. The values are exported as `LIMITS`.
 
 ## Receipt format `inertia-demo-evidence/v0`
 
@@ -29,11 +33,15 @@ The command prints a JSON array with one report per file. Exit codes: `0` if eve
 | `claimScope` | `partial-contribution` or `complete-application-outcome` |
 | `qualificationClaimed` | Boolean. Only a `system-produced` complete outcome may claim it |
 | `source` | `{repo, head, tree}` with exact git object ids |
-| `runs[]` | `{runRef, role: system\|collaborator, agentRef, runtimeRef, sourceHead}`. Exactly one `system` run. `sourceHead` must equal `source.head` |
-| `contributions[]` | `{contributionRef, runRef, bounded, invocationRefs[], artifactRefs[{artifactRef, version}]}`. Collaborator contributions are `bounded: true` |
+| `runs[]` | `{runRef, role: system\|collaborator, agentRef, runtimeRef, sourceHead}`. Exactly one `system` run; collaborator runs are optional, so a single-agent receipt is valid. `sourceHead` must equal `source.head` |
+| `contributions[]` | `{contributionRef, runRef, bounded, invocationRefs[], artifactRefs[{artifactRef, version}]}`. Collaborator contributions are `bounded: true`. Every invocation that produced a claimed artifact must be listed in that contribution's `invocationRefs` |
 | `toolInvocations[]` | `{invocationRef, runRef, tool, argumentsSha256, resultSha256, admittedSourceRefs[]}`. Digests only, never arguments or results |
 | `admittedSources[]` | `{sourceRef, admissionRef, version}` |
 | `artifacts[]` | `{artifactRef, version, contentSha256, origin, producedBy: {runRef, invocationRefs[]}}`. `origin` is `synthetic`, `system-produced`, `historical-human` or `manual-reference` |
+
+Every required digest (`argumentsSha256`, `resultSha256`, `contentSha256`) must be a 64-lowercase-hex string; `null`, booleans and other types are rejected. `source.head` and `source.tree` must be git object id strings.
+
+**One implementation build per receipt.** Every run's `sourceHead` equals `source.head`, so a v0 receipt describes runs of a single implementation build. Runs that span repositories or runtimes need a mapping agreed in #48, #45 and #49; the map that resolves those references stays protected.
 | `outcome` | `{artifactRef, version}` produced by the system run. Required for a complete outcome, otherwise `null` |
 | `measurements` | See below |
 | `nonClaims` | Optional free text. The validator always reports its own fixed non-claims |
@@ -51,12 +59,13 @@ Historical human-submitted receipts omit `runs`, `contributions`, `toolInvocatio
 - `cost[]` measured entries need `amount`, an ISO 4217 `currency`, `basis` and `coverage`.
 - `usage` and `cost` each need at least one entry. If a figure is not known, record it explicitly.
 - Unknown values use `status: unknown` or `not-measured` with a `reason` and no `seconds`/`value`/`amount`. Unknown is never zero.
-- `totals` is `null` unless every usage and cost entry is measured with complete coverage. A total must equal the sum of its components.
+- `totals` is `null` unless every usage and cost entry is measured with complete coverage. A total must equal the sum of its components. `totals.usage`, when present, is an array of `{metric, unit, value}`.
 - `corrections` is required: a measured `count` with a `boundary` and `source`, or an explicit unknown.
-- `asks` is optional (secondary measures from the [PR59 answer](https://github.com/NetRxn/Inertia/pull/59#issuecomment-6388561995)). When measured, `offered`, `accepted`, `declined`, `noResponse`, `pending` and `completed` are non-negative integers.
-  - Every offered ask has exactly one state: `accepted + declined + noResponse + pending = offered`.
+- `asks` is optional (secondary measures from the [PR59 answer](https://github.com/NetRxn/Inertia/pull/59#issuecomment-6388561995)). When measured, `offered`, `accepted`, `declined`, `noResponse`, `pending`, `withdrawn` and `completed` are non-negative integers.
+  - Every offered ask has exactly one state: `accepted + declined + noResponse + pending + withdrawn = offered`.
   - `completed` cannot exceed `accepted`.
   - `noResponse` is required, because silence is never counted as a rejection.
+  - `withdrawn` is required ([PR61 answer](https://github.com/NetRxn/Inertia/pull/61#issuecomment-6388867070)). It counts asks ended by a native terminal withdrawal, which is neither a decline nor no response. A completed ask stays `accepted` and `completed`; a later withdrawal never erases it. The native withdrawal and the original events stay in Paperclip history; the receipt only counts them.
   - An optional `responseTime` (`statistic`: `median`, `mean` or `max`, plus `seconds` and `boundary`) times responded asks only, and needs at least one response.
 - A `savings` field is always rejected.
 
@@ -70,7 +79,7 @@ Historical human-submitted receipts omit `runs`, `contributions`, `toolInvocatio
 | `DUPLICATE_REF` | The same reference is recorded twice |
 | `LINK_UNRESOLVED` | A reference points at nothing in the receipt |
 | `LINK_MISSING` | A contribution or artifact has no invocation or artifact |
-| `LINK_MISMATCH` | A link crosses runs |
+| `LINK_MISMATCH` | A link crosses runs, or a contribution claims an artifact produced by invocations it does not list |
 | `VERSION_CONFLICT` | A run head differs from `source.head`, an artifact version is not recorded, or the same artifact version has two digests |
 | `CLASS_MISMATCH` | An artifact origin does not fit `evidenceClass` (for example a manual reference packet in a system-produced receipt), or historical evidence carries runs |
 | `SCOPE_OVERCLAIM` | A partial contribution claims qualification, a collaborator contribution is unbounded, or a complete outcome is not produced by the system run |
@@ -78,6 +87,8 @@ Historical human-submitted receipts omit `runs`, `contributions`, `toolInvocatio
 | `UNKNOWN_COERCED` | An unknown carries a value, or a measured figure has no coverage |
 | `TOTAL_INCOMPLETE` | A total is given over incomplete components |
 | `NO_RESPONSE_COERCED` | Measured asks omit `noResponse`, so silence cannot be told apart from a decline |
+| `WITHDRAWAL_COERCED` | Measured asks omit `withdrawn`, so a withdrawal cannot be told apart from a decline or no response |
+| `RESOURCE_LIMIT` | The receipt or CLI input exceeds a limit, or the report was truncated |
 | `MEASUREMENT_FIELD`, `MEASUREMENT_INCONSISTENT` | A measurement field is missing, or values do not add up |
 | `SAVINGS_INFERRED` | A `savings` field is present |
 | `PRIVATE_FIELD`, `PRIVATE_VALUE` | A raw/private key (`arguments`, `result`, `content`, `packet`, …), or an email-, URL- or secret-shaped value |

@@ -187,6 +187,7 @@
       "accepted": 2,
       "declined": 2,
       "pending": 0,
+      "withdrawn": 0,
       "completed": 2,
       "boundary": "prepared member asks; silence counted as declined",
       "responseTime": {

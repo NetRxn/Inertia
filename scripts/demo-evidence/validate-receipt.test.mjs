@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync, mkdtempSync, writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {validateReceipt} from './validate-receipt.mjs';
+import {validateReceipt, LIMITS} from './validate-receipt.mjs';
 
 const fixture = name => fileURLToPath(new URL(`./fixtures/${name}.json`, import.meta.url));
 const load = name => JSON.parse(readFileSync(fixture(name), 'utf8'));
@@ -176,4 +178,182 @@ test('CLI exits 0 for valid, 1 for invalid and 2 for usage or parse errors', () 
   assert.deepEqual(JSON.parse(bad.stdout).map(r => r.valid), [true, false]);
   assert.equal(run().status, 2);
   assert.equal(run(cli).status, 2);
+});
+
+// Review findings on PR60 head 92904061 and the withdrawn ask category from the PR61 answers.
+const SENTINEL = 'SYNTHETIC_SENTINEL';
+const assertNoSentinel = (...outputs) => outputs.forEach(o =>
+  assert.ok(!(typeof o === 'string' ? o : JSON.stringify(o)).includes(SENTINEL), 'diagnostics echo rejected input'));
+const scratch = () => mkdtempSync(join(tmpdir(), 'demo-evidence-'));
+const writeJson = (dir, name, text) => { const f = join(dir, name); writeFileSync(f, text); return f; };
+
+test('a rejected private value is flagged without being echoed', () => {
+  const r = load('valid-synthetic');
+  r.contributions[0].runRef = `https://example.invalid/${SENTINEL}`;
+  const report = validateReceipt(r);
+  assert.ok(codes(report.errors).includes('PRIVATE_VALUE'));
+  assertNoSentinel(report);
+});
+
+test('diagnostics never echo receipt values, unknown keys or free-text reasons', () => {
+  const r = load('valid-synthetic');
+  r.evidenceClass = SENTINEL;
+  r.claimScope = SENTINEL;
+  r.contributions[0].artifactRefs[0].artifactRef = `art:${SENTINEL}`;
+  r.contributions[1].artifactRefs[0].version = SENTINEL;
+  r.contributions[0].invocationRefs[0] = `inv:${SENTINEL}`;
+  r.toolInvocations[0].admittedSourceRefs[0] = `src:${SENTINEL}`;
+  r.toolInvocations[1].runRef = `run:sha256:${'a'.repeat(64)}`;
+  r.artifacts[1].producedBy.runRef = SENTINEL;
+  r.artifacts[0].origin = SENTINEL;
+  r.artifacts.push({...structuredClone(r.artifacts[0]), contentSha256: 'b'.repeat(64)});
+  r.measurements.activeHumanTime = {status: 'unknown', boundary: 'member review', reason: SENTINEL};
+  r.measurements.cost[0].status = SENTINEL;
+  r[SENTINEL] = {runRef: 'bad', note: `https://example.invalid/${SENTINEL}`};
+  r.measurements[`${SENTINEL}@example.invalid`] = 1;
+  const report = validateReceipt(r);
+  assert.equal(report.valid, false);
+  assert.ok(report.errors.length > 5);
+  assertNoSentinel(report);
+  assert.equal(report.evidenceClass, null);
+  assert.equal(report.claimScope, null);
+});
+
+test('report metadata is allowlisted, never returned wholesale', () => {
+  const report = validateReceipt({...load('valid-synthetic'), receiptFormat: {password: SENTINEL}});
+  assert.deepEqual(codes(report.errors), ['FORMAT']);
+  assert.equal(report.receiptFormat, null);
+  assertNoSentinel(report);
+});
+
+test('CLI parse and read errors are static and never echo file content', () => {
+  const dir = scratch();
+  const bad = run(writeJson(dir, 'bad.json', `{"receiptFormat": ${SENTINEL}}`));
+  assert.equal(bad.status, 2);
+  assertNoSentinel(bad.stdout, bad.stderr);
+  const r = load('valid-synthetic');
+  r.measurements.activeHumanTime = {status: 'unknown', boundary: 'member review', reason: SENTINEL};
+  r.contributions[0].runRef = `https://example.invalid/${SENTINEL}`;
+  const invalid = run(writeJson(dir, 'leak.json', JSON.stringify(r)));
+  assert.equal(invalid.status, 1);
+  assertNoSentinel(invalid.stdout, invalid.stderr);
+});
+
+test('required digests must be SHA256 strings, not null or booleans', () => {
+  const a = load('valid-synthetic');
+  a.toolInvocations[0].argumentsSha256 = null;
+  assert.deepEqual(validateReceipt(a).errors.map(e => `${e.code} ${e.path}`), ['DIGEST_FORMAT toolInvocations[0].argumentsSha256']);
+  const b = load('valid-synthetic');
+  b.artifacts[0].contentSha256 = false;
+  assert.deepEqual(validateReceipt(b).errors.map(e => `${e.code} ${e.path}`), ['DIGEST_FORMAT artifacts[0].contentSha256']);
+  const c = load('valid-synthetic');
+  c.toolInvocations[1].resultSha256 = 'not-a-digest';
+  assert.deepEqual(validateReceipt(c).errors.map(e => `${e.code} ${e.path}`), ['DIGEST_FORMAT toolInvocations[1].resultSha256']);
+});
+
+test('source ids and currencies are not satisfied by coerced arrays', () => {
+  const r = load('valid-synthetic');
+  r.source.head = [r.source.head];
+  r.measurements.cost[0].currency = ['USD'];
+  const errs = validateReceipt(r).errors.map(e => `${e.code} ${e.path}`);
+  assert.ok(errs.includes('DIGEST_FORMAT source.head'));
+  assert.ok(errs.includes('MEASUREMENT_FIELD measurements.cost[0].currency'));
+});
+
+test('deeply nested input is rejected deterministically, not thrown', () => {
+  const r = load('valid-synthetic');
+  let p = r;
+  for (let i = 0; i < 10_000; i++) p = p.extra = {};
+  let report;
+  assert.doesNotThrow(() => { report = validateReceipt(r); });
+  assert.deepEqual(report.errors.map(e => `${e.code} ${e.path}`), ['RESOURCE_LIMIT ']);
+});
+
+test('node count, string length and cycles are bounded', () => {
+  const wide = load('valid-synthetic');
+  wide.measurements.cost[0].basisNotes = new Array(LIMITS.nodes + 1).fill(0);
+  assert.deepEqual(codes(validateReceipt(wide).errors), ['RESOURCE_LIMIT']);
+  const long = load('valid-synthetic');
+  long.measurements.cost[0].basis = 'a'.repeat(LIMITS.stringLength + 1);
+  assert.deepEqual(codes(validateReceipt(long).errors), ['RESOURCE_LIMIT']);
+  const cyclic = load('valid-synthetic');
+  cyclic.measurements.self = cyclic.measurements;
+  assert.deepEqual(codes(validateReceipt(cyclic).errors), ['RESOURCE_LIMIT']);
+});
+
+test('report growth is capped with a final RESOURCE_LIMIT entry', () => {
+  const r = load('valid-synthetic');
+  r.extraRefs = new Array(LIMITS.issues * 3).fill('bad');
+  const {errors} = validateReceipt(r);
+  assert.equal(errors.length, LIMITS.issues + 1);
+  assert.equal(errors.at(-1).code, 'RESOURCE_LIMIT');
+});
+
+test('CLI bounds file count and size, and reports deep nesting without a stack trace', () => {
+  const dir = scratch();
+  const valid = fixture('valid-synthetic');
+  const many = run(...new Array(LIMITS.files + 1).fill(valid));
+  assert.equal(many.status, 2);
+  assert.equal(many.stdout, '');
+  const big = run(writeJson(dir, 'big.json', JSON.stringify({pad: 'a'.repeat(LIMITS.bytes)})));
+  assert.equal(big.status, 2);
+  let deep = '{}';
+  for (let i = 0; i < 10_000; i++) deep = `{"extra":${deep}}`;
+  const nested = run(writeJson(dir, 'deep.json', deep));
+  assert.ok([1, 2].includes(nested.status));
+  assert.doesNotMatch(nested.stderr, /\n\s+at /);
+});
+
+test('an artifact claimed by a contribution must be produced by that contribution\'s invocations', () => {
+  const r = load('valid-synthetic');
+  r.contributions[0].invocationRefs = ['inv:sql-01'];
+  r.artifacts[0].producedBy.invocationRefs = ['inv:sql-02'];
+  assert.deepEqual(validateReceipt(r).errors.map(e => `${e.code} ${e.path}`), ['LINK_MISMATCH contributions[0].artifactRefs[0]']);
+  const subset = load('valid-synthetic');
+  subset.artifacts[0].producedBy.invocationRefs = ['inv:sql-01'];
+  assert.deepEqual(validateReceipt(subset).errors, []);
+});
+
+test('a genuine single-agent receipt with no collaborator is valid', () => {
+  const r = load('valid-synthetic');
+  r.runs.pop(); r.contributions.pop(); r.toolInvocations.pop(); r.artifacts.pop();
+  assert.deepEqual(validateReceipt(r).errors, []);
+});
+
+test('usage totals must be an array of well-formed entries before they are summed', () => {
+  const obj = load('valid-synthetic');
+  obj.measurements.totals.usage = {value: 999};
+  assert.deepEqual(validateReceipt(obj).errors.map(e => `${e.code} ${e.path}`), ['MEASUREMENT_FIELD measurements.totals.usage']);
+  const item = load('valid-synthetic');
+  item.measurements.totals.usage = [{value: 999}];
+  assert.deepEqual(codes(validateReceipt(item).errors), ['MEASUREMENT_FIELD']);
+  const ok = load('valid-synthetic');
+  ok.measurements.totals.usage = [{metric: 'input_tokens', unit: 'tokens', value: 182000}];
+  assert.deepEqual(validateReceipt(ok).errors, []);
+  ok.measurements.totals.usage[0].value = 999;
+  assert.deepEqual(codes(validateReceipt(ok).errors), ['MEASUREMENT_INCONSISTENT']);
+});
+
+test('withdrawn asks are their own state, separate from declined and no response', () => {
+  const r = load('valid-synthetic');
+  Object.assign(r.measurements.asks, {offered: 5, withdrawn: 1});
+  assert.deepEqual(validateReceipt(r).errors, []);
+  const folded = load('valid-synthetic');
+  Object.assign(folded.measurements.asks, {offered: 5, declined: 2, withdrawn: 1});
+  assert.deepEqual(validateReceipt(folded).errors.map(e => `${e.code} ${e.path}`), ['MEASUREMENT_INCONSISTENT measurements.asks']);
+  const negative = load('valid-synthetic');
+  negative.measurements.asks.withdrawn = -1;
+  assert.deepEqual(validateReceipt(negative).errors.map(e => `${e.code} ${e.path}`), ['MEASUREMENT_FIELD measurements.asks.withdrawn']);
+});
+
+test('measured asks must record withdrawals separately', () => {
+  const r = load('valid-synthetic');
+  delete r.measurements.asks.withdrawn;
+  assert.deepEqual(validateReceipt(r).errors.map(e => `${e.code} ${e.path}`), ['WITHDRAWAL_COERCED measurements.asks.withdrawn']);
+});
+
+test('a withdrawal never erases a completed contribution', () => {
+  const r = load('valid-synthetic');
+  Object.assign(r.measurements.asks, {accepted: 1, withdrawn: 1});
+  assert.deepEqual(validateReceipt(r).errors.map(e => `${e.code} ${e.path}`), ['MEASUREMENT_INCONSISTENT measurements.asks.completed']);
 });
