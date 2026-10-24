@@ -85,3 +85,8 @@ it("refuses changed pinned executable input before starting a process", async ()
     /pin/,
   );
 });
+it("serializes bounded exact funding spans without adding caller identity or policy", async () => {
+  const b = bridge(`process.stdin.on('data',b=>{console.log(JSON.stringify({ok:true,result:JSON.parse(b.toString())}));})`);
+  const input = { captureId: "capture", expectedSourceHash: "a".repeat(64), sourceIdentityReceiptId: "identity", runId: "run", queryReceiptId: "query", idempotencyKey: "key", facts: { programName: { quote: "🌱 Grant", span: { start: 0, end: 7 } } } };
+  expect(await b.assessFundingFacts!(input)).toEqual({ op: "assess_funding_facts", ...input });
+});

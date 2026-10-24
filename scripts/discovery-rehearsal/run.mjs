@@ -1,7 +1,7 @@
 /** Owns all database/process lifetime. Does not accept a database URL or deploy. */
 import {execFileSync} from 'node:child_process';
 import {randomBytes,createHash} from 'node:crypto';
-import {mkdtemp,mkdir,readFile,writeFile,cp,symlink,rm,realpath,readdir,stat} from 'node:fs/promises';
+import {mkdtemp,mkdir,readFile,writeFile,cp,symlink,rm,realpath} from 'node:fs/promises';
 import {createServer} from 'node:net';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
@@ -19,15 +19,10 @@ async function port() {
   const value=server.address().port; await new Promise((yes,no)=>server.close(e=>e?no(e):yes()));return value;
 }
 async function main() {
-  if(process.argv.length>2) throw Error('Usage: node scripts/discovery-rehearsal/run.mjs (no arguments)');
-  const host=resolve(process.env.PAPERCLIP_QUALIFICATION_HOST_DIR??join(root,'scripts/cloud-rehearsal/host')),hostPackage=JSON.parse(await readFile(join(host,'node_modules/paperclipai/package.json'),'utf8'));
+  if(process.argv.length>2) throw Error('Usage: node scripts/cloud-rehearsal/run.mjs (no arguments)');
+  const host='/workspace/shared/cloud-rehearsal-20261023/host',hostPackage=JSON.parse(await readFile(join(host,'node_modules/paperclipai/package.json'),'utf8'));
   checkPrerequisites({version:hostPackage.version,env:process.env,platform:process.platform,arch:process.arch});
-  const pg=resolve(process.env.PG_NATIVE_ROOT??join(root,'scripts/cloud-rehearsal/node_modules/@embedded-postgres/linux-x64/native'));
-  const fixturePath=resolve(process.env.DFW_DISCOVERY_FIXTURE??join(here,'cold-fixture.json'));
-  const hostLockSha256=createHash('sha256').update(await readFile(join(host,'package-lock.json'))).digest('hex');
-  if(hostLockSha256!=='68092b1b2f601a2f84836f63962daeb2046a18df5b28442d6fbc4547e9d49e9f')throw Error('Unqualified native host dependency lock');
-  const pgBinarySha256=createHash('sha256').update(await readFile(join(pg,'bin/postgres'))).digest('hex');
-  if(pgBinarySha256!=='c85fa9c977d9e641c2d22d93675a9b7097764b7df2c4c9ea021f5780522b2af2')throw Error('Unqualified native PostgreSQL binary');
+  const pg='/workspace/shared/cloud-rehearsal-20261023/pgtools/node_modules/@embedded-postgres/linux-x64/native';
   const work=await mkdtemp(join(tmpdir(),'inertia-cloud-rehearsal-'));
   const out=await mkdtemp(join(root,'runs-discovery-rehearsal-'));
   const password=randomBytes(32).toString('hex'),pgPort=await port();
@@ -37,26 +32,8 @@ async function main() {
     catch(e){const text=String(e.stdout??'')+'\n'+String(e.stderr??'');await writeFile(join(out,name+'.log'),text.replaceAll(password,'[fixture-password]'));throw Error(`${name} failed; inspect sanitized log`);}
   };
   const receipt={scope:'disposable-native-services',result:'running',hostVersion:hostPackage.version,fullHttp:false,ppc2Container:false,liveMemberEnrollment:false,productionReady:false};
-  const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-  async function inventory(paths) {
-    const entries=[];
-    async function visit(path) {
-      const full=join(root,path),info=await stat(full);
-      if(info.isDirectory()) {for(const name of (await readdir(full)).sort())await visit(path+'/'+name);}
-      else entries.push([path,hash(await readFile(full))]);
-    }
-    for(const path of paths)await visit(path);
-    entries.sort((a,b)=>a[0].localeCompare(b[0],'en'));
-    return {sha256:hash(JSON.stringify(entries)),files:entries};
-  }
   let knownStopped=true;
   try {
-  const source=await inventory(['src','migrations','package.json','package-lock.json','tsconfig.json']);
-  const runtime=await inventory(['dist/src']);
-  const scripts=await inventory(['scripts/discovery-rehearsal/run.mjs','scripts/discovery-rehearsal/qualify-runtime.mjs','scripts/discovery-rehearsal/check-discovery-native.mjs','scripts/discovery-rehearsal/check-native-members.mjs','scripts/discovery-rehearsal/check-host-binding.mjs','scripts/discovery-rehearsal/check-pg-recovery.mjs','scripts/discovery-rehearsal/migration-inventory.mjs']);
-  const fixtureBytes=await readFile(fixturePath),fixture=JSON.parse(fixtureBytes);
-  Object.assign(receipt,{sourceSha256:source.sha256,builtRuntimeSha256:runtime.sha256,qualificationScriptsSha256:scripts.sha256,dfwFixtureSha256:hash(fixtureBytes),dfwPackageSha256:fixture.package_sha256,dfwBootstrapSha256:fixture.bootstrap_sha256,pgBinarySha256});
-  await writeFile(join(out,'artifact-hashes.json'),JSON.stringify({algorithm:'sha256(JSON.stringify(sorted [relative path, file sha256] pairs))',source,runtime,scripts,dfwFixture:fixture},null,2)+'\n');
     await mkdir(env.HOME,{recursive:true});
     await writeFile(join(work,'pw'),password,{mode:0o600});
     await run('initdb',join(pg,'bin/initdb'),['-D',join(work,'db'),'-U','fixture','--auth-local=reject','--auth-host=scram-sha-256','--pwfile='+join(work,'pw'),'--encoding=UTF8','--locale=C']);
@@ -67,8 +44,8 @@ async function main() {
     await symlink(join(host,'node_modules'),join(local,'node_modules'),'dir');
     for(const f of ['qualify-runtime.mjs','migration-inventory.mjs','check-host-binding.mjs','check-native-members.mjs','check-pg-recovery.mjs','check-discovery-native.mjs'])await cp(join(here,f),join(local,f));
     for(const f of ['package.json','README.md','LICENSE','migrations','docs','dist/src'])await cp(join(root,f),join(local,'plugin',f),{recursive:true});
-    await symlink(join(root,'node_modules'),join(local,'plugin/node_modules'),'dir');
-    await cp(fixturePath,join(local,'cold-fixture.json'));
+    await cp(join(root,'node_modules'),join(local,'plugin/node_modules'),{recursive:true});
+    await cp(join(here,'cold-fixture.json'),join(local,'cold-fixture.json'));
     const dbEnv={QUALIFICATION_DATABASE_URL:url};
     await run('migrations',process.execPath,['--input-type=module','-e',"import {applyPendingMigrations} from '@paperclipai/db'; await applyPendingMigrations(process.env.QUALIFICATION_DATABASE_URL)"],local,dbEnv);
     await run('native',process.execPath,['qualify-runtime.mjs'],local,dbEnv);

@@ -135,6 +135,7 @@ export function createStdioDiscoveryBridge(
         queryReceiptId: saved.query_receipt_id,
         idempotencyKey: identity.idempotencyKey,
       }),
+    assessFundingFacts: (input) => call({ op: "assess_funding_facts", ...input }),
     sourceReview: (input) => call({ op: "source_review", ...input }),
     reviewCapture: (input) => call({ op: "review_capture", ...input }),
     readCapture: (captureId) => call({ op: "read_capture", captureId }),

@@ -105,7 +105,7 @@ export function registerFundingDiscovery(
   owner: Owner,
   clock = Date.now,
 ): void {
-  registerDiscoveryDiligence(ctx, bindings, owner);
+  registerDiscoveryDiligence(ctx, bindings, owner, completeFacts, clock);
   const actors = new AsyncLocalStorage<ToolRunContext>();
   const tool =
     (handler: (params: unknown, run: ToolRunContext) => Promise<any>) =>
@@ -175,7 +175,7 @@ export function registerFundingDiscovery(
     const actor = actors.getStore();
     if (actor)
       await ctx.issues.assertCheckoutOwner({
-        issueId: b.issueId,
+        issueId: actor.agentId === b.diligence?.agentId ? b.diligence.issueId : b.issueId,
         companyId: b.companyId,
         actorAgentId: actor.agentId,
         actorRunId: actor.runId,
@@ -457,7 +457,7 @@ export function registerFundingDiscovery(
               sourceUrl: c.sourceUrl,
             })),
             instruction:
-              "Use funding-diligence-context then exact-source funding-diligence-submit. Identity admission only; fit and eligibility remain separate agent work. Never treat review-required as a human-only terminal queue.",
+              "Use funding-diligence-context, source identity validation when needed, then funding-facts-submit with exact fundingEvidence spans for newly corroborated sponsors. Keep existing known-source funding-diligence-submit for named-program identity admission. Missing facts, fit and eligibility remain separate agent work. Never treat review-required as a human-only terminal queue.",
           }),
           "Independent funding diligence",
           d.issueId,
@@ -529,6 +529,51 @@ export function registerFundingDiscovery(
     }
     c.delivered = !pending;
     await persist(b, c);
+  }
+  /** Called only under the diligence owner's lock after independent checkout and receipt checks.
+   * Refresh through the existing revalidating delivery path, retaining prior event references. */
+  async function completeFacts(b: DiscoveryBinding, run: ToolRunContext, captureId: string) {
+    await actors.run(run, async () => {
+      await issue(b);
+      if (!b.bridge.readCapture) throw Error("Current capture reader unavailable");
+      const current = await b.bridge.readCapture(captureId);
+      if (!current || current.candidate.captureId !== captureId || !current.preliminary.length)
+        throw Error("Assessed capture is no longer current");
+      const previous = await readContinuation(b);
+      const c: Continuation = previous ?? {
+        version: "funding-discovery-continuation-v1", bindingHash: bindingHash(b),
+        runId: run.runId, nextRunAt: new Date(clock() + b.retryAfterMs).toISOString(),
+        result: { coverage: "partial", candidates: [], preliminary: [], findings: [], failures: [], remainingUrls: [] },
+        delivered: false,
+      };
+      c.result.candidates = c.result.candidates.filter(x => x.sourceUrl !== current.candidate.sourceUrl);
+      c.result.candidates.push(current.candidate);
+      const fresh = current.preliminary.map(brief => {
+        if (brief.source.sha256 !== current.candidate.sourceHash || brief.source.documentId !== current.candidate.sourceDocumentId)
+          throw Error("Assessed preliminary source mismatch");
+        return { captureId, brief, markdown: renderPreliminaryBrief(brief) };
+      });
+      // A new observation can reauthorize the same immutable alert. Do not suppress
+      // that event by checking its now-stale old capture before checking the fresh proof.
+      c.result.preliminary = c.result.preliminary.filter(old => !fresh.some(now =>
+        now.brief.urgent && old.brief.source.url === now.brief.source.url &&
+        old.brief.opportunityKey === now.brief.opportunityKey &&
+        old.brief.materialEventKey === now.brief.materialEventKey
+      ));
+      for (const item of fresh)
+        if (!c.result.preliminary.some(p => p.captureId === captureId && p.markdown === item.markdown))
+          c.result.preliminary.push(item);
+      c.delivered = false;
+      await persist(b, c);
+      await deliver(b, c);
+      // Retain old references until every delivery/suppression succeeds. Then keep only
+      // the current assessment for this capture; immutable native history remains intact.
+      if (c.delivered) {
+        c.result.preliminary = c.result.preliminary.filter(p => p.brief.source.url !== current.candidate.sourceUrl);
+        c.result.preliminary.push(...fresh);
+        await persist(b, c);
+      }
+    });
   }
   const declaration = contextTool;
   ctx.tools.register(
