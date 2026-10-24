@@ -1,6 +1,6 @@
 # Operational funding discovery loop
 
-Revision: FUNDING-2026-10-23-r4. Approved roadmap extension to Tasks 5, 6C/6D and 8. Host wiring is planned; the shipped daily profile schedule remains disabled.
+Revision: FUNDING-2026-10-24-r5. Approved roadmap extension to Tasks 5, 6C/6D and 8. Host wiring is planned; the shipped daily profile schedule remains disabled.
 Updated: 2026-10-24 (UTC)
 
 ## Operating flow

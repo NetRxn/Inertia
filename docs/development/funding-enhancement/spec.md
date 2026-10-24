@@ -1,6 +1,6 @@
 # Funding agents and DAO intake
 
-Revision: FUNDING-2026-10-23-r4. Implementation status and remaining contracts for DFW-Gov-Fund and Inertia.
+Revision: FUNDING-2026-10-24-r5. Implementation status and remaining contracts for DFW-Gov-Fund and Inertia.
 Updated: 2026-10-24 (UTC)
 
 ## Outcome
@@ -17,7 +17,7 @@ Agents turn public opportunities and DAO objectives into useful, evidence-backed
 
 ## Baseline
 
-DFW main `16e96b22d55caaa0c19513e121028ab78c3aa1c7` (PR46) and Inertia develop `6f93cfef486b017afccda7b275837e09213aa189` (PR28) include merged public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs. Independent real-PG/native/Helix cloud rehearsal and the synthetic actual-service meeting-answer loop passed. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. Exact receipts and activation gates are in [source-map.md](source-map.md).
+DFW main `331416c015c83d20ea2d6834e5b4dd53aaeea320` (PR50) and Inertia develop `901414612a032e44839ba33fe39163e0e9c28ee1` (PR31) include merged public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs. Independent real-PG/native/Helix cloud rehearsal and the synthetic actual-service meeting-answer loop passed. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Exact receipts and activation gates are in [source-map.md](source-map.md).
 
 July's five retained opportunity packets had 27 requirement rows with no supported answers and no named DAO programs in core narratives. The saved audit found 8 proposed-plan drafting opportunities, 6 partially answerable requirements, 10 genuine information gaps and 3 lead-only requirements. Evaluate those classifications as audit hypotheses. That historical run predates evaluation of the Codex proposal service.
 
@@ -168,11 +168,11 @@ Paperclip's managed company skill library and per-agent assignment own skill del
 
 ## Security and authority
 
-The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation.
+The durable successor captures authority for one exact command/version atomically with the native verdict. Later native role/membership changes, document edits, card withdrawal or disconnect do not revoke that instruction. Explicit cancellation takes effect only when DFW confirms it; an already-applied effect is not undone. Current DFW authorization, evidence, head and artifact checks still block stale effects, and submission authority remains separate. The core is implemented and independently reviewed; production route/transport, lifecycle-compatible retention/archive, real role/binding/source access, qualified writer fencing and a human correction/cancel walkthrough remain activation gates. The legacy adapter stays default-disabled.
 
 Server scope is derived from authenticated company, applicant, task and principal. Members receive only allowed evidence plus proposal tools in isolated workspaces. They receive no organization DB, financial/portal credentials, human signoff tools or privileged publisher token. Enforce read restrictions before retrieval and output restrictions before publication.
 
-Frozen adapter contract: native human-only cards are necessary but insufficient: trusted code verifies an actual human actor, designated role and exact target. Correlate effects with interaction ID + item ID + target identity/revision/hash + action. Store a unique domain effect receipt in the same transaction as the mutation. Reconcile cross-system acknowledgment loss through durable effect receipts. Domain grant-review capabilities and their epochs are transactionally checked with the effect; native actor/membership is freshly verified with a configured maximum age and fail-closed behavior. Immediate denial uses domain-capability revocation. Native revocation events propagate across stores and invalidate pending work. Partial cards apply resolved items only. Defer has no acceptance effect. Rejection and changes-requested mappings retain domain semantics.
+Legacy adapter contract (retained for the disabled through-commit slice; durable authority timing is defined above): native human-only cards are necessary but insufficient: trusted code verifies an actual human actor, designated role and exact target. Correlate effects with interaction ID + item ID + target identity/revision/hash + action. Store a unique domain effect receipt in the same transaction as the mutation. Reconcile cross-system acknowledgment loss through durable effect receipts. Domain grant-review capabilities and their epochs are transactionally checked with the effect; native actor/membership is freshly verified with a configured maximum age and fail-closed behavior. Immediate denial uses domain-capability revocation. Native revocation events propagate across stores and invalidate pending work. Partial cards apply resolved items only. Defer has no acceptance effect. Rejection and changes-requested mappings retain domain semantics.
 
 ## Success and deployment gates
 

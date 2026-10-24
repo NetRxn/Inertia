@@ -1,6 +1,6 @@
 # DAO data consolidation contract
 
-Storage and activation contract, 2026-10-24. Domain/graph and objective-intake migrations are merged and disposable cloud qualification passed. Native-review source/writer-fence composition and production cutover remain pending.
+Storage and activation contract, 2026-10-24. Domain/graph and objective-intake migrations are merged and disposable cloud qualification passed. Durable native capture and DFW acceptance are implemented and independently reviewed; production source/transport, retention/archive, writer-fence composition and cutover remain pending.
 
 ## Storage and authority
 
@@ -16,7 +16,7 @@ A research commit writes permitted evidence, typed assertions, audit history and
 
 Helix queries enforce tenant/audience/project/opportunity scope at every hop and revalidate current source/access/version in PG before hydrating any result. Revocation denies access immediately while removals propagate. During graph outage/lag, bounded indexed PG selection returns explicitly degraded coverage; unavailable authoritative checks withhold affected results. The operational graph remains a release requirement. See [core requirements](../../spec.md) and [T-K01–12](../../testing.md#operational-partner-graph-acceptance-live-qualification-pending).
 
-Task 6 evidence/SQL, sanitized financial contracts and the typed graph/outbox/query core are merged. Independent cloud rehearsal passed real PostgreSQL/PostGIS domain checks and PG-to-embedded-Helix reuse/writeback. Production schema/role and writer-fence composition, trusted source/host adapters, admitted inventory/backfill and live activation remain pending. The tested native-review adapter stays default-disabled until the approved durable exact-version acceptance/reconciliation seam and production writer composition are implemented and qualified.
+Task 6 evidence/SQL, sanitized financial contracts and the typed graph/outbox/query core are merged. Independent cloud rehearsal passed real PostgreSQL/PostGIS domain checks and PG-to-embedded-Helix reuse/writeback. Production schema/role and writer-fence composition, trusted source/host adapters, admitted inventory/backfill and live activation remain pending. The independently qualified durable native acceptance core is merged in DFW PR50 and Inertia host PR31. Native verdict and exact receipt commit atomically in Paperclip; DFW effect and audit commit atomically in DFW, with no cross-database transaction. Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival under domain audit retention. Production retention/archive and writer composition remain gates; the legacy adapter stays default-disabled.
 
 ## Source compatibility and migration ownership
 

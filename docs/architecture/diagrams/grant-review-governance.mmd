@@ -8,7 +8,7 @@ flowchart TB
  R -->|Decision ready| M["DAO meeting<br/>Prepared brief<br/>Project and next steps"]
  M -->|Further preparation| D
  M -->|Ready for signoff| H["Authenticated human decisions<br/>Proposal review, then packet-role signoffs"]
- H -.->|Required signoffs approved| A["Human decision adapter disabled<br/>Durable authority integration next"]
+ H -.->|Required signoffs approved| A["Human decision adapter disabled<br/>Production activation next"]
  A -.-> F[("Frozen direct-application packet<br/>Exact artifacts and review references")]
  F --> V["Required final-packet vote<br/>Vocdoni"]
  V -.-> Q["Verify vote authority<br/>Exact packet, action and final result"]

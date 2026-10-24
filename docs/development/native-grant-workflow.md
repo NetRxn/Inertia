@@ -1,6 +1,6 @@
 # Native-first grant integration contract
 
-**Planned, not shipped.** Reuse the [source-pinned primitives](../reference/native-grant-workflow.md). Current runtime, packet core and qualification receipts are unchanged.
+**Implemented and independently reviewed; non-live.** DFW durable acceptance is merged in PR50; atomic native verdict/receipt capture is qualified and host publication is merged in Inertia PR31. Reuse the [source-pinned primitives](../reference/native-grant-workflow.md). Production route/transport, retention/archive, roles/bindings/source access, writer fencing and human walkthrough remain gates.
 
 ## One workflow, separate authority
 
@@ -16,13 +16,13 @@ A server-enforced tool boundary separates proposal writes from human-decision wr
 
 ## Human-decision adapter
 
-A trusted server component applies already-authenticated Paperclip decisions through funding-domain services. This is new work: current MCP does not expose proposal acceptance or packet signoff.
+Trusted server components capture authenticated native authority and apply exact accepted commands through funding-domain services. The implemented durable path captures verdict and receipt atomically; later native role/document changes, withdrawal or disconnect do not revoke acceptance. Current MCP does not expose proposal acceptance or packet signoff.
 
 1. Create native per-item verdict/role cards with explicit `resolverPolicy: human_only`, configured `addresseeUserId` and current document-revision targets. Configure actual authorized people, not agent-provided reviewer names.
-2. Read the authoritative native result; verify company, applicant, interaction, addressee, authenticated resolver and configured role. For item verdicts, read each item’s actor/verdict: the card may still be partially pending, and its final resolver is not every item’s reviewer. A claimed decision ID or an agent narrative grants no authority.
+2. At native acceptance, verify and lock company, applicant, interaction, addressee, authenticated resolver, configured role, trusted command binding and exact document revision, then commit the verdict and acceptance receipt atomically. Read that authoritative receipt for later delivery. For item verdicts, read each item’s actor/verdict: the card may still be partially pending, and its final resolver is not every item’s reviewer. A claimed decision ID or an agent narrative grants no authority.
 3. Recheck exact workspace hash, allowed proposal target/evidence, latest packet version, review and external artifact bytes before applying. Preserve eligibility, deadline/freshness, official-form and technical blockers. Close apply-time races with guarded domain writes, not preflight alone.
 4. Map proposal approve/reject to `accepted`/`rejected` through `CodexAgentService.review_suggestion`. Map packet-role approve/reject to `approved`/`changes_requested`. Defer makes no domain write. Offer partner `not_applicable` only as an explicitly labeled, role-specific native confirmation/action; never infer it from defer/reject. Apply signoff only for the configured role and route.
-5. Persist native decision identity, authentic resolver, role, proposal/packet identity and version, action and domain outcome. For per-item review, decision identity is **native interaction ID + item ID**, not an invented item decision ID. Reconcile by **decision identity + proposal/packet ID and version + action**; never collapse distinct items in a partially resolved card. Handle a crash between systems by authoritative readback; apply once and hold unknown outcomes. No cross-system atomic transaction is claimed.
+5. Persist native decision identity, authentic resolver, role, proposal/packet identity and version, action and domain outcome. Explicit cancellation takes effect only when DFW confirms it under the apply/cancel lock; already_applied does not undo an effect. For per-item review, decision identity is **native interaction ID + item ID**, not an invented item decision ID. Reconcile by **decision identity + proposal/packet ID and version + action**; never collapse distinct items in a partially resolved card. Handle a crash between systems by authoritative readback; apply once and hold unknown outcomes. No cross-system atomic transaction is claimed.
 
 Initial correction path: edit native document → regenerate a proposal against the current workspace → request new review. Native verdict UI is not a structured field editor. Add a thin specialist panel only after a real packet walkthrough demonstrates material field/budget correction friction.
 
@@ -30,7 +30,7 @@ Initial correction path: edit native document → regenerate a proposal against 
 
 `ReviewedGrantSource` reads funding records consistently and supplies exact artifact bytes; it is not a separate-UI export requirement or a claimed existing HTTP endpoint. See [implemented packet contract](../implementation/grant-packet-binding.md).
 
-The shipped Inertia freeze/vote core accepts only direct-application manual submission with all five role checks. Other route rules belong to the funding domain/planned review adapter; this revision adds no vote/submission support for them.
+The shipped Inertia freeze/vote core accepts only direct-application manual submission with all five role checks. Other route rules belong to the funding domain/native review adapter; this revision adds no vote/submission support for them.
 
 The frozen canonical payload already contains reviews. Include authenticated native decision references consistently in domain review provenance before creating a vote; qualify any serialization change before claiming support. A changed packet, artifact or review needs a new snapshot and vote. Native document revision checks do not replace artifact hashing.
 
@@ -38,4 +38,4 @@ Vocdoni verification remains separate: require exact network/proposal/action/pac
 
 ## Implementation acceptance
 
-Configure roles and scoped transport; walk one real packet and correction; then implement the adapter and durable reconciliation. Run planned T-G06–12 in [testing.md](../../testing.md#native-grant-review-acceptance-planned), including wrong human/role, agent denial, stale bytes, duplicate/crash, reject/defer, partner-only N/A, cross-applicant access and no submission side effect. Source review is not deployed-instance acceptance.
+Independent qualification passed 36 native PostgreSQL cases, 20 separate DFW PostgreSQL cases and three native-to-DFW rehearsals using synthetic local-file transport and DFW SQLite. Configure authenticated production roles/bindings/source access, scoped route/transport, lifecycle-compatible retention/archive and qualified writer fencing, then walk one real packet through correction, regeneration, review and explicit cancellation. Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then permit ordinary archival under domain audit retention. Complete T-G06–12 in [testing.md](../../testing.md#native-grant-review-acceptance-default-disabled), including wrong human/role, agent denial, stale bytes, duplicate/crash, reject/defer, partner-only N/A, cross-applicant access and no submission side effect.

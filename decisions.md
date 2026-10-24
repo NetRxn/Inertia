@@ -1,13 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-23-r16
+Revision: INERTIA-2026-10-24-r17
 Updated: 2026-10-24 (UTC)
-Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
 
 
 ## Current baseline
 
-Develop `6f93cfef`; merged runtime includes cumulative core, cloud qualification/race fixes and Task 8 (PR25/26/27), plus the default-disabled native adapter (PR28). See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `90141461` (PR31) includes the published PR30 artifacts, cumulative core, cloud qualification/race fixes, Task 8, the default-disabled legacy adapter and the independently reviewed non-live durable host bundle. DFW durable acceptance is merged in PR50. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Settled decisions
 
@@ -43,7 +43,7 @@ Paperclip supplies operations, scheduling, task/approval state, credentials and 
 | P02 | Route Buzz task triggers into one native execution owner | Duplicate-trigger and checkout tests. |
 | P03 | Reuse existing execution hardening through native runner/plugin interfaces | Version, license, lifecycle and isolation qualification. |
 | P04 | Use native connection profiles and tool policy | Domain credential scopes and call-time authorization tests. |
-| P05 | Preserve funding-domain review/signoff semantics through native Paperclip UI | Adapter merged/default-disabled; approved acceptance seam pending. |
+| P05 | Preserve funding-domain review/signoff semantics through native Paperclip UI | Durable core implemented and merged, non-live; production activation gates pending. |
 
 ## Central configuration and compatibility register
 
@@ -137,9 +137,12 @@ Alternatives considered: latest native chat-provider implementation offers broad
 
 - D61: Extend Tasks 5, 6C/6D and 8 with the approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md): query saved evidence, discover uncovered sources, validate official evidence, assess benefit/effort, persist useful knowledge, deliver deduplicated urgent alerts and prioritized briefs, and retain due rechecks in native work. Configure recurring execution after host wiring, rehearsal and cadence agreement.
 
-- D62: Native acceptance records durable authority for one exact command/version and survives disconnect. The funding service confirms cancellation; changed funding evidence blocks stale execution; grant submission remains separately authorized. Acceptance/reconciliation seam implementation and production writer qualification are pending; the frozen adapter remains default-disabled.
+- D62: Native acceptance captures durable authority for one exact command/version atomically with the verdict. Later native role/document changes, withdrawal or disconnect do not revoke it. DFW-confirmed cancellation is serialized with apply; current funding evidence/head and authorization still gate effects, and submission remains separate. The independently reviewed core is implemented; DFW PR50 and Inertia host PR31 are merged, and production activation gates remain.
+- D63: Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival under domain audit retention. Unresolved acceptance needs confirmed cancellation or qualified transfer before removal. Use an approved lifecycle-compatible contract, not an indefinite company-deletion lock or qualification-only retention SQL.
 
 ## Change log
+
+- r17: Record merged deadline consistency and DFW durable acceptance, independently qualified atomic native capture and the source-only host publication. Preserve exact-version acceptance/cancellation semantics, scoped test evidence and production activation gates; daily discovery remains disabled.
 
 - r16: Record completed October discovery and merged drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8. Record independently passed cloud and synthetic meeting-answer rehearsals. Add the approved operational discovery loop, retaining disabled recurring execution and native-review activation gates.
 

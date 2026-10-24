@@ -1,6 +1,6 @@
 # Funding enhancement acceptance
 
-Revision: FUNDING-2026-10-23-r4. This test specification separates implementation evidence from remaining quality and deployment gates.
+Revision: FUNDING-2026-10-24-r5. This test specification separates implementation evidence from remaining quality and deployment gates.
 Updated: 2026-10-24 (UTC)
 
 ## Evaluation tracks
@@ -61,10 +61,10 @@ Initial qualification target (engineering choice): every demonstrably answerable
 | K07 | Producer status cannot promote knowledge; scope widening/adoption requires trusted admission | 6–7 |
 | K06 | Available cash and spending authorization require their own evidence | 6 |
 | A01 | An agent/system identity cannot apply a human-only domain decision | 7 |
-| A02 | Wrong/revoked reviewer, stale hash or wrong applicant rejects application | 7 |
+| A02 | Wrong/revoked native reviewer at acceptance, stale DFW hash or wrong applicant rejects; later native revocation does not cancel a durable acceptance | 7 |
 | A03 | Duplicate/reordered/partial decisions produce one correct domain effect per item | 7 |
 | A04 | Concurrent source/packet change and accept/reject race are transaction-safe on PostgreSQL | 7 |
-| A06 | Domain authorization epoch revocation races reject atomically; native freshness/timeout and delayed revocation use documented bounds | 7 |
+| A06 | Current domain authorization revocation rejects atomically; native authority is captured with the verdict, and later native changes/disconnect preserve it. Explicit cancellation requires serialized DFW confirmation | 7 |
 | A05 | No test path submits externally, creates a vote or expands credentials | 7–9 |
 | I01 | Each source submission/revision has one native mapping; acknowledgment loss reconciles | 8 |
 | I02 | Duplicate content preserves distinct submitters; withdrawal preserves history | 8 |
@@ -101,9 +101,11 @@ The graph core is merged, with independent real PostgreSQL/PostGIS and PG-to-emb
 
 Current qualification: Independent one-command cloud rehearsal passed DFW PostgreSQL 17.11/PostGIS 3.5.2 domain qualification (65 tests), Paperclip 2026.1012.0 native PostgreSQL 18 services and real PG-to-embedded-Helix reuse/writeback. Native inbox/outbox race fixes and cloud tooling are merged. Full HTTP/UI remains blocked by `os.networkInterfaces` / `uv_interface_addresses`; PPC2/VPS executor admission, live-member enrollment and production deployment remain future gates.
 
-Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is being packaged.
+Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is merged in Inertia PR29.
 
-Native review: Inertia native adapter is merged/default-disabled in PR28; the tested DFW transaction service is reviewed/in CI for PR47. PR47 CI found one UTC-versus-Chicago deadline-date boundary failure; repair is underway and merge requires green CI. The approved acceptance/reconciliation seam and production writer qualification remain pending. Durable exact-version authority-at-acceptance is approved; implementation must preserve funding-confirmed cancellation, stale-evidence rejection and separate submission authority.
+Durable native acceptance: DFW deadline consistency is merged in PR49 and durable acceptance in PR50 at `331416c015c83d20ea2d6834e5b4dd53aaeea320`; exact-head CI 40045687718 and post-merge CI 40046050158 passed. Independent review passed 36 native PostgreSQL cases, 13 upstream interaction tests, five launcher safety tests, 20 separate DFW PostgreSQL cases and three native-to-DFW rehearsals. The three rehearsals use actual native PostgreSQL verdict transactions with synthetic human fixtures and local-file receipt transport into DFW SQLite; separate real-PG qualification covers the DFW service. They prove proposal apply, packet-role apply and cancel-before-apply after native role/document changes, with offline replay/readback. Host publication is merged in Inertia PR31; production route/transport, retention/archive, real roles/bindings/source access, writer fencing and the human correction/cancel walkthrough remain gates. See [exact identities](source-map.md).
+
+Accepted exact-version authority survives later native changes/disconnect; cancellation takes effect only on DFW confirmation, while changed funding evidence/head still blocks stale effects. Preserve receipts until terminal DFW acknowledgement or qualified durable transfer, then permit ordinary archival under domain audit retention. Submission authority remains separate.
 
 ### Historical slice evidence
 
