@@ -203,6 +203,7 @@ it("default worker registers disabled roundtable job and exposes content-free he
     calls++;
     throw Error();
   };
+  Object.assign(h.ctx.db, { namespace: "plugin_netrxn_inertia_e936d62b87" });
   const plugin = createPlugin();
   await plugin.definition.setup(h.ctx);
   await h.runJob("reconcile-roundtable-sources");

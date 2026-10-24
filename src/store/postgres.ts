@@ -69,8 +69,9 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
         async suppressOutbox(receiptKey: string) {
             return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN state='publishing' THEN 'publishing' ELSE 'suppressed' END,suppression_requested=true,updated_at=now() WHERE receipt_key=$1 AND state IN ('pending','blocked','publishing')`, [receiptKey])).rowCount === 1;
         },
+        /** Guarded comment/urgent-alert publication. The legacy method name is kept for callers. */
         async claimCommentDelivery(receiptKey: string, token: string) {
-            return (await db.execute(`UPDATE ${outbox} SET state='publishing',publish_token=$2,updated_at=now() WHERE receipt_key=$1 AND receipt_key LIKE 'comment:%' AND state='pending' AND publish_token IS NULL AND suppression_requested=false AND (next_attempt_at IS NULL OR next_attempt_at<=now())`, [receiptKey,token])).rowCount === 1;
+            return (await db.execute(`UPDATE ${outbox} SET state='publishing',publish_token=$2,updated_at=now() WHERE receipt_key=$1 AND (receipt_key LIKE 'comment:%' OR receipt_key LIKE 'alert:%') AND state='pending' AND publish_token IS NULL AND suppression_requested=false AND (next_attempt_at IS NULL OR next_attempt_at<=now())`, [receiptKey,token])).rowCount === 1;
         },
         async finishCommentDelivery(receiptKey: string, token: string, state: 'pending' | 'blocked' | 'delivered', retryAfterMs = 0) {
             if (!Number.isSafeInteger(retryAfterMs) || retryAfterMs < 0) throw Error('Invalid delivery retry delay.');
@@ -78,7 +79,7 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
         },
         /** Administrator recovery only AFTER verifying the prior worker is stopped. Never called by jobs. */
         async recoverCommentDelivery(receiptKey: string, token: string) {
-            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN suppression_requested THEN 'suppressed' ELSE 'pending' END,publish_token=NULL,next_attempt_at=NULL,updated_at=now() WHERE receipt_key=$1 AND receipt_key LIKE 'comment:%' AND state='publishing' AND publish_token=$2`, [receiptKey,token])).rowCount === 1;
+            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN suppression_requested THEN 'suppressed' ELSE 'pending' END,publish_token=NULL,next_attempt_at=NULL,updated_at=now() WHERE receipt_key=$1 AND (receipt_key LIKE 'comment:%' OR receipt_key LIKE 'alert:%') AND state='publishing' AND publish_token=$2`, [receiptKey,token])).rowCount === 1;
         },
         async listCommentValidation(companyId: string, limit = 100) {
             if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw Error('Invalid validation batch limit.');
