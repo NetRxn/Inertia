@@ -272,3 +272,8 @@ Source inspection baselines, 22 October 2026. Exact runtime qualification is rec
 ## Website implementation handoff
 
 The [members-only publication and authorized knowledge proposal](docs/integrations/dao-website-member-publication-proposal.md) specifies the website-side API, schema, membership checks, publication readback and grant-evidence retrieval contracts. It is a reviewed implementation proposal; the user owns website rollout.
+
+
+## Team integration handoffs
+
+Track concrete owner inputs, minimal handoffs and qualification status in [Needed from team](Needed-from-team.md). Stable NTF IDs map to the existing setup, requirement and test contracts. Update affected entries alongside these artifacts; receipt of an input does not establish live qualification.
