@@ -37,3 +37,10 @@ createApp(db,{...appOptions,memberPacketReviewCapture:{db,captureInTransaction:m
 
 // @ts-expect-error Explicit enabling cannot omit authority, codec and retention.
 createMemberPacketCapture({enabled:true});
+
+declare const nativeActionCapability: NonNullable<Parameters<typeof createApp>[1]['memberPacketActions']>;
+createApp(db,{...appOptions,memberPacketActions:nativeActionCapability});
+// @ts-expect-error Parsed JSON/caller allow flags do not install trusted native routes.
+createApp(db,{...appOptions,memberPacketActions:{db,actorUserId:'claim',allowed:true}});
+// @ts-expect-error The bounded parser must be composed before the generic host parser.
+createApp(db,{...appOptions,memberPacketActions:{db,router:nativeActionCapability.router}});

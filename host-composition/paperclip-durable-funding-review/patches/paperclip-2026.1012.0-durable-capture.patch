@@ -217,7 +217,7 @@
 +};
 --- a/dist/app.js
 +++ b/dist/app.js
-@@ -339,6 +339,20 @@
+@@ -339,6 +339,24 @@
      };
  }
  export async function createApp(db, opts) {
@@ -235,10 +235,14 @@
 +        throw new Error("Invalid trusted funding review host composition or database ownership");
 +    }
 +    const reviewTransport = reviewInput === undefined ? undefined : Object.freeze({ ...reviewInput });
++    const actionInput = opts.memberPacketActions;
++    if (actionInput !== undefined && (!actionInput || actionInput.db !== db || typeof db.rollback === 'function' || typeof actionInput.beforeBodyParser !== 'function' || typeof actionInput.router !== 'function'))
++        throw new Error('Invalid trusted native member action root database composition');
++    const memberActions = actionInput === undefined ? undefined : Object.freeze({...actionInput});
      const app = express();
      const staticUi = express.Router();
      app.locals.paperclipDb = db;
-@@ -358,6 +372,9 @@
+@@ -358,6 +376,9 @@
      // Default is unset → Express trusts nothing, which is the only safe choice
      // when the server may be reachable without a known reverse proxy in front.
      applyTrustProxy(app, parseTrustProxyEnv(process.env.TRUST_PROXY));
@@ -248,7 +252,15 @@
      app.use(COMPANY_IMPORT_API_PATH, express.json({
          limit: PORTABLE_JSON_BODY_LIMIT,
          verify: captureRawBody,
-@@ -411,6 +428,7 @@
+@@ -366,6 +387,7 @@
+     // type before the global JSON parser so JSON events and form-encoded action
+     // callbacks are verified against the provider's original body.
+     app.use("/api/chat-webhooks", createChatWebhookDiagnostics(), chatWebhookBodyParser);
++    if (memberActions) app.use('/api/member-packet-actions', memberActions.beforeBodyParser);
+     app.use(express.json({
+         limit: DEFAULT_JSON_BODY_LIMIT,
+         verify: captureRawBody,
+@@ -411,6 +433,7 @@
      // REPLACES whatever actor the request otherwise resolved to, and only on
      // the one endpoint it authorizes (see the middleware for the contract).
      app.use(cloudControlMiddleware());
@@ -256,7 +268,15 @@
      app.use("/api/auth", authRoutes(db));
      if (opts.betterAuthHandler) {
          app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
-@@ -653,6 +671,7 @@
+@@ -477,6 +500,7 @@
+     const agentAvatars = agentAvatarRoutes();
+     api.use(agentAvatars.router);
+     api.use(boardMutationGuard());
++    if (memberActions) api.use('/member-packet-actions', memberActions.router);
+     api.use("/health", health);
+     api.use(openApiRoutes());
+     api.use("/cloud", cloudRoutes());
+@@ -653,6 +677,7 @@
      // issue approval endpoints delegate to it. The intervening routers use distinct
      // route prefixes, so this dependency does not change issue-route precedence.
      api.use(issueRoutes(db, opts.storageService, {
@@ -264,7 +284,7 @@
          chatRunRetries: chatChannels,
          feedbackExportService: opts.feedbackExportService,
          pluginWorkerManager: workerManager,
-@@ -714,6 +733,11 @@
+@@ -714,6 +739,11 @@
              const services = buildHostServices(db, pluginId, manifest.id, eventBus, notifyWorker, {
                  pluginWorkerManager: workerManager,
                  manifest,
@@ -278,12 +298,13 @@
              return createHostClientHandlers({
 --- a/dist/app.d.ts
 +++ b/dist/app.d.ts
-@@ -52,6 +52,14 @@
+@@ -52,6 +52,15 @@
  }) => Promise<boolean>;
  export declare function createApp(db: Db, opts: {
      cloudWarmStandby?: CloudWarmStandby;
 +    /** Trusted construction-time capability; absent by default. Never config JSON. */
 +    /** Trusted root-Db native review capture. Absent by default; never JSON config. */
++    memberPacketActions?: { db: Db; beforeBodyParser: express.RequestHandler; router: express.Router };
 +    memberPacketReviewCapture?: import("./services/member-packet-capture.js").MemberPacketReviewCapability;
 +    fundingReviewTransport?: {
 +        db: Db;

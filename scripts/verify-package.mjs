@@ -57,6 +57,7 @@ try {
   for (const required of [
     "dist/src/manifest.js",
     "dist/src/worker.js",
+    "dist/ui/index.js",
     "migrations/001_bridge.sql",
     "migrations/004_runtime_state.sql",
     "migrations/005_outbound_comments.sql",
@@ -66,7 +67,7 @@ try {
     assert(files.includes(required), `Missing runtime artifact: ${required}`);
   for (const file of files)
     assert(
-      /^(package\.json|README\.md|LICENSE|dist\/src\/.+\.(js|d\.ts)|migrations\/[^/]+\.sql|docs\/(operations|bridge-state-contract|native-comment-mirroring)\.md)$/.test(
+      /^(package\.json|README\.md|LICENSE|dist\/src\/.+\.(js|d\.ts)|dist\/ui\/index\.js|migrations\/[^/]+\.sql|docs\/(operations|bridge-state-contract|native-comment-mirroring)\.md)$/.test(
         file,
       ),
       `Unexpected packaged file: ${file}`,
@@ -117,6 +118,13 @@ try {
     { cwd: consumer, stdio: "pipe" },
   );
   assert.equal(manifest.id, "netrxn.inertia");
+  assert.equal(manifest.entrypoints.ui, "dist/ui");
+  assert(manifest.capabilities.includes("ui.detailTab.register"));
+  assert.deepEqual(manifest.ui.slots, [{type:"detailTab",id:"member-packet",displayName:"Packet",exportName:"MemberPacketTab",entityTypes:["issue"]}]);
+  const uiBundle = await readFile(resolve(installed, manifest.entrypoints.ui, "index.js"), "utf8");
+  assert(uiBundle.includes("MemberPacketTab"));
+  assert(uiBundle.includes('from "react"') || uiBundle.includes("from 'react'"));
+  assert(!uiBundle.includes("node:crypto") && !uiBundle.includes("react.production.js"));
   assert.equal(typeof worker.definition.setup, "function");
   await access(resolve(installed, manifest.entrypoints.worker));
   const migrations = await readdir(
