@@ -37,6 +37,7 @@ it("exports an actual definePlugin lifecycle with no side effects during import"
 it("registers the native scheduled job and reports disabled setup without external calls", async () => {
   const { createTestHarness } = await import("@paperclipai/plugin-sdk/testing");
   const harness = createTestHarness({ manifest, config: { enabled: false } });
+  Object.assign(harness.ctx.db,{namespace:"plugin_netrxn_inertia_e936d62b87"});
   const plugin = createPlugin();
   await plugin.definition.setup(harness.ctx);
   await harness.runJob("reconcile");

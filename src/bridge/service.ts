@@ -170,6 +170,8 @@ export function createBridge(d: BridgeDependencies) {
     }>("delivery-cursor");
     const batch = await d.store.listOutbox(100, cursor ?? undefined);
     for (const row of batch) {
+      // Urgent alerts require their own authoritative source/destination validation.
+      if (row.receiptKey.startsWith("alert:")) continue;
       if (row.relay !== cfg.relay) continue;
       const signed = verifyBuzzEvent(row.event);
       const payload = JSON.parse(signed.event.content) as { type?: string; companyId?: string; issueId?: string; commentId?: string };

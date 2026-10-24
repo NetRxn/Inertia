@@ -205,7 +205,7 @@ it("durably requests suppression of company claims when the whole connection is 
   f.fail(true); await f.bridge().reconcile();
   const row=(await f.store.listOutbox())[0]!; await f.store.claimCommentDelivery(row.receiptKey,"old-worker");
   const {createPlugin}=await import("../../src/worker.js"); const jobs=new Map<string,()=>Promise<void>>();
-  const ctx={db:f.db,companies:{list:async()=>[{id:"co"}]},config:{get:async()=>({enabled:false})},jobs:{register:(key:string,fn:()=>Promise<void>)=>jobs.set(key,fn)}} as unknown as PluginContext;
+  const ctx={tools:{register:()=>{}},db:f.db,companies:{list:async()=>[{id:"co"}]},config:{get:async()=>({enabled:false})},jobs:{register:(key:string,fn:()=>Promise<void>)=>jobs.set(key,fn)}} as unknown as PluginContext;
   const plugin=createPlugin(); await plugin.definition.setup(ctx); await jobs.get("reconcile")!();
   expect((await f.store.getOutbox(row.receiptKey))!.suppressionRequested).toBe(true);
   expect((await plugin.definition.onHealth!()).details?.inFlightPublications).toBe(1);

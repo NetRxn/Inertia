@@ -1,4 +1,8 @@
-import { registerRoundtableJobs, type RoundtableStatus } from "./roundtable/host.js";
+import { registerConfiguredFundingDiscovery } from "./discovery/setup.js";
+import {
+  registerRoundtableJobs,
+  type RoundtableStatus,
+} from "./roundtable/host.js";
 import {
   definePlugin,
   runWorker,
@@ -45,7 +49,10 @@ function trusted(
   };
 }
 export function createPlugin() {
-  let roundtableStatus: () => RoundtableStatus = () => ({state:"disabled",results:[]});
+  let roundtableStatus: () => RoundtableStatus = () => ({
+    state: "disabled",
+    results: [],
+  });
   let health: PluginHealthDiagnostics = {
     status: "degraded",
     message: "Enable a company connection to begin.",
@@ -53,6 +60,7 @@ export function createPlugin() {
   return definePlugin({
     multiCompanyConfig: true,
     async setup(ctx) {
+      await registerConfiguredFundingDiscovery(ctx);
       roundtableStatus = registerRoundtableJobs(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
@@ -96,7 +104,11 @@ export function createPlugin() {
                 for (const row of await store.listCommentValidation(company.id))
                   await store.suppressOutbox(row.receiptKey);
                 // An old publisher remains actionable even after the connection is disabled.
-                const pendingClaims = await runtimeState(ctx.db,company.id,"").deliveryHealth([]);
+                const pendingClaims = await runtimeState(
+                  ctx.db,
+                  company.id,
+                  "",
+                ).deliveryHealth([]);
                 inFlightPublications += pendingClaims.publishing ?? 0;
                 if (pendingClaims.publishing) degraded = true;
                 continue;
@@ -256,10 +268,10 @@ export function createPlugin() {
             message: inFlightPublications
               ? "Publication is in flight or interrupted. Verify the prior worker is stopped before targeted same-event recovery."
               : degraded
-              ? "Delivery or native outcome needs attention."
-              : enabled
-                ? "Connected and up to date."
-                : "Enable a company connection to begin.",
+                ? "Delivery or native outcome needs attention."
+                : enabled
+                  ? "Connected and up to date."
+                  : "Enable a company connection to begin.",
           };
         } catch {
           health = {
@@ -274,7 +286,10 @@ export function createPlugin() {
       return validateConfiguration(config);
     },
     async onHealth() {
-      return {...health, details: {...health.details, roundtable: roundtableStatus()}};
+      return {
+        ...health,
+        details: { ...health.details, roundtable: roundtableStatus() },
+      };
     },
   });
 }

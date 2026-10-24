@@ -1,3 +1,4 @@
+import { fundingDiscoveryManifest } from "./discovery/host.js";
 import { roundtableJobDeclaration } from "./roundtable/host.js";
 import { configurationSchema } from "./config.js";
 import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
@@ -12,6 +13,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   categories: ["connector"],
   minimumHostVersion: "2026.1012.0",
   capabilities: [
+    ...fundingDiscoveryManifest.capabilities,
     "companies.read",
     "issues.read",
     "issues.create",
@@ -30,7 +32,9 @@ export const manifest: PaperclipPluginManifestV1 = {
   ],
   entrypoints: { worker: "dist/src/worker.js" },
   database: { migrationsDir: "migrations" },
+  tools: fundingDiscoveryManifest.tools,
   jobs: [
+    ...fundingDiscoveryManifest.jobs,
     roundtableJobDeclaration,
     {
       jobKey: "backfill-conversations",
