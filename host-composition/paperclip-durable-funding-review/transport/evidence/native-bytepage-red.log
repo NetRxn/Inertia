@@ -1,0 +1,72 @@
+✔ actual native auth and capture expose bounded immutable tenant receipt envelopes (241.219916ms)
+✔ no ambient human or agent authority, malformed parameters, or scope confusion (144.481069ms)
+✔ disabled or missing approved lifecycle cannot serve receipts (130.581432ms)
+✔ host configuration is snapshotted and exact reader identity enforced (56.278241ms)
+✔ a second valid board credential is not the configured transport principal (53.588683ms)
+✖ native read routes reject bodies before parsing authority-like or oversized payloads (40.541843ms)
+✖ legal multibyte receipt batches are byte-paged instead of permanently rejected (57.319902ms)
+✖ one impossible oversized receipt is deferred without hiding later valid receipts (54.887961ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 5
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3078.056965
+
+✖ failing tests:
+
+test at transport/tests/native-routes.test.mjs:108:1
+✖ native read routes reject bodies before parsing authority-like or oversized payloads (40.541843ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 400
+  
+      at TestContext.<anonymous> (transport/tests/native-routes.test.mjs:112:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 400,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at transport/tests/native-routes.test.mjs:117:1
+✖ legal multibyte receipt batches are byte-paged instead of permanently rejected (57.319902ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  502 !== 200
+  
+      at TestContext.<anonymous> (transport/tests/native-routes.test.mjs:124:103)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 502,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at transport/tests/native-routes.test.mjs:129:1
+✖ one impossible oversized receipt is deferred without hiding later valid receipts (54.887961ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  502 !== 200
+  
+      at TestContext.<anonymous> (transport/tests/native-routes.test.mjs:135:57)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 502,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

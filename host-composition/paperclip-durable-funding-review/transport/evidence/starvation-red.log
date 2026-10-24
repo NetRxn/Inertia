@@ -1,0 +1,39 @@
+✔ page checkpoint resumes then resets every completed sweep; repeated delivery remains exact (65.637785ms)
+✔ lost apply response is reconciled by exact terminal read before archive acknowledgement (15.566398ms)
+✔ revoked fails closed without acknowledging archive (2.560556ms)
+✔ tamper fails closed without acknowledging archive (5.168182ms)
+✔ wrongScope fails closed without acknowledging archive (2.378953ms)
+✔ malformed fails closed without acknowledging archive (2.300665ms)
+✔ oversize fails closed without acknowledging archive (3.865785ms)
+✔ missing lifecycle and disabled config cause no network work (0.642074ms)
+✔ non-HTTPS, credentials in URL, and scope-swapped endpoint are rejected before secret resolution (0.8786ms)
+✔ canonical protocol rejects unsupported numeric values and malformed trusted scopes (0.743937ms)
+✖ one stale receipt does not starve later receipts and is retried on the next full sweep (21.461262ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 10
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 260.398844
+
+✖ failing tests:
+
+test at transport/tests/reconcile.test.mjs:75:1
+✖ one stale receipt does not starve later receipts and is retried on the next full sweep (21.461262ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (transport/tests/reconcile.test.mjs:79:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

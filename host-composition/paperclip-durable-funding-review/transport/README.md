@@ -1,0 +1,41 @@
+# Default-disabled review-service transport composition
+
+This source-only qualification connects the existing native human acceptance ledger to DFW's existing durable guarded application/cancellation service. It adds no approval UI, authorization tool, task ledger, credential issuer, scheduled daemon, deployment, or grant submission.
+
+## Concrete composition
+
+- `native/acceptance-routes.mjs`: Express Router mounted by an owning Paperclip host at `/api/funding-review-transport`, after its real `actorMiddleware`. Exact configured board-key ID, user ID and current company membership are required. No ambient local-board/session/agent identity is accepted. GET scope/read/list routes return only exact scoped receipts. Existing native capture owns human authority.
+- `dfw_incentives.review_transport` (installed from the private DFW package): FastAPI APIRouter at `/funding-review-transport`, composed with the actual durable DFW service and explicit verified transport principal mapping. ID-only apply/cancel/outcome routes; cancellation actor comes from host configuration, never request JSON. NativeReceiptReader performs the paired scope handshake, bounded authenticated authoritative read, digest and human/binding checks.
+- `native/reconcile.mjs`: callable bounded sweep body using the existing SDK `ctx.http.fetch`, `ctx.secrets.resolve`, and company-scoped `ctx.state`. Supply it to an already approved native job. This module does not register or schedule anything. Scan cursors are per-record resumable progress only, reset after every full sweep. Stale/rejected records remain unacknowledged while independent later records progress; every full sweep retries them. Effects/deduplication/cancellation remain DFW audit transactions.
+
+The full immutable source/destination/company/applicant/source-scope/purpose object is checked on both ends and hashed in `X-Funding-Scope`. Receipt hashes bind exact canonical JSON, not signatures or a replacement for TLS/authenticated source readback. The transport principal is not the human reviewer. Agent/event content cannot supply commands, reviewer authority, destination, or cancellation actor.
+
+## Owning-host integration and activation gates
+
+The installed Paperclip SDK has outbound HTTP, secret references and jobs, but does not expose generic authenticated HTTP-route registration. The concrete route factory must be imported in the trusted owning host composition, using the same public-source patch/upgrade requalification path as `paperclip-durable-funding-review`, not presented as a plugin SDK method. Its app.js currently creates the API Router, applies actorMiddleware at line 406, then boardMutationGuard around line 479 and native routers around line 480 onward. Add the narrow router mount only under an explicitly enabled construction option; no existing host file is patched by this bundle.
+
+DFW's existing `create_app` contains read/admin guards and installs API security middleware. An owning host may include this router only with an explicit credential-to-principal/company/applicant/source/destination/purpose mapping. An existing generic admin token is NOT asserted to be least privilege; this adapter does not automatically authorize it or create credentials. The authenticated principal dependency must be current on every call, including offline terminal reads. Required approvals for live keys/grants remain outstanding.
+
+Production lifecycle policy is a required host capability, not supplied here. Native reads require `lifecycle.assertReadable({scope,receipt})` to return true after verifying the already-approved storage contract. Reconciliation calls idempotent `lifecycle.acknowledgeTerminal({scope,receipt,receiptDigest,outcome})` only for exact authoritative applied/cancelled readback; throw to refuse acknowledgement. That capability owns any approved archive/deletion behavior and receipt handoff. Tests record the acknowledgement only; they do not delete or archive records. There is no indefinite company-deletion lock, no new retention policy, and no claim that a terminal acknowledgement alone approves deletion.
+
+The native capture's root-Db transaction, retention contract and exact command registrations must already be qualified. DFW's immutable inputs, current funding gates, PostgreSQL legacy-writer fence and cancellation actor authorization remain mandatory. Source identity-to-origin and destination identity-to-database mappings must remain immutable; changing either requires explicit reviewed migration, not reusing an old source/destination label.
+
+No production mount, credentials, recurring schedule, real tenant/data transfer, human UI walkthrough or archive policy activation is performed.
+
+## HTTP bounds and deployment constraints
+
+Production endpoints require HTTPS, fixed exact mounts, no userinfo/query/fragment and no redirects. Numeric-loopback plaintext is available only through explicit fixture flags. The DFW reader streams a maximum of 1 MiB with time bounds and rejects compression, malformed JSON and duplicate keys. Native responses and reconciliation parsing enforce a 1 MiB protocol limit; native pages cap at 500 and are byte-bounded with correct continuation. An individually oversized record is explicitly deferred, never acknowledged, and cannot starve later records.
+
+Important actual-SDK limitation: pinned `plugin-host-services.js` resolves/pins DNS, denies private targets, uses one non-redirecting request and a host timeout, but buffers up to 200 MiB before returning over RPC. `ctx.http.fetch` does not preserve AbortSignal in RPC. The reconciler's 1 MiB parser is therefore a protocol acceptance bound, NOT a pre-buffer host memory bound. Tightening native SDK host buffering/timeouts, or a separately qualified bounded host transport, is an explicit production hardening gate. Do not bypass the SDK private-address restriction; a private-only destination needs a supported scoped owning-host composition, not a plugin workaround.
+
+Each reconciliation invocation permits at most six outbound requests, including scope handshakes and uncertain-result readback (at most 180 seconds of HTTP under the pinned SDK 30-second timeout). It checkpoints sorted processed/deferred record IDs before stopping for budget, so native job timeouts do not repeatedly lose page progress. The existing scheduler has a five-minute timeout: approved lifecycle callbacks plus secret/state RPC responsiveness must be qualified within the remaining budget. There is no uncancelled timeout race around an archival operation and no claim that arbitrary injected lifecycle code is time-bounded.
+
+All errors emitted by these adapters are generic; no raw remote exception, secret, authorization header or receipt payload is logged. Credentials are resolved at request time and never persisted by this code. SDK/native/global access logs still require operator redaction review before activation.
+
+## Qualification
+
+Set `REVIEW_NATIVE_ROOT` to the verified bootstrapped durable native bundle (public Paperclip 2026.1012.0 baseline). A local `node_modules` link is only a qualification convenience, not a publication dependency. Run native tests under that bundle's hardened disposable PostgreSQL launcher. Run Python tests with current DFW `src` and `tests` on PYTHONPATH and its locked Python 3.14 environment. Cross-domain script requires `REVIEW_PYTHON` and `REVIEW_DFW_PROJECT`; it uses only disposable synthetic loopback databases/keys and removes its fixture files.
+
+Existing runtime registration is unchanged. This public transport subtree contains no DFW domain implementation; use the separately reviewed private DFW adapter and fixture helper. Parent owns current-base verification, final review and Git/public artifact publication. See `evidence/` and the final handoff for exact passed/failed/never-run checks.
+
+Run the portable native checks from the bootstrapped parent bundle with `bash transport/tests/run-native.sh`. For the real cross-HTTP rehearsal, set REVIEW_PYTHON to the private DFW locked environment and REVIEW_DFW_PROJECT to its reviewed project root, then run `bash transport/tests/run-cross-domain.sh`. The private project must contain the separately published `dfw_incentives.review_transport` module and `tests/dfw_transport_fixture.py`.
