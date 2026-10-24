@@ -1,0 +1,55 @@
+{
+  "policy": {
+    "schema": "inertia.member-review-policy.v2",
+    "id": "synthetic-member-policy",
+    "version": 1,
+    "mode": "verified_member_application_access",
+    "scope": {
+      "companyId": "company",
+      "applicantId": "applicant",
+      "applicationId": "application",
+      "opportunityNamespace": "fixture",
+      "opportunityExternalId": "opportunity",
+      "sourceScope": "members"
+    },
+    "authorityRefs": [
+      "synthetic:member-pilot",
+      "synthetic:😀",
+      "synthetic:"
+    ],
+    "additionalRequirements": []
+  },
+  "policyHash": "88f13282444c675339253e013a80fe484df18e47855953f097a7990b1420a29a",
+  "intent": {
+    "schema": "inertia.member-packet-action.v2",
+    "policyHash": "88f13282444c675339253e013a80fe484df18e47855953f097a7990b1420a29a",
+    "target": {
+      "packetId": "packet",
+      "packetVersion": 1,
+      "packetContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "action": "approve_packet",
+    "payload": {
+      "note": "Reviewed exact synthetic artifact. ✅"
+    }
+  },
+  "intentHash": "e0f77de88165871f42f5cef19f62eafb7c9eaa4fba28819cfc90d9fd18f1b0f4",
+  "invalidDiscriminants": [
+    [
+      "signature"
+    ],
+    [
+      "image"
+    ],
+    [],
+    {},
+    null,
+    true,
+    1
+  ],
+  "invalidTimestamps": [
+    "0000-01-01T00:00:00Z",
+    "2026-02-30T12:00:00Z",
+    "2026-10-24T12:00:00.0000001Z"
+  ]
+}

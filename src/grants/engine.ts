@@ -84,6 +84,16 @@ export async function freezeReviewedPacket(source: ReviewedGrantSource, identity
   const request=Object.freeze({packetId:identity.packetId,applicantId:identity.applicantId});
   const record=JSON.parse(canonicalJson(await readExport(request))) as ReviewedGrantExport;
   validateReview(record,request,at);
+  await verifyPacketArtifactInventory(record,request,readArtifact);
+  // Bind reviews and package to content. Fetch/observation timestamps are not regenerated here.
+  record.artifacts.sort((a,b)=>a.artifact_key<b.artifact_key?-1:a.artifact_key>b.artifact_key?1:0);
+  const {current_cycle_verified_at: _observedAt, ...opportunity}=record.opportunity;
+  const canonicalContent=canonicalJson({...record,opportunity});
+  return Object.freeze({...request,version:record.packet.version,schema:'inertia-grant-v1',canonicalContent,contentHash:snapshotHash(canonicalContent)});
+}
+
+/** Shared immutable artifact validation. This does not grant review/governance/submission authority. */
+export async function verifyPacketArtifactInventory(record: Pick<ReviewedGrantExport,'artifacts'>, request: PacketIdentity, readArtifact: ReviewedGrantSource['readArtifact']): Promise<void> {
   requireThat(Array.isArray(record.artifacts) && record.artifacts.length>=4 && record.artifacts.length<=64,'Expected complete artifact inventory');
   const keys=new Set<string>(); let bytes=0;
   for(const artifact of record.artifacts) {
@@ -94,9 +104,4 @@ export async function freezeReviewedPacket(source: ReviewedGrantSource, identity
     requireThat(sha256(body)===artifact.content_hash,'Artifact content integrity mismatch');
   }
   for(const key of ['application_packet_markdown','application_packet_docx','packet_data','review']) requireThat(keys.has(key),'Required packet artifact missing');
-  // Bind reviews and package to content. Fetch/observation timestamps are not regenerated here.
-  record.artifacts.sort((a,b)=>a.artifact_key<b.artifact_key?-1:a.artifact_key>b.artifact_key?1:0);
-  const {current_cycle_verified_at: _observedAt, ...opportunity}=record.opportunity;
-  const canonicalContent=canonicalJson({...record,opportunity});
-  return Object.freeze({...request,version:record.packet.version,schema:'inertia-grant-v1',canonicalContent,contentHash:snapshotHash(canonicalContent)});
 }
