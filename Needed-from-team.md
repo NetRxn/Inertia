@@ -1,125 +1,75 @@
 # Needed from team
 
-Inertia integration checklist · Updated 2026-10-24 · Baseline INERTIA-2026-10-24-r18
+Updated 2026-10-24 · INERTIA-2026-10-24-r21
 
-Start with P0 for the connected demo; P1 enables ongoing operation. John owns website rollout, a teammate owns Y2, and Inertia engineering deploys Paperclip and connects the existing Buzz instance. Other owner labels below are roles to assign.
+Please consolidate the remaining operational inputs once, using protected references rather than posting credentials, member records or private documents here. Reply with **NTF ID · reference/ready/missing · operational contact · next action**. Existing data/connections should be reused before asking for new copies.
 
-First handoffs: website API/test target (NTF01), Drive examples/access (NTF03), deployment/runtime configuration (NTF04–06), and the actual Buzz/Vocdoni/Y2 contracts (NTF07–10).
+The Wednesday October 28 path is PostgreSQL-native knowledge plus the existing authorized Buzz agent. Helix/Y2 are deferred. Any authenticated, currently verified DAO member with current application action access may contribute/approve an exact version under the v2 policy being implemented. No named application owner or default five-specialist reviewer setup is needed. Retention defaults and conditional actual governance are settled; do not re-ask those decisions.
 
-Reply with: **NTF ID · responsible person · protected reference · ready/missing · next action.** Use secure references for credentials, private records and member identities; keep them out of this artifact and public Git.
+## Consolidated current inputs
 
-All handoffs initially remain **needed**. Update an entry to **received**, **qualified** or **superseded**, with dated evidence; input receipt and live qualification are separate milestones.
+### NTF01 P0 Member publication API
 
-## John and the website implementer
+Protected test origin/current contract, scoped existing connection and sanitized publication/readback/correction example. Confirm current member audience/access enforcement. Website implementer owns rollout; engineering qualifies the caller and actual source path. Notes-only website behavior remains partial until qualified.
 
-### NTF01 P0 Member only publication API
+### NTF02 P0 Existing data and application access
 
-- [ ] Send the test origin, deployed route/schema version and secure reference to the scoped machine principal. Include one sanitized first-publication request/readback and one correction/conflict example. Confirm service-write scope and continued active membership of its responsible member, active-member reads, immutable operation lookup, audience and content/hash/version fields; identify deviations from the [publication proposal](https://github.com/NetRxn/Inertia/blob/develop/docs/integrations/dao-website-member-publication-proposal.md) and [v1.1 clarifications](https://github.com/NetRxn/Inertia/blob/develop/docs/integrations/dao-website-publication-v1.1-clarifications.md).
+Existing DAO/member/project/objective/meeting data routes or authorized exports with canonical IDs, revision/order and permitted audience. Identify the authoritative current DAO-membership and application action ACL source/adapter. Public visibility or a generic role alone is insufficient. No named application owner or specialist-role grant list is requested.
 
-**Unlocks:** Automatic transcript/notes publication with verified retries and corrections. Caller is contract-tested; server rollout and live publication admission are next.
+### NTF03 P0 Wednesday meeting sources
 
-### NTF02 P0 Objective feed and knowledge reads
+Approved Drive/Gemini folders and existing connection, transcript-plus-notes/corrected examples and any summary-only example through protected references. Identify the actual Wednesday source/participants and permitted member publication/recording scope. Engineering derives source readiness/mapping where available; do not ask for manual metadata the API already supplies.
 
-- [ ] Send the approved machine route or export for innovation-bounty submissions and permitted DAO/member/project/meeting records. Include one sanitized submission and its update/withdrawal, stable IDs, revision/order, visibility and access scope. Identify where current membership and adopted decisions can be read. Engineering can qualify existing exports against the [intake contract](https://github.com/NetRxn/Inertia/blob/develop/docs/development/objective-intake.md).
+### NTF04 P0 Existing deployment and SQL binding
 
-**Unlocks:** General native backlog intake and authoritative DAO fact reuse. Intake and knowledge cores are merged.
+Existing deployment/runtime and authorized PostgreSQL domain-tool connection references, application scope and restore/record owner. SQL architecture is settled. Confirm the actual selected binding, availability and qualification target without asking to choose Helix or a new database. Paperclip/domain ownership remains separate. No deployment/migration or new permission grant is performed by this checklist.
 
-## Drive administrator and meeting owner
+### NTF05 P0 Existing authorized runtime
 
-### NTF03 P0 Real Gemini sources
+Existing model/research/browser/domain-tool access and bounded pilot budget through protected connection references. Reuse the authorized Buzz agent and selected application, rather than requiring new member-runtime enrollment or hiring. Engineering verifies tools and actual system output. Broader Codex/Claude/local/untrusted runtime qualification is separate.
 
-- [ ] Share protected references to approved folders, the read principal and actual transcript-plus-notes and corrected-source examples. Include a summary-only example if produced. Supply existing DAO meeting identifiers/date and separate Gemini-notes references. Engineering derives Meet-to-Drive mappings and FILE_GENERATED readiness from the API; provide an explicit mapping only where the API lacks it. Confirm permitted member-portal publication and retention/withdrawal rules for originals, derived records and private operation state. See [source/native contract](https://github.com/NetRxn/Inertia/blob/develop/docs/development/meeting-source-native-composition.md).
+### NTF06 P0 Retained records and operational binding
 
-**Unlocks:** Real source ingestion, fidelity checks and versioned publication. Source/native composition is merged and qualified with fixtures. Summary-only native follow-up exists; notes-only website output still needs a server contract and real example.
+Retention defaults are settled: recordings after validated transcript/minutes, expendable drafts and operational logs 90 days; security logs one year. Supply storage/archive binding, record contact, readable archive/holds and actual grant-specific schedule. Meaningful reviewed/final/submitted and authoritative records remain retained. No deletion is enabled. Legacy accepted receipts retain terminal-acknowledgement/qualified-transfer protection.
 
-## Platform and database operator with domain owners
+### NTF07 P0 Existing Buzz identity and relay
 
-### NTF04 P0 Deployment and database target
+Protected reference to the existing authorized agent, relay/conversation identity, current authenticated human mapping and intended application/audience. Confirm the actual allowed source/tools and reply/readback path. Engineering tests contribution and member intent against trusted current membership/application access. This is not proof of full untrusted member-owned isolation.
 
-- [ ] Confirm the Paperclip target, canonical HTTPS domain and DNS/TLS operator. Confirm the existing DAO PostgreSQL provider/version, including whether it is 18.2, schema/role support and PostGIS availability. Supply protected source/target references and access for engineering’s read-only inventory, the backup/restore owner and an isolated restore target. Confirm Drizzle website/meeting ownership, Alembic funding ownership and independent Paperclip persistence. See [storage contract](https://github.com/NetRxn/Inertia/blob/develop/docs/development/dao-data-consolidation.md).
+### NTF08 P0 Actual governance example
 
-**Unlocks:** Deployment and migration/restore qualification on the selected target. Disposable PG/PostGIS and native-service checks have passed.
+Provide the existing operative DAO/Vocdoni example/rules only for a decision that genuinely needs them, with network/proposal/action and final-result evidence. Identify actual sponsor signatures/certifications if the selected case requires them. Do not invent a universal vote, five-human review or application-owner ceremony.
 
-### NTF05 P0 Runtime and tool access
+### NTF09 Superseded role setup; P0 current access walkthrough
 
-- [ ] Provide approved existing model/runtime and browser/search/domain-tool access with scoped connection references. Engineering verifies the tool inventory and creates/configures the research agent. Identify the intended DAO company/admin and existing CEO if present. Name an active responsible DAO member for scout, diligence and urgent-work issues; engineering configures and verifies the native wake mapping. Confirm pilot spend limits and native hiring-approval policy. The installation owner must approve the meeting plugin’s declared issues.read/create/update capabilities for the selected live instance before activation. Engineering prepares the deployment and [native intake setup](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#native-ceo-intake).
+The earlier named-reviewer/five-specialist setup request is superseded by the chosen v2 policy. Use NTF02's trusted membership/application ACL and one available verified member for exact-version confirmation, correction and Mark submitted/readback. Engineering implements/qualifies v2; it is not merged or deployed. V1 history stays intact. No new duplicate input form or reviewer-admin UI is required.
 
-**Unlocks:** Actual research, drafting and independent review through native tasks. Runtime/model quality is qualified after access is configured.
+### NTF10 Deferred Y2
 
-### NTF06 P0 Durable review retention
+Y2 is explicitly deferred from Wednesday. Preserve this ID and future interest/update, visibility, replay/cursor and deduplication contract. No current-critical Y2 handoff is requested.
 
-- [ ] Have the storage lifecycle owner approve who retains accepted native receipts until terminal DFW acknowledgement or qualified durable transfer, where archived evidence stays readable, audit retention and eventual deletion. Identify the operator and secure service scopes for tenant-scoped acceptance read/list and DFW access. Use the [host activation contract](https://github.com/NetRxn/Inertia/blob/develop/host-composition/paperclip-durable-funding-review/ACTIVATION-CONTRACT.md); engineering implements its hooks, sweeps, fencing and cancellation reconciliation.
+### NTF11 P0 Contribution participant; broader enrollment deferred
 
-**Unlocks:** Production durable-review composition. Native capture and DFW acceptance are qualified; the production lifecycle/transport remain to connect.
+Use the existing authorized Buzz agent for the achievable Wednesday contribution within the application packet. Identify any participating verified member and current application access through NTF02/07. A member can contribute/approve without owning the application. Full untrusted member runtime enrollment/isolation, draft PR51 and native authoritative completion remain separate unqualified work, not a prerequisite or an implied demo success.
 
-## Existing Buzz instance operator
+### NTF12 P0 Organizational and partner evidence
 
-### NTF07 P0 Relay and audience
+Existing authorized SQL/domain knowledge routes, source owners/references, canonical IDs and application/audience scopes for the bounded case. Supply actual organizational/governance/formation and partner records not publicly obtainable through protected access. Engineering performs inventory/research/writeback; the team need not manually build a graph. Helix deployment/backfill is deferred.
 
-- [ ] Send the existing canonical HTTPS/relay endpoints, API/version and bridge identity reference. Select one pilot thread and identify its actual readers, pairing administrator and human/agent enrollment/revocation route. Supply one protected company/issue/thread mapping and verified pairing. If outbound comments are wanted, approve the audience and start cutoff under the [live pilot checklist](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md).
+### NTF13 P0 Where the case needs financial facts
 
-**Unlocks:** Real signed replies, confirmation cards and receipts. Bridge and default-off comment mirroring are tested.
+Existing authorized financial documents or read-only export/API connection, representative sanitized format and current application scope. Financial/private organizational records not publicly obtainable cannot be replaced by guesses. Preserve period/basis/currency/source and distinguish actuals, requested funding, cash and spending authority. Provider compatibility still needs qualification; no credentials or private documents belong in public Git.
 
-## Governance and funding review owners
+### NTF14 P0 Wednesday case and bounded run
 
-### NTF08 P0 Vocdoni example
+Confirm the current chosen case and achievable backup, actual Wednesday participants/window and permitted application/audience. NSF exemplary preparation is sufficient for that case; no automatic extra submission is requested. Engineering owns substantial system research, near-complete generated draft, reference/output separation, agent critique, SQL reuse/writeback and measurements. Recurrence remains later/default-disabled. Do not ask again whether Helix/Y2 or a new approval ceremony is required.
 
-- [ ] Share one completed proposal with network/chain, proposal identity, final-result evidence and authorized action. Include applicable Aragon/settlement evidence and operative threshold/signing-authority rules. Confirm the exact packet ID/version/hash and action a new vote must bind. Engineering derives the verifier from this example and the [packet contract](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/grant-packet-binding.md).
+### NTF15 P0 Event and recording logistics
 
-**Unlocks:** Effective final authority for a frozen packet. Vocdoni is selected; the actual workflow example remains needed.
+Actual roster and participant talent registration, attendance/check-in plan, submission contact, presenter/delegate/demo duration and approved Wednesday/final recording inputs. Confirm exact public source/video links and administrator-verification state. Deadline: **Friday October 30, 2026, 11:00am CDT (16:00 UTC)**. Engineering prepares the tested build/runbook/video and measurement capture; the team provides people/logistics and permission to show selected sanitized material. No event entry, account creation, outreach or application submission is performed here.
 
-### NTF09 P0 Reviewer roles and walkthrough
+## Evidence and maintenance
 
-- [ ] Supply protected human role/applicant/source-scope mappings and the provisioning/revocation owner. Select an authorized rehearsal packet with readable evidence/artifact bytes and a participant for correction/regeneration and cancel-before-apply checks. Use the route-specific role matrix in the [review acceptance contract](https://github.com/NetRxn/Inertia/blob/develop/testing.md#native-grant-review-acceptance-default-disabled).
+Park Place is the real historical human-submitted case; roughly one hour is user-reported elapsed time, not a measured active-time or automated-system result. Keep its reference record separate from actual generated outputs. Capture system elapsed/active human time, known cost, corrections and evidence coverage honestly. No manually polished packet is an equivalent substitute for system-generated preparation.
 
-**Unlocks:** Real human-only review and DFW-confirmed cancellation. Durable acceptance is qualified; live roles and the walkthrough remain needed.
-
-## Y2 teammate
-
-### NTF10 P0 Interest and update contract
-
-- [ ] Send API/changefeed documentation or a test route, authorized account reference, visibility rules and rate limits. Include one sanitized interest registration/response and update event: stable subscription/event IDs, source URL, revision/order, relevance, replay/cursor behavior and unsubscribe/revocation. Identify unsupported operations against the [Y2 handoff](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#adapter-acceptance-checklist).
-
-**Unlocks:** A Y2 watch linked to native work with deduplicated updates. Contract and adapter qualification remain needed.
-
-## Member pilot participant and enrollment administrator
-
-### NTF11 P0 Second member rehearsal
-
-- [ ] Identify a willing participant, their chosen supported agent/runtime and protected membership reference. Agree one permitted company/project/task, data classes and enrollment/revocation authority. Arrange successful contribution, denied unauthorized access, interrupted-run recovery and revocation checks using the [member runner handoff](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#adapter-acceptance-checklist). Repository-admin access and DAO enrollment are separate.
-
-**Unlocks:** The required second-member demonstration. Candidate admission and artifact/receipt handling are merged in PR37 and independently qualified. Engineering owns authenticated ingress, non-reusable per-attempt authority, runtime isolation, native review handoff and authoritative completion.
-
-## DAO knowledge and finance source owners
-
-### NTF12 P0 Partner and organization sources
-
-- [ ] Share authoritative partner/contact/program/project collections and meeting-source pointers, protected access references, source owners and existing canonical IDs. Identify relationship owners, permitted scopes/audiences and who admits candidate facts or adopted decisions. Confirm correction/deletion/revocation signals. Engineering builds the bounded inventory, extracts, reconciles and backfills under the [knowledge contract](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/knowledge-contract.md).
-
-**Unlocks:** Indexed partner reuse and durable research writeback. PG/Helix core is qualified; actual inventory and admission are next.
-
-### NTF13 P1 Read only financial source
-
-- [ ] Choose the read-only QuickBooks export/API route and finance owner. Provide a sanitized representative Profit & Loss report with company/reference, period, cash/accrual basis, currency, totals, retrieval time and source revision/hash; confirm permitted scope and refresh policy. Identify different report/currency needs against the [public financial-source summary](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/spec.md#reusable-knowledge-and-financial-sources).
-
-**Unlocks:** Supported financial facts. Sanitized USD P&L normalization exists; actual provider format needs qualification. This becomes P0 if the selected demo packet needs those facts.
-
-## Discovery mandate and rehearsal coordinator
-
-### NTF14 P0 Pilot and P1 recurring operation
-
-- [ ] Confirm prioritized objectives/geography/applicant scope and the brief/urgent-alert audiences. Supply an existing DFW service/runtime identity and access reference if deployed; otherwise engineering deploys within the approved NTF04 target. Confirm engineering’s proposed source-admission policy (official identity validation and safe fetch; ambiguous authority goes to review), plus the existing Buzz destination, actual human audience and recipient policy for urgent alerts. Before the pilot, confirm engineering’s proposed query/page/time/cost limits and test destination. After the measured rehearsal, confirm its proposed cadence, urgency thresholds and recheck/alert targets. Identify the operational owner and whether automatic alerts are authorized. Engineering verifies actual human alert delivery, the responsible-member wake mapping from NTF05 and source admission. Also confirm rehearsal coordinator, required participants/delegates, availability and agreed demonstration window. See [discovery activation](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/discovery-loop.md) and [demo acceptance](https://github.com/NetRxn/Inertia/blob/develop/docs/implementation/live-handoff-checklist.md#demo-acceptance).
-
-**Unlocks:** Search → official validation → durable knowledge → brief/alert → next-run reuse, then approved recurrence. Discovery and source-bound funding facts are merged and qualified with controlled captures; actual research/model quality remains to qualify. Missing responsible-member mapping leaves wakes pending. Live research, human delivery and recurrence still need admission; the daily schedule stays disabled.
-
-## Engineering ownership and later work
-
-Engineering owns adapters, source inspection, native recovery, opportunity research, migration/restore checks, Helix indexing/fencing, model-quality checks and the host HTTP/UI qualification blocker. Bring the team a specific access or policy decision when required. Broader Form 990 enrichment and optional semantic/vector search are P2 stretch; the operational partner graph remains part of the demo.
-
-## Keeping this current
-
-Keep NTF01–NTF14 stable. Update the same entry when an input arrives, ownership/access/schema/audience/retention changes, or qualification passes. Record the date and protected evidence reference. Reopen affected entries after material changes.
-
-Synchronize with the [specification](https://github.com/NetRxn/Inertia/blob/develop/spec.md), [tests](https://github.com/NetRxn/Inertia/blob/develop/testing.md), [decisions](https://github.com/NetRxn/Inertia/blob/develop/decisions.md) and [plan](https://github.com/NetRxn/Inertia/blob/develop/plan.md). Preserve the same scope/status in the [deck](https://github.com/NetRxn/Inertia/blob/develop/Inertia-Architecture.pptx) and [HTML overview](https://github.com/NetRxn/Inertia/blob/develop/docs/architecture/Inertia-System-Overview.html); checklist-only changes can preserve the unchanged deck.
-
-Source baseline: [Inertia 30640183](https://github.com/NetRxn/Inertia/tree/3064018359e986a0b69bb5c860c01bb18dd7f5b9). The [public source map](https://github.com/NetRxn/Inertia/blob/develop/docs/development/funding-enhancement/source-map.md) records the DFW baseline; linked private DFW implementation details require owner access.
+Keep NTF01–15 stable. Mark a protected reference received or qualified with date/evidence; receipt is not live qualification. Reopen only genuinely changed operational dependencies. Preserve deferred/superseded entries rather than silently deleting them. [Spec](spec.md), [tests](testing.md), [decisions](decisions.md), [plan](plan.md), [source ownership](docs/development/funding-enhancement/source-map.md), [deck](Inertia-Architecture.pptx) and [HTML](docs/architecture/Inertia-System-Overview.html) share the same target/source distinction.

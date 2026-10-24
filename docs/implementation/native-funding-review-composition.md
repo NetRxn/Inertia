@@ -1,20 +1,15 @@
-# Native funding review host composition
+# Legacy v1 funding review host composition
 
-This document preserves the legacy through-commit adapter contract, which remains default-disabled. The independently reviewed durable successor captures exact-version authority atomically with native acceptance; DFW PR50 and Inertia host PR31 are merged. See the [durable successor activation contract](../../host-composition/paperclip-durable-funding-review/ACTIVATION-CONTRACT.md), [current native grant contract](../development/native-grant-workflow.md) and [publication/qualification record](../development/funding-enhancement/source-map.md).
+This is the retained **legacy v1** through-commit contract, not the chosen v2 member eligibility or a Wednesday prerequisite. New v2 current-member exact-version confirmation/submission recording is in progress, not merged; it has no named human application owner or default five-specialist gates. Actual membership/application access, case-specific sponsor/DAO requirements and selected immutable packet/date govern the new target. See the [current target contract](../development/native-grant-workflow.md). Do not reinterpret or loosen historical v1 records, fences, receipts or cancellation state.
+
+This document preserves the legacy through-commit adapter contract, which remains default-disabled. The independently reviewed durable successor captures exact-version authority atomically with native acceptance; DFW PR50 and Inertia host PR31 are merged. The successor [review-service transport](../../host-composition/paperclip-durable-funding-review/transport/README.md) is merged in Inertia PR39/DFW PR53, default-disabled, with [PR53](https://github.com/NetRxn/Inertia/pull/53) source-qualified, default-disabled owning-host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete cursor reset now merged. Source-row allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live walkthrough remain gates. See the [durable successor activation contract](../../host-composition/paperclip-durable-funding-review/ACTIVATION-CONTRACT.md), [current native grant contract](../development/native-grant-workflow.md) and [publication/qualification record](../development/funding-enhancement/source-map.md).
 
 Local qualification only. No worker registration, MCP tool, HTTP endpoint, new review UI,
 new approval ledger, deployment or submission action is added.
 
 ## Native source and authority
 
-`src/grants/native-review.ts` uses the installed official `@paperclipai/plugin-sdk`
-2026.1012.0 types and `issues.listInteractions` / `issues.documents.get`.
-Paperclip source pin: `bba6a45f0d364cfd962ac59b3bdf2426a8222adb`:
-
-- `packages/shared/src/types/issue.ts`: item actor/verdict and document-revision target.
-- `server/src/services/issue-thread-interactions.ts`: `submitItemVerdicts` keeps partial
-  results `pending`, marks complete results `answered`, and preserves per-item actors.
-- `packages/plugins/sdk/src/types.ts`: native read capability surface.
+The legacy public Inertia adapter reads authoritative native item actors/verdicts and document-revision targets through the pinned public SDK. Use the [source-pinned public primitives](../reference/native-grant-workflow.md) and current source tests for exact APIs. A partially resolved card retains per-item actors; its final card resolver is not every item's resolver.
 
 A host-owned registration binds company, task, interaction + item, applicant, target,
 version, workspace/head, source/evidence allowlists, configured human/role, exact
@@ -47,11 +42,7 @@ concurrency and a real packet correction walkthrough remain release gates.
 
 ## Funding service contract
 
-The DFW `NativeFundingReviewService` is a real domain-side implementation of the
-`FundingReviewPort` semantics. Trusted composition maps `readOutcome` to
-`read_outcome`, `applyGuarded` to `apply_guarded`, and authorizes against its own
-current directory. No network transport, credentials or model-accessible review
-endpoint is supplied. The schema uses identical camelCase registration/command keys.
+The owning funding service supplies authoritative outcome readback and guarded application. Trusted composition maps those behaviors to the existing domain contract and authorizes against the current domain directory. Exact private service names, serialization layouts and deployment configuration remain with the funding owner. This legacy adapter supplies no model-accessible review endpoint or credentials; the separately merged successor transport has its own scoped contract.
 
 The domain transaction must recheck latest version, workspace, actual head, allowed
 targets/evidence and current roles/source scope, apply existing operations and append
@@ -81,7 +72,7 @@ head also includes prior role reviews, so provision sequential role cards or rei
 the next card against the updated head. A retry reads the old exact durable receipt;
 it does not reapply an old approval to the new head.
 
-PostgreSQL receipt reads use a per-decision advisory lock; target inspection is read-only.
+Outcome reads and effects must serialize by exact decision identity; target inspection remains read-only.
 Domain application is disabled without a separately qualified PostgreSQL writer-fence
 host adapter. Broad all-table locks exist only in disposable qualification fixtures,
 not as production defaults or a request to expand grants.

@@ -1,21 +1,12 @@
 flowchart LR
- subgraph Inertia[Inertia integration work]
- B["Buzz and Paperclip host<br/>Deploy and pair relay and members<br/>Verify requests and returned results"]
- R["Roundtable source job<br/>Approve Drive source access<br/>Qualify live publication"]
- G["Funding and Vocdoni<br/>Qualify review transport and retention<br/>Exact-packet vote verifier"]
- C["Member contribution<br/>Trusted ingress and native review<br/>Enrollment and runtime qualification"]
- Y["Y2 updates<br/>Stable sources and deduplicated work links"]
- K["Partner graph and knowledge<br/>Connect trusted source adapters<br/>Qualify production PG and services"]
- end
- W["Website team<br/>Publication endpoints<br/>Active-member policy and readback"]
- R -.->|Publication contract| W
- B -.-> DEMO["Connected rehearsal"]
- W -.-> DEMO
- G -.-> DEMO
- C -.-> DEMO
- Y -.-> DEMO
- K -.-> DEMO
- class B,R,G,C,Y,K,W,DEMO planned
+ SQL["Existing authorized PostgreSQL tools<br/>Data and protected source bindings"] -.-> RUN["Actual system run<br/>Substantial draft and agent critique"]
+ B["Existing authorized Buzz agent and relay"] -.-> RUN
+ ACL["Current verified DAO membership<br/>Application action ACL"] -.-> V["V2 exact-version confirmation<br/>Mark submitted and later evidence<br/>In progress, not merged"]
+ W["Approved Drive and member website<br/>Actual publication and readback"] -.-> DEMO["Wednesday October 28 Roundtable<br/>Measured connected application proof"]
+ RUN -.-> DEMO
+ V -.-> DEMO
+ L["Helix and Y2 deferred<br/>Full untrusted member isolation separate"]
+ class SQL,B,ACL,W,RUN,V,DEMO,L planned
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
  classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4

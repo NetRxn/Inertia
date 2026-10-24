@@ -1,23 +1,13 @@
 flowchart TB
- subgraph M[Member environment]
- U["DAO member<br/>Operates an approved agent"] --> E["Member runtime<br/>Sandbox and isolated workspace<br/>Live enrollment and execution next"]
- E --> P["Candidate result<br/>Artifacts and source references"]
- end
- subgraph T[Trusted services]
- PC["Paperclip<br/>Task assignment and permitted inputs"]
- V["Candidate validation<br/>Identity, attempt, task and artifact checks<br/>Immutable candidate receipt"]
- A["Review and acceptance<br/>Native integration next"]
- D["Privileged domain services<br/>Database and publisher credentials"]
- V -.->|Review handoff next| A
- A -.->|Authorized domain action| D
- end
- PC -.->|Scoped task| E
- P -.->|Submit candidate| V
- H["Authorized human reviewer"] -.->|Authenticated decision when required| A
- A -.->|Outcome and status| E
- A -.->|Accepted task state| PC
- class PC,V core
- class E,A planned
+ T["Native application task<br/>Permitted evidence and tools"] -.-> A["Existing authorized Buzz agent<br/>Achievable Wednesday contribution path"]
+ A --> C["Generated contribution<br/>Sources, draft and prepared work"]
+ C --> Q["Independent agent quality critique<br/>Not human approval"]
+ Q -.-> H["Any eligible current DAO member<br/>Current membership and application access"]
+ H -.-> V["Exact-version v2 confirmation<br/>In progress, not merged or deployed"]
+ V -.-> T
+ D["Broader untrusted member runtime<br/>PR51 draft ingress only"] -.-> F["Isolation and native authoritative completion<br/>Separate unqualified engineering work"]
+ class C,Q core
+ class T,A,H,V,D,F planned
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
  classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4

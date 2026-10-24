@@ -1,33 +1,34 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-24-r18
+Revision: INERTIA-2026-10-24-r21
 Updated: 2026-10-24 (UTC)
-Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Meeting source/native composition is merged in PR34 and independently qualified, default-disabled. The discovery foundation and source-bound funding facts are merged in Inertia PR35/36 and DFW PR51/52; live activation remains pending. The member candidate-only boundary is merged in PR37 and independently qualified. Daily recurring scouting remains disabled.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 current-member review/submission policy is in progress, not merged or deployed. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Current baseline
 
-Develop `30640183` (PR37) includes the cumulative core, cloud qualification/race fixes, Task 8, the default-disabled legacy adapter, non-live durable host bundle, PR33 team checklist, meeting source/native composition, discovery/facts and inactive member candidate boundary. DFW durable acceptance is merged in PR50. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Public Inertia develop includes [PR53](https://github.com/NetRxn/Inertia/pull/53) with source-qualified, default-disabled owning-host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete cursor reset. The independently reviewed all-PostgreSQL reproduction is published in [PR52](https://github.com/NetRxn/Inertia/pull/52). Live admission still requires source-row database allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and the live human walkthrough. [Draft PR51](https://github.com/NetRxn/Inertia/pull/51) is outside that baseline. [Implementation status](spec.md#implementation-status) and the [qualification record](testing.md#qualification-record) distinguish merged, fixture-qualified and live states.
+
 
 ## Settled decisions
 
 | ID | Decision | Consequence |
 |---|---|---|
-| D01 | Three required outcomes: meetings, grant vote, member contribution | Preserve all three through planning. |
+| D01 | Wednesday outcomes are meeting publication and a substantial system-generated application packet, including agent contribution, exact-version member review and SQL knowledge reuse | Do not substitute a manually polished reference packet for actual system output. |
 | D02 | Meet/video → Gemini → organization Drive | Integrate actual outputs once access contract is known. |
 | D03 | Automatic cleaned transcript and notes publication | Routine in-policy publication is automatic. |
 | D04 | Preserve source fidelity and audience | Version outputs, retain source and read back publication. |
 | D05 | Reuse DAO PlanetScale PostgreSQL for funding and meetings | One relational database; isolated domain schemas and service roles. Paperclip DB remains independent. |
 | D06 | Reuse existing grant scanner | Qualify its current interfaces and refresh stale opportunities. |
-| D07 | Blockchain voting is settled | Bind final authority to an immutable packet. |
+| D07 | Vocdoni/DAO governance applies when the actual operative policy requires it | Do not impose a universal final-packet vote or invented sponsor signature gate. |
 | D08 | Ordinary tasks proceed under their configured authority | Reserve governance review for the decisions that require it. |
-| D09 | Y2 remains a demo integration objective | Teammate ownership makes access worth resolving early. |
+| D09 | Y2 is deferred from the Wednesday demo critical path | Preserve the future adapter objective and stable R-Y01/NTF10 IDs. |
 | D10 | Paperclip is the operational platform | Use its CEO, hiring, hierarchy, tasks and decisions. |
 | D11 | Buzz and dashboard are alternative interfaces | Share IDs, permissions and state in both directions. |
 | D12 | Agents eagerly acquire work and create follow-ups | Configure native autonomy, budgets and follow-up constraints. |
-| D13 | Member agents execute client-side securely | Qualify sandbox, data isolation and server validation. |
-| D14 | Reuse native/existing hardening first | Qualify existing execution hardening against the selected Paperclip release. |
-| D15 | Maintained Helix partner/people graph and query-first research writeback are core | Require indexed partner reuse and durable knowledge growth in the demo. Broader 990 and optional semantic/vector enrichment follow later. |
+| D13 | Full untrusted member-owned client execution remains a separate later lane | Qualify real sandbox/data isolation and server validation before admission; the authorized Buzz demo path proves none of those by implication. |
+| D14 | Reuse existing authorized runtime/tools for Wednesday and existing hardening for later untrusted execution | Preserve separate execution-isolation qualification rather than adding it to the current critical path. |
+| D15 | PostgreSQL-native knowledge is the Wednesday baseline using existing authorized SQL domain tools | Helix is explicitly deferred; retain future adapter reversibility and source/access guarantees. |
 | D16 | Cloudflare is available | Select services only when deployment needs justify them. |
 | D17 | Keep the specification, tests, decisions, plan, team handoff checklist and architecture artifacts synchronized | Preserve original PDF; use focused Git commits and existing PR. |
 
@@ -43,7 +44,7 @@ Paperclip supplies operations, scheduling, task/approval state, credentials and 
 | P02 | Route Buzz task triggers into one native execution owner | Duplicate-trigger and checkout tests. |
 | P03 | Reuse existing execution hardening through native runner/plugin interfaces | Version, license, lifecycle and isolation qualification. |
 | P04 | Use native connection profiles and tool policy | Domain credential scopes and call-time authorization tests. |
-| P05 | Preserve funding-domain review/signoff semantics through native Paperclip UI | Durable core implemented and merged, non-live; production activation gates pending. |
+| P05 | Preserve actual domain correctness through native/Buzz member actions | Chosen v2 allows any currently verified DAO member with current application action access. No named owner or default five specialist human gates. Implementation is in progress; v1 remains historical. |
 
 ## Central configuration and compatibility register
 
@@ -57,15 +58,15 @@ Implementation tasks reference these setup IDs.
 | U04 | Drive publication contract | Approved folder/source access, actual examples, stable DAO meeting identity/date, audience and retention; engineering derives and verifies API mappings/readiness | DAO administrator / G2 |
 | U05 | DAO publication interface and access | Existing meeting actions authenticate a Privy session; explicit active-DAO-membership enforcement remains required. Target is members-only behind the portal. Current login-only access must gain explicit active-membership checks alongside atomic upsert/readback; prepare the API/schema proposal, user owns rollout | Website owner / integration |
 | U06 | Effective multi-stage vote authority | Vocdoni is selected; user will supply an example. Verify whether documented Aragon/final-action stages apply to that actual workflow, then require effective authority and exact packet/action binding. Confirm chain/network from the example | Governance owner / integration |
-| U07 | Y2 account and application access | Public API/changefeed route is agreed. Confirm account authorization, registration/update identity, visibility, rate limits and demo data | Y2 teammate / integration |
-| U08 | Member participation topology | Named agent versus shared capacity, enrollment/revocation, data classes and capabilities | User + engineering / G2 |
+| U07 | Deferred Y2 interface | Future account/changefeed/scope/replay contract; not a current-critical input | Deferred / not Wednesday |
+| U08 | Achievable contribution path | Existing authorized Buzz agent and application-scoped tools for Wednesday; full untrusted member runtime/isolation is separate | Engineering / actual-path qualification |
 | U09 | Confirm operational budgets before live runs | Default: Paperclip owns scheduling; no duplicate Buzz routine; new hiring requires configured native authority. Conservative bounded retries and task limits in fixture configuration | Engineering / live admission |
 | U10 | Hosting and inference | Deploy Paperclip as part of Inertia; connect the existing target Buzz instance. Resolve inference/Cloudflare fit and deployment configuration | Inertia engineering / deployment |
-| U11 | Current grant demo candidate | Fresh scan, deadline, eligibility, direct/partner route and approved DAO facts | Grant owner / G3 |
-| U12 | Delivery staffing and final date details | Named owners, capacity, proposed October 29 rehearsal buffer and October 30 submission logistics | User / G2 |
-| U13 | Native grant reviewer configuration and correction walkthrough | Authenticated humans mapped to required roles; one real packet/correction cycle; member evidence/tool scopes and decision reconciliation | Grant owner + engineering / integration |
+| U11 | Current application example and achievable backup | System-generated substantial NSF preparation is sufficient for that case; choose a current achievable backup and recheck availability/requirements | Preparation team / Wednesday evidence |
+| U12 | Wednesday Roundtable and Friday deadline | Operational goal October 28; Friday October 30 submission 11:00am CDT. Confirm participants, recording and actual presentation slot without reopening settled scope | Coordinator / operational inputs |
+| U13 | Current DAO membership and application action access | Trusted identity/membership/application ACL and exact-version confirmation; no named reviewer owner or default five role grants | Application operator + engineering / v2 live qualification |
 | U14 | Shared DAO database readiness | Verify deployed PostgreSQL version, provider schema/role/backup/PostGIS support, current stores, collision inventory and Drizzle/Alembic ownership; qualify restore and cutover | DAO database + domain owners / before migration |
-| U15 | Operational partner graph compatibility and inventory | Pin actual Helix API/SDK, qualify atomic fence/revision checks and indexes; inventory source IDs/permissions, existing member/project mappings and relationship owners | Domain + Inertia owners / graph implementation and G3 |
+| U15 | SQL knowledge binding and bounded inventory | Reuse existing authorized PostgreSQL domain tools and admitted source IDs/scopes. Helix compatibility/backfill is deferred | Domain + engineering / Wednesday SQL qualification |
 
 Keep credential references in protected platform configuration.
 
@@ -89,14 +90,14 @@ Resolve reversible engineering choices autonomously. Obtain required authorizati
 | D25 | develop is the integration branch; feature branches and reviewed tested merges are authorized. Preserve main and existing user changes. |
 | D31 | Roundtable outputs publish only behind the members-only portal. Explicit active-membership enforcement is required; the website API/schema/contracts are proposed here and the user owns rollout. |
 | D32 | Use the existing target Buzz instance and deploy Paperclip as part of Inertia. |
-| D33 | Vocdoni is the selected voting route. The user supplies an example; verify applicable final-action/settlement stages before treating a vote as effective authority. |
-| D34 | A second rehearsal participant will have repository-admin access. Enroll its agent with scoped DAO permissions separately; repository authority grants no automatic DAO-system privileges. |
+| D33 | Use Vocdoni and any actual final-action stages when the DAO decision genuinely requires governance. Verify the operative example rather than inventing a universal packet-vote ceremony. |
+| D34 | Contribution and approval depend on current authenticated DAO/application access, not repository administration. Wednesday can use the existing authorized Buzz agent; full untrusted member-owned isolation remains a separate unqualified path. |
 | D30 | Aim for latest Paperclip releases. The existing pin identifies the reproducible security/build evaluation baseline; qualify newer releases for promotion. Qualify candidate compatibility, package, migrations and smoke tests; promote with a tested pre-upgrade database restore path and prior runtime. |
 | D29 | Cloud-first development and verification. The laptop is a fallback for a specific cloud blocker or required platform check; local Docker checks require a specific authorized fallback. A source-checkout workflow demo supplies a deterministic, explicitly synthetic journey and receipt. |
 | D28 | Package version 0.1.0 targets public SDK 2026.1012.0 and Node 24.11.0+. Qualify the actual archive in a fresh production-only install, including a native JSON-RPC worker handshake. Keep development commands in the source checkout. |
 | D27 | Keep routine operation automatic after one-time setup. Recover transient faults silently; report only material results, permanent setup failures or unresolved mutation outcomes with a concrete next action. |
 | D26 | Private hardening implementation stays outside public artifacts; integrate through public execution contracts. Qualify and deploy the execution layer through its own lifecycle. |
-| D35 | Treat the DAO website as the authoritative organizational knowledge source. Retrieve governance and formation evidence using the deployed agent’s authorized access; preserve citations, versions and restrictions. Ask for manual facts only after retrieval reveals a gap. |
+| D35 | Retrieve organizational/financial facts from existing authorized sources first. Documents not publicly obtainable require protected organizational sources or a team-supplied reference. Preserve versions/citations/audience; do not ask again for settled architecture or governance choices. |
 
 Alternatives considered: latest native chat-provider implementation offers broader built-in connector lifecycle but adds version/admission work; a custom standalone task service duplicates Paperclip. The narrow plugin wins on immediate usefulness and reduced maintenance. Transport functions remain separable so a future native provider can reuse verified event handling.
 
@@ -107,68 +108,67 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D38: Public applicant facts remain attributed review inputs, never eligibility proof. Resolve conflicting governance sources through operative ratification evidence for vote thresholds and signing authority.
 - D39: The selected native outbound slice mirrors eligible comments only, default-off with explicit binding audience approval/start time, using the existing durable outbox/reconciler. PR 17 is reviewed/tested and merged into develop. PR 16 supplies the native operator setup checklist; automatic intake still needs an explicitly assigned mandate and authorized live setup. General status mirroring remains future.
 
-- D40: Run grant scouting/drafting through a shared skill/tool harness on central or scoped member Paperclip agents. Native tasks, documents and human-only cards are the default UI; the funding web UI is optional specialist/admin fallback.
-- D41: Retain funding evidence, validated proposals, immutable packets and review audit. A tested, default-disabled trusted server adapter applies authenticated, addressed, revision-bound native decisions through domain validation. Current MCP lacks acceptance/signoff; agents cannot approve. Reconcile decision identity (interaction + item for verdicts), proposal/packet ID/version and action, without claiming a cross-system transaction.
-- D42: Start corrections with document edit → regenerated proposal → new review. Build a structured panel only after a real walkthrough demonstrates need. Preserve separate Vocdoni authority and exact artifact/packet/review binding.
+- D40: Use the shared funding harness for substantial research and application preparation. Native/Buzz views expose the same packet and member actions. Any verified member with current application action access may contribute; agents perform quality review, never human approval.
+- D41: Use an explicit versioned v2 member-confirmation policy for new work, with current identity/membership/application action access and exact immutable packet/artifact binding. No named owner or default specialist-human gates. V2 is in progress, not merged; preserve v1 approvals, receipts and cancellation history unchanged.
+- D42: Corrections produce a new exact packet/version and confirmation. Mark submitted records a selected immutable packet/date and reporter/evidence level, with optional later receipt evidence. It records a past fact, not an external submission or fabricated prior approval.
 
 - D43: Consolidate funding and meeting relational data in one existing DAO PostgreSQL database, with separate domain schemas and least-privilege roles. Keep Paperclip native persistence independent. Choose physical server placement during deployment and qualify provider capabilities before migration.
 - D44: Keep Drizzle responsible for DAO website/meeting tables and Alembic for funding tables, with non-overlapping schema scope and separate migration histories. No shared all-powerful application role or competing migration owner. See [consolidation plan](docs/development/dao-data-consolidation.md).
-- D45: Helix is the core derived indexed partner graph. DAO PostgreSQL owns admitted evidence, facts/history and an atomic projection outbox; native Paperclip owns work/decisions. Revalidate source/access/version at retrieval and use bounded indexed PG fallback during graph outages. Broader 990 and optional vectors follow later.
+- D45: Use authorized PostgreSQL domain knowledge tools for Wednesday. Helix is deferred, not required for the demo. Preserve authoritative source/history/access checks and reversible future derived adapters; no SQL integration is claimed deployed.
 
 ## Funding and objective delivery decisions
 
-- D46: Extend DFW-Gov-Fund's existing evidence, proposal and packet services. A case owner plus independent review coordinates six responsibility contracts, with specialist tasks on demand.
-- D47: Produce useful machine-reviewed candidates before human signoff. Preserve separate accepted facts and role-bound decisions. Researchable gaps stay with agents; members receive grouped decisions and unavailable private-data requests.
-- D48: Reuse Task 6 source-backed organization/project/opportunity knowledge and existing document/audit records. Its evidence/SQL and sanitized USD Profit & Loss fixture contracts are merged and real disposable PostgreSQL qualification passed. Production importer, financial source and role qualification remain pending. Production QuickBooks integration remains separate.
+- D46: Extend existing funding services with an assigned preparation agent and independent agent quality review. Specialist work is delegated as needed, without naming a human application owner.
+- D47: Produce useful machine-reviewed candidates before human confirmation. Accepted facts, proposed work and commitments remain distinct. Current member/application access governs exact-version v2 confirmation; unavailable private facts and genuine decisions are grouped after useful agent work.
+- D48: Reuse the existing SQL evidence/admission and sanitized financial foundation. Bind the actual organizational/financial source tools and current scopes; provider compatibility and actual private document access remain operational inputs, not a reason to copy private records into public artifacts.
 - D49: Every website innovation-bounty submission enters the general Paperclip queue. Keep versioned objective/funding links in the funding domain, separate from project status.
 - D50: Use one structured DAO opportunity brief across native documents and permitted portal/Buzz views. Separate application, delivery and reporting effort. Meeting outcomes update knowledge and follow-up work.
-- D51: Package a canonical portable skill for Codex, Claude and a named local runtime; qualify tool execution in each. Keep member evidence/proposal access separate from trusted human-review effects.
+- D51: Preserve portable skill/proposal contracts. Wednesday qualifies the existing authorized Buzz agent path; support for every Codex/Claude/local or untrusted member-owned runtime is not a prerequisite for that bounded demonstration.
 - D52: Continue authorized implementation in cloud. Inertia feature branches target develop; DFW-Gov-Fund feature branches target main. Preserve review, required checks and repository-specific merge authorization.
-- D53: Measure against frozen requirements with independent semantic review and reproducible arithmetic. Keep historical replay separate from current public enrichment. CI candidate qualification precedes runtime qualification; no quality gain is recorded until measured.
+- D53: Measure actual system-generated preparation separately from reference packets/answer keys. Record elapsed and active human time, observable cost, corrections and evidence coverage. Park Place approximately one hour is user-reported elapsed historical context, not measured automation or active time.
 
-- D54: Make gaps actionable and automate permitted preparation. Review existing DAO affiliations and prior programs before building local partner shortlists. Persist source-backed options, public contacts, evidence needs and prepared work in existing audit receipts. Use a trusted reviewer for candidate and gap-plan assessment; unresolved agent work cannot become a human request.
+- D54: Agents perform researchable work and prepare concrete options before requesting missing private documents or actual authority. An assigned preparation agent is not a named human application owner; existing application access governs collaboration.
 - D55: Require benchmark v3 evidence of preparation sufficiency, action support, decision precision and remaining agent work. Reassess the five examples against v3 preparation and handoff criteria. Distinguish merged implementation, reviewed local work and live model/deployment qualification.
 
 - D56: Query saved partners and evidence before new research. Every scan/diligence result includes a durable useful knowledge delta or explained no-change receipt; preserve reusable findings even when an opportunity is rejected.
-- D57: Cover every relevant organization, work contact/role, program/project/event, contribution history and relationship owner in the authorized source inventory. Reuse canonical IDs; unresolved identities remain explicit. Prospect/collaborator, evidence status and delivery stage are independent dimensions.
-- D58: Admit a versioned typed assertion envelope bound to exact evidence, identity and scope. Commit evidence/history/outbox together, project idempotently with target-side fencing/version checks and reconcile before acknowledgment. The graph core is merged; real PostgreSQL, native-service and embedded-Helix cloud rehearsal passed. Production source/host/service activation and admitted inventory/backfill remain pending.
-- D59: Seed MADE as a TechFW program and Moonshot/LiquidAcre as existing collaborators with attributed activity evidence. Preserve October 30 planned work and candidate aliases separately. Official IRS records verify EIN 41-2815082/public-charity status; the determination-letter attachment and funder-specific eligibility remain separate evidence needs.
+- D57: Cover the bounded authorized SQL source inventory needed for the selected application, keeping canonical IDs and explicit unresolved outcomes. Full Helix/graph backfill is deferred; relationship/evidence/delivery distinctions remain required.
+- D58: Preserve transactional authoritative evidence/history, payload-safe replay, source/scope admission and concurrency checks. The earlier Helix/outbox core remains historical work. Any later derived adapter still needs qualified fencing/recovery/removal/rebuild behavior; it is not a Wednesday dependency.
+- D59: Seed fixtures exercise program/legal-entity and alias disambiguation, evidenced collaboration and planned versus completed work. Legal/tax status, document availability and opportunity eligibility remain separate evidence needs. Concrete source records stay with their owner until admitted for the intended audience.
 - D60: Keep July case improvement, October 23 manual findings, dated replay and actual scanner output separate. October discovery is complete and PR42 is merged with passing post-merge CI. Use the delivered priority diligence queue for actionable preparation while preserving the exact confidence overlay and source limits.
 
-- D61: Extend Tasks 5, 6C/6D and 8 with the approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md): query saved evidence, discover uncovered sources, validate official evidence, assess benefit/effort, persist useful knowledge, deliver deduplicated urgent alerts and prioritized briefs, and retain due rechecks in native work. Configure recurring execution after research/model, wake-mapping and human-delivery qualification, rehearsal and cadence agreement.
+- D61: Run bounded query-first research and useful writeback through existing authorized SQL/domain tools for Wednesday. Operational recurrence, broader discovery automation and Y2 remain later live-admission work; the daily schedule remains disabled.
 
-- D62: Native acceptance captures durable authority for one exact command/version atomically with the verdict. Later native role/document changes, withdrawal or disconnect do not revoke it. DFW-confirmed cancellation is serialized with apply; current funding evidence/head and authorization still gate effects, and submission remains separate. The independently reviewed core is implemented; DFW PR50 and Inertia host PR31 are merged, and production activation gates remain.
-- D63: Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival under domain audit retention. Unresolved acceptance needs confirmed cancellation or qualified transfer before removal. Use an approved lifecycle-compatible contract, not an indefinite company-deletion lock or qualification-only retention SQL.
+- D62: Legacy v1 durable acceptance keeps its exact-command authority, current domain checks and DFW-confirmed cancellation semantics. New v2 member review is a distinct policy in progress, with current DAO/application action access and exact-version binding. Do not reinterpret legacy records or claim v2 capture/transport is already merged.
+- D63: Retention planning choices are settled: recordings after validated transcript/minutes, expendable drafts and operational logs use 90-day defaults; security logs one year. Meaningful reviewed/final/submitted and authoritative records remain retained under archive/grant rules and holds. Binding, record owner and grant-specific schedule are operational inputs. No deletion is enabled.
 
 - D64: Use explicit trusted Meet/Drive bindings, verified FILE_GENERATED readiness and unchanged Drive versions for meeting sources. Persist exact publication operations before I/O and reuse native intake for reference-only follow-up. Summary-only sources never become transcripts; notes-only website output remains R-M02 partial. The merged job stays default-disabled pending source/server and installation admission.
 
-- D65: Keep discovery in the existing plugin and native work. Independently corroborated new-source identity does not admit funding facts or a recurring adapter. PR36/DFW PR52 separately assess exact current source spans for conditional deadline/benefit facts without a site-specific adapter. The merged foundation uses preliminary briefs before packets and existing signed Buzz transport; relay acknowledgement does not establish human reading. Active responsible-member mapping, actual research/model quality and delivery admission gate activation.
+- D65: Source-bound discovery preserves exact provenance, conservative conditional facts and independently established eligibility. Wednesday uses the existing authorized agent and SQL tools. Actual delivery/model quality still needs measured evidence; relay acceptance is not human reading and recurrence stays disabled.
 
-- D66: Member output is an inert candidate with scoped inputs, validated artifacts and immutable replay-safe receipts. Engineering supplies authenticated ingress and non-reusable per-attempt authority. Native review and authoritative completion require their own current-state fence; candidate staging does not complete work.
+- D66: The existing authorized Buzz agent is the achievable Wednesday contribution path. PR37 only stages inert candidates; PR51 is draft ingress/per-attempt authority. Full untrusted isolation and native authoritative completion remain unqualified engineering work and must not be implied by the trusted path.
+
+- D67: Retain the legacy v1 capture/transport division and exact receipt readback/cancellation history. New v2 current-member native/Buzz actions require their own explicit versioned policy and qualification; no live v2 transport is claimed.
+
+- D68: Reuse current verified DAO membership and application action ACLs for v2. Do not create named-owner or default five-specialist reviewer setup as a prerequisite. Engineering implements trusted action checks and exact-version confirmation; operational administrators supply actual access/source bindings.
+
+## Chosen demo week priorities
+
+The operational target is Wednesday October 28 Roundtable with PostgreSQL knowledge and the existing authorized Buzz agent. Helix and Y2 are explicitly deferred. Actual system research/preparation and a near-complete current application draft are required; an independently prepared reference packet is not a substitute. Another agent contribution belongs within that packet outcome. NSF exemplary preparation and an achievable current backup are sufficient; no automatic extra submission. Friday October 30 at 11:00am CDT remains the event deadline. NTF15/T-J01–06 retain participant/video/source verification. Checked-in judging weights remain defaults, not verified live settings.
+
+## Settled retention planning choices
+
+These planning choices are settled. Storage binding, record ownership, holds, readable archive and grant-specific schedules remain operational inputs. No deletion is enabled or authorized by this design revision.
+
+- Raw recordings: 90 days after a validated transcript and minutes exist.
+- Approved minutes/decisions and authoritative evidence transcripts: long-term archive. Retain reusable facts with provenance and access scope.
+- Expendable drafts: 90 days. Meaningful reviewed/final/submitted records remain retained under the organization/grant-specific schedule and holds.
+- Operational logs: 90 days. Security logs: one year.
+
+Keep legacy accepted receipts through terminal acknowledgement or qualified durable transfer. Preserve readable archives and meaningful records under applicable holds/schedules; operational binding does not reopen the settled defaults.
 
 ## Change log
 
-- r18: Record PR34 meeting source/native composition and its scoped native PostgreSQL/WAL qualification. Record the merged PR35/DFW PR51 discovery foundation and scoped native/cold-DFW/relay-fixture qualification. Record merged PR36/DFW PR52 source-bound funding facts and the merged, independently qualified PR37 member candidate boundary. Keep notes-only website output, live activation and member review/completion pending. Update team handoffs without shifting engineering work to source owners.
-
-- r17: Record merged deadline consistency and DFW durable acceptance, independently qualified atomic native capture and the source-only host publication. Preserve exact-version acceptance/cancellation semantics, scoped test evidence and production activation gates; daily discovery remains disabled.
-
-- r16: Record completed October discovery and merged drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8. Record independently passed cloud and synthetic meeting-answer rehearsals. Add the approved operational discovery loop, retaining disabled recurring execution and native-review activation gates.
-
-- r15: Make the maintained partner graph and query-first research writeback core, with bounded coverage, typed evidence, transactional outbox/recovery and pre-implementation tests. Record locally approved Task 6, verified IRS status and the separate October discovery qualification path. Broader 990/vector enrichment stays later.
-
-- r14: Record merged DFW PR35/37/38/39/40, portable skills 3.4.1 and reviewed public drafting/actionable-gap work awaiting publication. Add source-bound prepared-handoff review and benchmark v3. Live runtimes, knowledge/finance, native human decisions and intake remain pending.
-
-- r13: Add funding quality, reusable meeting/financial knowledge, general objective intake, portable runtime contracts and staged implementation/evaluation. CI baseline merged; enhancement results pending.
-
-- r12: Consolidate DAO domain persistence by schema/role, retain separate Paperclip DB, and define a later Helix projection and gated migration. The graph priority in that historical revision is superseded by r15. Design only; runtime/qualification unchanged.
-- r11: Adopt native-first grant execution/review, scoped central/member harness and a planned trusted decision adapter. Runtime and qualification evidence unchanged.
-- r10: Condense current artifacts, centralize evidence and retain requirements, decisions and acceptance gates.
-- r9: Synchronize the reviewed website caller, proposed v1.1 limits, authenticated cloud handoff and public DAO grounding. Record PR 17’s reviewed 248-test candidate and exact native-service receipt while keeping live deployment outside this evidence.
-- r8: Add the connected workflow rehearsal, deterministic receipt and native-service evidence; adopt cloud-first execution and latest-release maintenance through repeatable qualification and tested database recovery.
-- r7: Record merged grant packet binding, minimum Node 24.11+ and verified package/setup delivery. Preserve the production exporter, chain verifier, native transactional acceptance and website publisher as explicit integration work.
-- r6: Select compatibility-backed thin bridge; define signed transport, SDK adapter, durable receipts, recovery tests, autonomous develop workflow and frictionless operator UX.
-- r5: Adopt actual Paperclip platform and shared Buzz UI, eager acquisition and follow-up creation; add reuse matrix, bridge contracts, targeted tests, compatibility-first gates and a single external configuration register.
-- r4: Establish public repository delivery and synchronized artifacts with unchanged original overview.
+r21 records the finalized Wednesday PostgreSQL/Buzz path, explicit Helix/Y2 deferral, current-member exact-version v2 policy, simple submission attestation, settled retention defaults and actual-system measurement. V2 implementation remains in progress, not merged. Stable IDs and legacy records are preserved; prior review/minimization and source-qualified PR53 status remain valid history.
 
 ## Source baseline
 
