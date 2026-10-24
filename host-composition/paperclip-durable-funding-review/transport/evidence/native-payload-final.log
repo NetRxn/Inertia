@@ -1,0 +1,38 @@
+✔ actual native auth and capture expose bounded immutable tenant receipt envelopes (163.467384ms)
+✔ no ambient human or agent authority, malformed parameters, or scope confusion (83.434988ms)
+✔ disabled or missing approved lifecycle cannot serve receipts (93.753611ms)
+✔ host configuration is snapshotted and exact reader identity enforced (37.769409ms)
+✔ a second valid board credential is not the configured transport principal (41.261344ms)
+✔ native read routes reject bodies before parsing authority-like or oversized payloads (4042.198948ms)
+✔ legal multibyte receipt batches are byte-paged instead of permanently rejected (131.119062ms)
+✔ one impossible oversized receipt is deferred without hiding later valid receipts (64.364215ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6682.42474
+✔ page checkpoint resumes then resets every completed sweep; repeated delivery remains exact (64.266674ms)
+✔ lost apply response is reconciled by exact terminal read before archive acknowledgement (13.338565ms)
+✔ revoked fails closed without acknowledging archive (2.043089ms)
+✔ tamper fails closed without acknowledging archive (4.664367ms)
+✔ wrongScope fails closed without acknowledging archive (1.930089ms)
+✔ malformed fails closed without acknowledging archive (1.934335ms)
+✔ oversize fails closed without acknowledging archive (3.10921ms)
+✔ missing lifecycle and disabled config cause no network work (0.85876ms)
+✔ non-HTTPS, credentials in URL, and scope-swapped endpoint are rejected before secret resolution (0.962606ms)
+✔ canonical protocol rejects unsupported numeric values and malformed trusted scopes (0.436555ms)
+✔ one stale receipt does not starve later receipts and is retried on the next full sweep (27.443553ms)
+✔ oversized source records remain pending while later records progress (11.902528ms)
+✔ malformed deferred record IDs cannot advance scan state (4.410535ms)
+✔ native job invocation caps HTTP work and resumes per-record scan progress (68.820855ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 333.04043
