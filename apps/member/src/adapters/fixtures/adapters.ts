@@ -14,9 +14,9 @@ import type {
   ChatSource,
   DaoEvent,
   EventSource,
-} from '../types.js';
-import type { FixtureData } from './dao.js';
-import { defaultFixture } from './dao.js';
+} from '../types';
+import type { FixtureData } from './dao';
+import { defaultFixture } from './dao';
 
 /**
  * Creates in-memory fixture adapters from the given data.

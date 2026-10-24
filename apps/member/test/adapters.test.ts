@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createFixtureAdapters, defaultFixture, FIXTURE_NOW, getAdapters } from '../src/adapters/index.js';
+import { createFixtureAdapters, defaultFixture, FIXTURE_NOW, getAdapters, resetAdaptersForTests } from '../src/adapters/index';
 
 describe('Adapter fixtures', () => {
   it('claim succeeds once then reports already-claimed', async () => {
@@ -101,6 +101,7 @@ describe('Adapter fixtures', () => {
   });
 
   it('getAdapters rejects unknown adapter mode', () => {
+    resetAdaptersForTests();
     const originalEnv = process.env.MEMBER_APP_ADAPTERS;
 
     try {
@@ -108,6 +109,7 @@ describe('Adapter fixtures', () => {
       expect(() => getAdapters()).toThrow('Unknown MEMBER_APP_ADAPTERS value: unknown-mode');
     } finally {
       process.env.MEMBER_APP_ADAPTERS = originalEnv;
+      resetAdaptersForTests();
     }
   });
 });

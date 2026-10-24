@@ -6,7 +6,7 @@ import type {
   Meeting,
   ChatThread,
   DaoEvent,
-} from '../types.js';
+} from '../types';
 
 export const FIXTURE_NOW = new Date('2026-10-24T15:00:00Z');
 
