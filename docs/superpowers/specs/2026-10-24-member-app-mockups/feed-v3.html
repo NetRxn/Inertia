@@ -1,0 +1,108 @@
+<h2>Feed + floating menu + chat bar</h2>
+<p class="subtitle">Scroll inside the phone: the icon menu floats at the top and the chat bar stays pinned at the bottom. Tap the chat bar to see it open. Sample content only.</p>
+
+<style>
+  .wrap { display:flex; gap: 28px; flex-wrap: wrap; justify-content:center; align-items:flex-start; }
+  .phone { position: relative; width: 300px; height: 600px; border: 3px solid #222; border-radius: 36px; overflow: hidden; background: #f3f4f7; font-size: 12.5px; line-height: 1.4; color: #1b1d22; }
+  .scroll { height: 100%; overflow-y: auto; padding: 0 12px 80px; box-sizing: border-box; }
+  .float { position: sticky; top: 10px; z-index: 5; margin: 10px auto 12px; width: fit-content; display:flex; gap: 14px; padding: 8px 16px; border-radius: 999px; background: rgba(255,255,255,.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 4px 18px rgba(0,0,0,.12); font-size: 17px; }
+  .float span { opacity:.55; } .float span.on { opacity: 1; }
+  .hello { font-size: 19px; font-weight: 700; margin: 2px 2px 10px; }
+  .hello small { display:block; font-size: 12px; font-weight: 400; opacity: .6; }
+  .card2 { background: #fff; border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .card2 .k { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .55; margin-bottom: 5px; }
+  .card2 h4 { margin: 0 0 4px; font-size: 14px; }
+  .card2.ask { background: #fff8e6; border: 1px solid #f0d58a; }
+  .pri { display:flex; justify-content: space-between; padding: 5px 0; border-top: 1px solid #eee; }
+  .pri:first-of-type { border-top: 0; }
+  .bar { height: 5px; border-radius: 3px; background: #e7e9ee; margin-top: 3px; } .bar i { display:block; height:100%; border-radius:3px; background:#4a6cf7; }
+  .ev { display:flex; gap: 10px; padding: 5px 0; } .ev .d { width: 38px; text-align:center; background:#eef1ff; border-radius: 8px; font-weight:700; font-size: 11px; padding: 3px 0; }
+  .chip2 { display:inline-block; padding: 1px 7px; border-radius: 9px; font-size: 10.5px; background: #e6f4ea; color: #1e6b34; }
+  .chatbar { position: absolute; left: 10px; right: 10px; bottom: 14px; z-index: 6; background: #fff; border-radius: 999px; padding: 11px 16px; box-shadow: 0 6px 22px rgba(0,0,0,.18); display:flex; justify-content: space-between; cursor: pointer; opacity: .95; }
+  .sheet { position:absolute; left:0; right:0; bottom:0; height: 72%; background:#fff; border-radius: 22px 22px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.2); z-index: 7; padding: 14px; box-sizing: border-box; display:none; flex-direction: column; gap: 8px; }
+  .phone.open .sheet { display:flex; } .phone.open .chatbar { display:none; }
+  .grab { width: 40px; height: 4px; background:#ccc; border-radius: 2px; margin: 0 auto 4px; cursor:pointer; }
+  .b { border-radius: 14px; padding: 7px 10px; max-width: 82%; }
+  .b.me { align-self:flex-end; background:#4a6cf7; color:#fff; } .b.ai { align-self:flex-start; background:#f0f2f6; }
+  .docx { display:inline-block; margin-top:4px; padding: 2px 7px; border:1px solid #ccd; border-radius: 6px; font-size: 11px; background:#fff; }
+  .src { font-size: 10px; opacity: .6; margin-top: 3px; }
+  .side { max-width: 300px; font-size: 13px; }
+  .side li { margin-bottom: 6px; }
+</style>
+
+<div class="wrap">
+  <div class="phone" id="ph">
+    <div class="scroll">
+      <div class="float"><span class="on">🏠</span><span>🗳</span><span>🎯</span><span>📅</span><span>📄</span><span>👤</span></div>
+
+      <div class="hello">Good morning, Kyle<small>Here's what's happening in the DAO</small></div>
+
+      <div class="card2 ask">
+        <div class="k">Waiting for you</div>
+        <h4>Pick the lead story for the garden grant</h4>
+        3 options drafted · about 10 min · due Fri
+      </div>
+
+      <div class="card2">
+        <div class="k">Top priorities right now</div>
+        <div class="pri"><div><b>1. Garden grant</b><div class="bar"><i style="width:75%"></i></div></div><span>75%</span></div>
+        <div class="pri"><div><b>2. Youth coding nights</b><div class="bar"><i style="width:35%"></i></div></div><span>needs help</span></div>
+        <div class="pri"><div><b>3. Treasury policy v2</b><div class="bar"><i style="width:15%"></i></div></div><span>drafting</span></div>
+      </div>
+
+      <div class="card2">
+        <div class="k">Coming up</div>
+        <div class="ev"><div class="d">WED<br>28</div><div><b>Weekly meeting</b><br>Agenda: grant go/no-go, venue</div></div>
+        <div class="ev"><div class="d">FRI<br>30</div><div><b>Garden grant deadline</b><br>11 a.m. CDT</div></div>
+        <div class="ev"><div class="d">TUE<br>3</div><div><b>Treasury vote opens</b><br>Rob's Rules</div></div>
+      </div>
+
+      <div class="card2">
+        <div class="k">Rob's Rules</div>
+        <h4>Fund the garden grant application</h4>
+        <span class="chip2">9 yes · 2 no</span> closes tonight
+      </div>
+
+      <div class="card2">
+        <div class="k">Last meeting · Wed Oct 21</div>
+        <h4>Agreed to apply for the garden grant</h4>
+        Open: budget cap, who leads outreach. 4 action items assigned.
+      </div>
+
+      <div class="card2">
+        <div class="k">This week</div>
+        🏆 Ana finished 6 tasks · Rob 4 · Lee 3<br>7 items still open
+      </div>
+
+      <div class="card2">
+        <div class="k">From the chat</div>
+        <h4>#grants: 14 new messages</h4>
+        Debate about the budget cap; leaning toward $25k.
+      </div>
+    </div>
+
+    <div class="chatbar" onclick="document.getElementById('ph').classList.add('open')"><span style="opacity:.6">Ask the DAO anything…</span><span>🎙 ↑</span></div>
+
+    <div class="sheet">
+      <div class="grab" onclick="document.getElementById('ph').classList.remove('open')"></div>
+      <div class="b me">Where are we on the budget cap?</div>
+      <div class="b ai">Leaning toward $25k. Ana and Rob favor it; Lee wants $30k for equipment. Not decided yet. It's on Wednesday's agenda.
+        <span class="docx">📄 Budget draft v2</span>
+        <div class="src">Sources: Buzz #grants · Oct 21 notes</div>
+      </div>
+      <div class="b me">Draft a one-pager I can send to the funder</div>
+      <div class="b ai">Here's a draft built from the application. <span class="docx">📄 Garden one-pager</span></div>
+      <div style="margin-top:auto; border:1px solid #ddd; border-radius: 999px; padding: 9px 14px; opacity:.6">Message…</div>
+    </div>
+  </div>
+
+  <div class="side">
+    <p><b>How I read your changes (correct me):</b></p>
+    <ul>
+      <li>Home is a scrolling <b>feed of summary cards</b>: anything waiting for you, top priorities, upcoming events, votes, last meeting, this week, chat highlights.</li>
+      <li><b>Floating icon menu</b> stays at the top while you scroll: Home, Votes, Initiatives, Calendar, Docs, Profile (my guess at the sections).</li>
+      <li><b>Chat is a bar pinned at the bottom.</b> Tapping it slides the conversation up over the feed; drag it down to get back.</li>
+      <li>On desktop the same thing would be a centered column, like a phone feed on a wider page.</li>
+    </ul>
+  </div>
+</div>
