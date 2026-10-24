@@ -260,3 +260,32 @@ Task 6 (`dao-knowledge-v1`) is merged. Historical pre-merge evidence: DFW: 55 kn
 October discovery is complete and merged in PR42. Final validation recorded 608 tests passed and one skip; post-merge CI passed. All eight selected scopes completed acquisition: 222 documents, 220 representations and 216 routed rows (208 monitor, eight reject). The exact confidence overlay is preserved. These scanner dispositions are separate from the human-reviewed [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md), which is delivered for actionable preparation. Temporary live jobs are removed. Historical repair evidence (558 passed, one private-snapshot skip and the missing-PPTX failure), the initial DNS-failed attempt, manual findings and dated replay retain their own labels; July improvement scores retain their separate evidence track.
 
 Exact implementation references and remaining gates: [source map](docs/development/funding-enhancement/source-map.md).
+
+
+## Team integration handoffs
+
+Track concrete owner inputs, minimal handoffs and qualification status in [Needed from team](Needed-from-team.md). Stable NTF IDs map to the existing setup, requirement and test contracts. Update affected entries alongside these artifacts; receipt of an input does not establish live qualification.
+
+Artifact checks also verify unique NTF IDs, linked contracts/tests, explicit input versus live-qualification status, protected-data boundaries, and reciprocal links from the maintained artifact inventory. Checklist-only changes preserve the unchanged deck and original PDF bytes.
+
+
+### Team handoff trace map
+
+The shareable checklist keeps requests concise; this map retains existing contract/test references. NTF status changes are reviewed against these gates.
+
+| Handoff | Setup and requirement | Acceptance |
+|---|---|---|
+| NTF01 Website publication | U05; R-M03–04 | T-M04–05, T-S09 |
+| NTF02 Objective/knowledge reads | U15; R-I01–04, R-F04 | Objective intake and funding enhancement acceptance |
+| NTF03 Drive sources | U04; R-M01–04 | T-M01–05, T-B09, T-S01/S06 |
+| NTF04 Deployment/storage | U10/U14 | T-D01–06 |
+| NTF05 Runtime/tools | U01/U09/U10; R-F07–08 | G1, T-S07–08 |
+| NTF06 Durable retention | U13/U14 | T-G06–12; owning-host activation contract |
+| NTF07 Buzz | U03 | T-B01–12, T-S06 |
+| NTF08 Governance | U06; R-G03–04 | T-G03–05 |
+| NTF09 Reviewer roles | U11/U13; R-G02–04 | T-G06–12 |
+| NTF10 Y2 | U07; R-Y01 | T-Y01 |
+| NTF11 Member pilot | U02/U08; R-C01–05 | T-C01–04, T-S02–05/S10 |
+| NTF12 Knowledge inventory | U15; R-F04/R-K01–08 | T-K01–12 |
+| NTF13 Financial source | R-F05 | Financial-snapshot contract and funding acceptance |
+| NTF14 Discovery/rehearsal | U09/U12; R-F03/R-F06/R-K03/R-I04 | Discovery-loop acceptance and connected demo acceptance |
