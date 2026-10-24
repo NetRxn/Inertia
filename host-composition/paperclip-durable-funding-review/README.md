@@ -1,0 +1,77 @@
+# Native durable funding acceptance: non-live candidate
+
+This is an isolated qualification of a trusted Paperclip host extension. It is not deployed, not a plugin SDK feature, and not connected to a real funding service. It adds no review UI, grant-submission route, new task table, or second approval/effect ledger.
+
+## Pinned base
+
+- @paperclipai/server, db, shared and plugin-sdk: 2026.1012.0.
+- Server build commit: bba6a45f0d364cfd962ac59b3bdf2426a8222adb.
+- This is a reproducible source baseline, not a permanent version policy or a claim that this is the latest release. See UPGRADE.md.
+- Bootstrap fetches official public npm packages using package-lock.json integrity. No upstream distribution, credentials or private dependency code is vendored.
+- Prerequisites: Linux x64, Node24.11+, npm, Python3 with Linux pidfd support, and GNU patch. No global service or production database is used.
+- Run npm run bootstrap to install locked packages without dependency install scripts, verify exact upstream source/build fingerprints, apply the narrow patch with zero fuzz, hydrate the fingerprint-verified local PostgreSQL dependency, and verify the resulting candidate. It never starts Paperclip or configures production routes.
+- npm run verify-and-patch repeats verification idempotently on already-installed local packages. External symlinked host/native packages are rejected for mutation.
+- Run npm test and npm run test:launcher for qualification. Existing NATIVE_PG_BIN is allowed only if its three executable fingerprints match the qualified official dependency.
+- patches/pinned-files.json records original and candidate SHA256 for changed/new files.
+- patches/paperclip-2026.1012.0-durable-capture.patch applies relative to the pinned @paperclipai/server package root. It does not wire production routes or include retention SQL.
+
+## Exact acceptance boundary
+
+The actual native submitItemVerdicts transaction invokes a construction-time trusted capture hook only for newly resolved items. A captured command and its native item verdict commit or roll back together. Defer produces no command. Retries, complete cards and previously resolved items never retrospectively mint acceptance. Native legacy result fields remain untouched.
+
+Capture checks the immutable registered card digest, exact document revision/link, current open issue/active company, authenticated human identity, current active non-viewer membership, and a configured funding-role permission grant with exact applicant and source scope. Native membership is not treated as a funding reviewer role. Existing principal_permission_grants rows are locked; permission keys and their meaning are injected by the host, not request or plugin data. No permissions are provisioned by capture.
+
+All relevant locks are in the native transaction; a 2-second lock timeout bounds contention/deadlock failure before commit. Nested transaction composition is rejected, because publishing after a savepoint is not publishing after the outer commit. There is no network call, DFW write, or cross-database fence inside capture.
+
+Once committed, the accepted snapshot survives later native document changes, withdrawal of remaining items, or membership/role revocation. DFW must still enforce its own current funding head/evidence/domain gates, exact command deduplication and explicit cancellation serialized with application. DFW remains the only effect/cancellation authority; this host never claims a grant was submitted.
+
+## Receipt and trusted replay
+
+readAcceptance(db, acceptanceId) returns only:
+
+    { schema: 'inertia.funding-acceptance.v1', acceptanceId, command, acceptedAt }
+
+acceptanceId is activity_log.id; command is the exact existing FundingReviewCommand. acceptedAt is activity_log.created_at, PostgreSQL transaction-start now(), NOT a commit-order timestamp. It may precede command.resolvedAt. Do not compare them to infer acceptance order.
+
+persistActivity(tx) applies the existing redactor. Capture reads back and compares the entire details payload; any redaction/change aborts the native transaction instead of authorizing a degraded command. Activity provenance, company/issue identity, canonical command identity and a command digest are validated on replay. The digest detects corruption, not a cryptographic signature against a malicious database administrator. Plugin activity is forced to actorType=plugin by the pinned host and is rejected, even if its action/details imitate an acceptance.
+
+Reader company scope is immutable construction-time readCompanyIds, defaulting to registered companies. Historical reads do not consult current membership, cards, document heads or mutable registrations. A separate authorized readCompanyIds scope can retain replay after registrations are retired.
+
+listAcceptances(db, {companyId, afterId, limit}) scans only existing native activity with a maximum page size of 500. The caller must restart full sweeps after exhausting pages. Neither UUID order nor created_at is commit order: a permanent high-water cursor can miss late commits. Every discovered ID is delivered to DFW's existing idempotent audit/apply path. Live-event publication is only a hint; loss after commit does not revoke acceptance.
+
+## Mandatory activation gates
+
+1. Capture fails closed unless a trusted retention.assertRetentionInTransaction(tx) contract is explicitly supplied. This must establish immutable exact records and approved archival/deletion behavior. A boolean from an agent/event is never authority.
+2. The supplied tests/qualification-retention.sql is TEST ONLY. It uses a user-provenance-filtered unique index and immutability guards on existing activity, with no extra tables. It intentionally blocks company deletion containing receipts. That proves the retention problem; it is not an approved production retention policy and is excluded from the host patch.
+3. Existing decision_retention archives attention metadata for native subjects. It does not archive/preserve this acceptance activity payload. The pinned company deletion path deletes activity_log. A production archive/ordinary-lifecycle design remains required; no broad retention restriction is silently installed.
+4. Production route composition is absent. The authenticated board verdict route must deliberately construct the service with the trusted capture implementation; plugin/request bodies must never supply hooks, bindings, permission mappings, or retention contracts.
+5. Trusted binding registration and scoped reviewer-role provisioning/revocation lifecycles still require owning-service integration. Existing Paperclip roles do not automatically grant funding authority.
+6. DFW integration, cancellation transport and current evidence checks must remain independently enforced. The exact target allowlist is captured without interpreting DFW discriminator strings as native/target UUIDs.
+
+## Validation
+
+- npm test: complete local qualification suite, 36 real PostgreSQL tests, no mocked transaction atomicity.
+- Existing packaged issue-thread-interactions.test.js: 13 upstream tests via Vitest, passed.
+- tests/typecheck.ts: strict declaration/host-composition typecheck, passed. Changed JS syntax checks passed.
+- Five fixture-launcher/cleanup safety tests passed.
+- Cold npm ci from the official registry installed 392 packages from the lock with scripts disabled; fresh official source fingerprints matched, zero-fuzz bootstrap passed, and the fresh cold installation passed all 36 native PostgreSQL cases and all 3 cross-domain scenarios. See evidence/cold-*.
+- Every hardened cluster cleanup records stopped=true, removed=true after verified pidfd shutdown. The harness uses allocated loopback ports, fresh generated fixture-only SCRAM credentials, rejects inherited database routing/auth, and retains any uncertain/live workspace instead of deleting it.
+- The archived strict typecheck and upstream 13-test evidence comes from the original qualified workspace; the portable npm test command reruns all 36 actual-PostgreSQL cases. The original full upstream repository build/test suite is not claimed: the installed npm package lacks its source workspace/build configuration. The actual installed service is exercised, plus its included focused regression module.
+
+Key real-PG cases include transaction rollback, native backend termination before commit, post-commit lost response and scan discovery, eight concurrent duplicate clicks, both membership/role-revocation lock orders, wrong tenant/actor/scope, stale document expiry, changed card digest, exact-redaction rejection, no retrospective capture, immutable test receipts, and partial-card withdrawal preserving accepted items.
+
+## Local integration fixture
+
+From this directory:
+
+    ./tests/with-disposable-pg.sh node tests/capture-dfw-fixture.mjs INPUT_JSON OUTPUT_JSON --mutate-after
+
+INPUT_JSON supplies funding-only binding fields: applicantId, targetId, targetVersion, kind, reviewerRole, expectedHead, expectedWorkspaceHash, sourceScope, allowedEvidenceIds and allowedTargets. Optional verdict defaults to approve. The harness creates a fresh native company/issue/document/card/user/grant and returns the full receipt with the complete native binding in OUTPUT_JSON. --mutate-after revokes native membership and role and changes the document revision before replay, asserting the original receipt remains exact.
+
+The fixture and caller command share one disposable cluster lifetime. For an authoritative read during that lifetime, tests/read-native-receipt.mjs accepts acceptanceId then companyId. All fixture state is synthetic and removed at verified shutdown. This is not a production service or event ingress.
+
+## Cross-domain regression
+
+Use the DFW project's locked Python3.14 environment, with DFW_PROJECT_ROOT pointing to its government-funding-dfw directory and NATIVE_CAPTURE_ROOT pointing to this bundle. Run that Python on cross-domain/run.py. It runs proposal apply, packet-role apply, and cancellation-first across actual native capture and actual disposable DFW SQLite domain service; DFW's separate owning-service PostgreSQL suite remains required too. Source/authority mutations after native acceptance and duplicate/offline replay are covered. The native child drops the project-location variable, but never drops inherited database-routing rejection.
+
+No production activation is authorized by a green qualification. Scope remains exact acceptance capture and transport, not grant submission.

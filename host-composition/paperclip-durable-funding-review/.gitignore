@@ -1,0 +1,5 @@
+node_modules/
+.cache/
+logs/
+*.tar.gz
+__pycache__/

@@ -1,0 +1,11 @@
+import type {Db} from '@paperclipai/db';
+import {createFundingReviewCapture, type FundingReviewBinding, type FundingReceiptRetention} from '../node_modules/@paperclipai/server/dist/services/funding-review-capture.js';
+import {issueThreadInteractionService} from '../node_modules/@paperclipai/server/dist/services/issue-thread-interactions.js';
+declare const db:Db;
+declare const binding:FundingReviewBinding;
+declare const retention:FundingReceiptRetention;
+const capture=createFundingReviewCapture({registrations:[binding],rolePermissionKeys:{program:'funding.review.program'},retention});
+issueThreadInteractionService(db,{captureItemVerdictsInTransaction:capture.captureInTransaction});
+const receipt=capture.readAcceptance(db,'00000000-0000-4000-8000-000000000000');
+const scan=capture.listAcceptances(db,{companyId:binding.companyId,limit:100});
+void [receipt,scan];

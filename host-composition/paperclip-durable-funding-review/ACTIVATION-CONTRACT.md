@@ -1,0 +1,14 @@
+# Owning-host activation contract
+
+A passed local rehearsal does not enable a live integration. The following are required before an owner chooses activation:
+
+- Instantiate the capture hook only in trusted authenticated native verdict routing, never from plugin/agent arguments. Register exact company/issue/item/card digest/document revision and complete DFW command binding from trusted host configuration.
+- Configure real human funding-review role/scope ownership. The tested host port reads and locks existing principal_permission_grants with exact applicantIds/sourceScopes. Provisioning and revocation semantics must be owned and reviewed; the bridge does not create grants or treat Paperclip membership as a funding role.
+- Supply retention.assertRetentionInTransaction(tx) from an approved host storage lifecycle. It must verify immutable exact acceptance until authoritative DFW handling/reconciliation, with a defined archive/deletion path that remains readable where required. Capture rejects missing/failed contracts. Qualification-only SQL is NOT that policy and must not be installed incidentally: it blocks company deletion and does not implement an approved archive.
+- Use root-Db composition only. All native source/authority checks and activity capture remain in one transaction; publication occurs only after commit. Do not place a DFW/network effect inside the native transaction.
+- Keep a trusted, tenant-scoped readAcceptance and listAcceptances interface. Agent/event input is acceptanceId only; event payload, command, role or binding is never authority. Restart complete bounded scans after every exhausted sweep because insertion UUIDs and transaction-start timestamps are not commit-order checkpoints. Notifications are hints, not delivery proof.
+- Deliver discovered acceptance IDs to DFW's exact-command, current-domain-gated, idempotent audit transaction. Explicit cancellation is confirmed only by DFW serialized with apply. Native-only withdrawal, document revision or role revocation after acceptance cannot retroactively revoke that command. Changed DFW evidence/head still rejects stale execution.
+- Preserve the native card as the sole review UI. Partial-card withdrawal retains previously resolved item results; it must not imply that already accepted domain commands were cancelled. Do not add another task/approval ledger, approve buttons, agent-controlled authorize tool or grant-submission path.
+- Monitor actual DFW outcomes and reconcile uncertainty from authoritative receipts. Do not call a failed post-commit notification a failed acceptance, and do not substitute preflight reads for the domain's locked effect transaction.
+
+Until all items are integrated and reviewed, the composition remains disabled. No live route, credentials, broad permissions, production migration, external submission or deployment is provided by this bundle.

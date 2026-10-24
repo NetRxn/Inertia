@@ -1,0 +1,217 @@
+--- a/dist/services/issue-thread-interactions.js
++++ b/dist/services/issue-thread-interactions.js
+@@ -1209,6 +1209,10 @@
+     return expired;
+ }
+ export function issueThreadInteractionService(db, opts = {}) {
++    // Trusted host construction only; never populate this hook from request input.
++    const captureItemVerdictsInTransaction = opts.captureItemVerdictsInTransaction;
++    if (captureItemVerdictsInTransaction && typeof db.rollback === "function")
++        throw new Error("Durable item capture requires a root database, not a nested transaction");
+     const pullRequestStateCache = new Map();
+     const now = opts.now ?? (() => new Date());
+     const defaultPullRequestStateResolver = opts.resolvePullRequestState
+@@ -2799,7 +2803,12 @@
+         submitItemVerdicts: async (issue, interactionId, input, actor) => {
+             assertIssueOpenForInteractionResolution(issue);
+             const data = submitIssueThreadInteractionVerdictsSchema.parse(input);
++            const postCommitPublications = [];
+             const submission = await db.transaction(async (tx) => {
++                // Source writers have different lock orders. Abort before commit,
++                // rather than wait indefinitely or perform any cross-database effect.
++                if (captureItemVerdictsInTransaction)
++                    await tx.execute(sql`select set_config('lock_timeout', '2000ms', true)`);
+                 await assertInteractionRunWriteAllowed(tx, issue, actor);
+                 const current = await tx
+                     .select()
+@@ -2882,12 +2891,22 @@
+                     throw interactionAlreadyResolvedError();
+                 }
+                 await touchIssue(tx, issue.id);
++                const resolvedInteraction = hydrateInteraction(updated);
++                if (captureItemVerdictsInTransaction) {
++                    const publications = await captureItemVerdictsInTransaction(tx, {
++                        issue, interaction: resolvedInteraction, actor, newlyResolvedItemIds,
++                    });
++                    postCommitPublications.push(...publications);
++                }
+                 return {
+-                    interaction: hydrateInteraction(updated),
++                    interaction: resolvedInteraction,
+                     newlyResolvedItemIds,
+                     resolved: complete,
+                 };
+             });
++            // Notifications are hints. Capture is already committed if publication fails.
++            for (const publication of postCommitPublications)
++                publishActivity(publication);
+             if ("terminalError" in submission)
+                 throw submission.terminalError;
+             if (submission.resolved) {
+--- a/dist/services/issue-thread-interactions.d.ts
++++ b/dist/services/issue-thread-interactions.d.ts
+@@ -31,6 +31,14 @@
+     contextSnapshot: Record<string, unknown>;
+ }) => Promise<unknown>;
+ export type IssueThreadInteractionServiceOptions = {
++    /** Host-only, root-Db construction. Never accept this callback from request data.
++     * Persist exact native command acceptance here; return only deferred publications. */
++    captureItemVerdictsInTransaction?: (tx: DbTransaction, input: {
++        issue: { id: string; companyId: string; status: string };
++        interaction: IssueThreadInteraction;
++        actor: InteractionActor;
++        newlyResolvedItemIds: string[];
++    }) => Promise<import("./activity-log.js").ActivityPublication[]>;
+     resolvePullRequestState?: (companyId: string, reference: GitHubPullRequestReference) => Promise<PullRequestMergeState>;
+     wakeup?: InteractionWakeup;
+     pullRequestCacheTtlMs?: number;
+--- /dev/null
++++ b/dist/services/funding-review-capture.js
+@@ -0,0 +1,103 @@
++// Opt-in trusted host extension for pinned Paperclip 2026.1012.0. Not a plugin SDK API.
++import { createHash } from 'node:crypto';
++import { and, asc, eq, gt, sql } from 'drizzle-orm';
++import { activityLog, companies, companyMemberships, documents, issueDocuments, issues, principalPermissionGrants } from '@paperclipai/db';
++import { persistActivity } from './activity-log.js';
++const SCHEMA = 'inertia.funding-acceptance.v1';
++const ACTION = 'funding.review.accepted';
++const ROLES = new Set(['program','fiscal','legal_compliance','partner','authorized_representative']);
++const FIELDS = ['companyId','issueId','interactionId','itemId','applicantId','targetId','targetVersion','kind','reviewerUserId','reviewerRole','expectedHead','expectedWorkspaceHash','sourceScope','allowedEvidenceIds','allowedTargets','documentId','documentKey','documentRevisionId','interactionDigest'];
++function canonical(value) {
++    if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
++    if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
++    return '{' + Object.entries(value).filter(([,v])=>v!==undefined).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>JSON.stringify(k)+':'+canonical(v)).join(',') + '}';
++}
++function digest(value) { return createHash('sha256').update(canonical(value)).digest('hex'); }
++function key(b) { return JSON.stringify([b.companyId,b.issueId,b.interactionId,b.itemId]); }
++function requireValue(condition, message) { if (!condition) throw Error(message); }
++function validBinding(b) {
++    return b && typeof b==='object' && Object.keys(b).length===FIELDS.length && FIELDS.every(k=>Object.hasOwn(b,k)) &&
++        FIELDS.filter(k=>!['targetVersion','allowedEvidenceIds','allowedTargets'].includes(k)).every(k=>typeof b[k]==='string' && b[k].trim()===b[k] && b[k].length>0) &&
++        Number.isSafeInteger(b.targetVersion) && b.targetVersion>0 && ['proposal','packet_role'].includes(b.kind) && ROLES.has(b.reviewerRole) &&
++        ['expectedHead','expectedWorkspaceHash','interactionDigest'].every(k=>/^[a-f0-9]{64}$/.test(b[k])) &&
++        ['allowedEvidenceIds','allowedTargets'].every(k=>Array.isArray(b[k]) && new Set(b[k]).size===b[k].length && b[k].every(v=>typeof v==='string' && v.trim().length>0));
++}
++function cardDigest(c) { return digest({id:c.id,companyId:c.companyId,issueId:c.issueId,kind:c.kind,title:c.title,summary:c.summary,payload:c.payload,addresseeUserId:c.addresseeUserId,addresseeAgentId:c.addresseeAgentId,requestedResolverPolicy:c.requestedResolverPolicy,effectiveResolverPolicy:c.effectiveResolverPolicy}); }
++function validateStored(row) {
++    if (!row || row.action!==ACTION || row.actorType!=='user' || row.agentId || row.runId || row.entityType!=='issue') return null;
++    const details=row.details, command=details?.command, b=command?.binding;
++    if (details?.schema!==SCHEMA || !validBinding(b) || Object.keys(command).sort().join(',')!=='action,actorUserId,binding,decisionKey,reason,resolvedAt' ||
++        command.decisionKey!==key(b) || row.companyId!==b.companyId || row.entityId!==b.issueId || row.actorId!==command.actorUserId || command.actorUserId!==b.reviewerUserId || row.responsibleUserId!==command.actorUserId ||
++        !(b.kind==='proposal'?['accepted','rejected']:['approved','changes_requested']).includes(command.action) || typeof command.reason!=='string' || command.reason.length>4000 ||
++        typeof command.resolvedAt!=='string' || !Number.isFinite(Date.parse(command.resolvedAt)) || new Date(command.resolvedAt).toISOString()!==command.resolvedAt || digest(command)!==details.commandHash) return null;
++    return {schema:SCHEMA,acceptanceId:row.id,command:structuredClone(command),acceptedAt:row.createdAt.toISOString()};
++}
++/**
++ * registrations and rolePermissionKeys are trusted host-owned configuration, never
++ * request parameters. Role grants are existing principal_permission_grants rows;
++ * their exact applicantIds/sourceScopes dependencies are locked, not read remotely.
++ * Provisioning those grants and production retention policy are separate gates.
++ */
++export function createFundingReviewCapture({registrations,rolePermissionKeys,retention,readCompanyIds}) {
++    const bindings=structuredClone(registrations), permissionKeys=structuredClone(rolePermissionKeys), seen=new Set();
++    for (const b of bindings) {
++        requireValue(validBinding(b) && typeof permissionKeys[b.reviewerRole]==='string' && permissionKeys[b.reviewerRole].trim().length>0,'Invalid trusted funding review registration');
++        requireValue(!seen.has(key(b)),'Ambiguous trusted funding review registration');seen.add(key(b));
++    }
++    const readableCompanies=new Set(structuredClone(readCompanyIds ?? bindings.map(b=>b.companyId)));
++    return {
++        async captureInTransaction(tx,{issue,interaction,actor,newlyResolvedItemIds}) {
++            const selected=bindings.filter(b=>b.companyId===issue.companyId && b.issueId===issue.id && b.interactionId===interaction.id && newlyResolvedItemIds.includes(b.itemId));
++            if (!selected.length) return [];
++            requireValue(typeof retention?.assertRetentionInTransaction==='function','Approved receipt retention lifecycle is not configured');
++            // The trusted host must verify immutable storage and an approved
++            // deletion/archive lifecycle in this transaction. Never accept a
++            // caller-supplied boolean or derive authority from an event payload.
++            await retention.assertRetentionInTransaction(tx);
++            requireValue(actor.userId && !actor.agentId && !actor.runId && !actor.systemId,'Funding review requires an authenticated human');
++            requireValue(interaction.kind==='request_item_verdicts' && ['pending','answered'].includes(interaction.status) && interaction.requestedResolverPolicy==='human_only' && interaction.effectiveResolverPolicy==='human_only' && !interaction.addresseeAgentId && !interaction.acceptanceBlocker && interaction.result?.outcome==='resolved','Native review policy mismatch');
++            const [company]=await tx.select().from(companies).where(eq(companies.id,issue.companyId)).for('update');
++            const [currentIssue]=await tx.select().from(issues).where(and(eq(issues.id,issue.id),eq(issues.companyId,issue.companyId))).for('update');
++            requireValue(company?.status==='active' && currentIssue && !['done','cancelled'].includes(currentIssue.status),'Native issue or company is not active');
++            const publications=[];
++            for (const b of selected) {
++                requireValue(actor.userId===b.reviewerUserId && interaction.addresseeUserId===b.reviewerUserId && cardDigest(interaction)===b.interactionDigest,'Native card or assigned reviewer mismatch');
++                const target=interaction.payload.target;
++                requireValue(target?.type==='issue_document' && target.key===b.documentKey && target.revisionId===b.documentRevisionId && (!target.issueId||target.issueId===b.issueId) && (!target.documentId||target.documentId===b.documentId),'Native revision target mismatch');
++                const [document]=await tx.select().from(documents).where(and(eq(documents.id,b.documentId),eq(documents.companyId,b.companyId))).for('update');
++                const [link]=await tx.select().from(issueDocuments).where(and(eq(issueDocuments.companyId,b.companyId),eq(issueDocuments.issueId,b.issueId),eq(issueDocuments.key,b.documentKey))).for('update');
++                requireValue(document?.latestRevisionId===b.documentRevisionId && link?.documentId===b.documentId,'Native document revision is stale');
++                const [member]=await tx.select().from(companyMemberships).where(and(eq(companyMemberships.companyId,b.companyId),eq(companyMemberships.principalType,'user'),eq(companyMemberships.principalId,actor.userId))).for('update');
++                const [grant]=await tx.select().from(principalPermissionGrants).where(and(eq(principalPermissionGrants.companyId,b.companyId),eq(principalPermissionGrants.principalType,'user'),eq(principalPermissionGrants.principalId,actor.userId),eq(principalPermissionGrants.permissionKey,permissionKeys[b.reviewerRole]))).for('update');
++                requireValue(member?.status==='active' && member.membershipRole!=='viewer' && Array.isArray(grant?.scope?.applicantIds) && grant.scope.applicantIds.includes(b.applicantId) && Array.isArray(grant.scope.sourceScopes) && grant.scope.sourceScopes.includes(b.sourceScope),'Human membership or configured funding role/scope is not authorized');
++                const items=interaction.result.items.filter(i=>i.id===b.itemId);
++                requireValue(items.length===1 && interaction.payload.items.filter(i=>i.id===b.itemId).length===1,'Native item mismatch');
++                const item=items[0];
++                requireValue(item.resolvedByUserId===actor.userId && !item.resolvedByAgentId && !item.resolvedByRunId && ['approve','reject','defer'].includes(item.verdict),'Native item is not a human verdict');
++                if (item.verdict==='defer') continue;
++                const command={decisionKey:key(b),binding:structuredClone(b),actorUserId:actor.userId,action:b.kind==='proposal'?(item.verdict==='approve'?'accepted':'rejected'):(item.verdict==='approve'?'approved':'changes_requested'),reason:item.reason??'',resolvedAt:new Date(item.resolvedAt).toISOString()};
++                const details={schema:SCHEMA,command,commandHash:digest(command)};
++                const prior=await tx.select().from(activityLog).where(and(eq(activityLog.companyId,b.companyId),eq(activityLog.action,ACTION),eq(activityLog.actorType,'user'),sql`${activityLog.details}->'command'->>'decisionKey' = ${command.decisionKey}`));
++                requireValue(prior.length===0,'Native item already has an acceptance; refusing to remint');
++                const persisted=await persistActivity(tx,{companyId:b.companyId,actorType:'user',actorId:actor.userId,responsibleUserIdOverride:actor.userId,action:ACTION,entityType:'issue',entityId:b.issueId,details});
++                const [stored]=await tx.select().from(activityLog).where(eq(activityLog.id,persisted.activity.id));
++                requireValue(canonical(stored?.details)===canonical(details) && validateStored(stored),'Activity redaction changed the exact funding command');
++                publications.push(persisted.publication);
++            }
++            return publications;
++        },
++        /** Read existing activity only. Never reconstruct authority from current cards. */
++        async readAcceptance(db,acceptanceId) {
++            if (typeof acceptanceId!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(acceptanceId)) return null;
++            const [row]=await db.select().from(activityLog).where(eq(activityLog.id,acceptanceId));return row && readableCompanies.has(row.companyId) ? validateStored(row) : null;
++        },
++        /** A reconciliation sweep must restart from null after exhausting pages.
++         * UUID/order is not commit order; a permanent high-water mark can miss commits. */
++        async listAcceptances(db,{companyId,afterId=null,limit=100}) {
++            requireValue(readableCompanies.has(companyId),'Receipt reader company scope mismatch');
++            requireValue(Number.isSafeInteger(limit) && limit>=1 && limit<=500,'Invalid receipt page size');
++            const rows=await db.select().from(activityLog).where(and(eq(activityLog.companyId,companyId),eq(activityLog.action,ACTION),eq(activityLog.actorType,'user'),...(afterId?[gt(activityLog.id,afterId)]:[]))).orderBy(asc(activityLog.id)).limit(limit);
++            return {receipts:rows.map(validateStored).filter(Boolean),nextCursor:rows.length===limit?rows.at(-1).id:null};
++        },
++    };
++}
+--- /dev/null
++++ b/dist/services/funding-review-capture.d.ts
+@@ -0,0 +1,41 @@
++import type { Db } from '@paperclipai/db';
++import type { IssueThreadInteractionServiceOptions } from './issue-thread-interactions.js';
++type Transaction = Parameters<Parameters<Db['transaction']>[0]>[0];
++export interface FundingReviewBinding {
++    companyId: string; issueId: string; interactionId: string; itemId: string;
++    applicantId: string; targetId: string; targetVersion: number;
++    kind: 'proposal' | 'packet_role'; reviewerUserId: string;
++    reviewerRole: 'program' | 'fiscal' | 'legal_compliance' | 'partner' | 'authorized_representative';
++    expectedHead: string; expectedWorkspaceHash: string; sourceScope: string;
++    allowedEvidenceIds: readonly string[]; allowedTargets: readonly string[];
++    documentId: string; documentKey: string; documentRevisionId: string; interactionDigest: string;
++}
++export interface FundingReviewCommand {
++    decisionKey: string; binding: FundingReviewBinding; actorUserId: string;
++    action: 'accepted' | 'rejected' | 'approved' | 'changes_requested';
++    reason: string; resolvedAt: string;
++}
++export interface FundingAcceptanceReceipt {
++    schema: 'inertia.funding-acceptance.v1'; acceptanceId: string;
++    command: FundingReviewCommand;
++    /** Native activity timestamp, not a commit-time ordering token. */
++    acceptedAt: string;
++}
++export interface FundingReceiptRetention {
++    /** Trusted host policy only. Must verify immutable acceptance storage plus
++     * approved archive/deletion behavior in this transaction; failure aborts the
++     * native verdict. The shipped qualification guard is NOT a production policy. */
++    assertRetentionInTransaction(tx: Transaction): Promise<void>;
++}
++export declare function createFundingReviewCapture(config: {
++    registrations: readonly FundingReviewBinding[];
++    rolePermissionKeys: Partial<Record<FundingReviewBinding['reviewerRole'],string>>;
++    retention?: FundingReceiptRetention;
++    /** Stable authorized tenant scope for historic replay. Defaults to registration companies. */
++    readCompanyIds?: readonly string[];
++}): {
++    captureInTransaction: NonNullable<IssueThreadInteractionServiceOptions['captureItemVerdictsInTransaction']>;
++    readAcceptance(db: Db, acceptanceId: string): Promise<FundingAcceptanceReceipt | null>;
++    /** Restart full sweeps after every exhausted scan; UUID order is not commit order. */
++    listAcceptances(db: Db, input: {companyId:string;afterId?:string|null;limit?:number}): Promise<{receipts:FundingAcceptanceReceipt[];nextCursor:string|null}>;
++};

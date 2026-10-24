@@ -1,0 +1,26 @@
+[
+  {
+    "workspace": "/tmp/native-pg-qualification.mixSUUUo",
+    "stopped": true,
+    "removed": true,
+    "reason": "verified_owned_process_exited"
+  },
+  {
+    "workspace": "/tmp/native-pg-qualification.3ViDYVJz",
+    "stopped": true,
+    "removed": true,
+    "reason": "verified_owned_process_exited"
+  },
+  {
+    "workspace": "/tmp/native-pg-qualification.gfg6l8pe",
+    "stopped": true,
+    "removed": true,
+    "reason": "verified_owned_process_exited"
+  },
+  {
+    "workspace": "/tmp/native-pg-qualification.97fDGA37",
+    "stopped": true,
+    "removed": true,
+    "reason": "verified_owned_process_exited"
+  }
+]

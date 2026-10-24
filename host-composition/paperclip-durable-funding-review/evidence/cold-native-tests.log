@@ -1,0 +1,54 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> paperclip-durable-funding-review-qualification@0.0.0 test
+> ./tests/with-disposable-pg.sh node --test tests/*.test.mjs
+
+✔ native capture persists exact command envelope in existing activity; replay does not reread native authority (117.726079ms)
+✔ duplicate native verdict and partial card additions do not remint old commands (87.726315ms)
+✔ legacy already resolved items never get retrospective acceptance (25.257786ms)
+✔ inactive membership rejects and rolls back verdict (29.08583ms)
+✔ viewer membership rejects and rolls back verdict (28.941173ms)
+✔ missing configured role grant rejects and rolls back verdict (25.307095ms)
+✔ wrong applicant scope rejects and rolls back verdict (26.329961ms)
+✔ closed current issue despite stale route snapshot rejects and rolls back verdict (22.647268ms)
+✔ redaction changing exact command aborts native transaction instead of persisting degraded authority (29.014975ms)
+✔ defer records native result without authorizing a DFW command (22.918215ms)
+✔ reader rejects agent/plugin forged receipt and missing acceptance IDs (26.287518ms)
+✔ nested transaction composition fails closed instead of publishing before the outer commit (52.35266ms)
+✔ capture transaction configures bounded native lock wait before locking verdict row (40.450462ms)
+✔ capture cannot be enabled without trusted retention contract even when host hook is installed (33.324963ms)
+✔ reader is scoped to trusted construction company and cannot read a foreign acceptance (89.687757ms)
+✔ native withdrawal before acceptance prevents command capture (98.260514ms)
+✔ partial-card withdrawal preserves already resolved native item and receipt while unresolved items cannot accept (60.420374ms)
+✔ stale document revision expires native card without creating acceptance (35.292133ms)
+✔ changed native card content rejects and rolls back human verdict (43.664966ms)
+✔ caller mutations of trusted registration object cannot change captured command (42.811433ms)
+✔ agent or different human cannot mint bound human acceptance (34.809885ms)
+✔ malformed command identity or checksum is never a replayable receipt (41.130487ms)
+✔ DFW target discriminator allowlist is preserved, not misinterpreted as target UUIDs (35.768127ms)
+✔ actual native verdict transaction calls trusted capture and commits its activity atomically (96.365699ms)
+✔ capture failure rolls back actual native verdict transaction (31.726728ms)
+✔ backend termination before native commit leaves neither verdict nor acceptance (143.930205ms)
+✔ lost response after native commit replays original receipt and duplicate produces no effect authority (57.284739ms)
+✔ membership revocation waits behind captured acceptance and cannot retroactively cancel (62.827019ms)
+✔ role grant revocation waits behind captured acceptance and cannot retroactively cancel (44.845854ms)
+✔ membership revocation committed first rejects and rolls back acceptance (34.893273ms)
+✔ role grant revocation committed first rejects and rolls back acceptance (31.809276ms)
+✔ concurrent duplicate human clicks persist exactly one command using native row lock (47.920894ms)
+✔ qualification guard makes accepted activity exact and immutable (65.693269ms)
+✔ qualification retention proves company deletion remains an explicit activation gate (36.914159ms)
+✔ trusted user duplicate acceptance key is rejected but ordinary native activity remains mutable (22.448311ms)
+✔ replay sweep reads authoritative existing receipts and uses bounded pagination (21.641849ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4057.203151
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice

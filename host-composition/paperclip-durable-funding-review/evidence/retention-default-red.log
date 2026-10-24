@@ -1,0 +1,28 @@
+✔ nested transaction composition fails closed instead of publishing before the outer commit (50.330815ms)
+✔ capture transaction configures bounded native lock wait before locking verdict row (37.762612ms)
+✖ capture cannot be enabled without trusted retention contract even when host hook is installed (34.592449ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2547.038436
+
+✖ failing tests:
+
+test at tests/guardrails.test.mjs:19:1
+✖ capture cannot be enabled without trusted retention contract even when host hook is installed (34.592449ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/guardrails.test.mjs:22:2)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /retention/i,
+    operator: 'rejects',
+    diff: 'simple'
+  }

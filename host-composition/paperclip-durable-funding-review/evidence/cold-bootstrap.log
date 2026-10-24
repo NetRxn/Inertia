@@ -1,0 +1,10 @@
+checking file dist/services/issue-thread-interactions.js
+checking file dist/services/issue-thread-interactions.d.ts
+checking file dist/services/funding-review-capture.js
+checking file dist/services/funding-review-capture.d.ts
+patching file dist/services/issue-thread-interactions.js
+patching file dist/services/issue-thread-interactions.d.ts
+patching file dist/services/funding-review-capture.js
+patching file dist/services/funding-review-capture.d.ts
+/workspace/shared/native-durable-capture-20261024/portable-cold-install/node_modules/@embedded-postgres/linux-x64/native/bin
+Qualified baseline patch verified locally. No host started, route activated, retention policy approved, or production database modified. Check upstream regularly; upgrades require requalification.

@@ -1,0 +1,252 @@
+✖ native capture persists exact command envelope in existing activity; replay does not reread native authority (54.911148ms)
+✖ duplicate native verdict and partial card additions do not remint old commands (11.522485ms)
+✖ legacy already resolved items never get retrospective acceptance (25.727959ms)
+✖ inactive membership rejects and rolls back verdict (10.457235ms)
+✖ viewer membership rejects and rolls back verdict (12.17179ms)
+✖ missing configured role grant rejects and rolls back verdict (11.656677ms)
+✖ wrong applicant scope rejects and rolls back verdict (25.570703ms)
+✖ closed current issue despite stale route snapshot rejects and rolls back verdict (9.925567ms)
+✖ redaction changing exact command aborts native transaction instead of persisting degraded authority (10.609955ms)
+✖ defer records native result without authorizing a DFW command (11.733802ms)
+✖ reader rejects agent/plugin forged receipt and missing acceptance IDs (10.5037ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 0
+ℹ fail 11
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2841.923898
+
+✖ failing tests:
+
+test at tests/capture.test.mjs:16:1
+✖ native capture persists exact command envelope in existing activity; replay does not reread native authority (54.911148ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:17:51)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:24:1
+✖ duplicate native verdict and partial card additions do not remint old commands (11.522485ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:25:51)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:32:1
+✖ legacy already resolved items never get retrospective acceptance (25.727959ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:34:18)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:42:4
+✖ inactive membership rejects and rolls back verdict (10.457235ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:42:98)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:42:4
+✖ viewer membership rejects and rolls back verdict (12.17179ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:42:98)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:42:4
+✖ missing configured role grant rejects and rolls back verdict (11.656677ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:42:98)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:42:4
+✖ wrong applicant scope rejects and rolls back verdict (25.570703ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:42:98)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:42:4
+✖ closed current issue despite stale route snapshot rejects and rolls back verdict (9.925567ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:42:98)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:43:1
+✖ redaction changing exact command aborts native transaction instead of persisting degraded authority (10.609955ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:44:42)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:47:1
+✖ defer records native result without authorizing a DFW command (11.733802ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:48:42)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests/capture.test.mjs:50:1
+✖ reader rejects agent/plugin forged receipt and missing acceptance IDs (10.5037ms)
+  AssertionError [ERR_ASSERTION]: trusted capture factory must exist
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at create (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:10:9)
+      at TestContext.<anonymous> (file:///workspace/shared/native-durable-capture-20261024/tests/capture.test.mjs:51:50)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
