@@ -39,3 +39,31 @@ Set `REVIEW_NATIVE_ROOT` to the verified bootstrapped durable native bundle (pub
 Existing runtime registration is unchanged. This public transport subtree contains no DFW domain implementation; use the separately reviewed private DFW adapter and fixture helper. Parent owns current-base verification, final review and Git/public artifact publication. See `evidence/` and the final handoff for exact passed/failed/never-run checks.
 
 Run the portable native checks from the bootstrapped parent bundle with `bash transport/tests/run-native.sh`. For the real cross-HTTP rehearsal, set REVIEW_PYTHON to the private DFW locked environment and REVIEW_DFW_PROJECT to its reviewed project root, then run `bash transport/tests/run-cross-domain.sh`. The private project must contain the separately published `dfw_incentives.review_transport` module and `tests/dfw_transport_fixture.py`.
+
+## Separate all-PostgreSQL functional lane
+
+The existing `run-cross-domain.sh` remains the native-PostgreSQL → funding-SQLite
+lane. The additive `run-cross-domain-postgres.sh` asks the installed private owning
+project to start its own disposable PostgreSQL/PostGIS fixture, then runs the native
+domain in a separate fingerprint-qualified PostgreSQL cluster. Supply only explicit
+reviewed fixture roots, never an external database URL:
+
+    REVIEW_PYTHON=/absolute/private-project/.venv/bin/python \
+    REVIEW_DFW_PROJECT=/absolute/private-project \
+    PG_FIXTURE_ROOT=/absolute/private-postgres-preparation/root \
+    QUALIFICATION_OUTPUT=/absolute/private-receipts \
+    bash transport/tests/run-cross-domain-postgres.sh
+
+The private project owns its fixture implementation and generated connection handoff;
+none of that implementation is copied here. The native rehearsal captures one in-scope acceptance plus two filtered other-applicant
+acceptances per scenario, exercises one-record pages and current-key revocation, and
+checks proposal application, packet-role application and cancellation-first over HTTP.
+It also exercises committed-response loss/readback and concurrent duplicate delivery.
+Each reconciliation invocation still has at most six requests. Later native role and
+document changes do not rewrite the accepted instruction.
+
+Receipts identify both actual database dialects. This remains an injected-standard-fetch
+functional rehearsal, not qualification of the actual SDK HTTP/RPC resource boundary.
+The explicit disposable writer fence is not a production writer/grant policy. Approved
+production writer inventory/fencing, lifecycle/retention, scheduling and a real authenticated
+human walkthrough remain activation gates. No deployment, scheduler or live grant is added.
