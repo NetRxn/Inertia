@@ -1,17 +1,20 @@
 # Funding implementation source map
 
-Revision: FUNDING-2026-10-23-r4. Status recorded 2026-10-24 UTC.
+Revision: FUNDING-2026-10-24-r5. Status recorded 2026-10-24 UTC.
 Updated: 2026-10-24 (UTC)
 
 ## Pinned delivery state
 
-Inertia’s native adapter is merged/default-disabled in PR28; DFW `NativeFundingReviewService` is reviewed/in CI for PR47. The approved exact-version authority-at-acceptance model requires an acceptance/reconciliation seam and production writer qualification. The frozen through-commit slice remains disabled until replaced.
+DFW durable acceptance is merged in PR50. Atomic native verdict/receipt capture and the portable source-only host bundle are independently reviewed and qualified; host publication is merged in Inertia PR31. The integration remains non-live pending production route/transport, retention/archive, real roles/bindings/source access, writer fencing and human correction/cancel acceptance. The legacy through-commit adapter stays default-disabled.
 
-- Native-review service candidate: DFW `74e1dfc1d40cddc593899964ddb5d25e7fc5f95f`, [PR47](https://github.com/NetRxn/DFW-Gov-Fund/pull/47), [CI40043004931](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40043004931) found one deadline-date boundary failure between UTC and Chicago business dates. Repair is underway; merge requires passing CI. Inertia candidate `d729e045ce2a64217bcea04acd8f97627a9aaf3c` is merged in PR28. Both sides remain default-disabled; the approved successor semantics are recorded below.
-- DFW main: `16e96b22d55caaa0c19513e121028ab78c3aa1c7`, tree `bf95bf9ece1aba19004ad51a06227723161cd03b` ([PR46](https://github.com/NetRxn/DFW-Gov-Fund/pull/46)). Public drafting/gaps, Task 6, graph core, cloud tooling/race qualification and objective links/briefs are merged.
+- Deadline consistency: [DFW PR49](https://github.com/NetRxn/DFW-Gov-Fund/pull/49) merged at `21792a6ca2fa6f5bca2a791c40558d872be82eda`, resolving the earlier UTC-versus-Chicago boundary failure.
+- Durable acceptance: [DFW PR50](https://github.com/NetRxn/DFW-Gov-Fund/pull/50) merged at `331416c015c83d20ea2d6834e5b4dd53aaeea320`, tree `6149f5e5ce3408b7ba62534dbd34a59eb5cef61b`; [exact-head CI 40045687718](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40045687718) and [post-merge CI 40046050158](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40046050158) passed. The legacy Inertia adapter is preserved in PR28/default-disabled.
+- DFW main: `331416c015c83d20ea2d6834e5b4dd53aaeea320`, tree `6149f5e5ce3408b7ba62534dbd34a59eb5cef61b` ([PR50](https://github.com/NetRxn/DFW-Gov-Fund/pull/50)). Public drafting/gaps, Task 6, graph core, cloud tooling/race qualification and objective links/briefs are merged.
 - Historical portable-skills qualification at `c615525291a656f9abd4da1262c23fa8ae97290c`: [CI 39999694731](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/39999694731): all steps passed for the exact PR40 qualification head. Offline Codex install/cache refresh verified; live model execution remains the next qualification step.
 - Public drafting plus actionable gaps: merged. Historical pre-merge patch SHA-256 `aae99bc899ca7805d6d8f5092efc77ccb58bcb06b766f8dae7350cdeeb0c8483`; exact historical validation remains below.
-- Inertia develop: `6f93cfef486b017afccda7b275837e09213aa189`, tree `93b93bd527e6d120f69a7bb41ec692dc38353f90` ([PR28](https://github.com/NetRxn/Inertia/pull/28)). PR25/26/27 include cumulative core, cloud qualification/race fixes and Task 8; PR28 adds the default-disabled native adapter. The synchronized r16/funding r4 artifact refresh remains unpublished.
+- Inertia develop: `901414612a032e44839ba33fe39163e0e9c28ee1`, tree `da97acb1c1223061bc53e9cf47278d9910940016` ([PR31](https://github.com/NetRxn/Inertia/pull/31)). The 55-path durable host publication preserves all 187 files from [PR30](https://github.com/NetRxn/Inertia/pull/30), `7d81b2bdda40f526ea9f4fee9d510ed274841d11` / tree `0c3d51cd69cefb303f1a4e4ff5678f9f02588e85`, including published r16/funding r4. This status refresh is r17/funding r5.
+- Portable meeting supplement: [Inertia PR29](https://github.com/NetRxn/Inertia/pull/29) merged at `6ad79b32fe3fc9b465758371c3dd64db97b90f45`, tree `981020637192636ebc5f225af5064a2f5670a048`; qualification remains scoped to its synthetic actual-service rehearsal.
+- Durable host publication: 55 entirely new paths under [`host-composition/paperclip-durable-funding-review/`](../../../host-composition/paperclip-durable-funding-review/README.md), independently accepted and merged in PR31 as non-live. Source-only archive SHA-256 `74b92775f93965815fa9d1514e4e78e3d9b5ae9cf7338d2448aed2ca4afc5673`; `MANIFEST.json` SHA-256 `e2cfde18ccf01c8af5913eb222c0caf23c287b36ce5abf9a9e0f612905f0e1bf`. No existing runtime, migration or root dependency change; the [activation contract](../../../host-composition/paperclip-durable-funding-review/ACTIVATION-CONTRACT.md) retains production gates.
 - Task 6 `dao-knowledge-v1`: merged. Historical local patches: DFW SHA-256 `322b77e6f43383e23c0e9df3103d905a8f8f3729dfa7c81c9f60c804d85d3b60`; Inertia SHA-256 `ac9d2b76de58bf065fa598119a9d93db71f69b23986f361094f64e0098407cc6`. Production source/financial-adapter activation remains pending.
 - October discovery: complete and merged in [PR42](https://github.com/NetRxn/DFW-Gov-Fund/pull/42) at `e5a146398e4aa2e808e445be102a255f04f5265d`; [post-merge CI 40036012817](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40036012817) passed. Temporary live jobs are removed. The [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md) was delivered as an initial snapshot, SHA-256 `e2ff7dc6fade650932fb28f6d62984142d25e7b1c65f2c98a164d9eda46b5ce2`. Apply current owner priorities and deferrals before further preparation.
 - Partner-graph core: merged. Historical pre-merge patches: DFW SHA-256 `164e6a688bb4a7a41f7516086d65500f22534310435872070584b9673a2176cf`; Inertia SHA-256 `bb53a7a124884e75518621accb1079f7b5da8c68e88093fa29dbc60f7abb802f`. Real PG-to-embedded-Helix cloud rehearsal subsequently passed.
@@ -19,7 +22,7 @@ Inertia’s native adapter is merged/default-disabled in PR28; DFW `NativeFundin
 
 ## DFW implementation boundaries
 
-Paths are relative to `government-funding-dfw/`. Merged runtime slices and the default-disabled native-review upload retain their distinct delivery states recorded above.
+Paths are relative to `government-funding-dfw/`. Merged runtime slices and the independently qualified non-live durable host composition retain their delivery states recorded above.
 
 | Paths | Current behavior |
 |---|---|
@@ -33,7 +36,8 @@ Paths are relative to `government-funding-dfw/`. Merged runtime slices and the d
 | `docs/public-drafting-continuation.md`, `docs/actionable-funding-gaps.md` | Merged host, persistence and v3 quality contracts |
 | `organization_knowledge.py`, `financial_snapshots.py`, model/migration 0014 and related document/rendering services | Merged Task 6 exact evidence, trusted admission, scoped selection/history/invalidation and sanitized USD Profit & Loss fixture normalization |
 | `docs/organization-knowledge-contract.md`, `docs/financial-snapshot-contract.md` | Task 6 contract revision dao-knowledge-v1; real disposable PG passed; production importer/roles and financial-source compatibility remain pending |
-| `native_review.py`, `packet_review_context.py`, `tests/test_native_funding_review.py` | Tested default-disabled native funding transaction service; native-source and production writer-fence composition remain activation gates |
+| `native_review.py`, `packet_review_context.py`, `tests/test_native_funding_review.py` | Merged legacy native funding transaction service, preserved default-disabled with cancellation guard |
+| `durable_native_review.py`, `tests/test_durable_native_review.py`, `qualification/run-durable-native-review-postgres.sh` | Merged trusted acceptance-ID apply/cancel service; current-domain checks, effect and audit are transactional; 20 real PostgreSQL cases passed |
 | `config/scouts/2026-10-23-sources.yaml`, `docs/discovery/2026-10-23-*`, profile/IRS evidence and discovery/qualification modules | Merged October discovery; selected-scope acquisition complete, confidence overlay preserved and priority diligence queue delivered |
 
 Python module names above live under `src/dfw_incentives/`. Use the current source definitions for exact interface names. Existing document/evidence, numeric validation and packet/signoff services remain owners of those functions.
@@ -48,13 +52,15 @@ Paperclip owns tasks, hiring, execution and review UI; Buzz exposes the same wor
 
 ## Quality and qualification
 
+Independent durable review passed 36 native PostgreSQL cases, 13 upstream interaction tests, five launcher safety tests, 20 separate DFW PostgreSQL cases and three native-to-DFW rehearsals. The rehearsals use actual native verdict transactions with synthetic human fixtures, local-file receipt transport and DFW SQLite; separate real-PG qualification covers DFW. Native role/document changes after acceptance, disconnect, missed notifications, replay and cancellation ordering are covered. DFW migration 0013→0016→0013→0016, zero-leak/shutdown cleanup and cold official-registry host bootstrap passed. The 2026.1012.0 pin is a qualified baseline; upstream drift requires requalification.
+
 Independent one-command cloud rehearsal passed DFW PostgreSQL 17.11/PostGIS 3.5.2 domain qualification (65 tests), Paperclip 2026.1012.0 native PostgreSQL 18 services and real PG-to-embedded-Helix reuse/writeback. Native inbox/outbox race fixes and cloud tooling are merged. Full HTTP/UI remains blocked by `os.networkInterfaces` / `uv_interface_addresses`; PPC2/VPS executor admission, live-member enrollment and production deployment remain future gates.
 
-Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is being packaged.
+Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Inertia tests, typecheck/build and seven-migration native-service recovery passed; DFW recorded 906 passed, five skipped and one protected missing-PPTX manifest failure in the local snapshot. The separate synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal passed independent review; its portable supplement is merged in Inertia PR29.
 
-The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation.
+The durable successor captures authority for one exact command/version atomically with the native verdict. Later native role/membership changes, document edits, card withdrawal or disconnect do not revoke that instruction. Explicit cancellation takes effect only when DFW confirms it; an already-applied effect is not undone. Current DFW authorization, evidence, head and artifact checks still block stale effects, and submission authority remains separate. The core is implemented and independently reviewed; production route/transport, lifecycle-compatible retention/archive, real role/binding/source access, qualified writer fencing and a human correction/cancel walkthrough remain activation gates. The legacy adapter stays default-disabled.
 
-Portable meeting supplement candidate: 400/400 combined tests, typecheck and build passed. Publication is next; the separately qualified synthetic meeting-answer rehearsal remains the delivered evidence.
+Portable meeting supplement: merged in Inertia PR29; 400/400 combined tests, typecheck and build passed. Its separately qualified synthetic meeting-answer rehearsal remains distinct from production source/host delivery.
 
 ### Historical pre-merge qualification
 

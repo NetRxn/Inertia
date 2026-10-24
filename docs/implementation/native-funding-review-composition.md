@@ -1,5 +1,7 @@
 # Native funding review host composition
 
+This document preserves the legacy through-commit adapter contract, which remains default-disabled. The independently reviewed durable successor captures exact-version authority atomically with native acceptance; DFW PR50 and Inertia host PR31 are merged. See the [durable successor activation contract](../../host-composition/paperclip-durable-funding-review/ACTIVATION-CONTRACT.md), [current native grant contract](../development/native-grant-workflow.md) and [publication/qualification record](../development/funding-enhancement/source-map.md).
+
 Local qualification only. No worker registration, MCP tool, HTTP endpoint, new review UI,
 new approval ledger, deployment or submission action is added.
 

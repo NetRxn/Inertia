@@ -1,6 +1,6 @@
 # Funding enhancement implementation plan
 
-Revision: FUNDING-2026-10-23-r4.
+Revision: FUNDING-2026-10-24-r5.
 Updated: 2026-10-24 (UTC)
 
 > **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans to implement task-by-task. Steps use checkbox syntax.
@@ -96,7 +96,7 @@ Historical baseline: PR35 merged at `ac483c309d1df84dec8a8106ec5f13860e080fc0`; 
 
 ## Task 5: Portable skill and runtime qualification
 
-Operational discovery extension: assign one native research agent authorized objectives, search/browser tools, source access and a bounded query/page/time/cost budget. Verify actual tool execution against an unseeded official opportunity and a near-deadline case. Portable discovery/meeting supplement packaging is underway; the daily schedule remains disabled.
+Operational discovery extension: assign one native research agent authorized objectives, search/browser tools, source access and a bounded query/page/time/cost budget. Verify actual tool execution against an unseeded official opportunity and a near-deadline case. The portable discovery/meeting supplement is merged in Inertia PR29; the daily schedule remains disabled.
 
 **State:** PR40 merged, version 3.4.1. Exact remote CI 39999694731 passed all steps. Offline Codex marketplace installation and cache refresh are verified. Live model qualification remains pending.
 
@@ -166,23 +166,25 @@ Operational discovery extension: prove restart/uncertain-delivery recovery, chan
 
 ## Task 7: Trusted native review application
 
-**State:** Inertia native adapter is merged/default-disabled in PR28; the tested DFW transaction service is reviewed/in CI for PR47. The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation. The checklist below records the frozen adapter; successor qualification must implement the approved acceptance, cancellation and current-domain-evidence rules.
+**State:** The independently reviewed durable core is merged in DFW PR50 and Inertia host PR31. The durable successor captures authority for one exact command/version atomically with the native verdict. Later native role/membership changes, document edits, card withdrawal or disconnect do not revoke that instruction. Explicit cancellation takes effect only when DFW confirms it; an already-applied effect is not undone. Current DFW authorization, evidence, head and artifact checks still block stale effects, and submission authority remains separate. The core is implemented and independently reviewed; production route/transport, lifecycle-compatible retention/archive, real role/binding/source access, qualified writer fencing and a human correction/cancel walkthrough remain activation gates. The legacy adapter stays default-disabled. The checklist retains legacy requirements and records the completed successor core separately.
 
-**Files:** existing DFW `src/dfw_incentives/codex_agents.py`, `src/dfw_incentives/packet_handoff.py`, `src/dfw_incentives/models.py`; new `src/dfw_incentives/native_review.py`, `packet_review_context.py` and `tests/test_native_funding_review.py`; Inertia new `src/grants/native-review.ts`, `test/grants/native-review.test.ts`; existing `src/grants/contracts.ts`.
+**Files:** durable DFW `src/dfw_incentives/durable_native_review.py`, `tests/test_durable_native_review.py` and `qualification/run-durable-native-review-postgres.sh`; Inertia `host-composition/paperclip-durable-funding-review/`; existing DFW `src/dfw_incentives/codex_agents.py`, `src/dfw_incentives/packet_handoff.py`, `src/dfw_incentives/models.py`; new `src/dfw_incentives/native_review.py`, `packet_review_context.py` and `tests/test_native_funding_review.py`; Inertia new `src/grants/native-review.ts`, `test/grants/native-review.test.ts`; existing `src/grants/contracts.ts`.
 
 **Original design interfaces:** The implementation exports `NativeFundingReviewService` in DFW and `createNativeFundingReviewAdapter` in Inertia; the following design names describe the retained contract. DFW planned `apply_review_effect(session: Session, decision: TrustedReviewDecision) -> ReviewEffectReceipt`. TrustedReviewDecision is constructed server-side, never accepted from member MCP: company/applicant, principal_id/type, domain_authorization_epoch, native_verification_time, interaction_id, item_id, target_kind/id/version/hash, workspace_hash, action, evidence_revisions. Receipt includes effect_key, result (`applied`, `replayed`, `stale`, `unauthorized`, `conflict`) and domain IDs. Inertia new `applyNativeGrantDecision(ref: NativeDecisionRef, deps: NativeReviewDependencies): Promise<ReviewEffectReceipt>` reads the authoritative native actor and result. NativeDecisionRef contains companyId, issueId, interactionId, itemId; dependencies are trusted native read and domain effect ports.
 
-- [ ] Tests cover agent/system actor, wrong/revoked human role, partial card, defer, duplicate/reordered event, wrong company, changed document/packet/source, simultaneous accept/reject, and a source update racing the transaction.
-- [ ] Run `uv run --locked pytest tests/test_native_funding_review.py tests/test_draft_review.py -q` and `npm test -- test/grants/native-review.test.ts --maxWorkers=1`; confirm failures.
-- [ ] Make the domain service authoritative for grant-review capabilities: an administrator-admitted organization/principal/scope grant with a monotonic authorization epoch, stored with domain data. Lock/recheck this grant and epoch in the same effect transaction; a role string from an event or agent is never authority. Native human identity and current membership are freshly read before application; timeout/unknown membership fails closed. Native membership and domain grants live in separate stores, with asynchronous native revocation propagation. Configure a short explicit verification-age limit, invalidate pending decisions when revocation is received, and require domain-grant revocation for immediate transactional denial. Deployment acceptance must choose and test that bound and revocation path.
+- [x] Cover agent/system actor, wrong/revoked human role at acceptance, partial card, defer, duplicate/reordered event, wrong company, changed document/packet/source, simultaneous decisions and source-update races in the reviewed native/durable suites.
+- [x] Independently rerun the reviewed native/durable suites, including 47 focused DFW cases and the native PostgreSQL capture cases; retain exact [qualification evidence](testing.md#recorded-implementation-evidence).
+- [ ] Qualify the production domain grant-review directory: an administrator-admitted organization/principal/scope grant with a monotonic authorization epoch, stored with domain data. Lock/recheck this grant and epoch in the same effect transaction; a role string from an event or agent is never authority. Native human identity, membership, role and source revision are checked and locked at acceptance; timeout/unknown authority fails closed. Native membership and domain grants live in separate stores. Later native revocation does not cancel a durable acceptance; require current domain-grant checks for transactional denial and explicit DFW confirmation for cancellation. Qualify real provisioning/revocation and source access before activation.
 - [x] Implement final revision validation, guarded effect and exact-command replay receipt in one domain transaction; test the native adapter.
-- [ ] Implement the approved durable exact-version acceptance seam, funding-confirmed cancellation and changed-evidence rejection; qualify production PostgreSQL writer composition before activation.
+- [x] Implement and independently review atomic native verdict/receipt capture, trusted acceptance readback/sweeps, DFW exact-command application, funding-confirmed cancellation and changed-evidence rejection. Pass 36 native PostgreSQL cases, 20 separate DFW PostgreSQL cases and three synthetic-transport native-to-DFW rehearsals.
+- [ ] Qualify authenticated production route/transport, lifecycle-compatible retention/archive, real role/binding/source access and least-privilege writer fencing. Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then permit ordinary archival.
+- [ ] Walk a real human through correction → regeneration → review and explicit DFW-confirmed cancellation; retain separate submission authority.
 - [ ] Preserve accepted/corrected/rejected proposal operations and packet changes_requested semantics. Preserve partner-only N/A and required role mapping. Native review never submits externally or infers a DAO vote.
-- [ ] Run concurrency tests on real isolated PostgreSQL, full suites, commit `feat: apply authenticated native grant review safely`.
+- [x] Pass separate real PostgreSQL concurrency qualification and reviewed publication in DFW PR50 and Inertia PR31. Exact-head and post-merge DFW CI passed; production integration qualification remains above.
 
 ## Task 8: General objective intake and opportunity brief
 
-**State:** merged in Inertia PR27 and DFW PR46. Objective intake, versioned funding links and briefs passed independent review. The synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal also passed; portable supplement packaging is underway. Production source/member exports, native visibility and assigned live intake remain activation work.
+**State:** merged in Inertia PR27 and DFW PR46. Objective intake, versioned funding links and briefs passed independent review. The synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal also passed; its portable supplement is merged in Inertia PR29. Production source/member exports, native visibility and assigned live intake remain activation work.
 
 Operational discovery extension: render a short benefit/effort brief with source/as-of, deadline, exact action and owner. Deliver validated urgent findings separately with opportunity/cycle/material-event deduplication. Persist due rechecks in native work, then rehearse and agree cadence/alert targets before enabling recurring execution.
 
@@ -198,7 +200,8 @@ Operational discovery extension: render a short benefit/effort brief with source
 - [ ] Configure explicit CEO intake assignment and admitted production source/member visibility.
 - [x] Render the brief with separate application, delivery and reporting effort ranges and estimation basis; retain evidence gaps and concrete meeting decisions. Native questions/documents/cards remain the review UI.
 - [x] Independently verify the synthetic actual-service meeting answer → scoped knowledge update → follow-up work → revised-brief rehearsal.
-- [ ] Finish portable supplement packaging and qualify actual production source/host delivery.
+- [x] Publish the portable supplement in Inertia PR29.
+- [ ] Qualify actual production source/host delivery.
 
 ## Task 9: Integration rehearsal and synchronized artifacts
 
@@ -212,7 +215,7 @@ Operational discovery extension: render a short benefit/effort brief with source
 
 The CI, benchmark, candidate, route-review, public drafting/gap and portable-package foundations are merged. Qualify actual host/model behavior against the merged contracts. Independent v3 quality assessment and actual runtime qualification remain distinct from passing contract tests.
 
-Task 6, partner graph and Task 8 intake/link/brief are merged. Independent cloud and synthetic meeting-answer rehearsals passed. Task 7 has its Inertia adapter merged/default-disabled and DFW service reviewed/in CI for PR47; the approved acceptance/reconciliation seam and production writer qualification remain pending. The approved discovery loop extends Tasks 5, 6C/6D and 8; daily execution remains disabled until host wiring, end-to-end rehearsal and cadence agreement. Task 9 retains HTTP/UI, PPC2/VPS and production activation gates. Exact July replay and October discovery remain separate evidence tracks.
+Task 6, partner graph and Task 8 intake/link/brief are merged. Independent cloud and synthetic meeting-answer rehearsals passed. Task 7 has DFW durable acceptance merged in PR50 and independently qualified native capture; host publication is merged in Inertia PR31. Production route/transport, retention/archive, real roles/bindings/source access, writer fencing and the human correction/cancel walkthrough remain gates; the legacy adapter stays default-disabled. The approved discovery loop extends Tasks 5, 6C/6D and 8; daily execution remains disabled until host wiring, end-to-end rehearsal and cadence agreement. Task 9 retains HTTP/UI, PPC2/VPS and production activation gates. Exact July replay and October discovery remain separate evidence tracks.
 
 October discovery is complete and PR42 is merged with passing post-merge CI; temporary live jobs are removed. Select preparation under current owner priorities and deferrals from the dated [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md). Preserve the exact confidence overlay, automated routing dispositions and manual-source limits; the first DNS-failed scout, manual findings and dated replay remain historical evidence, separate from July improvement.
 
