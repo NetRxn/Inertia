@@ -240,3 +240,8 @@ coverage/
 # Qualification installs may be local dependency links during development
 scripts/cloud-rehearsal/node_modules
 scripts/cloud-rehearsal/host/node_modules
+
+# Disposable funding qualification artifacts and local fixture paths
+runs-discovery-rehearsal-*/
+runs-funding-facts-native-*/
+scripts/discovery-rehearsal/cold-fixture.json

@@ -1,5 +1,17 @@
 /** A discovery brief is evidence for further agent work, not a canonical grant packet. */
 export interface PreliminaryBrief {
+  assessmentReceiptId?: string;
+  assessedAt?: string;
+  assessedAsOf?: string;
+  deadlineAssessment?: {
+    date: string | null; precision: "date" | "unknown";
+    timezone: null; cutoff: null; quote: string | null; reason: string;
+  };
+  benefit?: {
+    kind: "per_award" | "per_award_range" | "per_award_limit" | "total_pool" | "in_kind" | "unknown";
+    quote: string | null; minimum: number | null; maximum: number | null;
+    currency: null; amountBasis: string;
+  } | null;
   contract_version: "preliminary-opportunity-v1";
   opportunityKey: string | null;
   title: string;
@@ -104,6 +116,21 @@ export function renderPreliminaryBrief(p: PreliminaryBrief): string {
         p.value.minimum > p.value.maximum))
   )
     throw Error("Invalid preliminary value");
+  if (p.deadlineAssessment && (
+    !["date", "unknown"].includes(p.deadlineAssessment.precision) ||
+    p.deadlineAssessment.timezone !== null || p.deadlineAssessment.cutoff !== null ||
+    !text(p.deadlineAssessment.reason) ||
+    (p.deadlineAssessment.quote !== null && !text(p.deadlineAssessment.quote)) ||
+    (p.deadlineAssessment.date !== null && !date(p.deadlineAssessment.date)) ||
+    p.deadlineAssessment.date !== (p.deadline?.date ?? null)
+  )) throw Error("Invalid assessed deadline");
+  if (p.benefit && (
+    !["per_award", "per_award_range", "per_award_limit", "total_pool", "in_kind", "unknown"].includes(p.benefit.kind) ||
+    p.benefit.currency !== null || !text(p.benefit.amountBasis) ||
+    (p.benefit.quote !== null && !text(p.benefit.quote)) ||
+    ![p.benefit.minimum, p.benefit.maximum].every(v => v === null || (Number.isFinite(v) && v >= 0)) ||
+    (["total_pool", "in_kind", "unknown"].includes(p.benefit.kind) && p.value !== null)
+  )) throw Error("Invalid assessed benefit");
   if (
     p.urgent &&
     (!p.deadline ||
@@ -126,9 +153,13 @@ export function renderPreliminaryBrief(p: PreliminaryBrief): string {
     p.deadline
       ? `Published deadline: ${p.deadline.date}; exact cutoff/timezone unknown.\nSource evidence: ${escape(p.deadline.quote)}`
       : "Deadline: unknown; inspect official rules.",
-    p.value
+    p.benefit
+      ? `Source-reported benefit (${escape(p.benefit.kind)}): ${escape(p.benefit.amountBasis)}.\n${p.benefit.quote ? `Source evidence: ${escape(p.benefit.quote)}` : "Amount unknown; continue agent diligence."}`
+      : p.value
       ? `Published benefit evidence (currency and applicability require confirmation): ${p.value.quotes.map(escape).join("; ")}`
       : "Benefit/amount: unknown; inspect official rules.",
+    ...(p.deadlineAssessment ? [`Deadline assessment: ${escape(p.deadlineAssessment.reason)}`] : []),
+    ...(p.assessmentReceiptId ? ["Source-bound preliminary assessment only. Current application cycle and applicant qualification remain unverified."] : []),
     "Fit: unknown. Eligibility: unknown.\nApplication effort: unknown. Delivery effort: unknown. Reporting effort: unknown.",
     "## Remaining agent diligence",
     ...p.questions.map((q) => `- ${escape(q)}`),
@@ -151,6 +182,7 @@ export function renderPreliminaryAlert(p: PreliminaryBrief): string {
     `Time-critical funding source: ${short(p.title, 160)}`,
     `Sponsor: ${short(p.sponsor, 160)}`,
     `Published closing date: ${p.deadline.date}; exact cutoff/timezone unknown.`,
+    ...(p.assessmentReceiptId ? ["Conditional source evidence only; current application cycle is unverified. This is not confirmation applications remain open."] : []),
     `Official evidence: ${short(p.deadline.quote, 1200)}`,
     `Source: ${p.source.url}\nObserved: ${p.source.observedAt}\nSHA256: ${p.source.sha256}`,
     "Eligibility and fit remain unverified. Application, delivery and reporting effort remain unknown.",

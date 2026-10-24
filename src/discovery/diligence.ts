@@ -1,3 +1,4 @@
+import { fundingFactsParameters, validateFundingFactEvidence, validateFundingFactsReceipt, type FundingFactsRequest, type FundingFactsReceipt } from "./funding-facts.js";
 import { readNativeDocument, writeNativeDocument } from "./documents.js";
 import type {
   PluginContext,
@@ -26,6 +27,7 @@ export interface SourceReviewReceipt {
   nextAction: string;
 }
 export interface DiligenceBridge extends DiscoveryBridge {
+  assessFundingFacts?(input: FundingFactsRequest): Promise<FundingFactsReceipt>;
   sourceReview?(input: {
     captureId: string;
     expectedSourceHash: string;
@@ -59,7 +61,27 @@ export interface DiligenceBinding {
   agentId: string;
   bridge: DiligenceBridge;
 }
+const quotedFactSchema = {
+  type: "object", additionalProperties: false, required: ["quote", "span"],
+  properties: { quote: { type: "string", minLength: 1, maxLength: 2000 }, span: {
+    type: "object", additionalProperties: false, required: ["start", "end"],
+    properties: { start: { type: "integer", minimum: 0 }, end: { type: "integer", minimum: 1 } },
+  } },
+};
 export const diligenceTools: PluginToolDeclaration[] = [
+  {
+    name: "funding-facts-submit",
+    displayName: "Assess exact captured funding facts",
+    description: "Independent reviewer submits exact Unicode code-point spans from current fundingEvidence. Source identity is not eligibility or fit. Missing facts remain agent-owned diligence; no adapter or application authorization.",
+    parametersSchema: { type: "object", additionalProperties: false,
+      required: ["binding", "captureId", "facts"], properties: {
+        binding: { type: "string" }, captureId: { type: "string" },
+        facts: { type: "object", additionalProperties: false, required: ["programName"], properties: {
+          programName: quotedFactSchema, deadline: quotedFactSchema, benefit: quotedFactSchema,
+        } },
+      },
+    },
+  },
   {
     name: "funding-source-validation-submit",
     displayName: "Validate a new sponsor identity",
@@ -121,6 +143,8 @@ export function registerDiscoveryDiligence(
   ctx: Pick<PluginContext, "tools" | "issues">,
   bindings: DiscoveryBinding[],
   owner: Pick<ReturnType<typeof createRuntimeOwner>, "own">,
+  completeFacts?: (binding: DiscoveryBinding, run: ToolRunContext, captureId: string) => Promise<void>,
+  clock = Date.now,
 ) {
   function params(value: unknown, submit = false, source = false) {
     const keys = source
@@ -165,6 +189,7 @@ export function registerDiscoveryDiligence(
       b.issueId === b.diligence.issueId ||
       run.companyId !== b.companyId ||
       run.projectId !== b.projectId ||
+      !run.runId ||
       run.agentId !== b.diligence.agentId
     )
       throw Error("Independent diligence actor denied");
@@ -191,9 +216,11 @@ export function registerDiscoveryDiligence(
     "funding-diligence-query-" + documentHash([runId, captureId]);
   for (const declaration of diligenceTools)
     ctx.tools.register(declaration.name, declaration, async (value, run) => {
+      const factsSubmission = declaration.name === "funding-facts-submit";
+      const factsParams = factsSubmission ? fundingFactsParameters(value) : undefined;
       const source = declaration.name === "funding-source-validation-submit",
-        submit = source || declaration.name === "funding-diligence-submit",
-        p = params(value, submit, source);
+        submit = factsSubmission || source || declaration.name === "funding-diligence-submit",
+        p = factsParams ? { binding: factsParams.binding, captureId: factsParams.captureId } : params(value, submit, source);
       const b = await authorize(
           bindings.find((b) => b.key === p.binding),
           run,
@@ -227,6 +254,15 @@ export function registerDiscoveryDiligence(
             if (!saved.query_receipt_id)
               throw Error("Missing independent query receipt");
             await authorize(b, run);
+            const budgetKey = "funding-review-budget-" + documentHash(run.runId);
+            const budget = await readNativeDocument(ctx.issues.documents, d.issueId, budgetKey, b.companyId);
+            const startedAt = budget ? JSON.parse(budget.body).startedAt : clock();
+            if (!Number.isFinite(startedAt)) throw Error("Invalid independent run budget");
+            await writeNativeDocument(ctx.issues.documents, {
+              issueId: d.issueId, companyId: b.companyId, key: budgetKey,
+              body: JSON.stringify({ runId: run.runId, startedAt }),
+              format: "markdown", title: "Independent funding review run budget",
+            });
             await writeNativeDocument(ctx.issues.documents, {
               issueId: d.issueId,
               companyId: b.companyId,
@@ -236,6 +272,7 @@ export function registerDiscoveryDiligence(
                 captureId: p.captureId,
                 sourceHash: current.candidate.sourceHash,
                 queryReceiptId: saved.query_receipt_id,
+                startedAt,
               }),
               format: "markdown",
               title: "Independent funding diligence query",
@@ -244,7 +281,7 @@ export function registerDiscoveryDiligence(
               current,
               saved,
               nextAction:
-                "For awaiting_source_validation, corroborate using a separately captured qualified official hyperlink and funding-source-validation-submit. Otherwise verify explicit source-rule identity evidence against captured public text. Submit only the exact named-program quote through funding-diligence-submit. This narrow admission does not assess fit or eligibility; continue those separate evidence tasks with authorized tools.",
+                "After source identity admission, use funding-facts-submit with exact fundingEvidence Unicode code-point half-open spans for program name and available deadline/benefit. For deadline and benefit, select the entire claimUnits span so qualifiers are not omitted. Unknown facts remain your diligence work, not a human-only queue. For awaiting_source_validation, corroborate using a separately captured qualified official hyperlink and funding-source-validation-submit. Otherwise verify explicit source-rule identity evidence against captured public text. Submit only the exact named-program quote through funding-diligence-submit. This narrow admission does not assess fit or eligibility; continue those separate evidence tasks with authorized tools.",
             };
           }
           const doc = await readNativeDocument(
@@ -261,11 +298,35 @@ export function registerDiscoveryDiligence(
             q.captureId !== p.captureId ||
             q.sourceHash !== current.candidate.sourceHash ||
             !q.queryReceiptId ||
-            (!source &&
+            (!source && !factsSubmission &&
               !current.candidate.records.some((r) => r.recordId === p.recordId))
           )
             throw Error("Independent source binding changed");
           await authorize(b, run);
+          if (factsParams) {
+            if (!Number.isFinite(q.startedAt) || clock() >= q.startedAt + (b.runBudgetMs ?? 120_000))
+              throw Error("Independent funding facts run budget exhausted");
+            validateFundingFactEvidence(current.candidate, factsParams.facts);
+            const bridge = d.bridge.withDeadline?.(q.startedAt + (b.runBudgetMs ?? 120_000)) as DiligenceBridge | undefined ?? d.bridge;
+            if (!bridge.assessFundingFacts) throw Error("Funding facts assessment unavailable");
+            const request: FundingFactsRequest = {
+              captureId: p.captureId!, expectedSourceHash: q.sourceHash,
+              sourceIdentityReceiptId: current.candidate.sourceIdentityReceiptId!,
+              runId, queryReceiptId: q.queryReceiptId,
+              idempotencyKey: discoveryHash([runId, p.captureId, q.sourceHash, current.candidate.sourceIdentityReceiptId, factsParams.facts]),
+              facts: factsParams.facts,
+            };
+            const receipt = await bridge.assessFundingFacts(request);
+            validateFundingFactsReceipt(receipt, request, current.candidate);
+            await authorize(b, run);
+            await writeNativeDocument(ctx.issues.documents, {
+              issueId: d.issueId, companyId: b.companyId,
+              key: "funding-facts-receipt-" + documentHash([runId, p.captureId, receipt.assessmentReceiptId]),
+              body: JSON.stringify(receipt), title: "Exact-capture funding facts assessment", format: "markdown",
+            });
+            if (completeFacts) await completeFacts(b, run, p.captureId!);
+            return receipt;
+          }
           if (source) {
             if (!d.bridge.sourceReview)
               throw Error("Source validation unavailable");

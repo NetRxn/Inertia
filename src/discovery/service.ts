@@ -41,6 +41,14 @@ export interface DiscoveryBrief {
   urgency?: { eventId: string; reason: string; asOf: string };
 }
 export interface DiscoveryCandidate {
+  sourceIdentityReceiptId?: string;
+  sourceIdentity?: import("./diligence.js").SourceReviewReceipt;
+  fundingEvidence?: {
+    text: string; sha256: string;
+    claimUnits?: Array<{ start: number; end: number }>;
+    normalization: "bs4-html-text-space-strip-v1";
+    spanUnits: "unicode_code_points"; spanConvention: "half_open";
+  };
   captureId: string;
   sourceId: string;
   sourceDocumentId: string;
