@@ -1,0 +1,64 @@
+{
+  "baseline": "paperclipai 2026.1012.0 public npm distribution",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "productionActivated": false,
+  "nativeSourcePins": {
+    "packageVersion": "2026.1012.0",
+    "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+    "patchSha256": "fd42c6cf1697dbd1dd99ebca752d174bc7607897608b9d23c09f0617db8509bf",
+    "files": {
+      "dist/agent-auth-jwt.d.ts": {
+        "originalSha256": "2075d3c5e17da78ddcd4c276a8b3650b7d392c6ebaa8c9c46d314b55881b5227",
+        "candidateSha256": "78c8a2bb24f19840b7fb9b0859768433e067281bafd451c0e324a86ec7f556bb"
+      },
+      "dist/agent-auth-jwt.js": {
+        "originalSha256": "f0d42df5889a544a8aaca0bda5a7e9101be483e5fb79249b11b8b5d3ce959eed",
+        "candidateSha256": "9d30ab16110c574050eea34f111858984614ad5a8ffb38ef54546c4d23865ab1"
+      },
+      "dist/app.d.ts": {
+        "originalSha256": "82dd908b08b98ab3e20fcf387081efc727a609361d92cab99e6afd4df5d76a6b",
+        "candidateSha256": "43f3904a65ef59c1bc4dc2eef70874332a9307d2a2e3d77251d7c85c05c77294"
+      },
+      "dist/app.js": {
+        "originalSha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32",
+        "candidateSha256": "cf448d341e3a9a09cf1118ec486c8ff9df6ee28b985bdd0c5f4e0662fcc90036"
+      },
+      "dist/middleware/auth.d.ts": {
+        "originalSha256": "374350defc30a10b7cd8619e8142b57f0424fec0068070c843f885907bf0d34d",
+        "candidateSha256": "be490f3cf526744d1338d46b17261fff9b9bde864b718820bd9712d727b38f71"
+      },
+      "dist/middleware/auth.js": {
+        "originalSha256": "f9024ca81754d0270c67458cf42033ae68b2e3eaaa512d950c327553e692274d",
+        "candidateSha256": "dd73c53443723e8708affaefa020008d615c434bac637a93a99c1c8cf928b119"
+      },
+      "dist/routes/issues.d.ts": {
+        "originalSha256": "6168f698c7f88ebad1e36c58a50f196e48aafa7001972666d03a1a80411d2b45",
+        "candidateSha256": "a74b249f0b74b0cedcc67751e77ec8e7ed245c884cbfe6ffde2743b5f50d939b"
+      },
+      "dist/routes/issues.js": {
+        "originalSha256": "743bc9f972322a2c383f7fa8400d7513c2105fca669b8d56c105812186264ace",
+        "candidateSha256": "191101012001f3ece8fb02567682be803ada7ebe865deb331c5fa755259ec8b8"
+      },
+      "dist/services/heartbeat.d.ts": {
+        "originalSha256": "3e03a63c130421f9352424112998d8d0397d330036ac84045c2112d41fd47eb7",
+        "candidateSha256": "bb9775df165250018b3d6b1ce50d04f4b5134c764e238b65bc88b483f1d2fd79"
+      },
+      "dist/services/heartbeat.js": {
+        "originalSha256": "a8afeea6df9b7d8517230c9cdbed8ad6e81d05df916a9f09b8025442408f0176",
+        "candidateSha256": "ce44f5cee4ad1d9a2fd6a8eefe3c504533a574422b165cd7050b4e009de2a6d4"
+      }
+    }
+  },
+  "findings": {
+    "executionHook": "heartbeatService optional construction port: begin before signed native JWT, assertCurrent immediately before actual adapter.execute, conditional retirement during cleanup. Qualified via actual process adapter.",
+    "nativeJwt": "Existing optional jti verification reused. New issuer argument signs jti plus explicit member marker; unmarked/default JWT construction remains unchanged.",
+    "authentication": "Marked tokens require configured current-record validator on ordinary native authentication too; exact POST member export/submit/native issue checkout only. Pre-parser marker hint always invokes full signature/native verification.",
+    "nativeOwnership": "Actual native legacyControllerBootId + renewable controller expiry + current run/cancellation, exact task execution binding, current active non-viewer membership and native optional environment lease. No provider truth inferred.",
+    "httpMount": "Marked-only pre-parser admission preserves hostname -> cloud identity -> standby -> native auth before parsing, with unmarked original order unchanged. Actual stock createApp registration inspected in focused functional fixture; no public-route HTTP probes or independent security signoff.",
+    "persistence": "Existing plugin bridge_runtime one company/issue fencing record; no schema/task/scheduler/credential platform.",
+    "providerEvidence": "Synthetic in qualification; real native provider current-owner source and isolation remain activation gates.",
+    "checkout": "Exclusive fencing lock serializes marked native checkouts; issue-then-run update locks match actual native clearing helpers and avoid shared upgrades. Current-authority reads use issue-then-run share locks. Focused ordinary PG regressions pass for valid concurrent checkouts and reads/native clearing. Native service, rollback, bounded receipts and default behavior retained.",
+    "markedControlFlow": "Source-only correction: hasMemberAttemptMarker is a dispatch hint; marked requests cannot take inherited unmarked public routine/MCP early returns and must reach actual native JWT/current-record authorization. No flagged public-route probes rerun; independent security qualification remains open."
+  },
+  "providerImplementationCopied": false
+}

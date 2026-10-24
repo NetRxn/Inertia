@@ -1,0 +1,362 @@
+--- a/dist/agent-auth-jwt.d.ts
++++ b/dist/agent-auth-jwt.d.ts
+@@ -12,7 +12,8 @@
+     aud?: string;
+     instance_id?: string;
+     jti?: string;
++    inertia_member_attempt?: true;
+ }
+-export declare function createLocalAgentJwt(agentId: string, companyId: string, adapterType: string, runId: string, responsibleUserId?: string | null, keyScope?: AgentApiKeyScope): string | null;
++export declare function createLocalAgentJwt(agentId: string, companyId: string, adapterType: string, runId: string, responsibleUserId?: string | null, keyScope?: AgentApiKeyScope, executionAttemptId?: string): string | null;
+ export declare function verifyLocalAgentJwt(token: string): LocalAgentJwtClaims | null;
+ //# sourceMappingURL=agent-auth-jwt.d.ts.map
+\ No newline at end of file
+--- a/dist/agent-auth-jwt.js
++++ b/dist/agent-auth-jwt.js
+@@ -92,12 +92,14 @@
+         return false;
+     return timingSafeEqual(left, right);
+ }
+-export function createLocalAgentJwt(agentId, companyId, adapterType, runId, responsibleUserId, keyScope = { kind: "standard" }) {
++export function createLocalAgentJwt(agentId, companyId, adapterType, runId, responsibleUserId, keyScope = { kind: "standard" }, executionAttemptId) {
+     const config = jwtConfig();
+     if (!config)
+         return null;
++    if (executionAttemptId !== undefined && (typeof executionAttemptId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(executionAttemptId))) return null;
+     const now = Math.floor(Date.now() / 1000);
+     const claims = {
++        ...(executionAttemptId === undefined ? {} : { jti: executionAttemptId, inertia_member_attempt: true }),
+         sub: agentId,
+         company_id: companyId,
+         adapter_type: adapterType,
+@@ -215,6 +217,7 @@
+         ...(audience ? { aud: audience } : {}),
+         ...(instanceClaim ? { instance_id: instanceClaim } : {}),
+         jti: typeof claims.jti === "string" ? claims.jti : undefined,
++        ...(claims.inertia_member_attempt === true ? { inertia_member_attempt: true } : {}),
+     };
+ }
+ //# sourceMappingURL=agent-auth-jwt.js.map
+\ No newline at end of file
+--- a/dist/app.d.ts
++++ b/dist/app.d.ts
+@@ -1,3 +1,4 @@
++import type { MemberAttemptRequestAuthority } from "./middleware/auth.js";
+ import type { CloudWarmStandby } from "./services/cloud-warm-standby.js";
+ import express, { type Request as ExpressRequest } from "express";
+ import { type Server as HttpServer } from "node:http";
+@@ -51,6 +52,8 @@
+     pluginKey: string;
+ }) => Promise<boolean>;
+ export declare function createApp(db: Db, opts: {
++    memberContributionIngress?: express.RequestHandler;
++    memberAttemptAuthority?: MemberAttemptRequestAuthority;
+     cloudWarmStandby?: CloudWarmStandby;
+     uiMode: UiMode;
+     serverPort: number;
+--- a/dist/app.js
++++ b/dist/app.js
+@@ -20,7 +20,7 @@
+ import { fileURLToPath } from "node:url";
+ import { derivePaperclipViteHmrPort, } from "@paperclipai/shared";
+ import { httpLogger, errorHandler } from "./middleware/index.js";
+-import { actorMiddleware } from "./middleware/auth.js";
++import { actorMiddleware, memberAttemptPreparseGuard, hasMemberAttemptMarker } from "./middleware/auth.js";
+ import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
+ import { privateHostnameGuard, resolvePrivateHostnameAllowSet, } from "./middleware/private-hostname-guard.js";
+ import { applyTrustProxy, parseTrustProxyEnv, } from "./middleware/trust-proxy.js";
+@@ -358,6 +358,25 @@
+     // Default is unset → Express trusts nothing, which is the only safe choice
+     // when the server may be reachable without a known reverse proxy in front.
+     applyTrustProxy(app, parseTrustProxyEnv(process.env.TRUST_PROXY));
++    // Source-only opt-in: the member ingress owns its raw-byte bounds and
++    // disabled gate before any global parser/authentication side effects.
++    if (opts.memberContributionIngress) app.use("/api/member-contributions",
++        privateHostnameGuard({ enabled: shouldEnablePrivateHostnameGuard({ deploymentMode: opts.deploymentMode, deploymentExposure: opts.deploymentExposure }), allowedHostnames: opts.allowedHostnames, bindHost: opts.bindHost }),
++        cloudRuntimeIdentityMiddleware(db), cloudWarmStandbyMiddleware(isWarmStandby, health, staticUi), opts.memberContributionIngress);
++    // Only marked attempt requests take this early path. Preserve the stock
++    // hostname -> cloud identity -> standby ordering before native auth/SQL,
++    // while leaving unmarked requests on their unchanged original path.
++    const markedMemberAdmission = Router();
++    const memberHostname = privateHostnameGuard({ enabled: shouldEnablePrivateHostnameGuard({ deploymentMode: opts.deploymentMode, deploymentExposure: opts.deploymentExposure }), allowedHostnames: opts.allowedHostnames, bindHost: opts.bindHost });
++    const memberCloudIdentity = cloudRuntimeIdentityMiddleware(db);
++    const memberStandby = cloudWarmStandbyMiddleware(isWarmStandby, health, staticUi);
++    const memberAuthenticate = memberAttemptPreparseGuard(db, { deploymentMode: opts.deploymentMode, memberAttemptAuthority: opts.memberAttemptAuthority });
++    markedMemberAdmission.use(function selectMarkedMemberAttempt(req, _res, next) { return hasMemberAttemptMarker(req) ? next() : next("router"); });
++    markedMemberAdmission.use(function checkMemberHostname(req, res, next) { return memberHostname(req, res, next); });
++    markedMemberAdmission.use(function checkMemberCloudIdentity(req, res, next) { return memberCloudIdentity(req, res, next); });
++    markedMemberAdmission.use(function checkMemberWarmStandby(req, res, next) { return memberStandby(req, res, next); });
++    markedMemberAdmission.use(function authenticateMarkedMemberAttempt(req, res, next) { return memberAuthenticate(req, res, next); });
++    app.use(markedMemberAdmission);
+     app.use(COMPANY_IMPORT_API_PATH, express.json({
+         limit: PORTABLE_JSON_BODY_LIMIT,
+         verify: captureRawBody,
+@@ -404,6 +423,7 @@
+     // agent API key. Every request revalidates the active heartbeat row.
+     app.use(runtimeConnectionIntentRoutes(db));
+     app.use(actorMiddleware(db, {
++        memberAttemptAuthority: opts.memberAttemptAuthority,
+         deploymentMode: opts.deploymentMode,
+         resolveSession: opts.resolveSession,
+     }));
+@@ -653,6 +673,7 @@
+     // issue approval endpoints delegate to it. The intervening routers use distinct
+     // route prefixes, so this dependency does not change issue-route precedence.
+     api.use(issueRoutes(db, opts.storageService, {
++        memberAttemptAuthority: opts.memberAttemptAuthority,
+         chatRunRetries: chatChannels,
+         feedbackExportService: opts.feedbackExportService,
+         pluginWorkerManager: workerManager,
+--- a/dist/middleware/auth.d.ts
++++ b/dist/middleware/auth.d.ts
+@@ -1,14 +1,23 @@
++import type { LocalAgentJwtClaims } from "../agent-auth-jwt.js";
+ import type { Request, RequestHandler } from "express";
+ import type { Db } from "@paperclipai/db";
+ import { type DeploymentMode } from "@paperclipai/shared";
+ import type { BetterAuthSessionResult } from "../auth/better-auth.js";
+ export { isTransientDbConnectionError, retryIdempotentDatabaseOperation as retryOnTransientDbConnectionError, } from "../database-retry.js";
+ export { isCloudManagedInstance } from "../services/cloud-instance.js";
++declare global { namespace Express { interface Request { memberAttemptClaims?: LocalAgentJwtClaims; } } }
++export interface MemberAttemptRequestAuthority {
++    withNativeCheckout?<T>(input: {claims: LocalAgentJwtClaims; issueId: string; agentId: string; runId: string}, operation: (tx: Db) => Promise<T>): Promise<T>;
++    authorizeNativeRequest(input: {claims: LocalAgentJwtClaims; method: string; path: string}): Promise<boolean>;
++}
+ interface ActorMiddlewareOptions {
++    memberAttemptAuthority?: MemberAttemptRequestAuthority;
+     deploymentMode: DeploymentMode;
+     resolveSession?: (req: Request) => Promise<BetterAuthSessionResult | null>;
+ }
+ export declare function actorMiddleware(db: Db, opts: ActorMiddlewareOptions): RequestHandler;
++export declare function memberAttemptPreparseGuard(db: Db, opts: ActorMiddlewareOptions): RequestHandler;
++export declare function hasMemberAttemptMarker(req: Pick<Request, "header">): boolean;
+ /**
+  * Minimal header accessor `resolveCloudTenantActor` needs. Express `Request`
+  * satisfies it directly; websocket upgrade paths adapt a raw
+--- a/dist/middleware/auth.js
++++ b/dist/middleware/auth.js
+@@ -148,7 +148,10 @@
+ const publicMcpGatewayProtocolPath = /^\/mcp\/gateways\/gw_[a-f0-9]{32}\/?$/i;
+ export function actorMiddleware(db, opts) {
+     const boardAuth = boardAuthService(db);
++    const memberAttemptCheck = typeof opts.memberAttemptAuthority?.authorizeNativeRequest === "function" ? opts.memberAttemptAuthority.authorizeNativeRequest.bind(opts.memberAttemptAuthority) : null;
+     return async (req, _res, next) => {
++        delete req.memberAttemptClaims;
++        const markedMemberAttempt = hasMemberAttemptMarker(req);
+         req.actor =
+             opts.deploymentMode === "local_trusted"
+                 ? {
+@@ -162,7 +165,7 @@
+                 : { type: "none", source: "none" };
+         // Routine ingress authenticates its own bearer/signature. Never interpret
+         // webhook credentials as agent keys or attach an ambient browser session.
+-        if (req.method === "POST" && publicRoutineWebhookPath.test(req.path)) {
++        if (!markedMemberAttempt && req.method === "POST" && publicRoutineWebhookPath.test(req.path)) {
+             req.actor = { type: "none", source: "none" };
+             next();
+             return;
+@@ -176,7 +179,7 @@
+         // the protocol route can verify its run-scoped credential. Keep this bypass
+         // restricted to the unguessable public gateway path; all /api routes retain
+         // the normal actor authentication path below.
+-        if (hasBearerCredentials && publicMcpGatewayProtocolPath.test(req.path)) {
++        if (!markedMemberAttempt && hasBearerCredentials && publicMcpGatewayProtocolPath.test(req.path)) {
+             if (runIdHeader)
+                 req.actor.runId = runIdHeader;
+             next();
+@@ -269,6 +272,11 @@
+                 next(unauthorized(invalidAgentTokenMessage(token)));
+                 return;
+             }
++            if (claims.inertia_member_attempt === true) {
++                let allowed = false;
++                try { allowed = !!memberAttemptCheck && await memberAttemptCheck({ claims, method: req.method, path: req.originalUrl ?? req.url }) === true; } catch { /* Unknown authority is denied. */ }
++                if (!allowed) { next(forbidden("Member execution attempt is unavailable or out of scope")); return; }
++            }
+             const agentRecord = await db
+                 .select()
+                 .from(agents)
+@@ -343,6 +351,7 @@
+                 onBehalfOfMemberships,
+                 source: "agent_jwt",
+             };
++            if (claims.inertia_member_attempt === true) req.memberAttemptClaims = Object.freeze({ ...claims });
+             next();
+             return;
+         }
+@@ -816,4 +825,19 @@
+ export function requireBoard(req) {
+     return req.actor.type === "board";
+ }
+-//# sourceMappingURL=auth.js.map
+\ No newline at end of file
++//# sourceMappingURL=auth.js.map
++/** Dispatch-only hint, never authentication: a marked token is fully verified
++ * by the real native middleware before any global JSON parser can consume it.
++ * Unmarked/native-compatible credentials keep the original path unchanged. */
++export function hasMemberAttemptMarker(req) {
++    const header = req.header("authorization");
++    try {
++        if (typeof header !== "string" || !/^Bearer\s+/i.test(header)) return false;
++        const parts = header.replace(/^Bearer\s+/i, "").split(".");
++        return parts.length === 3 && JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"))?.inertia_member_attempt === true;
++    } catch { return false; }
++}
++export function memberAttemptPreparseGuard(db, opts) {
++    const authenticate = actorMiddleware(db, opts);
++    return (req, res, next) => hasMemberAttemptMarker(req) ? authenticate(req, res, next) : next();
++}
+--- a/dist/routes/issues.d.ts
++++ b/dist/routes/issues.d.ts
+@@ -1,3 +1,4 @@
++import type { MemberAttemptRequestAuthority } from "../middleware/auth.js";
+ import type { Db } from "@paperclipai/db";
+ import type { ChatChannelService } from "../services/chat-channels.js";
+ import { type CompanySearchExtractQuery, type CompanySearchExtractResponse, type CompanySearchQuery, type CompanySearchResponse } from "@paperclipai/shared";
+@@ -35,6 +36,7 @@
+ export declare function __getIssueListResponseCacheSizeForTests(): number;
+ export declare function __clearIssueListResponseCacheForTests(): void;
+ export declare function issueRoutes(db: Db, storage: StorageService, opts?: {
++    memberAttemptAuthority?: MemberAttemptRequestAuthority;
+     chatRunRetries?: Pick<ChatChannelService, "prepareFailedChatRunRetry" | "processFailedChatRunRetry">;
+     feedbackExportService?: {
+         flushPendingFeedbackTraces(input?: {
+--- a/dist/routes/issues.js
++++ b/dist/routes/issues.js
+@@ -2166,6 +2166,7 @@
+ }
+ export function issueRoutes(db, storage, opts = {}) {
+     const router = Router();
++    const memberAttemptCheckout = typeof opts.memberAttemptAuthority?.withNativeCheckout === "function" ? opts.memberAttemptAuthority.withNativeCheckout.bind(opts.memberAttemptAuthority) : null;
+     const svc = issueService(db);
+     const runRedactions = createRunSecretRedactionRegistry(db);
+     const access = accessService(db);
+@@ -10735,6 +10736,7 @@
+             });
+         }
+         const closedExecutionWorkspace = await getClosedIssueExecutionWorkspace(issue);
++        if (req.memberAttemptClaims && closedExecutionWorkspace) { res.status(403).json({ error: "member_checkout_unavailable" }); return; }
+         const checkoutRunId = requireAgentRunId(req, res);
+         if (req.actor.type === "agent" && !checkoutRunId)
+             return;
+@@ -10769,9 +10771,15 @@
+             finalIssueStatus: () => updated?.status,
+         });
+         try {
+-            updated = await svc.checkout(id, req.body.agentId, req.body.expectedStatuses, checkoutRunId);
++            if (req.memberAttemptClaims) {
++                if (!memberAttemptCheckout || !checkoutRunId) throw forbidden("Member checkout authority unavailable");
++                updated = await memberAttemptCheckout({ claims: req.memberAttemptClaims, issueId: id, agentId: req.body.agentId, runId: checkoutRunId }, tx => issueService(tx).checkout(id, req.body.agentId, req.body.expectedStatuses, checkoutRunId));
++            } else {
++                updated = await svc.checkout(id, req.body.agentId, req.body.expectedStatuses, checkoutRunId);
++            }
+         }
+         catch (error) {
++            if (req.memberAttemptClaims) { res.status(Number.isInteger(error?.status) ? error.status : 503).json({ error: "member_checkout_unavailable" }); return; }
+             if (isUniqueViolation(error, "issues_open_routine_execution_uq")) {
+                 res.status(409).json({
+                     error: "Another execution for this routine is already in progress",
+@@ -10814,7 +10822,7 @@
+             })
+                 .catch((err) => logger.warn({ err, issueId: issue.id }, "failed to wake assignee on issue checkout"));
+         }
+-        res.json(updated);
++        res.json(req.memberAttemptClaims ? { state: "checked-out" } : updated);
+     });
+     router.post("/issues/:id/release", async (req, res) => {
+         const id = req.params.id;
+--- a/dist/services/heartbeat.d.ts
++++ b/dist/services/heartbeat.d.ts
+@@ -1391,7 +1391,17 @@
+     legacySessionId: string | null;
+ };
+ export type HeartbeatEnvironmentRuntime = ReturnType<typeof environmentRuntimeService>;
++export interface MemberExecutionAttempt {
++    authorityEpoch: string; companyId: string; projectId: string; issueId: string;
++    agentId: string; memberId: string; runId: string; environmentLeaseId: string | null;
++}
+ export interface HeartbeatServiceOptions {
++    /** Opt-in owning-host member fence; absent preserves all default behavior. */
++    memberAttemptAuthority?: {
++        begin(input: {companyId: string; agentId: string; runId: string; issueId: string | null; environmentLeaseId: string | null}): Promise<MemberExecutionAttempt | null>;
++        assertCurrent(attempt: MemberExecutionAttempt): Promise<void>;
++        finish(attempt: MemberExecutionAttempt): Promise<void>;
++    };
+     /** Test seam before the atomic native runtime handoff. */
+     beforeNativeRuntimeSelection?: (runId: string) => Promise<void>;
+     /** Test seam immediately before the durable chat-control admission check. */
+--- a/dist/services/heartbeat.js
++++ b/dist/services/heartbeat.js
+@@ -6197,6 +6197,14 @@
+     return { suppressed: false, reason: null };
+ }
+ export function heartbeatService(db, options = {}) {
++    // Source-only opt-in member attempt fence. Default native auth is unchanged.
++    const configuredMemberAttempts = options.memberAttemptAuthority;
++    if (configuredMemberAttempts && ["begin", "assertCurrent", "finish"].some(key => typeof configuredMemberAttempts[key] !== "function")) throw new Error("Invalid member attempt authority");
++    const memberAttemptAuthority = configuredMemberAttempts ? Object.freeze({
++        begin: configuredMemberAttempts.begin.bind(configuredMemberAttempts),
++        assertCurrent: configuredMemberAttempts.assertCurrent.bind(configuredMemberAttempts),
++        finish: configuredMemberAttempts.finish.bind(configuredMemberAttempts),
++    }) : null;
+     let shutdownInProgress = false;
+     const instanceSettings = instanceSettingsService(db);
+     const getCurrentUserRedactionOptions = async () => ({
+@@ -14403,6 +14411,7 @@
+         let nativeWorkspaceSync = null;
+         let providerResourceDispositionForRun;
+         let nativeLifecycleTelemetryForRun;
++        let memberContributionAttempt = null;
+         let managedAiRuntime;
+         let providerTraceCapture = null;
+         let providerTraceFinalized = false;
+@@ -17743,12 +17752,19 @@
+                     })
+                         .where(eq(heartbeatRuns.id, run.id));
+                 }
++                if (memberAttemptAuthority && nativeRuntimeResolution.kind === "legacy" && adapter.supportsLocalAgentJwt) {
++                    memberContributionAttempt = await memberAttemptAuthority.begin({
++                        companyId: agent.companyId, agentId: agent.id, runId: run.id,
++                        issueId: issueRef?.id ?? null,
++                        environmentLeaseId: activeEnvironmentLease?.lease?.id ?? null,
++                    });
++                }
+                 const localAgentJwtScope = issueRef?.workMode === "skill_test"
+                     ? { kind: "skill_test", issueId: issueRef.id }
+                     : { kind: "standard" };
+                 const authToken = nativeRuntimeResolution.kind === "legacy" &&
+                     adapter.supportsLocalAgentJwt
+-                    ? createLocalAgentJwt(agent.id, agent.companyId, agent.adapterType, run.id, run.responsibleUserId, localAgentJwtScope)
++                    ? createLocalAgentJwt(agent.id, agent.companyId, agent.adapterType, run.id, run.responsibleUserId, localAgentJwtScope, memberContributionAttempt?.authorityEpoch)
+                     : null;
+                 if (nativeRuntimeResolution.kind === "legacy" &&
+                     adapter.supportsLocalAgentJwt &&
+@@ -18212,7 +18228,9 @@
+                         }
+                         const guardedDispatch = await dispatchResolvedInteractionContinuationWithAtomicGate((markDispatchStarted) => {
+                             legacyAdapterEntered = true;
+-                            return withAdapterExecutionPhase(executionPhaseContext, "adapter_execution", () => adapter.execute({
++                            return withAdapterExecutionPhase(executionPhaseContext, "adapter_execution", async () => {
++                                if (memberContributionAttempt) await memberAttemptAuthority.assertCurrent(memberContributionAttempt);
++                                return adapter.execute({
+                                 getFreshSessionHandoff,
+                                 runId: run.id,
+                                 agent,
+@@ -18279,7 +18297,8 @@
+                                     });
+                                 },
+                                 authToken: authToken ?? undefined,
+-                            }));
++                                });
++                            });
+                         });
+                         if (!guardedDispatch.dispatched)
+                             return;
+@@ -19521,6 +19540,7 @@
+             }
+         }
+         finally {
++            if (memberContributionAttempt) await memberAttemptAuthority.finish(memberContributionAttempt).catch(() => logger.warn({ runId: run.id }, "Member attempt retirement unavailable; native run ownership still gates access"));
+             await nativeInstructionReservation?.release().catch(error => logger.warn({ runId: run.id, err: error }, "Managed warm session preparation cleanup failed"));
+             if (managedAiRuntime)
+                 await managedAiRuntime.cleanup().catch(() => logger.warn({ runId: run.id }, "AI connection refresh or cleanup failed"));
