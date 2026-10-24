@@ -1,0 +1,272 @@
+{
+  "receiptFormat": "inertia-demo-evidence/v0",
+  "receiptId": "rcpt:rehearsal-target-synthetic",
+  "evidenceClass": "synthetic-fixture",
+  "claimScope": "complete-application-outcome",
+  "qualificationClaimed": false,
+  "source": {
+    "repo": "NetRxn/Inertia",
+    "head": "3560f1e3a1e593807e3fda6ddc7ac4a5fae117ba",
+    "tree": "e4606557b246ac73848bfdeb07fd4e76c08f1080"
+  },
+  "runs": [
+    {
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "role": "system",
+      "agentRef": "agent:ntf05-system-agent",
+      "runtimeRef": "ntf05:existing-runtime",
+      "sourceHead": "3560f1e3a1e593807e3fda6ddc7ac4a5fae117ba"
+    },
+    {
+      "runRef": "run:sha256:cac0cccf93ca019e8fc9405069bcab63b4033048ed55120ad7b6c21f0a314fef",
+      "role": "collaborator",
+      "agentRef": "agent:ntf07-buzz-agent",
+      "runtimeRef": "ntf07:existing-relay",
+      "sourceHead": "3560f1e3a1e593807e3fda6ddc7ac4a5fae117ba"
+    }
+  ],
+  "contributions": [
+    {
+      "contributionRef": "contrib:system-brief-and-draft",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "bounded": false,
+      "invocationRefs": [
+        "inv:sql-01",
+        "inv:sql-02",
+        "inv:research-01",
+        "inv:draft-01",
+        "inv:critique-01",
+        "inv:draft-02"
+      ],
+      "artifactRefs": [
+        {
+          "artifactRef": "art:opportunity-brief",
+          "version": "v1"
+        },
+        {
+          "artifactRef": "art:application-draft",
+          "version": "v1"
+        },
+        {
+          "artifactRef": "art:application-draft",
+          "version": "v2"
+        }
+      ]
+    },
+    {
+      "contributionRef": "contrib:buzz-section",
+      "runRef": "run:sha256:cac0cccf93ca019e8fc9405069bcab63b4033048ed55120ad7b6c21f0a314fef",
+      "bounded": true,
+      "invocationRefs": [
+        "inv:buzz-01"
+      ],
+      "artifactRefs": [
+        {
+          "artifactRef": "art:collaborator-section",
+          "version": "v1"
+        }
+      ]
+    }
+  ],
+  "toolInvocations": [
+    {
+      "invocationRef": "inv:sql-01",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf12-sql-facade.query",
+      "argumentsSha256": "3c47f216682db05cc8bf9bc6bc558c9bd9405e06a55c0be2c77dadcffc5e277b",
+      "resultSha256": "9979ace27ff13b93ed3f54c32280f659737ef6ec86df0f855558fbe176fcfeb2",
+      "admittedSourceRefs": [
+        "src:ntf12-org-evidence"
+      ]
+    },
+    {
+      "invocationRef": "inv:sql-02",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf12-sql-facade.query",
+      "argumentsSha256": "c66282629600a65e0acd2651c0820224361632e1fe9eb6b4e59007cc8bc4fb6d",
+      "resultSha256": "bfe2e72d7f75fe2c0cb40c980b1d7357d6c61b780840140761bb97e4ae5964e0",
+      "admittedSourceRefs": [
+        "src:ntf14-case-scope"
+      ]
+    },
+    {
+      "invocationRef": "inv:research-01",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf05-research",
+      "argumentsSha256": "489c90811f87cb2c1462abe3cd95e12dcd4e454c63d65297d7b5eee48e382ff7",
+      "resultSha256": "598fe9f9a581faa16e390417c36964679664b53a438c8441a1f0b55d83a789b0",
+      "admittedSourceRefs": [
+        "src:ntf14-case-scope"
+      ]
+    },
+    {
+      "invocationRef": "inv:draft-01",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf05-draft",
+      "argumentsSha256": "4c48fb77de351cfe6f76cfa3e50f8cec836aa44aa09b3f046ae928c70474ffcc",
+      "resultSha256": "814a4bcf0a846d13939caedc4deefe2bb358583612ac2153bdddd64c2279af87",
+      "admittedSourceRefs": [
+        "src:ntf12-org-evidence",
+        "src:ntf14-case-scope"
+      ]
+    },
+    {
+      "invocationRef": "inv:critique-01",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf05-critique",
+      "argumentsSha256": "0db3eb236777df5296c83dba51412a6ffad43ba94a258dece7c47d48954714f0",
+      "resultSha256": "0f9ab88f6e5ce03eeb357a109dfe67f720b0cb137b5bad91b57a92257e9d0045",
+      "admittedSourceRefs": []
+    },
+    {
+      "invocationRef": "inv:draft-02",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf05-draft",
+      "argumentsSha256": "f8f99f21d75af3cbc6e225a467cf5db13f20d6c6ab01207e96205e4a0e6ea31d",
+      "resultSha256": "428d46204950f4366c35e50b859f05771191e868b6261c71cf8e28d55c163f4d",
+      "admittedSourceRefs": [
+        "src:ntf14-case-scope"
+      ]
+    },
+    {
+      "invocationRef": "inv:buzz-01",
+      "runRef": "run:sha256:cac0cccf93ca019e8fc9405069bcab63b4033048ed55120ad7b6c21f0a314fef",
+      "tool": "tool:ntf07-buzz.contribute",
+      "argumentsSha256": "df8d1b4abb3c699fc95ce4fbc940c71a3d3c95b74eb57999dbf62be02cec6704",
+      "resultSha256": "64f74af9f838f76e06107d05e67df1fcc4f4e06a079639f1b03a11e32cb18629",
+      "admittedSourceRefs": [
+        "src:ntf14-case-scope"
+      ]
+    }
+  ],
+  "admittedSources": [
+    {
+      "sourceRef": "src:ntf12-org-evidence",
+      "admissionRef": "adm:ntf12-protected",
+      "version": "rev-synthetic-1"
+    },
+    {
+      "sourceRef": "src:ntf14-case-scope",
+      "admissionRef": "adm:ntf14-protected",
+      "version": "rev-synthetic-1"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifactRef": "art:opportunity-brief",
+      "version": "v1",
+      "contentSha256": "6e901965edd991a2c0ea62bb146bf2c8d1f3f217225d360f32bc93fb25972537",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+        "invocationRefs": [
+          "inv:sql-01",
+          "inv:sql-02",
+          "inv:research-01"
+        ]
+      }
+    },
+    {
+      "artifactRef": "art:application-draft",
+      "version": "v1",
+      "contentSha256": "29b3a211bc98cc2105bb47faed991014f23373f32f468a4cb47af97bf434afff",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+        "invocationRefs": [
+          "inv:draft-01",
+          "inv:critique-01"
+        ]
+      }
+    },
+    {
+      "artifactRef": "art:collaborator-section",
+      "version": "v1",
+      "contentSha256": "907b7dfcd2e1648a320d8bde42a6c0277392899a8e9dce9a6b2c81b27ee2cc85",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:cac0cccf93ca019e8fc9405069bcab63b4033048ed55120ad7b6c21f0a314fef",
+        "invocationRefs": [
+          "inv:buzz-01"
+        ]
+      }
+    },
+    {
+      "artifactRef": "art:application-draft",
+      "version": "v2",
+      "contentSha256": "e726a4f34a0ca100e5eb0b54a1893115cb2936e59c91b303dcbd952f82c9c7ca",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+        "invocationRefs": [
+          "inv:draft-02"
+        ]
+      }
+    }
+  ],
+  "outcome": {
+    "artifactRef": "art:application-draft",
+    "version": "v2"
+  },
+  "measurements": {
+    "wallClock": {
+      "status": "measured",
+      "startedAt": "2026-10-28T15:00:00Z",
+      "endedAt": "2026-10-28T17:00:00Z",
+      "seconds": 7200,
+      "boundary": "system run registered to art:application-draft v2 persisted"
+    },
+    "activeHumanTime": {
+      "status": "measured",
+      "seconds": 1200,
+      "method": "timer",
+      "boundary": "member answering the prepared ask and confirming the exact version"
+    },
+    "usage": [
+      {
+        "status": "unknown",
+        "metric": "input_tokens",
+        "unit": "tokens",
+        "coverage": "none",
+        "reason": "provider usage export not yet bound (NTF05)"
+      }
+    ],
+    "cost": [
+      {
+        "status": "unknown",
+        "currency": "USD",
+        "coverage": "none",
+        "reason": "billing export not yet bound (NTF05)"
+      }
+    ],
+    "totals": null,
+    "corrections": {
+      "status": "measured",
+      "count": 1,
+      "boundary": "member corrections between art:application-draft v1 and v2",
+      "source": "native task history"
+    },
+    "asks": {
+      "status": "measured",
+      "offered": 1,
+      "accepted": 1,
+      "declined": 0,
+      "noResponse": 0,
+      "pending": 0,
+      "completed": 1,
+      "boundary": "prepared member asks for the selected case only",
+      "responseTime": {
+        "status": "measured",
+        "statistic": "median",
+        "seconds": 1800,
+        "boundary": "responded asks only; no-response excluded"
+      }
+    }
+  },
+  "nonClaims": [
+    "synthetic target shape, not a run",
+    "not security signoff",
+    "not grant acceptance",
+    "not member approval: exact-version confirmation is recorded natively"
+  ]
+}
