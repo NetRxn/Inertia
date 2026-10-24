@@ -18,6 +18,13 @@
       "sourceHead": "3560f1e3a1e593807e3fda6ddc7ac4a5fae117ba"
     },
     {
+      "runRef": "run:sha256:d34ad726276f02b56e8c742e589a2698d3515b4d19314697b8f18be393acff83",
+      "role": "collaborator",
+      "agentRef": "agent:ntf05-critic",
+      "runtimeRef": "ntf05:existing-runtime",
+      "sourceHead": "3560f1e3a1e593807e3fda6ddc7ac4a5fae117ba"
+    },
+    {
       "runRef": "run:sha256:cac0cccf93ca019e8fc9405069bcab63b4033048ed55120ad7b6c21f0a314fef",
       "role": "collaborator",
       "agentRef": "agent:ntf07-buzz-agent",
@@ -34,8 +41,9 @@
         "inv:sql-01",
         "inv:sql-02",
         "inv:research-01",
+        "inv:sql-write-01",
+        "inv:sql-read-01",
         "inv:draft-01",
-        "inv:critique-01",
         "inv:draft-02"
       ],
       "artifactRefs": [
@@ -50,6 +58,20 @@
         {
           "artifactRef": "art:application-draft",
           "version": "v2"
+        }
+      ]
+    },
+    {
+      "contributionRef": "contrib:independent-critique",
+      "runRef": "run:sha256:d34ad726276f02b56e8c742e589a2698d3515b4d19314697b8f18be393acff83",
+      "bounded": true,
+      "invocationRefs": [
+        "inv:critique-01"
+      ],
+      "artifactRefs": [
+        {
+          "artifactRef": "art:critique",
+          "version": "v1"
         }
       ]
     },
@@ -100,6 +122,26 @@
       ]
     },
     {
+      "invocationRef": "inv:sql-write-01",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf12-sql-facade.writeback",
+      "argumentsSha256": "188ee8f3197b11c01c2c7729835b8936a61cfe306f3e12b70fb41018497531bc",
+      "resultSha256": "7149874e30cf52da34c1552703adcc7bd9f59809e99d2eb1efdb585e25e91c64",
+      "admittedSourceRefs": [
+        "src:ntf14-case-scope"
+      ]
+    },
+    {
+      "invocationRef": "inv:sql-read-01",
+      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "tool": "tool:ntf12-sql-facade.query",
+      "argumentsSha256": "69d621520803bcf5ec70e146cef090d25d10101fe1c00097e119701d407d9189",
+      "resultSha256": "7cd3de2bc503cb55f5de7b276f1f999afecb26f7d758fc4662fabc739bbbb79c",
+      "admittedSourceRefs": [
+        "src:ntf12-org-evidence"
+      ]
+    },
+    {
       "invocationRef": "inv:draft-01",
       "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
       "tool": "tool:ntf05-draft",
@@ -112,11 +154,14 @@
     },
     {
       "invocationRef": "inv:critique-01",
-      "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
+      "runRef": "run:sha256:d34ad726276f02b56e8c742e589a2698d3515b4d19314697b8f18be393acff83",
       "tool": "tool:ntf05-critique",
       "argumentsSha256": "0db3eb236777df5296c83dba51412a6ffad43ba94a258dece7c47d48954714f0",
       "resultSha256": "0f9ab88f6e5ce03eeb357a109dfe67f720b0cb137b5bad91b57a92257e9d0045",
-      "admittedSourceRefs": []
+      "admittedSourceRefs": [
+        "src:ntf12-org-evidence",
+        "src:ntf14-case-scope"
+      ]
     },
     {
       "invocationRef": "inv:draft-02",
@@ -162,7 +207,9 @@
         "invocationRefs": [
           "inv:sql-01",
           "inv:sql-02",
-          "inv:research-01"
+          "inv:research-01",
+          "inv:sql-write-01",
+          "inv:sql-read-01"
         ]
       }
     },
@@ -174,7 +221,18 @@
       "producedBy": {
         "runRef": "run:sha256:8f43ba1217f237d9caced557622ad3b3905ac8b41cba6f239e41cf88e0590cfc",
         "invocationRefs": [
-          "inv:draft-01",
+          "inv:draft-01"
+        ]
+      }
+    },
+    {
+      "artifactRef": "art:critique",
+      "version": "v1",
+      "contentSha256": "22bb01a53a29e5f074cdd7ecab681fa06f6232f09bf09f332c0a337827b7d268",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:d34ad726276f02b56e8c742e589a2698d3515b4d19314697b8f18be393acff83",
+        "invocationRefs": [
           "inv:critique-01"
         ]
       }
@@ -211,16 +269,16 @@
   "measurements": {
     "wallClock": {
       "status": "measured",
-      "startedAt": "2026-10-28T15:00:00Z",
-      "endedAt": "2026-10-28T17:00:00Z",
-      "seconds": 7200,
-      "boundary": "system run registered to art:application-draft v2 persisted"
+      "startedAt": "2026-10-28T13:00:00Z",
+      "endedAt": "2026-10-28T16:00:00Z",
+      "seconds": 10800,
+      "boundary": "phases A-C: system run registration to verified art:application-draft v2 readback, including waiting between phases; excludes setup and phase D review"
     },
     "activeHumanTime": {
       "status": "measured",
-      "seconds": 1200,
-      "method": "timer",
-      "boundary": "member answering the prepared ask and confirming the exact version"
+      "seconds": 1020,
+      "method": "timer for the member ask session; self-report for coordinator and operator interventions",
+      "boundary": "same span as wallClock: member ask session plus coordinator and operator interventions; excludes setup and phase D review"
     },
     "usage": [
       {
@@ -253,6 +311,7 @@
       "declined": 0,
       "noResponse": 0,
       "pending": 0,
+      "withdrawn": 0,
       "completed": 1,
       "boundary": "prepared member asks for the selected case only",
       "responseTime": {
@@ -264,9 +323,10 @@
     }
   },
   "nonClaims": [
-    "synthetic target shape, not a run",
+    "synthetic target shape, not a run; times and values are illustrative",
     "not security signoff",
     "not grant acceptance",
-    "not member approval: exact-version confirmation is recorded natively"
+    "not member approval: exact-version review is recorded natively",
+    "not a submission: the new case stops at prepared/reviewed"
   ]
 }
