@@ -1,25 +1,27 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-24-r17
+Revision: INERTIA-2026-10-24-r18
 Updated: 2026-10-24 (UTC)
-Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Meeting source/native composition is merged in PR34 and independently qualified, default-disabled. The discovery foundation and source-bound funding facts are merged in Inertia PR35/36 and DFW PR51/52; live activation remains pending. The member candidate-only boundary is merged in PR37 and independently qualified. Daily recurring scouting remains disabled.
 
 
 ## Implementation status
 
-Runtime/documentation base: develop `901414612a032e44839ba33fe39163e0e9c28ee1` ([PR31](https://github.com/NetRxn/Inertia/pull/31)), preserving the published PR30 r16/funding r4 artifacts and adding the non-live durable host bundle. DFW durable acceptance is merged at `331416c015c83d20ea2d6834e5b4dd53aaeea320` ([PR50](https://github.com/NetRxn/DFW-Gov-Fund/pull/50)). The historical PR17 archive retains its exact qualification record.
+Runtime/documentation base: develop `3064018359e986a0b69bb5c860c01bb18dd7f5b9` ([PR37](https://github.com/NetRxn/Inertia/pull/37)), including meeting PR34, discovery PR35, source-bound funding facts PR36 and the inactive member candidate boundary. The non-live durable host bundle remains merged in PR31. DFW durable acceptance is merged at `331416c015c83d20ea2d6834e5b4dd53aaeea320` ([PR50](https://github.com/NetRxn/DFW-Gov-Fund/pull/50)). The historical PR17 archive retains its exact qualification record.
 
 | Component | Verified state | Remaining integration |
 |---|---|---|
 | Buzz bridge | Signed transport, native comments/confirmations, durable recovery | Approved relay, pairing and live admission |
 | Native comment export | First-publication mirroring, default-off | Per-binding audience approval and history cutoff; status mirroring planned |
-| Roundtable | Source/hash core and website caller contract-tested | Website server, authorized Drive source and single-owner native job |
+| Roundtable | Source adapter, durable single-owner native job and reference-only follow-up merged in PR34; native PostgreSQL/WAL qualification passed, default-disabled | Real Drive/website admission, live capability review, retention/recovery and transport qualification; notes-only website contract (R-M02 partial) |
 | Grants | Public drafting/actionable gaps and packet/review/vote binding merged; durable DFW acceptance merged and native capture independently qualified, non-live | Qualify production route/transport, retention/archive, roles/bindings/source access, writer fence, human correction/cancel walkthrough, actual model harness and effective-authority verification |
 | Reusable knowledge and finance | Task 6 evidence/SQL reuse and sanitized financial contracts merged; real PostgreSQL domain qualification passed | Configure trusted production import/admission, roles and the selected financial adapter |
 | Partner graph | Typed assertions, writeback/outbox and scoped projection/query core merged; real PG-to-embedded-Helix rehearsal passed | Qualify authenticated production adapters, admitted inventory/backfill, deployed Helix and operational discovery |
 | October discovery | Selected-scope acquisition complete; PR42 merged with passing post-merge CI; priority diligence queue delivered | Select preparation under current owner priorities and deferrals from the [reviewed queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md), preserving confidence and source limits |
+| Operational discovery | Foundation and source-bound funding facts merged in Inertia PR35/36 and DFW PR51/52; native/cold-DFW qualification passed | Actual research/model tools, responsible-member wake mapping, human Buzz delivery and recurrence admission |
 | CEO | Objective intake, funding links and meeting-ready brief core merged; synthetic meeting-answer loop passed | Assign the live intake/research mandate, source access, tools, budgets and delivery policy |
-| Member agents and Y2 | Interfaces identified | Enrollment, execution isolation and live adapters |
+| Member agents | Candidate-only admission, scoped inputs, artifact validation and immutable replay receipts merged in PR37; independently qualified | Engineering-owned authenticated ingress/attempt authority, live enrollment/provider execution, native review handoff and authoritative completion |
+| Y2 | Interface identified | Authorized contract and live adapter |
 
 Historical PR17 qualification: 248 combined tests; its exact archive passed native-service RPC checks with six migrations. Current cloud and Task 8 evidence is recorded separately. [Testing evidence](testing.md#qualification-record) identifies the artifact and acceptance scope. Live deployment and domain admission are pending. Website server contract: [v1 proposal](docs/integrations/dao-website-member-publication-proposal.md), [v1.1 clarification](docs/integrations/dao-website-publication-v1.1-clarifications.md).
 
@@ -96,7 +98,7 @@ Selected route: a TypeScript plugin using the qualified SDK’s paired-user comm
 
 Website reads currently require Privy login. Members-only publication requires active-membership checks and audience readback. Inertia supplies the API/schema proposal; the user owns website rollout.
 
-Current core uses source-grounded extractive quotes. It rejects model-supplied owners and labels model classifications unverified. The caller-side website publisher/readback adapter is merged and contract-tested. The website server contract remains proposed and source readiness, durable native job wiring and live admission are still pending; the contracts below define the complete target.
+Current core uses source-grounded extractive quotes. It rejects model-supplied owners and labels model classifications unverified. [Meeting source/native composition](docs/development/meeting-source-native-composition.md) is merged and independently qualified: explicit Meet/Drive readiness, versioned publication recovery and reference-only native follow-up. The manual job remains default-disabled. R-M02 is partial: summary-only sources create missing-transcript work and retain their protected Drive reference, but notes-only website output needs a server contract. Real source/website admission and production qualification remain pending.
 
 - R-M01: Observe authorized ready Meet/Gemini outputs in organization Drive. Identify meeting, source file, source revision and content hash; preserve originals and provenance.
 - R-M02: Produce a faithful cleaned transcript separately from notes, decisions and action items. Preserve uncertainties and source links. A summary-only source yields notes and a missing-transcript exception, never an invented transcript.
@@ -142,7 +144,7 @@ The [detailed funding specification](docs/development/funding-enhancement/spec.m
 
 ### Maintained partner knowledge: R-K01–R-K08 (core, merged)
 
-Current delivery: the core is merged. The approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md) connects query-first knowledge, bounded new-source research, official validation, useful writeback, briefs and urgent alerts. Host wiring and recurring activation remain pending.
+Current delivery: the core is merged. The approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md) connects query-first knowledge, bounded new-source research, official validation, useful writeback, briefs and urgent alerts. The merged default-disabled foundation supports saved-context/URL submission, durable budgets/frontier, known-source preliminary briefs and date urgency before packets, corroborated new-sponsor identity admission and existing Buzz transport. Source-bound new-sponsor deadline/benefit assessment is merged in PR36/DFW PR52 and needs no site-specific adapter. It preserves conditional facts and unknowns; eligibility remains separately established. Activation requires actual research/model qualification, active responsible-member wake mapping and verified human delivery before recurrence.
 
 Task 6 provides the merged evidence/SQL foundation. The Helix projection, retrieval and research-writeback core is merged and independently reviewed; real PostgreSQL-to-embedded-Helix rehearsal passed. Production adapters, admitted inventory/backfill and live qualification remain pending. Reuse existing member, project and evidence identities. Paperclip owns work and decisions; the graph supplies indexed knowledge.
 
@@ -169,6 +171,8 @@ Objective intake, versioned funding links and brief rendering are merged. The ac
 ### Member contribution: R-C01–R-C05
 
 The user will arrange repository-admin access for a second rehearsal participant. Authorize that participant’s agent separately within the DAO application. DAO privileges and control-plane access require their own explicit grants.
+
+The [candidate-only boundary](docs/development/member-contribution-boundary.md) is merged in PR37 and independently qualified. It admits scoped inputs and validated inert artifacts to immutable replay-safe receipts. Engineering must provide authenticated ingress and a non-reusable authority epoch for each execution attempt. Live enrollment/provider execution, native review handoff, authoritative completion and R-C05 follow-up remain next.
 
 - R-C01: Pair a member and agent, verify membership and capabilities, and limit access to approved companies/projects/tasks.
 - R-C02: Use native eager acquisition, checkout and dependency handling. Configure explicit autonomy, hiring and budget permissions.

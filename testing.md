@@ -1,8 +1,8 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-24-r17
+Revision: INERTIA-2026-10-24-r18
 Updated: 2026-10-24 (UTC)
-Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Meeting source/native composition is merged in PR34 and independently qualified, default-disabled. The discovery foundation and source-bound funding facts are merged in Inertia PR35/36 and DFW PR51/52; live activation remains pending. The member candidate-only boundary is merged in PR37 and independently qualified. Daily recurring scouting remains disabled.
 
 
 ## Qualification record
@@ -14,6 +14,28 @@ Task 8 is merged in Inertia PR27 and DFW PR46. Qualified-base evidence: 362 Iner
 Native review: The durable successor captures authority for one exact command/version atomically with the native verdict. Later native role/membership changes, document edits, card withdrawal or disconnect do not revoke that instruction. Explicit cancellation takes effect only when DFW confirms it; an already-applied effect is not undone. Current DFW authorization, evidence, head and artifact checks still block stale effects, and submission authority remains separate. The core is implemented and independently reviewed; production route/transport, lifecycle-compatible retention/archive, real role/binding/source access, qualified writer fencing and a human correction/cancel walkthrough remain activation gates. The legacy adapter stays default-disabled. DFW deadline consistency is merged in [PR49](https://github.com/NetRxn/DFW-Gov-Fund/pull/49) at `21792a6ca2fa6f5bca2a791c40558d872be82eda`. Durable acceptance is merged in [PR50](https://github.com/NetRxn/DFW-Gov-Fund/pull/50) at `331416c015c83d20ea2d6834e5b4dd53aaeea320`, tree `6149f5e5ce3408b7ba62534dbd34a59eb5cef61b`; [exact-head CI 40045687718](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40045687718) and [post-merge CI 40046050158](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40046050158) passed. The 55-path non-live host bundle is merged in [Inertia PR31](https://github.com/NetRxn/Inertia/pull/31) at `901414612a032e44839ba33fe39163e0e9c28ee1`, tree `da97acb1c1223061bc53e9cf47278d9910940016`, preserving all 187 PR30 files.
 
 Independent durable review passed 36 native PostgreSQL cases, 13 upstream interaction tests, five launcher safety tests, 20 separate DFW PostgreSQL cases and three native-to-DFW rehearsals. The rehearsals use actual native PostgreSQL verdict transactions, synthetic human fixtures and local-file receipt transport into the actual DFW SQLite service; they are not production transport or all-PostgreSQL cross-service evidence. Proposal apply, packet-role apply and cancel-before-apply survive later native role/document changes and offline replay. DFW migration 0013→0016→0013→0016 and verified zero-leak/shutdown cleanup passed. Receipt retention must preserve accepted instructions until terminal DFW acknowledgement or qualified durable transfer, then permit ordinary archival under domain audit policy; no indefinite company-deletion lock is approved.
+
+### Meeting source and native composition
+
+[PR34](https://github.com/NetRxn/Inertia/pull/34) merged at `600827473e4be392dd819ccb89a81749c0a2cb30`, tree `d56109ffca61baa250947e0adec767f7ce12e17b`. Final author verification passed 449 tests in 33 files, typecheck, build and standard package verification. Independent review passed the frozen 446-test suite and separately checked three later source cases; the final formatted production hashes were rebuilt and requalified against the pinned native host.
+
+Actual Paperclip 2026.1012.0/PostgreSQL checks passed disabled-job RPC, exclusive ownership, summary-only missing-transcript work, transcript readmission/correction, website/native acknowledgment recovery and immediate-stop/WAL restart preservation. Enabled composition used actual SQL/issues services with synthetic Google/website HTTP, secrets and configuration, not full worker HTTP transport or live sources. R-M02 notes-only website publication remains partial. [Admission gates](docs/development/meeting-source-native-composition.md#admission-checklist) include real source/website access, installation capability review, retention, stopped-owner recovery and host transport bounds.
+
+### Discovery foundation
+
+[Inertia PR35](https://github.com/NetRxn/Inertia/pull/35) merged at `da902be0b7e0dcce935c8d4bc4cc0f6e9ede30c0`, tree `669f28ede5d5d9878fb8dd8f6c9e77265a249bf4`. Author and independent suites passed 505 tests in 42 files; typecheck, build and the 111-file/seven-migration production package passed. No Inertia CI checks were reported. [DFW PR51](https://github.com/NetRxn/DFW-Gov-Fund/pull/51) merged at `0e73407926c71f2203bfb36e8d3495187c004ced`, tree `b47d3e48c8dfbcc59b68fbd50e9b32d3212c1ed4`, after [exact-head CI 40052112703](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40052112703) passed.
+
+Independent qualification exercised actual native PostgreSQL/worker services, 16 native documents, four successful wakeups, cold DFW identity admission/reuse, lost acknowledgements, signed Buzz HTTP fixtures and immediate PostgreSQL restart recovery. These fixtures do not establish live search/model quality, a real relay or human reading. Wake policy needs a host-resolvable active responsible member on scout/diligence/urgent issues; `responsible_user_unresolved` leaves the wake pending. Source-bound funding-facts admission is now merged in PR36/DFW PR52; [foundation scope and activation inputs](docs/development/funding-enhancement/discovery-host-composition.md) define the boundary.
+
+### Source-bound funding facts
+
+[Inertia PR36](https://github.com/NetRxn/Inertia/pull/36) merged at `e52e16e3bfe54eab073c928230bc4b660deab52a`, tree `1e2d6dbad933c03967c00cff4b398908925d3275`. [DFW PR52](https://github.com/NetRxn/DFW-Gov-Fund/pull/52) merged at `e81d7a0ece03bbe951e5b1ae3727c26a3c86068a`, tree `94f971b5a0c66e1e99dae13f5c411bc015175774`; [post-merge CI 40053808354](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40053808354) passed. Host verification passed 516 tests in 43 files, typecheck/build and the 113-file/seven-migration package. Independent actual-native qualification passed with 22 documents, eight queued wake responses and the cold DFW process; receipt SHA-256 `24ea229340a89ea07d907efeceeb944a983d34d74bb2f3ac83492bf704df783d`.
+
+Exact current source/identity/span binding, actor separation, persistent reviewer budgets, conservative deadline/benefit interpretation, supersession and alert replay are covered. Controlled captured HTML and agent calls are distinct from live model/search, actual relay delivery or human reading. Eligibility and fit remain unknown unless independently established.
+
+### Member candidate boundary
+
+[PR37](https://github.com/NetRxn/Inertia/pull/37) merged the independently approved candidate-only boundary at `3064018359e986a0b69bb5c860c01bb18dd7f5b9`, tree `5a96320bd034c8dc6309390ae6709289dfdb57cd`. Combined verification passed 566 tests, typecheck/build and a 123-file/seven-migration package. Actual native member and unchanged funding-facts rehearsals passed, including cleanup/recovery. Native tests cover scoped reads, hostile artifacts, current membership/checkout rejection, concurrent replay and lost receipt acknowledgements. Tasks remain in progress; native review dispatch and authoritative completion remain to implement. Engineering must qualify authenticated ingress and non-reusable attempt authority, live enrollment/provider execution, native review and atomic completion before the second-member demonstration.
 
 ### Historical PR17 archive
 
@@ -27,7 +49,7 @@ Independent durable review passed 36 native PostgreSQL cases, 13 upstream intera
 | HTTP/API | Historical pre-mirror source `a3e60ee5f1f9d9a295d3f744d3eca452a4ded947`; candidate HTTP/auth/UI acceptance pending |
 | External services | Synthetic demo I/O; live website, Drive, grant/vote, member and Y2 acceptance pending |
 
-[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Current runtime/documentation baseline: develop `90141461` (PR31); the runtime receipt above retains its original source identity.
+[Native receipt and reproduction](docs/qualification/combined-native-services/README.md). Qualification applies to the exact archive above. Current runtime/documentation baseline: develop `30640183` (PR37); the runtime receipt above retains its original source identity.
 
 ### Historical slice evidence
 
@@ -36,13 +58,14 @@ Independent durable review passed 36 native PostgreSQL cases, 13 upstream intera
 | Signed Buzz transport | Merged into develop | [PR 2](https://github.com/NetRxn/Inertia/pull/2), 36 tests; canonical signatures, NIP98, stable retry IDs, bounded responses and deferred Retry-After | Exercise the configured relay during live admission |
 | Native authority and durable records | Merged into develop | [PR 3](https://github.com/NetRxn/Inertia/pull/3), combined 60 tests; real SDK types, PGlite SQL, atomic inbox/outbox and host query validation | Configured relay admission and live domain integration |
 | Connected plugin | Merged into develop | [PR 4](https://github.com/NetRxn/Inertia/pull/4), 85 tests, typecheck/build/demo; durable retry, lookback/backfill, scoped health and addressed confirmation-card privacy | Configured relay admission and live domain integration |
-| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR 14; deployed server/source/job admission pending |
+| Roundtable core | Merged into develop | [PR 5](https://github.com/NetRxn/Inertia/pull/5), 23 Roundtable tests; 108 combined tests at PR 5; source revisions, extractive quote grounding and deterministic materialization | Website caller merged in PR14 and source/native composition in PR34; live source/server admission pending |
 | Grant packet binding | Merged into develop | [PR 7](https://github.com/NetRxn/Inertia/pull/7), 37 grant tests; 145 combined tests at PR 7, typecheck/build and grant fixture demo pass | Trusted domain/human-decision adapter, chain verifier and native receipt acceptance |
 | Package and setup | Merged into develop | [PR 8](https://github.com/NetRxn/Inertia/pull/8), 149 tests, typecheck/build; clean production install and real native JSON-RPC worker handshake pass | Deploy the qualified plugin and configure authorized targets |
 | Connected workflow rehearsal | Merged into develop | [PR 10](https://github.com/NetRxn/Inertia/pull/10), 152 tests and five demos pass; independently reviewed three workflow tests, typecheck/build/demo/diff | Replace explicit fixture seams with tested live adapters |
 | Historical native service qualification | Passed for its recorded pre-mirror artifact | [Qualification receipt](docs/qualification/native-services.md): actual plugin loader, real PostgreSQL, four plugin migrations/eight tables, worker initialization and three registered jobs; disabled configuration validates | HTTP/API qualification also passed in the authorized isolated Docker fallback; external/live integrations remain pending |
 | Latest-release qualification | Merged into develop | [PR 11](https://github.com/NetRxn/Inertia/pull/11): official registry discovery, isolated exact-lock qualification, 12 focused tests plus actual 152 runtime tests/typecheck/production package verification | Qualify each new candidate with native/HTTP checks and tested database recovery before promotion |
-| Y2 and member participation | Planned required product slices | Existing systems and public interfaces identified | Implement adapters and complete the three-outcome rehearsal |
+| Member participation | Candidate-only boundary merged in PR37; independently qualified | 566 combined tests, package and native member/facts rehearsals passed | Authenticated ingress/attempt authority, live enrollment/provider execution, native review and completion |
+| Y2 | Planned required product slice | Existing system and public interface identified | Qualify adapter and complete the three-outcome rehearsal |
 
 ## Strategy and evidence
 
@@ -176,7 +199,7 @@ Also prove each route’s required roles: direct application has five; partner c
 |---|---|---|
 | T-M01 | R-M01 | Ready source creates one job with meeting ID, revision and hash. |
 | T-M02 | R-M02 | Faithful transcript and separate notes retain uncertainty and source attribution. |
-| T-M03 | R-M02 | Summary-only source produces notes plus missing-transcript exception. |
+| T-M03 | R-M02 | Summary-only source produces notes plus missing-transcript exception. Partial: native missing-transcript work is implemented; notes-only website output awaits a server contract and real de-identified Gemini example. |
 | T-M04 | R-M03–04 | Automatic upsert readback matches content, audience, URLs and version. |
 | T-M05 | R-M04 | Duplicate, corrected and interrupted source updates reconcile and version once. |
 | T-G01 | R-G01–02 | Current grant has cited deadline, applicant route and eligibility; expired candidate excluded. |
@@ -244,9 +267,9 @@ The full-HTTP receipt remains historical; requalify HTTP/auth/UI against the cur
 
 ## Funding enhancement qualification
 
-The approved discovery loop adds actual-agent/search, unseeded official opportunity, deadline amendment, failed-source triage, budget/coverage, alert deduplication/recovery and second-run reuse checks in [discovery-loop.md](docs/development/funding-enhancement/discovery-loop.md#acceptance). The daily schedule remains disabled pending host wiring and acceptance.
+The approved discovery loop adds actual-agent/search, unseeded official opportunity, deadline amendment, failed-source triage, budget/coverage, alert deduplication/recovery and second-run reuse checks in [discovery-loop.md](docs/development/funding-enhancement/discovery-loop.md#acceptance). The narrow foundation is merged and independently qualified with controlled external I/O; source-bound funding facts are merged, while actual research/model behavior and human delivery remain pending. The daily schedule remains disabled.
 
-Detailed [acceptance requirements](docs/development/funding-enhancement/testing.md) cover R-F01–08 and R-I01–04. Current merged DFW main is `331416c015c83d20ea2d6834e5b4dd53aaeea320` (PR50); Inertia develop is `901414612a032e44839ba33fe39163e0e9c28ee1` (PR31), including the non-live durable host publication. Public drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8 are merged. Historical discovery and portable-skills CI records below remain scoped to their exact heads; live model/tool qualification remains pending.
+Detailed [acceptance requirements](docs/development/funding-enhancement/testing.md) cover R-F01–08 and R-I01–04. Current merged DFW main is `e81d7a0ece03bbe951e5b1ae3727c26a3c86068a` (PR52); Inertia develop is `3064018359e986a0b69bb5c860c01bb18dd7f5b9` (PR37), including the non-live durable host bundle, meeting source/native composition, discovery/facts and member candidate boundary. Public drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8 are merged. Historical discovery and portable-skills CI records below remain scoped to their exact heads; live model/tool qualification remains pending.
 
 Public drafting and actionable-gap continuation are merged. Historical pre-merge qualification: the combined candidate passed 451 tests with one manifest failure caused by the snapshot's missing pre-existing PPTX; the manifest entry is preserved. Independent focused review passed 125 tests. Ruff, mypy (100 source files), compileall and build passed. Current production host/model qualification remains an activation gate.
 

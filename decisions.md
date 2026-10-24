@@ -1,13 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-24-r17
+Revision: INERTIA-2026-10-24-r18
 Updated: 2026-10-24 (UTC)
-Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. The durable native acceptance core is implemented and independently reviewed, with DFW PR50 and Inertia host PR31 merged; it remains non-live pending production composition and qualification. Meeting source/native composition is merged in PR34 and independently qualified, default-disabled. The discovery foundation and source-bound funding facts are merged in Inertia PR35/36 and DFW PR51/52; live activation remains pending. The member candidate-only boundary is merged in PR37 and independently qualified. Daily recurring scouting remains disabled.
 
 
 ## Current baseline
 
-Develop `90141461` (PR31) includes the published PR30 artifacts, cumulative core, cloud qualification/race fixes, Task 8, the default-disabled legacy adapter and the independently reviewed non-live durable host bundle. DFW durable acceptance is merged in PR50. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `30640183` (PR37) includes the cumulative core, cloud qualification/race fixes, Task 8, the default-disabled legacy adapter, non-live durable host bundle, PR33 team checklist, meeting source/native composition, discovery/facts and inactive member candidate boundary. DFW durable acceptance is merged in PR50. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Settled decisions
 
@@ -54,7 +54,7 @@ Implementation tasks reference these setup IDs.
 | U01 | Public SDK package resolution and eventual serving admission | Reproducible tested baseline: v2026.1012.0 / bba6a45f0d364cfd962ac59b3bdf2426a8222adb. Target latest releases through repeatable qualification; record package integrity and serving admission | Engineering / build and deployment |
 | U02 | Existing execution-hardening compatibility and reuse permissions | Version pin, license/authorization, supported lifecycle, isolation and deployment evidence | Engineering qualification / G1 |
 | U03 | Buzz instance, runtime route and identity pairing | Supported bridge API, relay endpoints, paired human/agent rules, owner-author configuration | Integration owner / G2 |
-| U04 | Drive publication contract | Folder IDs, actual Gemini output types, readiness, audience and retention | DAO administrator / G2 |
+| U04 | Drive publication contract | Approved folder/source access, actual examples, stable DAO meeting identity/date, audience and retention; engineering derives and verifies API mappings/readiness | DAO administrator / G2 |
 | U05 | DAO publication interface and access | Existing meeting actions authenticate a Privy session; explicit active-DAO-membership enforcement remains required. Target is members-only behind the portal. Current login-only access must gain explicit active-membership checks alongside atomic upsert/readback; prepare the API/schema proposal, user owns rollout | Website owner / integration |
 | U06 | Effective multi-stage vote authority | Vocdoni is selected; user will supply an example. Verify whether documented Aragon/final-action stages apply to that actual workflow, then require effective authority and exact packet/action binding. Confirm chain/network from the example | Governance owner / integration |
 | U07 | Y2 account and application access | Public API/changefeed route is agreed. Confirm account authorization, registration/update identity, visibility, rate limits and demo data | Y2 teammate / integration |
@@ -135,12 +135,20 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D59: Seed MADE as a TechFW program and Moonshot/LiquidAcre as existing collaborators with attributed activity evidence. Preserve October 30 planned work and candidate aliases separately. Official IRS records verify EIN 41-2815082/public-charity status; the determination-letter attachment and funder-specific eligibility remain separate evidence needs.
 - D60: Keep July case improvement, October 23 manual findings, dated replay and actual scanner output separate. October discovery is complete and PR42 is merged with passing post-merge CI. Use the delivered priority diligence queue for actionable preparation while preserving the exact confidence overlay and source limits.
 
-- D61: Extend Tasks 5, 6C/6D and 8 with the approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md): query saved evidence, discover uncovered sources, validate official evidence, assess benefit/effort, persist useful knowledge, deliver deduplicated urgent alerts and prioritized briefs, and retain due rechecks in native work. Configure recurring execution after host wiring, rehearsal and cadence agreement.
+- D61: Extend Tasks 5, 6C/6D and 8 with the approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md): query saved evidence, discover uncovered sources, validate official evidence, assess benefit/effort, persist useful knowledge, deliver deduplicated urgent alerts and prioritized briefs, and retain due rechecks in native work. Configure recurring execution after research/model, wake-mapping and human-delivery qualification, rehearsal and cadence agreement.
 
 - D62: Native acceptance captures durable authority for one exact command/version atomically with the verdict. Later native role/document changes, withdrawal or disconnect do not revoke it. DFW-confirmed cancellation is serialized with apply; current funding evidence/head and authorization still gate effects, and submission remains separate. The independently reviewed core is implemented; DFW PR50 and Inertia host PR31 are merged, and production activation gates remain.
 - D63: Preserve accepted receipts until terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival under domain audit retention. Unresolved acceptance needs confirmed cancellation or qualified transfer before removal. Use an approved lifecycle-compatible contract, not an indefinite company-deletion lock or qualification-only retention SQL.
 
+- D64: Use explicit trusted Meet/Drive bindings, verified FILE_GENERATED readiness and unchanged Drive versions for meeting sources. Persist exact publication operations before I/O and reuse native intake for reference-only follow-up. Summary-only sources never become transcripts; notes-only website output remains R-M02 partial. The merged job stays default-disabled pending source/server and installation admission.
+
+- D65: Keep discovery in the existing plugin and native work. Independently corroborated new-source identity does not admit funding facts or a recurring adapter. PR36/DFW PR52 separately assess exact current source spans for conditional deadline/benefit facts without a site-specific adapter. The merged foundation uses preliminary briefs before packets and existing signed Buzz transport; relay acknowledgement does not establish human reading. Active responsible-member mapping, actual research/model quality and delivery admission gate activation.
+
+- D66: Member output is an inert candidate with scoped inputs, validated artifacts and immutable replay-safe receipts. Engineering supplies authenticated ingress and non-reusable per-attempt authority. Native review and authoritative completion require their own current-state fence; candidate staging does not complete work.
+
 ## Change log
+
+- r18: Record PR34 meeting source/native composition and its scoped native PostgreSQL/WAL qualification. Record the merged PR35/DFW PR51 discovery foundation and scoped native/cold-DFW/relay-fixture qualification. Record merged PR36/DFW PR52 source-bound funding facts and the merged, independently qualified PR37 member candidate boundary. Keep notes-only website output, live activation and member review/completion pending. Update team handoffs without shifting engineering work to source owners.
 
 - r17: Record merged deadline consistency and DFW durable acceptance, independently qualified atomic native capture and the source-only host publication. Preserve exact-version acceptance/cancellation semantics, scoped test evidence and production activation gates; daily discovery remains disabled.
 

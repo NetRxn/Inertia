@@ -1,6 +1,6 @@
 # Funding enhancement implementation plan
 
-Revision: FUNDING-2026-10-24-r5.
+Revision: FUNDING-2026-10-24-r6.
 Updated: 2026-10-24 (UTC)
 
 > **For agentic workers:** Use superpowers:subagent-driven-development or superpowers:executing-plans to implement task-by-task. Steps use checkbox syntax.
@@ -186,7 +186,9 @@ Operational discovery extension: prove restart/uncertain-delivery recovery, chan
 
 **State:** merged in Inertia PR27 and DFW PR46. Objective intake, versioned funding links and briefs passed independent review. The synthetic actual-service meeting-answer → scoped knowledge → follow-up → revised-brief rehearsal also passed; its portable supplement is merged in Inertia PR29. Production source/member exports, native visibility and assigned live intake remain activation work.
 
-Operational discovery extension: render a short benefit/effort brief with source/as-of, deadline, exact action and owner. Deliver validated urgent findings separately with opportunity/cycle/material-event deduplication. Persist due rechecks in native work, then rehearse and agree cadence/alert targets before enabling recurring execution.
+Meeting source/native composition is merged in Inertia PR34 and independently qualified with synthetic external I/O and actual native PostgreSQL/WAL. New/corrected publications reuse one reference-only native issue; summary-only sources create missing-transcript work. Qualify real source/website access, live installation capabilities, retention/recovery and transport bounds; resolve notes-only website output before claiming complete R-M02 acceptance.
+
+Operational discovery foundation is merged in Inertia PR35/DFW PR51: same-plugin context/URL tools, bounded durable frontier/budgets, known-source preliminary briefs before packets, corroborated identity admission and existing signed Buzz transport. The source-bound funding-facts service/tool is merged in PR36/DFW PR52, with conservative conditional deadline/benefit interpretation and separately established eligibility. Qualify actual search/model behavior, active responsible-member wake mapping, document-history costs and human delivery, then rehearse and agree cadence/alert targets before recurrence.
 
 **Files:** merged Inertia `src/intake/contracts.ts`, `src/intake/service.ts`, `src/grants/brief.ts`, `test/intake/service.test.ts`, `test/grants/brief.test.ts`; existing `src/paperclip/adapter.ts`, `src/worker.ts`, `src/manifest.ts`; merged DFW `src/dfw_incentives/opportunity_brief.py`, `src/dfw_incentives/objective_links.py`, model/migration and tests; extend the website integration proposal; production server rollout remains with its owner.
 
@@ -215,7 +217,7 @@ Operational discovery extension: render a short benefit/effort brief with source
 
 The CI, benchmark, candidate, route-review, public drafting/gap and portable-package foundations are merged. Qualify actual host/model behavior against the merged contracts. Independent v3 quality assessment and actual runtime qualification remain distinct from passing contract tests.
 
-Task 6, partner graph and Task 8 intake/link/brief are merged. Independent cloud and synthetic meeting-answer rehearsals passed. Task 7 has DFW durable acceptance merged in PR50 and independently qualified native capture; host publication is merged in Inertia PR31. Production route/transport, retention/archive, real roles/bindings/source access, writer fencing and the human correction/cancel walkthrough remain gates; the legacy adapter stays default-disabled. The approved discovery loop extends Tasks 5, 6C/6D and 8; daily execution remains disabled until host wiring, end-to-end rehearsal and cadence agreement. Task 9 retains HTTP/UI, PPC2/VPS and production activation gates. Exact July replay and October discovery remain separate evidence tracks.
+Task 6, partner graph and Task 8 intake/link/brief are merged. Independent cloud and synthetic meeting-answer rehearsals passed. Task 7 has DFW durable acceptance merged in PR50 and independently qualified native capture; host publication is merged in Inertia PR31. Production route/transport, retention/archive, real roles/bindings/source access, writer fencing and the human correction/cancel walkthrough remain gates; the legacy adapter stays default-disabled. The approved discovery loop extends Tasks 5, 6C/6D and 8; the foundation and source-bound funding facts are merged and independently qualified. Daily execution stays disabled until actual research/model and human-delivery qualification, end-to-end rehearsal and cadence agreement. Task 9 retains HTTP/UI, PPC2/VPS and production activation gates. Exact July replay and October discovery remain separate evidence tracks.
 
 October discovery is complete and PR42 is merged with passing post-merge CI; temporary live jobs are removed. Select preparation under current owner priorities and deferrals from the dated [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md). Preserve the exact confidence overlay, automated routing dispositions and manual-source limits; the first DNS-failed scout, manual findings and dated replay remain historical evidence, separate from July improvement.
 

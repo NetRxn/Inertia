@@ -1,6 +1,6 @@
 # Funding enhancement acceptance
 
-Revision: FUNDING-2026-10-24-r5. This test specification separates implementation evidence from remaining quality and deployment gates.
+Revision: FUNDING-2026-10-24-r6. This test specification separates implementation evidence from remaining quality and deployment gates.
 Updated: 2026-10-24 (UTC)
 
 ## Evaluation tracks
@@ -98,6 +98,12 @@ The graph core is merged, with independent real PostgreSQL/PostGIS and PG-to-emb
 | P12 | Real PG concurrent admission/source changes and role isolation plus actual pinned Helix integration pass; end-to-end reuse/writeback/reuse is demonstrated before demo acceptance | 6D,9 |
 
 ## Recorded implementation evidence
+
+Meeting source/native composition is merged in Inertia PR34. Final author checks passed 449 tests in 33 files, typecheck, build and package verification; independent review and actual pinned native PostgreSQL/WAL qualification passed. Synthetic source/website I/O covered summary-only work, transcript readmission/correction and uncertain-acknowledgment recovery. This is not live source or full worker HTTP qualification. R-M02 notes-only website output remains partial; see the [meeting evidence and admission gates](../../../testing.md#meeting-source-and-native-composition). The narrow discovery foundation is merged; its separate evidence is below.
+
+Discovery foundation: Inertia PR35/DFW PR51 are merged. Author and independent host suites passed 505 tests in 42 files; typecheck/build and the 111-file/seven-migration package passed. Actual native PostgreSQL/worker, cold DFW identity admission/reuse, native documents/wakes, signed-relay fixtures and restart recovery passed independently. DFW exact-head CI 40052112703 passed; no Inertia CI-pass claim is made. Source/relay responses were controlled fixtures, not live research or human receipt. Test unresolved responsible-member mapping as a pending wake, not execution. Source-bound funding-facts admission is merged in PR36/DFW PR52; live model/search/delivery remain pending. See [exact scope and identities](../../../testing.md#discovery-foundation).
+
+Funding facts: PR36/DFW PR52 are merged; DFW post-merge CI 40053808354 passed. Host 516 tests, typecheck/build and the 113-file/seven-migration package passed. Independent actual-native/cold-DFW qualification passed with 22 documents and eight queued wakes. Exact source spans, conservative conditional facts, unknown eligibility/fit, persistent reviewer budgets and supersession/replay were verified with controlled captures. The merged PR37 member candidate boundary additionally passed 566 combined tests, package and member/facts native rehearsals; live ingress/provider execution and native review/completion remain pending. See [exact facts evidence](../../../testing.md#source-bound-funding-facts) and [member limits](../../../testing.md#member-candidate-boundary).
 
 Current qualification: Independent one-command cloud rehearsal passed DFW PostgreSQL 17.11/PostGIS 3.5.2 domain qualification (65 tests), Paperclip 2026.1012.0 native PostgreSQL 18 services and real PG-to-embedded-Helix reuse/writeback. Native inbox/outbox race fixes and cloud tooling are merged. Full HTTP/UI remains blocked by `os.networkInterfaces` / `uv_interface_addresses`; PPC2/VPS executor admission, live-member enrollment and production deployment remain future gates.
 
