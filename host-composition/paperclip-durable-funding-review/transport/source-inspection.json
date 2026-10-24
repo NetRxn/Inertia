@@ -4,7 +4,8 @@
   "files": [
     {
       "path": "@paperclipai/server/dist/app.js",
-      "sha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32"
+      "sha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32",
+      "qualifiedCandidateSha256": "23dcb0d58d7ef2afd93830efe949af363072b799f1f337a6b252f7fee9f76224"
     },
     {
       "path": "@paperclipai/server/dist/middleware/auth.js",
@@ -16,7 +17,8 @@
     },
     {
       "path": "@paperclipai/server/dist/services/plugin-host-services.js",
-      "sha256": "9eb7981530436f3f5c6beb8b7680aebd69f3a9a2b1f551d533e0e029f48193b9"
+      "sha256": "9eb7981530436f3f5c6beb8b7680aebd69f3a9a2b1f551d533e0e029f48193b9",
+      "qualifiedCandidateSha256": "87007ca98aa81ef2d15dee688a1431a7b21e8af276ea321739023fe625631297"
     },
     {
       "path": "@paperclipai/plugin-sdk/dist/types.d.ts",
@@ -25,13 +27,36 @@
     {
       "path": "@paperclipai/plugin-sdk/dist/worker-rpc-host.js",
       "sha256": "a1079eb8978a5efb3580a21e26a72b6ce1daa9196602119d3e47f74599355663"
+    },
+    {
+      "path": "@paperclipai/server/dist/services/plugin-host-services.d.ts",
+      "sha256": "88f4558d20d6bb8bc231b02e71b92e21024bb2be715b7e6ae89f162d6b4e5e1c"
+    },
+    {
+      "path": "@paperclipai/server/dist/app.d.ts",
+      "sha256": "c80c67ede5f691ceead4ae6df19bbcc85bde30df50d10c33a73a5d78ae55f8e2"
+    },
+    {
+      "path": "@paperclipai/server/dist/services/plugin-worker-manager.js",
+      "sha256": "ba27a96d902c7e9498225892147861437391f794a6889f92683b5a4f08003ec4"
+    },
+    {
+      "path": "@paperclipai/server/dist/services/plugin-loader.js",
+      "sha256": "89cec951987fba8d3907b144401d4e0e0627b37071dc95cad9e875df0587bcf9"
+    },
+    {
+      "path": "@paperclipai/plugin-sdk/dist/host-client-factory.js",
+      "sha256": "013f7c44b6f6a8b0feb227966e2107027461f071afc6e17d43c339b553a00ac9"
     }
   ],
   "findings": {
-    "router": "app.js Express API Router after actorMiddleware; no general plugin route registration in PluginContext",
+    "router": "Optional construction-time Db-owned pre-parser bodyless rejection; receipt router after all stock hostname/cloud identity/warm-standby/actor gates. No plugin-config/request JSON hooks.",
     "nativeAuth": "board_api_keys revokedAt/expiry + auth user lookup + current company membership; exact configured userId/keyId additionally required",
-    "http": "plugin-host-services pins resolved IP, denies private targets, uses one request without redirect, max response body200MiB",
+    "http": "Default host remains 200 MiB/30-second socket budget. Trusted optional Inertia owning-host composition: 8 KiB request/header-parser budget, fixed 1 MiB raw response storage, compression/invalid UTF-8 rejection, absolute 15-second DNS-plus-socket deadline; original IP pinning/private denial/no-follow/TLS unchanged.",
     "sdk": "worker-rpc-host serializes method/headers/body; does not forward AbortSignal",
-    "secrets": "ctx.secrets.resolve(secret_ref,{companyId}) at request time; never provisioned by this composition"
+    "secrets": "ctx.secrets.resolve(secret_ref,{companyId}) at request time; never provisioned by this composition",
+    "sourceAllocation": "Full activity rows are materialized before validation; trusted binding strings/arrays lack per-row byte caps. Reason/page/response limits are not total source allocation limits.",
+    "nativeJob": "Schedule-free explicit manual declaration; real worker manager proactiveCompanyScopes from existing configured companies; state read/write capability required but not granted. Full-sweep reset prefers existing state.delete; get/set-only adapters use bounded JSON marker.",
+    "rpc": "Actual worker/host encoding is exercised. A raw-body cap has bounded JSON escaping overhead; no 1 MiB total RPC/process-memory claim."
   }
 }

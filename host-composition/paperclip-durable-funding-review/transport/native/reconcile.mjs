@@ -1,7 +1,10 @@
 /** Bounded job body. Does not create schedules, credentials, approval UI, or ledgers. */
 import {MAX_RESPONSE_BYTES, UUID, canonicalJson, digestJson, receiptInScope, snapshotScope} from './acceptance-routes.mjs';
 
+const MAX_REQUEST_BYTES = 8192;
+
 function endpoint(raw, path, fixtureLoopback) {
+  if (typeof raw !== 'string' || raw.length > 2048 || Buffer.byteLength(raw, 'utf8') > 2048) throw Error('Invalid trusted transport endpoint');
   const url = new URL(raw);
   if (url.username || url.password || url.search || url.hash || url.pathname.replace(/\/$/, '') !== path) {
     throw Error('Invalid trusted transport endpoint');
@@ -60,12 +63,18 @@ export function createAcceptanceReconciler(ctx, config = {}) {
   const exactScope = result => result && canonicalJson(result.scope) === canonicalJson(scope);
   const rawRequest = async (native, path, method = 'GET') => {
     const secret = await ctx.secrets.resolve(native ? nativeRef : fundingRef, {companyId: scope.companyId});
-    if (typeof secret !== 'string' || !secret || /[\r\n]/.test(secret)) throw Error('Transport credential unavailable');
+    if (typeof secret !== 'string' || !secret || secret.length > 4096 || Buffer.byteLength(secret, 'utf8') > 4096 || /[\x00-\x1f\x7f]/.test(secret)) throw Error('Transport credential unavailable');
     const headers = {'X-Funding-Scope': scopeDigest, Accept: 'application/json'};
     headers[native ? 'Authorization' : 'X-Admin-Token'] = native ? `Bearer ${secret}` : secret;
     // Actual pinned SDK uses a single pinned-IP request and does not follow redirects.
     // redirect/error and timeout also protect direct standard-fetch host compositions.
-    const response = await ctx.http.fetch((native ? nativeUrl : fundingUrl) + path,
+    const url = (native ? nativeUrl : fundingUrl) + path;
+    // Bound the known bodyless protocol BEFORE the SDK serializes HTTP RPC.
+    // URL/credential component caps also bound this small measurement allocation.
+    if (Buffer.byteLength(JSON.stringify({url, init: {method, headers}}), 'utf8') > MAX_REQUEST_BYTES) {
+      throw Error('Transport request limit');
+    }
+    const response = await ctx.http.fetch(url,
       {method, headers, redirect: 'error', signal: AbortSignal.timeout(15_000)});
     return boundedJson(response);
   };
@@ -136,7 +145,11 @@ export function createAcceptanceReconciler(ctx, config = {}) {
         // This is scan progress, not delivery proof. Advance past unresolved rows
         // and reset after exhaustion; DFW alone owns terminal effects and dedup.
         cursor = page.nextCursor;
-        await ctx.state.set(cursorKey, cursor);
+        // Prefer the existing native deletion primitive (same state.write
+        // capability). get/set-only adapters use a bounded JSON reset marker:
+        // native plugin_state.value_json is NOT NULL, so JS null is not valid.
+        if (cursor === null && typeof ctx.state.delete === 'function') await ctx.state.delete(cursorKey);
+        else await ctx.state.set(cursorKey, cursor === null ? {afterId: null} : cursor);
         if (cursor === null) return progress(true);
       }
       return progress(false);
