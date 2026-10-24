@@ -20,11 +20,11 @@
     },
     "dist/app.js": {
       "original_sha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32",
-      "candidate_sha256": "23dcb0d58d7ef2afd93830efe949af363072b799f1f337a6b252f7fee9f76224"
+      "candidate_sha256": "4742bf802330f3238cd08d92fc7ba053567cae1957e45e5f38bf357021351d78"
     },
     "dist/app.d.ts": {
       "original_sha256": "82dd908b08b98ab3e20fcf387081efc727a609361d92cab99e6afd4df5d76a6b",
-      "candidate_sha256": "c80c67ede5f691ceead4ae6df19bbcc85bde30df50d10c33a73a5d78ae55f8e2"
+      "candidate_sha256": "d77865281600281cef77461e2a6166fa348c19a9057765fb5fc4dbb9045229c7"
     },
     "dist/services/plugin-host-services.js": {
       "original_sha256": "9eb7981530436f3f5c6beb8b7680aebd69f3a9a2b1f551d533e0e029f48193b9",
@@ -33,6 +33,22 @@
     "dist/services/plugin-host-services.d.ts": {
       "original_sha256": "fdff561f33bba1447176feaf0edd1f7d49a50621fe7e1b6054e6d234b8e4d9a3",
       "candidate_sha256": "88f4558d20d6bb8bc231b02e71b92e21024bb2be715b7e6ae89f162d6b4e5e1c"
+    },
+    "dist/routes/issues.js": {
+      "original_sha256": "743bc9f972322a2c383f7fa8400d7513c2105fca669b8d56c105812186264ace",
+      "candidate_sha256": "3dcf8222ae8064e8b740eb26906e6fb65189d0857397a923f7e2e978709dff13"
+    },
+    "dist/routes/issues.d.ts": {
+      "original_sha256": "6168f698c7f88ebad1e36c58a50f196e48aafa7001972666d03a1a80411d2b45",
+      "candidate_sha256": "e118d71af2c7fe94ab901bff0148eb45ca80efbce506f1af0763646f75b881d0"
+    },
+    "dist/services/member-packet-capture.js": {
+      "original_sha256": null,
+      "candidate_sha256": "a6bccf454e7cca3e156616a6549c9fb2c729749ee72106928699255e7e449a65"
+    },
+    "dist/services/member-packet-capture.d.ts": {
+      "original_sha256": null,
+      "candidate_sha256": "b2f1a76578e0ddf466917dedfb33282173db3c5993af7248dce18c132d613a4d"
     }
   }
 }

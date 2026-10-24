@@ -22,3 +22,18 @@ createApp(db, {...appOptions, fundingReviewTransport: transportCapability});
 createApp(db, {...appOptions, fundingReviewTransport: {db}});
 // @ts-expect-error HTTP limits are numeric trusted host options, not a plugin config flag.
 buildHostServices(db, 'synthetic', 'netrxn.inertia', createPluginEventBus(), undefined, {httpLimits: true});
+
+import {createMemberPacketCapture} from '../node_modules/@paperclipai/server/dist/services/member-packet-capture.js';
+import {memberNativeCodec} from '../../../dist/src/grants/member-native.js';
+declare const memberBinding:unknown;
+const memberCapture=createMemberPacketCapture({enabled:true,bindings:[memberBinding],contracts:memberNativeCodec,
+  authorizeInTransaction:async()=>({actorUserId:'synthetic-human',actorType:'human',authenticatedHuman:true,verifiedDaoMember:true,applicationActionAllowed:true,nativeActionAllowed:true,membershipVersion:'existing-row-update',applicationAccessVersion:'existing-issue-decision'} as const),
+  retention:{async assertRetentionInTransaction(){}}});
+createApp(db,{...appOptions,memberPacketReviewCapture:{db,handlesNativeReview:memberCapture.handlesNativeReview,captureInTransaction:memberCapture.captureInTransaction}});
+// @ts-expect-error A caller's identity/allow booleans are not a trusted capture capability.
+createApp(db,{...appOptions,memberPacketReviewCapture:{db,actorUserId:'claim',allowed:true}});
+// @ts-expect-error Exact source selection is required; unrelated native cards must stay stock.
+createApp(db,{...appOptions,memberPacketReviewCapture:{db,captureInTransaction:memberCapture.captureInTransaction}});
+
+// @ts-expect-error Explicit enabling cannot omit authority, codec and retention.
+createMemberPacketCapture({enabled:true});

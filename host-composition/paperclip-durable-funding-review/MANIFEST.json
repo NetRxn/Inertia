@@ -33,8 +33,8 @@
     "evidence/upstream-interactions.log": "2100eb3c5c30d4f84289fdf77e2c880d495e812eaaa39cf3a7e1f341e05798e1",
     "package-lock.json": "2aa5e2abc6dfb23e40b2921c3d9e1820d5be3d87099d40cdaa8182c2612bd7df",
     "package.json": "8fd508791d3d30e7ec9e11fdf76f8dc4f06cebc42fd0842c1370eb2ec95ba038",
-    "patches/paperclip-2026.1012.0-durable-capture.patch": "2cb6c05ee6a9f7ed88a2c483bd86a37e97243ee595da90618b2ec2106c6e5115",
-    "patches/pinned-files.json": "fc8dc32be1cf8bf4dd6fdf60d2bb7c2347a99314aa27da8b8232c31e97cf7268",
+    "patches/paperclip-2026.1012.0-durable-capture.patch": "8bb9cd51ffb5eb692dee4c0d7acd3e82b4ec85bcce9230696c4e8e86917986bc",
+    "patches/pinned-files.json": "565f97b9a2d8ecd958ab607ae20950de0c64dc305882ddf645fee8a5679b9b02",
     "scripts/bootstrap.mjs": "8f59582f3343755c8760fd7dd64c8ee37ec254b4feed0c7a3d4e46c5ecb6e9c4",
     "scripts/check-upstream.mjs": "923fd99ab94a75909cceff4e09426dfe5643739a6f03185c05fb2ebc63f397f1",
     "scripts/verify-pg.mjs": "bd71d420787fc49c07dd35cb9e0fda42c65daf6257040c96ccdf6131b77ed277",
@@ -55,7 +55,7 @@
     "tests/setup.mjs": "63687aca278db2f791790cbe9983c472e4d4ee9ce829c48258264977d8655392",
     "tests/synthetic-dfw-input.json": "ec128fb1a5ed105021ea060ff1ecdd2792ce9a8253593d1c7ffeee3812802809",
     "tests/test_launcher_safety.py": "5fc49fd2983c23f61e8284b8da4f0643e736421aab8acd1d7c8cfdb1d1500080",
-    "tests/typecheck.ts": "db91d39e66732a27f90c034bcec90eb033f1d1b5ff17a8bb8f456b5cf77c86b6",
+    "tests/typecheck.ts": "97051bfcaee6e0dae9bf6be20ad0ff38395e7b4eea0d74fd436a6aa84dd16857",
     "tests/upstream-vitest.config.mjs": "6f32e022e177c168e35e3047d2e2df7f80aada39673ed543acd5fc1871099360",
     "tests/with-disposable-pg.sh": "84121fdcce5a5c3a8de981840b7f0509d3539069a2b9530a752689000d164e16",
     "tests/with-pg.sh": "ce4002b440653b486e37f57a3547dbb5cf259e2d1308071ebaf12eb2307e8dc8",
@@ -85,6 +85,16 @@
     "transport/tests/run-cross-domain-postgres.sh": "f2edc0d0b003cd9b185df14a105a9821de0c02d14492cd0726a6a3ad80b30278",
     "transport/tests/run-cross-domain.sh": "82fbb119b87e52b1d6880935806daf1c49acd810e7ec8e3e9e75c03464e4a8e7",
     "transport/tests/run-native.sh": "7307c8b78766008266695e581898e48a1f0faaaa9a337d40e74cb57dffe9f8e4",
-    "transport/tests/sdk-fixture.mjs": "6766001c28aa716fee2611fa341ef331d46b9c3469c7db6a06da4fe5af0f8749"
+    "transport/tests/sdk-fixture.mjs": "6766001c28aa716fee2611fa341ef331d46b9c3469c7db6a06da4fe5af0f8749",
+    "tests/member-capture.test.mjs": "0a02d34ae61968db89945d7d40407947ce602639466e33dadb84924b1b10efee",
+    "tests/member-route-hook.test.mjs": "28c01304b64cce2bef6ded7a4a6b894f45f0b517cb8b9ed6c67f21ae730c3d2b"
+  },
+  "memberPacketCapture": {
+    "state": "source-only Task 1; synthetic admission; independent review pending",
+    "defaultEnabled": false,
+    "uiBuzzTransport": "not implemented",
+    "schema": "inertia.member-packet-acceptance.v2",
+    "decisionProofSchema": "inertia.native-member-access-decision.v2",
+    "nativeSourceSha256": "a6bccf454e7cca3e156616a6549c9fb2c729749ee72106928699255e7e449a65"
   }
 }

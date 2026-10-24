@@ -65,7 +65,7 @@
      resolvePullRequestState?: (companyId: string, reference: GitHubPullRequestReference) => Promise<PullRequestMergeState>;
      wakeup?: InteractionWakeup;
      pullRequestCacheTtlMs?: number;
---- /dev/null
+--- a/dist/services/funding-review-capture.js
 +++ b/dist/services/funding-review-capture.js
 @@ -0,0 +1,103 @@
 +// Opt-in trusted host extension for pinned Paperclip 2026.1012.0. Not a plugin SDK API.
@@ -171,7 +171,7 @@
 +        },
 +    };
 +}
---- /dev/null
+--- a/dist/services/funding-review-capture.d.ts
 +++ b/dist/services/funding-review-capture.d.ts
 @@ -0,0 +1,41 @@
 +import type { Db } from '@paperclipai/db';
@@ -217,10 +217,17 @@
 +};
 --- a/dist/app.js
 +++ b/dist/app.js
-@@ -339,6 +339,13 @@
+@@ -339,6 +339,20 @@
      };
  }
  export async function createApp(db, opts) {
++    const memberCapture = opts.memberPacketReviewCapture;
++    if (memberCapture !== undefined && (!memberCapture || memberCapture.db !== db || typeof db.rollback === "function" || typeof memberCapture.captureInTransaction !== "function" || typeof memberCapture.handlesNativeReview !== "function"))
++        throw new Error("Member packet capture requires trusted root database ownership/composition");
++    const captureMemberVerdicts = memberCapture === undefined ? undefined : Object.freeze({
++        handlesNativeReview: memberCapture.handlesNativeReview.bind(memberCapture),
++        captureInTransaction: memberCapture.captureInTransaction.bind(memberCapture),
++    });
 +    // This capability is construction-time trusted host code, never config JSON.
 +    const reviewInput = opts.fundingReviewTransport;
 +    if (reviewInput !== undefined && (!reviewInput || reviewInput.db !== db
@@ -231,7 +238,7 @@
      const app = express();
      const staticUi = express.Router();
      app.locals.paperclipDb = db;
-@@ -358,6 +365,9 @@
+@@ -358,6 +372,9 @@
      // Default is unset → Express trusts nothing, which is the only safe choice
      // when the server may be reachable without a known reverse proxy in front.
      applyTrustProxy(app, parseTrustProxyEnv(process.env.TRUST_PROXY));
@@ -241,7 +248,7 @@
      app.use(COMPANY_IMPORT_API_PATH, express.json({
          limit: PORTABLE_JSON_BODY_LIMIT,
          verify: captureRawBody,
-@@ -411,6 +421,7 @@
+@@ -411,6 +428,7 @@
      // REPLACES whatever actor the request otherwise resolved to, and only on
      // the one endpoint it authorizes (see the middleware for the contract).
      app.use(cloudControlMiddleware());
@@ -249,7 +256,15 @@
      app.use("/api/auth", authRoutes(db));
      if (opts.betterAuthHandler) {
          app.all("/api/auth/{*authPath}", opts.betterAuthHandler);
-@@ -714,6 +725,11 @@
+@@ -653,6 +671,7 @@
+     // issue approval endpoints delegate to it. The intervening routers use distinct
+     // route prefixes, so this dependency does not change issue-route precedence.
+     api.use(issueRoutes(db, opts.storageService, {
++        memberPacketReviewCapture: captureMemberVerdicts,
+         chatRunRetries: chatChannels,
+         feedbackExportService: opts.feedbackExportService,
+         pluginWorkerManager: workerManager,
+@@ -714,6 +733,11 @@
              const services = buildHostServices(db, pluginId, manifest.id, eventBus, notifyWorker, {
                  pluginWorkerManager: workerManager,
                  manifest,
@@ -263,11 +278,13 @@
              return createHostClientHandlers({
 --- a/dist/app.d.ts
 +++ b/dist/app.d.ts
-@@ -52,6 +52,12 @@
+@@ -52,6 +52,14 @@
  }) => Promise<boolean>;
  export declare function createApp(db: Db, opts: {
      cloudWarmStandby?: CloudWarmStandby;
 +    /** Trusted construction-time capability; absent by default. Never config JSON. */
++    /** Trusted root-Db native review capture. Absent by default; never JSON config. */
++    memberPacketReviewCapture?: import("./services/member-packet-capture.js").MemberPacketReviewCapability;
 +    fundingReviewTransport?: {
 +        db: Db;
 +        beforeBodyParser: express.RequestHandler;
@@ -310,7 +327,7 @@
          if (results.length === 0) {
              throw new Error(`DNS resolution returned no results for ${originalHostname}`);
          }
-@@ -133,12 +142,17 @@
+@@ -133,6 +142,7 @@
          };
      }
      catch (err) {
@@ -318,16 +335,17 @@
          // Re-throw our own errors; wrap DNS failures
          if (err instanceof Error && (err.message.startsWith("All resolved IPs") ||
              err.message.startsWith("DNS resolution returned") ||
-             err.message.startsWith("DNS lookup timed out")))
+@@ -140,6 +150,10 @@
              throw err;
          throw new Error(`DNS resolution failed for ${originalHostname}: ${err.message}`);
-+    }
+     }
 +    finally {
 +        clearTimeout(dnsTimer);
 +        signal?.removeEventListener("abort", onAbort);
-     }
++    }
  }
  function buildPinnedRequestOptions(target, init) {
+     const headers = new Headers(init?.headers);
 @@ -175,49 +189,140 @@
          body,
      };
@@ -402,6 +420,19 @@
 -        if (body !== undefined) {
 -            req.write(body);
 -        }
+-        req.end();
+-    });
+-    const MAX_RESPONSE_BODY_BYTES = 200 * 1024 * 1024; // 200 MB
+-    const chunks = [];
+-    let totalBytes = 0;
+-    await new Promise((resolve, reject) => {
+-        response.on("data", (chunk) => {
+-            const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+-            totalBytes += buf.length;
+-            if (totalBytes > MAX_RESPONSE_BODY_BYTES) {
+-                chunks.length = 0;
+-                response.destroy(new Error(`Response body exceeded ${MAX_RESPONSE_BODY_BYTES} bytes`));
+-                return;
 +        let response;
 +        let settled = false;
 +        const chunks = [];
@@ -432,7 +463,8 @@
 +                    fail(new Error("Plugin HTTP response encoding rejected"));
 +                    return;
 +                }
-+            }
+             }
+-            chunks.push(buf);
 +            // Fixed storage for the opt-in bound also avoids a tiny-chunk array
 +            // growing to one allocation/reference per response byte.
 +            if (limits) boundedBody = Buffer.allocUnsafe(maxBytes);
@@ -468,28 +500,13 @@
 +                resolve({status: response.statusCode ?? 500, statusText: response.statusMessage ?? "", headers,
 +                    body: text});
 +            });
-+        });
-+        req.on("error", fail);
-+        if (body !== undefined) req.write(body);
-         req.end();
-     });
--    const MAX_RESPONSE_BODY_BYTES = 200 * 1024 * 1024; // 200 MB
--    const chunks = [];
--    let totalBytes = 0;
--    await new Promise((resolve, reject) => {
--        response.on("data", (chunk) => {
--            const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
--            totalBytes += buf.length;
--            if (totalBytes > MAX_RESPONSE_BODY_BYTES) {
--                chunks.length = 0;
--                response.destroy(new Error(`Response body exceeded ${MAX_RESPONSE_BODY_BYTES} bytes`));
--                return;
--            }
--            chunks.push(buf);
--        });
+         });
 -        response.on("end", resolve);
 -        response.on("error", reject);
--    });
++        req.on("error", fail);
++        if (body !== undefined) req.write(body);
++        req.end();
+     });
 -    const headers = {};
 -    for (const [key, value] of Object.entries(response.headers)) {
 -        if (Array.isArray(value)) {
@@ -558,3 +575,213 @@
  }): HostServices & {
      dispose(): void;
  };
+--- a/dist/routes/issues.js
++++ b/dist/routes/issues.js
+@@ -2166,6 +2166,9 @@
+ }
+ export function issueRoutes(db, storage, opts = {}) {
+     const router = Router();
++    const memberPacketReviewCapture = opts.memberPacketReviewCapture === undefined ? undefined : Object.freeze({...opts.memberPacketReviewCapture});
++    if (memberPacketReviewCapture && (typeof memberPacketReviewCapture.captureInTransaction !== "function" || typeof memberPacketReviewCapture.handlesNativeReview !== "function"))
++        throw new Error("Invalid trusted member capture composition");
+     const svc = issueService(db);
+     const runRedactions = createRunSecretRedactionRegistry(db);
+     const access = accessService(db);
+@@ -3682,7 +3685,17 @@
+             return false;
+         if (req.actor.type !== "agent")
+             assertBoard(req);
+-        const interactionSvc = issueThreadInteractionService(db);
++        // Construction-time host capability only; no request/plugin actor claims.
++        const selectedMemberCapture = memberPacketReviewCapture?.handlesNativeReview(issue.companyId, issue.id, interactionId) === true
++            ? memberPacketReviewCapture.captureInTransaction : undefined;
++        const originalAuthenticatedContext = selectedMemberCapture
++            ? Object.freeze({actor: structuredClone(req.actor), method: req.method,
++                companyId: issue.companyId, issueId: issue.id}) : undefined;
++        const interactionSvc = issueThreadInteractionService(db, selectedMemberCapture ? {
++            captureItemVerdictsInTransaction: (tx, input) => selectedMemberCapture(tx, {
++                ...input, originalAuthenticatedContext,
++            }),
++        } : {});
+         const current = await interactionSvc.getForIssue(issue, interactionId);
+         const resolutionAuthorization = await assertIssueThreadInteractionResolutionAllowed(req, res, issue, current, runId);
+         if (!resolutionAuthorization)
+--- a/dist/routes/issues.d.ts
++++ b/dist/routes/issues.d.ts
+@@ -35,6 +35,8 @@
+ export declare function __getIssueListResponseCacheSizeForTests(): number;
+ export declare function __clearIssueListResponseCacheForTests(): void;
+ export declare function issueRoutes(db: Db, storage: StorageService, opts?: {
++    /** Trusted app-owned callback and immutable registration selector only. */
++    memberPacketReviewCapture?: Pick<import("../services/member-packet-capture.js").MemberPacketCapture, "handlesNativeReview" | "captureInTransaction">;
+     chatRunRetries?: Pick<ChatChannelService, "prepareFailedChatRunRetry" | "processFailedChatRunRetry">;
+     feedbackExportService?: {
+         flushPendingFeedbackTraces(input?: {
+--- a/dist/services/member-packet-capture.js
++++ b/dist/services/member-packet-capture.js
+@@ -0,0 +1,98 @@
++// Trusted native host composition only. No plugin/agent/request authority entrypoint.
++import {and,asc,eq,gt,sql} from 'drizzle-orm';
++import {activityLog,authUsers,companies,companyMemberships,documents,issueDocuments,issues} from '@paperclipai/db';
++import {persistActivity} from './activity-log.js';
++import {assertIssueReviewVerdictActorAllowed} from './issue-review-policy.js';
++const ACTION='member.packet.review.accepted';
++const SCHEMA='inertia.member-native-storage.v2';
++const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
++function requireValue(value,message){if(!value)throw Error(message);}
++function cardContent(c){return{id:c.id,companyId:c.companyId,issueId:c.issueId,kind:c.kind,title:c.title,summary:c.summary,payload:c.payload,addresseeUserId:c.addresseeUserId,addresseeAgentId:c.addresseeAgentId,requestedResolverPolicy:c.requestedResolverPolicy,effectiveResolverPolicy:c.effectiveResolverPolicy};}
++// Native card digest v1 deliberately retains its existing canonicalization.
++function nativeCanonical(value){if(value===null||typeof value!=='object')return JSON.stringify(value)??'null';if(Array.isArray(value))return '['+value.map(nativeCanonical).join(',')+']';return '{'+Object.entries(value).filter(([,v])=>v!==undefined).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>JSON.stringify(k)+':'+nativeCanonical(v)).join(',')+'}';}
++import {createHash} from 'node:crypto';
++
++/** The codec and authority are fixed trusted in-process functions, never serialized
++ * through plugin RPC or taken from config/form JSON. Admission may be native
++ * company membership if the DAO explicitly designates it. No grant writer exists.
++ * Current authority and retention are required ports; importing this stays inert. */
++export function createMemberPacketCapture(config={}){
++ if(config.enabled!==true)return Object.freeze({enabled:false,handlesNativeReview(){return false;},async captureInTransaction(){return[];},async readAcceptance(){return null;},async listAcceptances(){return{receipts:[],nextCursor:null};}});
++ const contracts=config.contracts;
++ requireValue(contracts&&['snapshotBinding','intentForVerdict','acceptance','accessProof','hash','canonical'].every(key=>typeof contracts[key]==='function'),'Fixed member contract codec required');
++ requireValue(Array.isArray(config.bindings)&&config.bindings.length<=128&&typeof config.authorizeInTransaction==='function'&&typeof config.retention?.assertRetentionInTransaction==='function','Trusted member authority/retention composition required');
++ const codec=Object.freeze(Object.fromEntries(['snapshotBinding','intentForVerdict','acceptance','accessProof','hash','canonical'].map(key=>[key,contracts[key].bind(contracts)])));
++ const bindings=config.bindings.map(raw=>codec.snapshotBinding(structuredClone(raw)));
++ const identity=b=>codec.canonical([b.companyId,b.issueId,b.interactionId,b.itemId]);
++ requireValue(new Set(bindings.map(identity)).size===bindings.length,'Duplicate native member identity');
++ const scopes=new Set(bindings.map(b=>codec.canonical([b.companyId,b.policy.scope.applicationId])));
++ const authorize=config.authorizeInTransaction.bind(config);
++ const retain=config.retention.assertRetentionInTransaction.bind(config.retention);
++ function stored(row){
++  try{
++   const d=row?.details;
++   if(!row||row.action!==ACTION||row.actorType!=='user'||row.agentId||row.runId||row.entityType!=='issue'||!d||Object.keys(d).sort().join(',')!=='binding,intent,intentHash,memberAccess,nativeDecisionKey,schema'||d.schema!==SCHEMA)return null;
++   if(d.memberAccess?.schema!=='inertia.native-member-access-decision.v2'||Object.keys(d.memberAccess).sort().join(',')!=='decision,schema')return null;
++   const b=codec.snapshotBinding(d.binding);
++   if(!scopes.has(codec.canonical([b.companyId,b.policy.scope.applicationId]))||row.companyId!==b.companyId||row.entityId!==b.issueId||row.responsibleUserId!==row.actorId||d.nativeDecisionKey!==codec.hash(identity(b))||d.intentHash!==codec.hash(d.intent))return null;
++   return codec.acceptance(b,{sourceId:row.id,acceptedAt:row.createdAt.toISOString(),actorUserId:row.actorId,authorization:d.memberAccess.decision,intent:d.intent});
++  }catch{return null;}
++ }
++ return Object.freeze({enabled:true,
++  handlesNativeReview(companyId,issueId,interactionId){return bindings.some(b=>b.companyId===companyId&&b.issueId===issueId&&b.interactionId===interactionId);},
++  async captureInTransaction(tx,source){
++   const selected=bindings.filter(b=>b.companyId===source.issue?.companyId&&b.issueId===source.issue?.id&&b.interactionId===source.interaction?.id&&source.newlyResolvedItemIds?.includes(b.itemId));
++   if(!selected.length)return[];
++   const context=source.originalAuthenticatedContext, actor=source.actor, c=source.interaction;
++   requireValue(context?.method==='POST'&&context.companyId===source.issue.companyId&&context.issueId===source.issue.id&&context.actor?.type==='board'&&['session','board_key','cloud_tenant','mcp_oauth'].includes(context.actor.source)&&context.actor.userId&&context.actor.userId===actor?.userId&&!actor.agentId&&!actor.runId&&!actor.systemId&&!context.actor.agentId&&!context.actor.runId,'Authenticated original native human context required');
++   requireValue(c.kind==='request_item_verdicts'&&['pending','answered'].includes(c.status)&&c.requestedResolverPolicy==='human_only'&&c.effectiveResolverPolicy==='human_only'&&!c.addresseeUserId&&!c.addresseeAgentId&&!c.acceptanceBlocker&&c.result?.outcome==='resolved'&&c.payload.items.length===1&&c.payload.allowBulkApprove===false,'Unaddressed single-item native human review required');
++   const retained=await retain(tx);requireValue(retained===undefined||retained===true,'Receipt retention rejected');
++   // Match the existing capture ordering. Native verdict already owns its card
++   // and touchIssue lock; the existing hook sets a bounded lock_timeout.
++   const [company]=await tx.select().from(companies).where(eq(companies.id,source.issue.companyId)).for('update');
++   const [issue]=await tx.select().from(issues).where(and(eq(issues.id,source.issue.id),eq(issues.companyId,source.issue.companyId))).for('update');
++   requireValue(company?.status==='active'&&issue&&!['done','cancelled'].includes(issue.status),'Native company/issue is unavailable');
++   // Reuse the native policy unchanged; item cards otherwise omit its review-policy intersection.
++   await assertIssueReviewVerdictActorAllowed(tx,{issue,actor:{type:'user',id:actor.userId}});
++   const publications=[];
++   for(const b of selected){
++    requireValue(createHash('sha256').update(nativeCanonical(cardContent(c))).digest('hex')===b.interactionDigest,'Native member card changed');
++    const target=c.payload.target;
++    requireValue(target?.type==='issue_document'&&target.key===b.documentKey&&target.revisionId===b.documentRevisionId&&(!target.issueId||target.issueId===b.issueId)&&(!target.documentId||target.documentId===b.documentId),'Native member revision target mismatch');
++    const [document]=await tx.select().from(documents).where(and(eq(documents.id,b.documentId),eq(documents.companyId,b.companyId))).for('update');
++    const [link]=await tx.select().from(issueDocuments).where(and(eq(issueDocuments.companyId,b.companyId),eq(issueDocuments.issueId,b.issueId),eq(issueDocuments.key,b.documentKey))).for('update');
++    requireValue(document?.latestRevisionId===b.documentRevisionId&&link?.documentId===b.documentId,'Native member document is stale');
++    const [human]=await tx.select({id:authUsers.id}).from(authUsers).where(eq(authUsers.id,actor.userId)).for('update');
++    const [member]=await tx.select().from(companyMemberships).where(and(eq(companyMemberships.companyId,b.companyId),eq(companyMemberships.principalType,'user'),eq(companyMemberships.principalId,actor.userId))).for('update');
++    requireValue(human&&member?.status==='active','Current native human membership required');
++    const items=c.result.items.filter(item=>item.id===b.itemId);
++    requireValue(items.length===1&&c.payload.items[0].id===b.itemId&&items[0].resolvedByUserId===actor.userId&&!items[0].resolvedByAgentId&&!items[0].resolvedByRunId,'Exact native human item result required');
++    const item=items[0], intent=codec.intentForVerdict(b,{id:item.id,verdict:item.verdict,reason:item.reason??''});
++    // Defer changes the native card too: require current review access even
++    // though it creates no domain approval and carries no fabricated intent.
++    const proof=codec.accessProof(await authorize(tx,{...source,issue,originalAuthenticatedContext:structuredClone(context)},structuredClone(b),structuredClone(intent)),actor.userId);
++    if(intent===null)continue;
++    // Fixed codec rejects agents, false flags, actor mismatches and extra claims.
++    const checked=codec.acceptance(b,{sourceId:'00000000-0000-4000-8000-000000000000',acceptedAt:new Date(item.resolvedAt).toISOString(),actorUserId:actor.userId,authorization:proof,intent});
++    const nativeDecisionKey=codec.hash(identity(b));
++    const prior=await tx.select({id:activityLog.id}).from(activityLog).where(and(eq(activityLog.companyId,b.companyId),eq(activityLog.action,ACTION),sql`${activityLog.details}->>'nativeDecisionKey' = ${nativeDecisionKey}`)).limit(1);
++    requireValue(prior.length===0,'Native member action already accepted; refusing to remint');
++    // Dedicated allowlisted noncredential decision schema only. No headers, tokens,
++    // original actor context, or arbitrary authorization object is persisted.
++    // Native redaction remains active; any value it changes aborts this receipt.
++    const details={schema:SCHEMA,binding:structuredClone(b),intent:checked.intent,intentHash:checked.intentHash,memberAccess:{schema:'inertia.native-member-access-decision.v2',decision:checked.authorization},nativeDecisionKey};
++    const written=await persistActivity(tx,{companyId:b.companyId,actorType:'user',actorId:actor.userId,responsibleUserIdOverride:actor.userId,action:ACTION,entityType:'issue',entityId:b.issueId,details});
++    const [row]=await tx.select().from(activityLog).where(eq(activityLog.id,written.activity.id));
++    requireValue(codec.canonical(row?.details)===codec.canonical(details)&&stored(row),'Audit redaction changed exact member acceptance');
++    publications.push(written.publication);
++   }
++   return publications;
++  },
++  async readAcceptance(db,id){if(typeof id!=='string'||!UUID.test(id))return null;const [row]=await db.select().from(activityLog).where(eq(activityLog.id,id));return stored(row);},
++  async listAcceptances(db,{companyId,afterId=null,limit=100}){
++   requireValue(bindings.some(b=>b.companyId===companyId)&&Number.isSafeInteger(limit)&&limit>=1&&limit<=500&&(afterId===null||typeof afterId==='string'&&UUID.test(afterId)),'Invalid scoped member acceptance page');
++   const rows=await db.select().from(activityLog).where(and(eq(activityLog.companyId,companyId),eq(activityLog.action,ACTION),...(afterId?[gt(activityLog.id,afterId)]:[]))).orderBy(asc(activityLog.id)).limit(limit);
++   return{receipts:rows.map(stored).filter(Boolean),nextCursor:rows.length===limit?rows.at(-1).id:null};
++  }
++ });
++}
+--- a/dist/services/member-packet-capture.d.ts
++++ b/dist/services/member-packet-capture.d.ts
+@@ -0,0 +1,64 @@
++import type {Db} from '@paperclipai/db';
++import type {IssueThreadInteraction} from '@paperclipai/shared';
++import type {ActivityPublication} from './activity-log.js';
++type Tx=Parameters<Parameters<Db['transaction']>[0]>[0];
++/** Strict noncredential decision fields; no arbitrary authorization/header map. */
++export interface MemberAccessDecision {
++ readonly actorUserId:string;
++ readonly actorType:'human';
++ readonly authenticatedHuman:true;
++ readonly verifiedDaoMember:true;
++ readonly applicationActionAllowed:true;
++ readonly nativeActionAllowed:true;
++ readonly membershipVersion:string;
++ readonly applicationAccessVersion:string;
++}
++export interface MemberNativeTarget {readonly packetId:string;readonly packetVersion:number;readonly packetContentHash:string;}
++export interface MemberNativeBinding {
++ readonly schema:'inertia.native-member-packet-binding.v2';
++ readonly companyId:string;readonly issueId:string;readonly interactionId:string;readonly itemId:string;
++ readonly documentId:string;readonly documentKey:string;readonly documentRevisionId:string;readonly interactionDigest:string;
++ readonly policyHash:string;
++ readonly policy:{readonly scope:{readonly applicationId:string}};
++ readonly target:MemberNativeTarget;
++}
++export interface MemberNativeIntent {readonly schema:'inertia.member-packet-action.v2';readonly policyHash:string;readonly target:MemberNativeTarget;readonly action:string;readonly payload:unknown;}
++export interface MemberNativeAcceptance {
++ readonly schema:'inertia.member-packet-acceptance.v2';readonly source:{readonly kind:'paperclip'|'buzz';readonly id:string};readonly acceptedAt:string;
++ readonly actor:{readonly type:'human';readonly userId:string};readonly authorization:MemberAccessDecision;
++ readonly intent:MemberNativeIntent;readonly intentHash:string;
++}
++/** Fixed merged v2 codec supplied by trusted host bootstrap, never request JSON. */
++export interface MemberNativeContracts {
++ snapshotBinding(raw:unknown):MemberNativeBinding;
++ intentForVerdict(binding:unknown,verdict:unknown):MemberNativeIntent|null;
++ acceptance(binding:unknown,raw:unknown):MemberNativeAcceptance;
++ accessProof(raw:unknown,actorUserId:string):MemberAccessDecision;
++ hash(raw:unknown):string;
++ canonical(raw:unknown):string;
++}
++export interface MemberNativeSource {
++ issue:{id:string;companyId:string;status:string};
++ interaction:IssueThreadInteraction;
++ actor:{userId?:string|null;agentId?:string|null;runId?:string|null;systemId?:string|null};
++ newlyResolvedItemIds:string[];
++ /** Original server-authenticated context only. It is never persisted wholesale. */
++ originalAuthenticatedContext:{readonly actor:Readonly<Record<string,unknown>>;readonly method:string;readonly companyId:string;readonly issueId:string};
++}
++export interface MemberPacketCapture {
++ readonly enabled:boolean;
++ handlesNativeReview(companyId:string,issueId:string,interactionId:string):boolean;
++ captureInTransaction(tx:Tx,source:MemberNativeSource):Promise<ActivityPublication[]>;
++ readAcceptance(db:Db,id:string):Promise<MemberNativeAcceptance|null>;
++ listAcceptances(db:Db,input:{companyId:string;afterId?:string|null;limit?:number}):Promise<{receipts:MemberNativeAcceptance[];nextCursor:string|null}>;
++}
++export declare function createMemberPacketCapture(config?:{enabled?:false}):MemberPacketCapture;
++export declare function createMemberPacketCapture(config:{
++ enabled:true;
++ bindings:readonly unknown[];
++ contracts:MemberNativeContracts;
++ authorizeInTransaction:(tx:Tx,source:MemberNativeSource,binding:MemberNativeBinding,intent:MemberNativeIntent|null)=>Promise<MemberAccessDecision|null>;
++ retention:{assertRetentionInTransaction(tx:Tx):Promise<void|true>};
++}):MemberPacketCapture;
++/** Root database capability, supplied only by owning app construction. */
++export interface MemberPacketReviewCapability extends Pick<MemberPacketCapture,'handlesNativeReview'|'captureInTransaction'> {readonly db:Db;}
