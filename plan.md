@@ -1,8 +1,8 @@
 # Inertia connected bridge implementation plan
 
-Revision: INERTIA-2026-10-23-r15
-Updated: 2026-10-23 (UTC)
-Status: DFW foundations merged; drafting/gap and Task 6 knowledge/financial contracts independently reviewed locally, awaiting publication. Core Helix partner-graph implementation is underway. October discovery draft PR42 is published; CI is running and source qualification is in review. Final scout and live integrations remain pending.
+Revision: INERTIA-2026-10-23-r16
+Updated: 2026-10-24 (UTC)
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
 
 Use test-driven implementation, isolated feature branches and independent review. Inertia feature branches target develop. DFW-Gov-Fund feature branches target main; apply repository-specific merge authorization.
 
@@ -17,7 +17,7 @@ Use test-driven implementation, isolated feature branches and independent review
 
 ## Current baseline
 
-Develop `1ac44a7a`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `6f93cfef`; merged runtime includes cumulative core, cloud qualification/race fixes and Task 8 (PR25/26/27), plus the default-disabled native adapter (PR28). See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Global constraints
 
@@ -116,10 +116,10 @@ Deployment ownership: Inertia engineering deploys Paperclip and connects the exi
 These remain required product work. Build with the settled platform choices and existing native issue/artifact and bridge contracts.
 
 1. Meetings: finish authorized Drive-ready source adaptation and single-owner native job wiring around the merged core and caller-side website publisher/readback using R-M01–04. Admit the website team’s proposed v1.1 server contract before live use. Start with supplied de-identified fixtures; real folder/publication API admission is U04–05. Test summary-only, duplicate/correction, source injection and audience before enabling routine automatic publishing. Existing Privy login only establishes authenticated-user access; propose explicit active-membership checks for the required members-only portal publication. The user owns website API/schema rollout.
-2. Grants and vote: implement the [native-first grant contract](docs/development/native-grant-workflow.md). Package existing skill/CLI/MCP for native central/member agents, with scoped proposal tools and one scheduling owner. Configure real human role mappings (U13); walk one packet through native documents, human-only cards and edit → regenerate → new review before considering a custom editor. Build the trusted server decision adapter and consistent-read `ReviewedGrantSource`; test decision/version/action reconciliation, identity, stale bytes and crash/replay (T-G06–12). Current MCP acceptance/signoff is absent. Complete the Vocdoni verifier (U06) and native receipt acceptance separately, using the user’s example to establish all applicable final-action stages. Preserve exact packet/review/artifact binding and a separately authorized human submission handoff.
+2. Grants and vote: implement the [native-first grant contract](docs/development/native-grant-workflow.md). Package existing skill/CLI/MCP for native central/member agents, with scoped proposal tools and one scheduling owner. Configure real human role mappings (U13); walk one packet through native documents, human-only cards and edit → regenerate → new review before considering a custom editor. Complete DFW publication alongside the merged, default-disabled Inertia decision adapter and implement/qualify the approved acceptance/reconciliation seam and production writer composition; connect consistent-read `ReviewedGrantSource`; test decision/version/action reconciliation, identity, stale bytes and crash/replay (T-G06–12). Current MCP acceptance/signoff is absent. Complete the Vocdoni verifier (U06) and native receipt acceptance separately, using the user’s example to establish all applicable final-action stages. Preserve exact packet/review/artifact binding and a separately authorized human submission handoff.
 3. Member contribution: use existing hardened runner/provider lifecycle and native checkout, add narrow member enrollment/result boundary. Test source data limits, revoked member, stale run and hostile artifact. Do not share privileged broker credentials with members.
 4. Y2: implement interest registration/update adapter against teammate API U07; deduplicate follow-ups and preserve provenance. 990 enrichment remains stretch.
-5. Partner knowledge: implement the four core slices below, then connect query-first/writeback to scouting and diligence. Reuse Task 6 evidence and existing member/project identities.
+5. Partner knowledge: activate the merged core through authenticated production sources and the approved discovery loop below. Reuse Task 6 evidence and existing member/project identities.
 6. Rehearsal: real meeting publication, current grant packet/vote, second-member contribution, shared Buzz/dashboard state and partner reuse → durable research delta → next-run retrieval. Assemble reproducible receipts and record any environment-bound work still pending.
 
 ## DAO data consolidation gate
@@ -128,12 +128,12 @@ Follow the [source-grounded storage contract](docs/development/dao-data-consolid
 
 ## Operational partner graph implementation
 
-The maintained graph and research writeback are core work under implementation. Task 6 supplies the locally implemented evidence/SQL foundation. Helix integration is underway; projector, writeback and end-to-end qualification remain pending. Define and run failing T-K01–12 fixtures before their corresponding implementation.
+The maintained graph and research-writeback core is merged on the Task 6 foundation. Independent cloud rehearsal passed real PostgreSQL/PostGIS domain checks, native PostgreSQL services and PG-to-embedded-Helix reuse/writeback. Production source/host adapters, admitted inventory/backfill, deployed Helix and the operational discovery loop remain activation work. The checklist below retains those release gates.
 
-1. **Align source inventory and compatibility.** Pin reviewed Task 6 and Helix SDK 3.1.0/embedded runtime 0.3.3 (U15); the first real embedded query has passed. Inventory authorized website, meeting and existing partner records with source revisions, permissions and stable member/project IDs. Seed DAO, TechFW/MADE, Moonshot, LiquidAcre and HackFW; retain unresolved identities/owners and distinguish planned from completed activity.
-2. **Add typed knowledge and durable writeback.** Extend trusted admission with separately versioned entity/relationship assertions, canonical semantic conflicts and exact evidence/scope binding. Commit research deltas, existing audit history and a projection outbox in one DAO PG transaction. Backfill every inventoried partner/contact with a mapped or unresolved coverage disposition.
-3. **Build indexed projection and query tools.** Implement fenced, idempotent Helix projection, active indexes and bounded partner/context/introduction queries with PG/source revalidation. Add scoped PG outage fallback. Wire scanners/diligence to query first and return answer plus useful delta, including rejected-opportunity discoveries.
-4. **Qualify recovery and the demo.** Prove replay/lost response, out-of-order delivery, stale-worker fencing, tombstones, corrections/revocation, backfill overlap and generation rebuild. Qualify real PG/Helix and measure performance. Rehearse known partner reuse, newly saved knowledge and next-run retrieval before accepting the October 30 demo.
+1. **Qualify source inventory and deployment compatibility.** Local review exercised Helix SDK 3.1.0/embedded runtime 0.3.3 with Task 6 (U15). Qualify the selected deployed service. Inventory authorized website, meeting and existing partner records with source revisions, permissions and stable member/project IDs. Seed DAO, TechFW/MADE, Moonshot, LiquidAcre and HackFW; retain unresolved identities/owners and distinguish planned from completed activity.
+2. **Activate merged typed knowledge and durable writeback.** The merged core extends trusted admission with separately versioned entity/relationship assertions, canonical semantic conflicts and exact evidence/scope binding, plus transactional research deltas, audit history and projection outbox. Real disposable PostgreSQL qualification passed; qualify the production role and writer composition. Backfill every inventoried partner/contact with a mapped or unresolved coverage disposition.
+3. **Connect merged projection and query tools.** The merged core supplies fenced, idempotent Helix projection, active indexes, bounded partner/context/introduction queries and scoped SQL fallback with source revalidation. Bind authenticated source adapters and actual scanners/diligence to query first and return answer plus useful delta, including rejected-opportunity discoveries.
+4. **Qualify recovery and the live demo.** Local review proved core replay/lost-response, fencing, tombstone and revocation behavior. Qualify production PostgreSQL/Helix, actual backfill/generation switching and representative performance. Rehearse known partner reuse, newly saved knowledge and next-run retrieval before accepting the October 30 demo.
 
 Use Paperclip's existing jobs for scheduling and real unresolved work. Projection receipts track delivery; Paperclip owns task state. Broader 990 enrichment and optional semantic/vector retrieval follow after this operational slice.
 
@@ -157,31 +157,33 @@ The [members-only publication and authorized knowledge proposal](docs/integratio
 
 1. Complete website/server, source and native job acceptance.
 2. Configure the existing CEO with assigned intake, native run policy and budgets for an authorized pilot.
-3. Complete grant, member and Y2 adapters and the core partner graph/query-first writeback against the contracts above.
+3. Complete grant, member and Y2 adapters; live-qualify the merged partner graph and approved discovery loop.
 4. Qualify each changed runtime archive through the package/native/HTTP workflow. Preserve its exact hash and receipts.
 5. Publish synchronized documents and diagrams after independent review.
 
 ## Funding enhancement execution
+
+The approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md) extends Tasks 5, 6C/6D and 8. Assign the research agent/tools/budget; connect bounded search and official validation to candidate admission and durable writeback; deliver separate urgent alerts and prioritized briefs; persist due rechecks in native work. Rehearse end to end, agree cadence and alert targets, then enable recurring execution. The shipped daily schedule remains disabled.
 
 The [detailed implementation plan](docs/development/funding-enhancement/plan.md) supplies exact files, contracts and acceptance commands. Autonomous cloud execution is authorized. Existing meeting publication, vote, member contribution and Y2 delivery continue in parallel.
 
 | Slice | Work | Current state |
 |---|---|---|
 | 0 | CI and dependency baseline | Merged PR35 |
-| 1 | Frozen public benchmark | Merged PR37; v3 handoff criteria in reviewed candidate; complete inventories/gold admission pending |
-| 2–3 | Draft candidates and route review | Merged PR38/39; scoped public drafting/repair bridge reviewed, awaiting publication |
-| 4 | Research and actionable preparation | Reviewed gap checkpoints and independent handoff review, awaiting publication |
+| 1 | Frozen public benchmark | Merged PR37; v3 handoff criteria merged; complete inventories/gold admission pending |
+| 2–3 | Draft candidates and route review | Merged candidates, scoped public drafting/repair and independent review contracts; actual model/host quality qualification pending |
+| 4 | Research and actionable preparation | Gap checkpoints, prepared work and independent handoff review merged; operational discovery host wiring pending |
 | 5 | Canonical portable skill | Merged PR40, version 3.4.1; offline Codex install/cache verified; live runtimes pending |
-| 6 | Reusable DAO knowledge and financial snapshots | Implemented and independently approved locally; unpublished/not live; real PG/importer/financial-source qualification pending |
-| 6A–6D | Maintained partner graph and research writeback | Core implementation underway; typed assertions/outbox, Helix/query tools and operational acceptance pending |
-| 7 | Trusted native human decisions | Planned; transactional scope/revision/authority checks required |
-| 8 | General intake, funding links and DAO brief | Planned; use native work and domain records |
-| 9 | Live integration rehearsal | Pending actual models, host adapters, PostgreSQL and admitted sources |
+| 6 | Reusable DAO knowledge and financial snapshots | Merged; real PG domain qualification passed; production importer/financial-source activation pending |
+| 6A–6D | Maintained partner graph and research writeback | Merged; real PG-to-embedded-Helix rehearsal passed; production sources/backfill and discovery loop pending |
+| 7 | Trusted native human decisions | Inertia adapter merged/default-disabled; DFW service is reviewed/in CI for PR47; approved acceptance/reconciliation seam and production writer qualification pending |
+| 8 | General intake, funding links and DAO brief | Merged; synthetic actual-service meeting-answer loop independently passed; live sources and delivery pending |
+| 9 | Live integration rehearsal | One-command real PG/native/Helix cloud lanes passed; HTTP/UI blocked by network-interface enumeration; PPC2/VPS and production future |
 
-DFW main: `c615525291a656f9abd4da1262c23fa8ae97290c`. Inertia documentation source: develop `1ac44a7a5c9d8e1376e2c358ee2888b16be58905`; refresh remote base before publication. No Inertia runtime change is part of this artifact update.
+DFW main: `16e96b22d55caaa0c19513e121028ab78c3aa1c7` (PR46). Inertia develop: `6f93cfef486b017afccda7b275837e09213aa189` (PR28). These merged bases include public drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8. This r16/funding r4 artifact set remains unpublished.
 
-Next: publish and qualify the reviewed public drafting/gap candidate, then qualify trusted independent candidate and gap-plan review in the selected host. Unfinished research remains agent-owned. Human requests carry prepared work and an exact remaining authority, access or private-record decision. Reassess the five examples against v3 preparation and handoff criteria.
+Next: qualify actual trusted reviewer/model behavior and production source adapters against the merged implementation. Unfinished research remains agent-owned. Human requests carry prepared work and the exact remaining authority, access or private-record decision. Reassess the five examples against v3 preparation and handoff criteria.
 
-Publish the reviewed Task 6 repository slices, then qualify the trusted importer, real PG concurrency/schema roles and chosen financial source. Build and qualify the core graph in slices 6A–6D. Native human-decision effects, objective intake/brief and live deployment remain explicit work.
+Task 6 and graph are merged. Configure the trusted importer, production schema/role and writer-fence composition, selected financial source and admitted partner inventory. Native review remains default-disabled pending successor implementation; durable exact-version authority-at-acceptance is approved, with seam implementation and qualification pending. Task 8 is merged, with production intake and discovery-to-brief/alert delivery still to connect.
 
-Separately, qualify the published October discovery draft PR42 on `discovery/2026-10-23-refresh`, inspect each guarded source result, then run the authorized bounded scout and remove the temporary CI job before merge. The initial DNS-failed attempt, manual findings and replay retain distinct labels; final live results are pending. July case improvements remain a separate benchmark track. Existing meeting, vote, member and Y2 gates continue.
+October discovery is complete and PR42 is merged with passing post-merge CI; temporary live jobs are removed. Select preparation under current owner priorities and deferrals from the dated [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md), preserving the exact confidence overlay and separating manual supplementation from automated source coverage. July case improvements remain a separate benchmark track. Existing meeting, vote, member and Y2 gates continue.

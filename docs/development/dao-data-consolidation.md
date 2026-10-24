@@ -1,6 +1,6 @@
 # DAO data consolidation contract
 
-Design target, 2026-10-23. No migration, deployment or credential change is implemented here. Native grant decision integration remains planned.
+Storage and activation contract, 2026-10-24. Domain/graph and objective-intake migrations are merged and disposable cloud qualification passed. Native-review source/writer-fence composition and production cutover remain pending.
 
 ## Storage and authority
 
@@ -14,9 +14,9 @@ The DFW knowledge service extends Task 6 within its existing Alembic-owned schem
 
 A research commit writes permitted evidence, typed assertions, audit history and outbox rows atomically in DAO PG. Helix projection uses stable keys, monotonic revisions, atomic target-side fencing and readback reconciliation; acknowledge PG delivery only after durable application. Backfill/rebuild preserves a gap-safe sequence and propagates tombstones. Delivery is at least once, with idempotent convergence and separate acknowledgment in each store.
 
-Helix queries enforce tenant/audience/project/opportunity scope at every hop and revalidate current source/access/version in PG before hydrating any result. Revocation denies access immediately while removals propagate. During graph outage/lag, bounded indexed PG selection returns explicitly degraded coverage; unavailable authoritative checks withhold affected results. The operational graph remains a release requirement. See [core requirements](../../spec.md) and [T-K01–12](../../testing.md#operational-partner-graph-acceptance-planned).
+Helix queries enforce tenant/audience/project/opportunity scope at every hop and revalidate current source/access/version in PG before hydrating any result. Revocation denies access immediately while removals propagate. During graph outage/lag, bounded indexed PG selection returns explicitly degraded coverage; unavailable authoritative checks withhold affected results. The operational graph remains a release requirement. See [core requirements](../../spec.md) and [T-K01–12](../../testing.md#operational-partner-graph-acceptance-live-qualification-pending).
 
-Task 6 evidence/SQL and sanitized financial fixture contracts are locally implemented and independently approved, unpublished and not live. Real PG concurrent admission/source changes, schema/role isolation and trusted-source adapters remain qualification work. The typed graph/outbox/query additions are under implementation; operational acceptance remains pending.
+Task 6 evidence/SQL, sanitized financial contracts and the typed graph/outbox/query core are merged. Independent cloud rehearsal passed real PostgreSQL/PostGIS domain checks and PG-to-embedded-Helix reuse/writeback. Production schema/role and writer-fence composition, trusted source/host adapters, admitted inventory/backfill and live activation remain pending. The tested native-review adapter stays default-disabled until the approved durable exact-version acceptance/reconciliation seam and production writer composition are implemented and qualified.
 
 ## Source compatibility and migration ownership
 

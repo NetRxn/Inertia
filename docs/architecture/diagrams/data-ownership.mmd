@@ -5,14 +5,14 @@ flowchart TB
  PC <-.-> A
  A <-.-> DAO
  M["Meeting sources and decisions"] -.-> K["Trusted knowledge admission<br/>Source revision and access scope"]
- Q["Financial snapshots<br/>Sanitized fixture contracts reviewed"] -.-> K
+ Q["Financial snapshots<br/>Sanitized fixture contracts merged"] -.-> K
  K -.-> DAO
- DAO -.->|Admitted records and revisions| HX[("Helix partner graph<br/>Maintained derived index<br/>Core capability, implementation underway")]
+ DAO -.->|Admitted records and revisions| HX[("Helix partner graph<br/>Maintained derived index<br/>Merged core, live integration next")]
  HX -.-> C["Authorized queries<br/>Revalidate current PG sources and access"]
  DAO -.->|Access and revision checks| C
  class PC,DAO store
- class A,HX,C planned
- class K,Q reviewed
+ class A planned
+ class K,Q,HX,C core
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px
  classDef planned fill:#fffaf0,stroke:#b1853e,color:#132e38,stroke-dasharray:6 4

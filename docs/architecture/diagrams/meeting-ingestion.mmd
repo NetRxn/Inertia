@@ -9,9 +9,8 @@ flowchart TB
  A -.-> T
  R -.-> K["Trusted knowledge admission<br/>Reviewed facts and adopted decisions<br/>Source version and access scope"]
  K -.-> DB[("Reusable DAO knowledge")]
- class R core
- class J,W,A planned
- class K reviewed
+ class R,A,K core
+ class J,W planned
  class DB store
 
  classDef core fill:#e7f1ee,stroke:#157d80,color:#132e38,stroke-width:2px

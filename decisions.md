@@ -1,13 +1,13 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-23-r15
-Updated: 2026-10-23 (UTC)
-Status: DFW foundations merged; drafting/gap and Task 6 knowledge/financial contracts independently reviewed locally, awaiting publication. Core Helix partner-graph implementation is underway. October discovery draft PR42 is published; CI is running and source qualification is in review. Final scout and live integrations remain pending.
+Revision: INERTIA-2026-10-23-r16
+Updated: 2026-10-24 (UTC)
+Status: Public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs are merged. Real PostgreSQL, native-service and embedded-Helix cloud rehearsal and the synthetic meeting-answer loop passed independent review. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. The approved discovery loop awaits host wiring; daily recurring scouting remains disabled.
 
 
 ## Current baseline
 
-Develop `1ac44a7a`; runtime through PR 17. See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
+Develop `6f93cfef`; merged runtime includes cumulative core, cloud qualification/race fixes and Task 8 (PR25/26/27), plus the default-disabled native adapter (PR28). See [implementation status](spec.md#implementation-status) and the exact [qualification record](testing.md#qualification-record). Live deployment and domain admission are pending.
 
 ## Settled decisions
 
@@ -43,7 +43,7 @@ Paperclip supplies operations, scheduling, task/approval state, credentials and 
 | P02 | Route Buzz task triggers into one native execution owner | Duplicate-trigger and checkout tests. |
 | P03 | Reuse existing execution hardening through native runner/plugin interfaces | Version, license, lifecycle and isolation qualification. |
 | P04 | Use native connection profiles and tool policy | Domain credential scopes and call-time authorization tests. |
-| P05 | Preserve funding-domain review/signoff semantics through native Paperclip UI | Source-pinned mapping; trusted human-decision adapter remains planned. |
+| P05 | Preserve funding-domain review/signoff semantics through native Paperclip UI | Adapter merged/default-disabled; approved acceptance seam pending. |
 
 ## Central configuration and compatibility register
 
@@ -108,7 +108,7 @@ Alternatives considered: latest native chat-provider implementation offers broad
 - D39: The selected native outbound slice mirrors eligible comments only, default-off with explicit binding audience approval/start time, using the existing durable outbox/reconciler. PR 17 is reviewed/tested and merged into develop. PR 16 supplies the native operator setup checklist; automatic intake still needs an explicitly assigned mandate and authorized live setup. General status mirroring remains future.
 
 - D40: Run grant scouting/drafting through a shared skill/tool harness on central or scoped member Paperclip agents. Native tasks, documents and human-only cards are the default UI; the funding web UI is optional specialist/admin fallback.
-- D41: Retain funding evidence, validated proposals, immutable packets and review audit. A planned trusted server adapter applies authenticated, addressed, revision-bound native decisions through domain validation. Current MCP lacks acceptance/signoff; agents cannot approve. Reconcile decision identity (interaction + item for verdicts), proposal/packet ID/version and action, without claiming a cross-system transaction.
+- D41: Retain funding evidence, validated proposals, immutable packets and review audit. A tested, default-disabled trusted server adapter applies authenticated, addressed, revision-bound native decisions through domain validation. Current MCP lacks acceptance/signoff; agents cannot approve. Reconcile decision identity (interaction + item for verdicts), proposal/packet ID/version and action, without claiming a cross-system transaction.
 - D42: Start corrections with document edit → regenerated proposal → new review. Build a structured panel only after a real walkthrough demonstrates need. Preserve separate Vocdoni authority and exact artifact/packet/review binding.
 
 - D43: Consolidate funding and meeting relational data in one existing DAO PostgreSQL database, with separate domain schemas and least-privilege roles. Keep Paperclip native persistence independent. Choose physical server placement during deployment and qualify provider capabilities before migration.
@@ -119,7 +119,7 @@ Alternatives considered: latest native chat-provider implementation offers broad
 
 - D46: Extend DFW-Gov-Fund's existing evidence, proposal and packet services. A case owner plus independent review coordinates six responsibility contracts, with specialist tasks on demand.
 - D47: Produce useful machine-reviewed candidates before human signoff. Preserve separate accepted facts and role-bound decisions. Researchable gaps stay with agents; members receive grouped decisions and unavailable private-data requests.
-- D48: Reuse Task 6 source-backed organization/project/opportunity knowledge and existing document/audit records. Its evidence/SQL and sanitized USD Profit & Loss fixture contracts are locally implemented and independently approved, awaiting publication and real PG/source qualification. Production QuickBooks integration remains separate.
+- D48: Reuse Task 6 source-backed organization/project/opportunity knowledge and existing document/audit records. Its evidence/SQL and sanitized USD Profit & Loss fixture contracts are merged and real disposable PostgreSQL qualification passed. Production importer, financial source and role qualification remain pending. Production QuickBooks integration remains separate.
 - D49: Every website innovation-bounty submission enters the general Paperclip queue. Keep versioned objective/funding links in the funding domain, separate from project status.
 - D50: Use one structured DAO opportunity brief across native documents and permitted portal/Buzz views. Separate application, delivery and reporting effort. Meeting outcomes update knowledge and follow-up work.
 - D51: Package a canonical portable skill for Codex, Claude and a named local runtime; qualify tool execution in each. Keep member evidence/proposal access separate from trusted human-review effects.
@@ -131,11 +131,17 @@ Alternatives considered: latest native chat-provider implementation offers broad
 
 - D56: Query saved partners and evidence before new research. Every scan/diligence result includes a durable useful knowledge delta or explained no-change receipt; preserve reusable findings even when an opportunity is rejected.
 - D57: Cover every relevant organization, work contact/role, program/project/event, contribution history and relationship owner in the authorized source inventory. Reuse canonical IDs; unresolved identities remain explicit. Prospect/collaborator, evidence status and delivery stage are independent dimensions.
-- D58: Admit a versioned typed assertion envelope bound to exact evidence, identity and scope. Commit evidence/history/outbox together, project idempotently with target-side fencing/version checks and reconcile before acknowledgment. Graph implementation is underway; acceptance remains pending.
+- D58: Admit a versioned typed assertion envelope bound to exact evidence, identity and scope. Commit evidence/history/outbox together, project idempotently with target-side fencing/version checks and reconcile before acknowledgment. The graph core is merged; real PostgreSQL, native-service and embedded-Helix cloud rehearsal passed. Production source/host/service activation and admitted inventory/backfill remain pending.
 - D59: Seed MADE as a TechFW program and Moonshot/LiquidAcre as existing collaborators with attributed activity evidence. Preserve October 30 planned work and candidate aliases separately. Official IRS records verify EIN 41-2815082/public-charity status; the determination-letter attachment and funder-specific eligibility remain separate evidence needs.
-- D60: Keep July case improvement, October 23 manual findings, dated replay and actual scanner output separate. Discovery draft PR42 is published with CI and source qualification in review; final live scout evidence is pending.
+- D60: Keep July case improvement, October 23 manual findings, dated replay and actual scanner output separate. October discovery is complete and PR42 is merged with passing post-merge CI. Use the delivered priority diligence queue for actionable preparation while preserving the exact confidence overlay and source limits.
+
+- D61: Extend Tasks 5, 6C/6D and 8 with the approved [operational discovery loop](docs/development/funding-enhancement/discovery-loop.md): query saved evidence, discover uncovered sources, validate official evidence, assess benefit/effort, persist useful knowledge, deliver deduplicated urgent alerts and prioritized briefs, and retain due rechecks in native work. Configure recurring execution after host wiring, rehearsal and cadence agreement.
+
+- D62: Native acceptance records durable authority for one exact command/version and survives disconnect. The funding service confirms cancellation; changed funding evidence blocks stale execution; grant submission remains separately authorized. Acceptance/reconciliation seam implementation and production writer qualification are pending; the frozen adapter remains default-disabled.
 
 ## Change log
+
+- r16: Record completed October discovery and merged drafting/gaps, Task 6, graph, cloud qualification/race fixes and Task 8. Record independently passed cloud and synthetic meeting-answer rehearsals. Add the approved operational discovery loop, retaining disabled recurring execution and native-review activation gates.
 
 - r15: Make the maintained partner graph and query-first research writeback core, with bounded coverage, typed evidence, transactional outbox/recovery and pre-implementation tests. Record locally approved Task 6, verified IRS status and the separate October discovery qualification path. Broader 990/vector enrichment stays later.
 

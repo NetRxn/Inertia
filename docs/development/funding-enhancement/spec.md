@@ -1,6 +1,7 @@
 # Funding agents and DAO intake
 
-Revision: FUNDING-2026-10-23-r3. Implementation status and remaining contracts for DFW-Gov-Fund and Inertia.
+Revision: FUNDING-2026-10-23-r4. Implementation status and remaining contracts for DFW-Gov-Fund and Inertia.
+Updated: 2026-10-24 (UTC)
 
 ## Outcome
 
@@ -16,13 +17,15 @@ Agents turn public opportunities and DAO objectives into useful, evidence-backed
 
 ## Baseline
 
-DFW main `c615525291a656f9abd4da1262c23fa8ae97290c`: PR35 CI, PR37 benchmark, PR38 candidates, PR39 route review and PR40 portable skills 3.4.1 are merged. Inertia documentation source is develop `1ac44a7a5c9d8e1376e2c358ee2888b16be58905`. The scoped public drafting/actionable-gap pipeline and Task 6 evidence/SQL/financial fixture contracts are independently reviewed local work, awaiting publication. Helix integration and the operational graph are core work under implementation. October discovery is published in draft PR42 on `discovery/2026-10-23-refresh`; CI is running and source qualification is in review and final scout results remain pending. Exact evidence and remaining gates are in source-map.md.
+DFW main `16e96b22d55caaa0c19513e121028ab78c3aa1c7` (PR46) and Inertia develop `6f93cfef486b017afccda7b275837e09213aa189` (PR28) include merged public drafting/gaps, Task 6, partner graph, cloud qualification/race fixes and objective intake/briefs. Independent real-PG/native/Helix cloud rehearsal and the synthetic actual-service meeting-answer loop passed. Inertia native review is merged/default-disabled; DFW service is reviewed/in CI; the approved durable exact-version acceptance model awaits host-seam implementation and qualification. Exact receipts and activation gates are in [source-map.md](source-map.md).
 
 July's five retained opportunity packets had 27 requirement rows with no supported answers and no named DAO programs in core narratives. The saved audit found 8 proposed-plan drafting opportunities, 6 partially answerable requirements, 10 genuine information gaps and 3 lead-only requirements. Evaluate those classifications as audit hypotheses. That historical run predates evaluation of the Codex proposal service.
 
 Existing services already provide acquisition, matching, evidence, draft packets, proposal persistence and human review operations. Extend these services. Existing Inertia provides signed Buzz transport, native interactions, meeting publication contracts and exact grant packet/vote binding.
 
 ## Workflow
+
+The approved [operational discovery loop](discovery-loop.md) extends this workflow through Tasks 5, 6C/6D and 8. It combines due-source rechecks and bounded new-source search with official validation, benefit-versus-effort assessment, durable writeback, prioritized briefs, deduplicated urgent alerts and native follow-ups. Host wiring remains planned and the daily profile schedule remains disabled.
 
 ```mermaid
 flowchart TD
@@ -83,7 +86,7 @@ Paperclip owns tasks, hiring, scheduling and review UI; Buzz exposes the same wo
 
 ## Actionable gaps and public drafting
 
-The reviewed bridge exposes only `funding_drafting_workspace`, `save_funding_proposals` and `save_funding_gap_progress` through `create_public_funding_mcp`. The host supplies authenticated company/applicant/task identities, current public evidence and reviewer/repair adapters. Operator MCP remains privileged and separate. Drafts stay unaccepted through independent review and at most two targeted repairs.
+The merged bridge exposes only `funding_drafting_workspace`, `save_funding_proposals` and `save_funding_gap_progress` through `create_public_funding_mcp`. The host supplies authenticated company/applicant/task identities, current public evidence and reviewer/repair adapters. Operator MCP remains privileged and separate. Drafts stay unaccepted through independent review and at most two targeted repairs.
 
 For partnership gaps, query the saved partner graph and authoritative evidence for existing DAO affiliations, capabilities, relationship owners and prior programs before investigating missing or stale facts about relevant local partners. Save source-backed relationship paths, proposed roles, exact public-contact passages, evidence needs and prepared work. Prefer completing a worksheet, cited answer, role matrix, unsigned letter outline or cost scenario to returning a generic missing-information label. Preparation never authorizes outreach or commitments.
 
@@ -95,7 +98,7 @@ The default checkpoint threshold is six attempts per current workspace, triggeri
 
 ## Reusable knowledge and financial sources
 
-Task 6 (`dao-knowledge-v1`) implements this evidence/SQL foundation locally and has independent approval; publication and live qualification remain pending. `OrganizationKnowledge` reuses ApplicantProfile and ApplicantDocumentVersion/Fact with WorkbenchAuditEvent history. Its DFW Alembic-owned schema and scoped roles remain in the DAO PostgreSQL deployment. Existing website/member/project objects retain their owner and canonical IDs.
+Task 6 (`dao-knowledge-v1`) supplies the merged evidence/SQL foundation; real disposable PostgreSQL qualification passed. Production source/importer and role activation remain pending. `OrganizationKnowledge` reuses ApplicantProfile and ApplicantDocumentVersion/Fact with WorkbenchAuditEvent history. Its DFW Alembic-owned schema and scoped roles remain in the DAO PostgreSQL deployment. Existing website/member/project objects retain their owner and canonical IDs.
 
 A reusable record contains `organization_id`, `record_id`, `revision`, `kind`, `scope_kind`, `scope_id`, `value`, `source_id`, `source_revision`, `source_locator`, `source_hash`, `observed_at`, `effective_from`, `effective_until`, `status`, `audience`, `supersedes_id`. Kinds: fact, priority, resource, decision, commitment. Scope: organization, project, opportunity. Status: candidate, current, disputed, superseded, revoked. Missing effective dates stay unknown. Only compatible scope and current, authorized records enter a workspace. Keep conflicts visible and resolve them through trusted source admission.
 
@@ -165,12 +168,14 @@ Paperclip's managed company skill library and per-agent assignment own skill del
 
 ## Security and authority
 
+The frozen native-review adapter remains default-disabled: native session loss can release source locks before a separate funding transaction commits. The approved successor records durable authority for an exact command/version at native acceptance, surviving disconnect. Funding-service confirmation establishes cancellation; changed funding evidence blocks stale execution; grant submission remains separate. Implement and qualify the acceptance/reconciliation seam and production writer-fence composition before activation.
+
 Server scope is derived from authenticated company, applicant, task and principal. Members receive only allowed evidence plus proposal tools in isolated workspaces. They receive no organization DB, financial/portal credentials, human signoff tools or privileged publisher token. Enforce read restrictions before retrieval and output restrictions before publication.
 
-Native human-only cards are necessary but insufficient: trusted code verifies an actual human actor, designated role and exact target. Correlate effects with interaction ID + item ID + target identity/revision/hash + action. Store a unique domain effect receipt in the same transaction as the mutation. Reconcile cross-system acknowledgment loss through durable effect receipts. Domain grant-review capabilities and their epochs are transactionally checked with the effect; native actor/membership is freshly verified with a configured maximum age and fail-closed behavior. Immediate denial uses domain-capability revocation. Native revocation events propagate across stores and invalidate pending work. Partial cards apply resolved items only. Defer has no acceptance effect. Rejection and changes-requested mappings retain domain semantics.
+Frozen adapter contract: native human-only cards are necessary but insufficient: trusted code verifies an actual human actor, designated role and exact target. Correlate effects with interaction ID + item ID + target identity/revision/hash + action. Store a unique domain effect receipt in the same transaction as the mutation. Reconcile cross-system acknowledgment loss through durable effect receipts. Domain grant-review capabilities and their epochs are transactionally checked with the effect; native actor/membership is freshly verified with a configured maximum age and fail-closed behavior. Immediate denial uses domain-capability revocation. Native revocation events propagate across stores and invalidate pending work. Partial cards apply resolved items only. Defer has no acceptance effect. Rejection and changes-requested mappings retain domain semantics.
 
 ## Success and deployment gates
 
 Public-only fixtures must show useful, cited answers for answerable requirements, explicit proposals where appropriate, no fabricated facts, no premature human requests for agent-researchable gaps and no route/authority regression. Compare Codex, Claude and one local runtime on the same frozen inputs. Evaluate human correction burden, material-error rate, supported coverage, research coverage, cost and elapsed time.
 
-Historical July replay requires exact retained artifacts. Fresh October discovery, current public enrichment and historical replay have separate reports. The October 23 first live attempt failed public DNS with zero acquisitions; manual findings and dated replay remain separately labeled while guarded cloud qualification and final scout are pending. Graph acceptance requires an end-to-end query → research → durable delta → next-run reuse demonstration. Real integration admission requires authorized source access, website server contract, actual reviewer mapping, scoped runtime/tool configuration and database migration qualification. CI/dependency qualification is separately owned. Record passed, failed and skipped tests distinctly. Existing voting/member/Y2 roadmap remains active.
+Historical July replay requires exact retained artifacts. Fresh October discovery, current public enrichment and historical replay have separate reports. October discovery is complete and merged; its exact confidence overlay is preserved and the [priority diligence queue](https://github.com/NetRxn/DFW-Gov-Fund/blob/main/government-funding-dfw/docs/discovery/2026-10-23-priority-diligence.md) guides next preparation. The historical DNS-failed attempt, manual findings and dated replay retain their separate labels. The graph core is merged and has passed independent real-PG-to-embedded-Helix cloud rehearsal; live acceptance still requires a complete authorized query → research → durable delta → next-run reuse workflow. Real integration admission requires authorized source access, website server contract, actual reviewer mapping, scoped runtime/tool configuration and database migration qualification. CI/dependency qualification is separately owned. Record passed, failed and skipped tests distinctly. Existing voting/member/Y2 roadmap remains active.
