@@ -1,8 +1,8 @@
 # Member app: build progress and handoff
 
-Plan: [`2026-10-24-member-app.md`](2026-10-24-member-app.md) · Spec: [`../specs/2026-10-24-member-app-design.md`](../specs/2026-10-24-member-app-design.md) · Branch: `feat/member-app` (from `develop` at `00b9ebc`) · Updated 2026-10-25.
+Plan: [`2026-10-24-member-app.md`](2026-10-24-member-app.md) · Spec: [`../specs/2026-10-24-member-app-design.md`](../specs/2026-10-24-member-app-design.md) · Working branch: `feat/member-app-all` (all member work; see below) · Updated 2026-10-25.
 
-Execution method: subagent-driven development (`superpowers:subagent-driven-development`). Each task is built by a fresh implementer and then reviewed (spec + quality) before the next task starts. This file is the committed copy of the controller's progress ledger, so a new session can resume. A resuming controller should recreate its local ledger from this file.
+Execution method: Tasks 1–7 used subagent-driven development (a fresh implementer and a reviewer per task). From Task 8 on, the plan runs inline with `superpowers:executing-plans` (TDD per task, one fresh whole-branch review at the end; R29). This file is the committed copy of the controller's progress ledger (the live ledger is git-ignored under `.superpowers/sdd/2026-10-24-member-app/`), so a new session can resume. A resuming controller should recreate its local ledger from this file.
 
 ## Status
 
@@ -14,16 +14,22 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 | 4 Email-link login | Complete, review clean (2 fix rounds) | `66ab12d..f697715` |
 | 5 Visual system, shell, home feed | Complete, review clean | `97048b5..d00a094` |
 | 6 Work tab and claiming | Complete, review clean (1 pre-review fix, 1 review fix round) | `1efbb27..8f75893` |
-| 7 Share: posts, files and link previews | Complete; unit, build and e2e green (controller self-review, no separate reviewer pass) | `de21fdc..` (this commit's parent) |
-| 8–11 | Not started | |
+| 7 Share: posts, files and link previews | Complete; unit, build and e2e green (no separate reviewer pass) | `69997df` on `feat/member-app-all`; `1469b3d` on `feat/member-app-feed` |
+| 8 Assistant tool layer | Complete (inline, TDD); 18 tests | `a5743ca` |
+| 9 Chat: route, conversations, sheet | Complete (inline, TDD); unit 115/115 three runs, e2e 16/16, build clean | `bd8a2e7` |
+| 10 Votes, Calendar, Docs, Profile | **Next** — not started | |
+| 11 Full journey, README, final checks | Not started | |
+| Final whole-branch review | Not started (covers Tasks 7–11, none of which had a per-task reviewer) | |
 
-PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 5 onward is committed on the local worktree branch and not pushed to `feat/member-app`, so it doesn't land in #70 (ruling R11). Checkpoint 2 (after Task 7) goes up as a separate branch.
+PR checkpoint 1 (Tasks 1–4) is NetRxn/Inertia#70 into `develop`. PR checkpoint 2 (Tasks 5–7) is NetRxn/Inertia#74 from `feat/member-app-feed` into `feat/member-app`. Tasks 8–9 are only on `feat/member-app-all` so far.
 
 ## Where things are on GitHub
 
-- `feat/member-app`: Tasks 1–4. PR checkpoint 1 is NetRxn/Inertia#70 into `develop`. It's mergeable, with no reviews yet and no CI checks configured.
-- `feat/member-app-feed`: Tasks 5–6 plus this file, stacked on `feat/member-app`. It has no PR yet; checkpoint 2 opens after Task 7.
-- `member-layer`: Kyle's member-layer notes (`member-layer/VISION.md`, `DASHBOARD.md`, `CLAUDE.md`). It's exploratory, with no PR until the scope in #40 is agreed.
+- `feat/member-app-all`: **the working branch.** Tasks 1–9 plus Kyle's `member-layer/` notes. All new work is committed here (R28, R29).
+- `feat/member-app`: Tasks 1–4. PR checkpoint 1 is NetRxn/Inertia#70 into `develop`, with no CI checks configured.
+- `feat/member-app-feed`: Tasks 5–7, stacked on `feat/member-app`. PR checkpoint 2 is NetRxn/Inertia#74 into `feat/member-app`.
+- `member-layer`: Kyle's member-layer notes only. Exploratory, with no PR until the scope in #40 is agreed. `member-layer/` files must never enter a checkpoint PR (`member-layer/CLAUDE.md`).
+- Checkpoints are cut by cherry-picking the app commits from `feat/member-app-all` onto `feat/member-app-feed` (or a new branch stacked on it); the cherry-picks are clean because member-layer commits touch only `member-layer/` (R29).
 
 ## Coordination
 
@@ -32,13 +38,15 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 
 ## Resume here
 
-1. **Task 7** is done. The implementer's uncommitted work from the `member-app-tree-github-issues` worktree was moved onto the consolidated branch (`feat/member-app-all`, which already held Tasks 1–6 and `member-layer/`), checked against the brief and rulings R22–R27, and committed. Evidence: `npm run typecheck` clean, `npm test` 75/75, `npm run build` clean, `npm run e2e` 14/14 (4 new share specs). Beyond the brief: PDF serving e2e, author-delete e2e, orphaned uploads removed when a share fails validation, and `getMemberFromCookies()` so route handlers answer 401 instead of redirecting.
-2. **Next: PR checkpoint 2**, "Member app: home feed, work tab and sharing" (Tasks 5–7), based on `feat/member-app` while #70 is open (R26). It needs Kyle's OK before it goes up.
-3. Then Task 8 (assistant tool layer).
+1. **Task 10** (Votes, Calendar, Docs, Profile) is next. Its brief is in the plan. Source chips from Task 9 already link to `/docs#meeting-<id>`, `/docs#doc-<id>`, `/votes` and `/calendar`, so the Docs page needs `id="meeting-<id>"` and `id="doc-<id>"` anchors. Use `listDocuments`/`getDocument` from `src/documents/documents.ts` (Task 8). E2E specs claim members so their state never collides: alex@example.org is the only active member no spec uses yet (chat.spec uses sam and jordan); pat@example.org is the inactive one.
+2. **Task 11** (full journey, README, final checks).
+3. **Final whole-branch review** (executing-plans "Final Review"): review package from `feat/member-app`'s merge base with develop (`00b9ebc`) to HEAD, excluding `member-layer/`; reviewer on the most capable model with the plan's Review Focus section and the ruling list below. Then one TDD fix pass for Critical/Important findings.
+4. **PR checkpoint 3**, "Member app: assistant, chat and sections" (Tasks 8–11), stacked on `feat/member-app-feed`, by cherry-picking the app commits. Needs Kyle's OK before it goes up.
 
 ## Environment
 
-- Kyle's Mac: Homebrew's default `node` is broken, so local commands use `PATH=/opt/homebrew/opt/node@24/bin:$PATH`. Other environments just need Node ≥ 24.11.
+- Kyle's Mac: Homebrew's default `node` is broken, so local commands use `PATH=/opt/homebrew/opt/node@24/bin:$PATH`. Other environments (including cloud sessions) just need Node ≥ 24.11; the prepended path is harmless when it doesn't exist.
+- Chat e2e runs with `MEMBER_APP_MODEL_PROVIDER=mock` (set in `playwright.config.ts`), a scripted model that is refused when `NODE_ENV=production`. A real model needs `MEMBER_APP_MODEL_PROVIDER`, `MEMBER_APP_MODEL` and the provider's key in `apps/member/.env.local` (see `.env.example`); no real model is needed for tests.
 - `apps/member/playwright.config.ts` currently hardcodes that Homebrew path in its web server command. It's a deferred minor; fix it if it gets in the way.
 - Every command runs from `apps/member/`: `npm ci`, `npm test`, `npm run typecheck`, `npm run build`, `npm run e2e`. Chromium for Playwright: `npx playwright install chromium`.
 - Imports in `apps/member` are extension-free (no `.js`).
@@ -65,7 +73,14 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 - **R20:** `HumanTask.prepared` is prose describing what agents already prepared. The fixtures now carry sentences instead of dates.
 - **R10:** Fix round 2 went to a fresh implementer because the round-1 implementer's context was gone.
 
+- **R28:** One umbrella branch, `feat/member-app-all`, holds all member work (app line plus `member-layer/`). Checkpoint PRs still come from `feat/member-app-feed` so their diffs carry app commits only.
+- **R29:** From Task 8 the plan runs inline (`superpowers:executing-plans`) directly on `feat/member-app-all`. Checkpoints cherry-pick the app commits onto the PR branch.
+- **T8 rulings:** `ai` 7 and `zod` 4 added. Source blocks are capped at 4000 characters including the `<source>` tags, so a capped block always ends with its real closing tag. `draftDocument` stores the sources the tool set read before it. `listWork` returns open tasks (claimants omitted, so no other member's identity reaches the model) then initiatives by priority. The `getDocument` tool returns `{ results: [] }` for another member's or a missing document.
+- **T9 rulings:** The chat stays on the Vercel AI SDK (`@ai-sdk/anthropic`, `@ai-sdk/openai-compatible`), per spec §8; `.env.example` suggests `claude-opus-5-5`. `searchMeetings` with an empty query returns the latest meetings (otherwise no tool can answer "the Oct 21 meeting"). The greeting covers the past 7 days because the session lookup refreshes `lastSeenAt` before any route runs. The greeting context rides as a leading text part of the first user message; only the member's own words are stored. The `mock` provider is a hand-written model in `src/assistant/mock-model.ts` so the dev server never imports `ai/test`. The chat route answers 401 (not a redirect) without a member. Source chips: meeting → `/docs#meeting-<id>`, proposal → its Robert's Rules `url`, task/initiative → `/work`, share → `/work?tab=ideas`, document → `/docs#doc-<id>`, event → `/calendar`, chat → plain chip. Vitest `hookTimeout` is 30 s because PGlite migrations in `beforeAll` intermittently passed 10 s under parallel load. Feed cards ask through a client `AskCard` wrapper (links and buttons inside are ignored) with a visually hidden "Ask: …" button for keyboards.
+
 ## Deferred minor findings (for the final whole-branch review to triage)
+
+- T9: the greeting can't say "since your last visit" until auth keeps the previous `lastSeenAt`. Chat messages are stored only when the stream finishes, so an aborted reply leaves no record of the question. The chat sheet doesn't trap focus. Card taps use a window event rather than shared state.
 
 - T7: link previews check DNS and then let `fetch` resolve again, so a host that rebinds between the two lookups could reach a private address. Pinning the checked address needs a custom undici dispatcher. Uploads are read fully into memory before the 10 MB check. `DeleteShareButton` gives no message when a delete fails. The composer's chat-bar offset assumes Task 9's bar.
 
