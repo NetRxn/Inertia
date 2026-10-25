@@ -86,6 +86,16 @@ class ScaffoldTests(unittest.TestCase):
         self.assertEqual(sources['buzz']['commit'], '9e8c9fc04daf20259cd259dcaec89109587cc7f5')
         self.assertEqual(sources['inertia']['commit'], '8d15eaaa514d5604244fd731982df13e9a54f810')
 
+    def test_arm64_lock_is_scoped_metadata(self):
+        lock = json.loads((ROOT / 'images.linux-arm64.lock.json').read_text())
+        self.assertEqual(lock['platform'], 'linux/arm64')
+        self.assertEqual(lock['qualified_inertia_commit'], '5f2f903274715ae194390fe2fa9845301586d90c')
+        self.assertEqual(lock['repair_merge_commit'], '8d0654546fa905511b2d52a710a7e6ca4ddf51d0')
+        self.assertEqual(set(lock['images']), {'buzz', 'postgres17', 'redis7', 'silo', 'bucket_init'})
+        for image in lock['images'].values():
+            self.assertRegex(image['reference'], r'^[a-z0-9./-]+@sha256:[0-9a-f]{64}$')
+            self.assertRegex(image['observed_oci_source_revision'], r'^[0-9a-f]{40}$')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

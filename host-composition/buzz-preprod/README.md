@@ -1,14 +1,16 @@
 # Buzz preprod — isolated preparation, not a running deployment
 
-**Owner update: phone deferred.** No invite, pairing, public endpoint, DNS, tunnel, account, credential, or runtime has been created. Existing grant runtime is outside this package and unchanged. This is a source/configuration handoff, not end-to-end relay qualification.
+**Phone remains deferred.** An isolated Linux ARM64 official-relay retest passed with repaired Inertia and synthetic native fixtures; all disposable resources were removed. Actual installed `ctx.http.fetch` still rejects private-only DNS, so full installed-host integration is **not qualified**. See [QUALIFICATION.md](QUALIFICATION.md). This package creates no runtime, persistent credentials or public endpoint; existing grant runtime remains outside its scope.
 
 ## Scope and layout
 - `compose.preprod.yml`: minimally derived from pinned official Compose, not another orchestrator. Same relay/Postgres 17/Redis 7/Silo/mc services and upstream healthchecks.
 - `upstream/`: unmodified official deployment evidence; **do not run its run.sh or compose files**, which use production naming/public binds.
 - `.env.preprod.example`: unset secrets, origin, identity and unresolved image references. No real `.env.preprod` exists.
-- `PROTOCOL.md`: source compatibility and actual-relay test gates.
+- `QUALIFICATION.md`: sanitized actual-relay retest scope and remaining host limitation.
+- `images.linux-arm64.lock.json`: qualified ARM64 image references and observed OCI source labels; metadata only, not an automatic Compose override.
+- `PROTOCOL.md`: historical pre-repair source compatibility review and plan.
 - `validate_scaffold.py`: offline structural checks (Python + PyYAML; not Docker validation).
-- `tests/timestamp-contract.mjs`: five offline pinned-client characterization checks, including the known >15-minute delivery gap; invocation and limits are in `PROTOCOL.md`. Passing means the limitation was reproduced, not repaired.
+- `tests/timestamp-contract.mjs`: five offline pinned-client characterization checks, pinned to historical Inertia `8d15eaaa`, including its >15-minute delivery gap; invocation and limits are in `PROTOCOL.md`. Passing means the limitation was reproduced, not repaired.
 - `REVIEW.md`: independent scaffold/fixture review and resolution record.
 - `evidence/`, `SOURCES.json`: source provenance.
 
@@ -22,13 +24,13 @@ Alternatives deliberately excluded: using the existing grant stack risks shared 
 3. Validate isolation and negative mutations offline; independently review source/configuration.
 4. Hand off runtime gates without deploying or claiming real-relay evidence.
 
-Executed: `python validate_scaffold.py` — 9 tests passed, including public-port, external-volume, volume-driver host bind, shared-network, open-membership and egress rejection. Docker is **not installed in this cloud executor**; no Compose parse, image pull, migration, container start, real relay message, invite or phone join has run.
+Executed: `python validate_scaffold.py` — 10 tests passed, including public-port, external-volume, volume-driver host bind, shared-network, open-membership and egress rejection. These structural checks do not run Docker. Later isolated ARM64 relay execution is reported separately in QUALIFICATION.md; no phone join or public endpoint was tested.
 
 ## Source and image pins
 Buzz source: [9e8c9fc](https://github.com/block/buzz/tree/9e8c9fc04daf20259cd259dcaec89109587cc7f5).
-Inertia develop observed: [8d15eaaa](https://github.com/NetRxn/Inertia/tree/8d15eaaa514d5604244fd731982df13e9a54f810).
+Historical Inertia baseline: [8d15eaaa](https://github.com/NetRxn/Inertia/tree/8d15eaaa514d5604244fd731982df13e9a54f810).
 Official [Compose documentation](https://github.com/block/buzz/blob/9e8c9fc04daf20259cd259dcaec89109587cc7f5/deploy/compose/README.md).
-Upstream Silo/mc multi-platform OCI digests are retained exactly. Buzz, Postgres and Redis digest references remain unset rather than inventing pins or treating mutable tags as immutable. Resolve approved platform-compatible images and verify their registry digests/source relationship before runtime. Latest GitHub release observed was **desktop-v0.5.28**; that is not proof of relay image contents or of the user's installed mobile version.
+Upstream Silo/mc multi-platform OCI digests are retained exactly. Buzz, Postgres and Redis digest references remain unset rather than inventing pins or treating mutable tags as immutable. The qualified Linux ARM64 references and observed OCI source labels are now recorded in images.linux-arm64.lock.json. Do not apply them as AMD64 qualification. Environment values remain unset; Compose is not silently retargeted. Latest GitHub release observed was **desktop-v0.5.28**; that is not proof of relay image contents or of the user's installed mobile version.
 
 ## Local runtime prerequisites
 - A separately selected isolated host with Docker and Compose >=2.24.4; adequate disk/resources for the official five-service stack (size after measured smoke test, not invented sizing).
@@ -39,7 +41,7 @@ Upstream Silo/mc multi-platform OCI digests are retained exactly. Buzz, Postgres
 - Verify this is a fresh project namespace before any start/migration/stop: inspect containers, volumes and networks with label `com.docker.compose.project=buzzpreprod`, and the expected `buzzpreprod_*` resource names. Existing resources require ownership/data review; do not reuse, migrate, stop or delete them merely because names match. A fixed project name is not proof of freshness.
 - Canonical relay origin consistent with NIP-98 Host/URL/tenant checks. Inertia requires HTTPS even for an actual local smoke test; choose a private test TLS endpoint trusted by its client, rather than weakening the adapter or disabling TLS verification. This private TLS path is not included or started.
 - A separate preprod Inertia/native host instance or approved fixture host, isolated company/agent/channel mapping, bridge identity and memberships. Do not point this package at the current grant runtime.
-- Review delayed-publication timestamp compatibility before claiming resilient end-to-end behavior.
+- Use the repaired maintained transport and its regression tests. The actual-relay result does not qualify the installed host fetch path; private-only DNS remains rejected without bypass.
 
 Only after those gates, copy the template to a mode-0600 `.env.preprod` and fill the approved values on that host. Validate without dumping interpolated secrets:
 
@@ -81,8 +83,8 @@ Current official mobile source supports community invite join with a fresh phone
 
 Sources: [mobile join provider](https://github.com/block/buzz/blob/9e8c9fc04daf20259cd259dcaec89109587cc7f5/mobile/lib/features/invites/invite_join_provider.dart), [invite API](https://github.com/block/buzz/blob/9e8c9fc04daf20259cd259dcaec89109587cc7f5/crates/buzz-relay/src/api/invites.rs).
 
-## Next qualification option: disposable, container-internal only
-On a Docker-capable isolated test host, the smallest real-relay qualification can remain entirely local: use the same official five services with temporary storage, no host-published ports, known public test-only identities/password fixtures (never deployment accounts), and a disposable test runner on that project's internal network. For the actual unchanged Inertia HTTPS adapter, add reviewed local TLS termination using a test-only certificate trusted narrowly by that runner and a matching internal DNS alias/canonical tenant Host; do not disable TLS verification or contact public certificate authorities. This is a described option, not an implemented or started override. No public endpoint or phone is necessary.
+## Disposable test topology for reproduction
+On a Docker-capable isolated test host, the smallest real-relay qualification can remain entirely local: use the same official five services with temporary storage, no host-published ports, known public test-only identities/password fixtures (never deployment accounts), and a disposable test runner on that project's internal network. For the actual unchanged Inertia HTTPS adapter, add reviewed local TLS termination using a test-only certificate trusted narrowly by that runner and a matching internal DNS alias/canonical tenant Host; do not disable TLS verification or contact public certificate authorities. This package does not implement or start that disposable override. The qualification lane used a separate no-published-port harness; its result does not claim that this retained loopback-publishing Compose profile was itself executed. No public endpoint or phone is necessary.
 
 Run actual official relay admission/readback with synthetic owner, joining member and separate bridge identities, isolated channel/native actor mappings and no source scans. Record exact image digests, receipts and failure statuses. Test old first-publication, lost-response retry after 901 seconds, exact-ID readback, absent readback, membership loss and restart/replay. An injectable clock in an offline fixture cannot substitute for the real relay's wall clock; use controlled timestamps where possible and a bounded real wait for the lost-response aging case. Confirm the private TLS route preserves Host and the actual host's ctx.http.fetch semantics. Temporary credentials/data stay inside the disposable test namespace, are never used for the later deployment, and are removed only after ownership/evidence checks. This option needs Docker availability and reviewed image digests. Known disposable test fixtures are not permission to create real memberships/accounts or persistent preprod keys.
 

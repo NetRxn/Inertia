@@ -1,4 +1,6 @@
-/** Offline characterization, NOT a real relay or a replacement HTTP adapter.
+/** HISTORICAL baseline at Inertia 8d15eaaa514d5604244fd731982df13e9a54f810.
+ * Offline characterization, NOT a real relay or a repaired-code regression test.
+ * See QUALIFICATION.md and maintained root tests for the repaired transport.
  * Models only verified official NIP98/event timestamp rules and exact-ID reads.
  * Product change that alters observed errors or exact signed bytes fails assertions.
  */

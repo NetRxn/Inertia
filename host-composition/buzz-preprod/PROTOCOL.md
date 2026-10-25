@@ -1,6 +1,6 @@
-# Protocol compatibility and qualification gates
+# Historical protocol baseline and qualification plan
 
-Read-only source review, 2026-10-25. Phone use is deferred. No server, invite, account, key generation, installation or product-code change occurred. The primary next qualification is an isolated synthetic local actor → official relay → Inertia → reply/readback flow.
+This document records the pre-repair source review at Inertia `8d15eaaa514d5604244fd731982df13e9a54f810`. Its failures, proposed repair and unexecuted plan are historical, not the status of repaired current code. See [QUALIFICATION.md](QUALIFICATION.md) for the later actual-relay result and remaining installed-host limitation. Phone remains deferred.
 
 ## Pinned evidence and verdict
 
@@ -8,7 +8,7 @@ Read-only source review, 2026-10-25. Phone use is deferred. No server, invite, a
 - Inertia develop `8d15eaaa514d5604244fd731982df13e9a54f810`.
 - Relevant Inertia source copied unchanged under `evidence/inertia/src/`.
 
-**The real relay already provides the HTTP protocol Inertia consumes. No protocol shim or additional orchestrator is required for immediate kind-9 channel traffic. Actual relay execution remains unqualified; the offline test is not a relay substitute.**
+**The real relay already provides the HTTP protocol Inertia consumes. No protocol shim or additional orchestrator is required for immediate kind-9 channel traffic. At this baseline-review stage actual relay execution was unqualified; the offline test is not a relay substitute.**
 
 | Contract | Source finding |
 |---|---|
@@ -41,7 +41,7 @@ Consequences:
 3. Within one client call, uncertainty is preserved after an ambiguous attempt. Across separate calls, the client sees a first-attempt 400 and reports `BuzzRequestRejected`; the durable service may mark a previously uncertain delivery blocked. That refusal is not proof the earlier event was absent.
 4. Current service delivery does not perform exact-ID readback before retry. Readback capability exists in the HTTP query client but is not integrated recovery.
 
-### Proposed smallest repair contract — NOT implemented
+### Historical proposed repair contract — subsequently repaired in PR #82
 
 Keep changes in existing service/outbox transport; no wrapper or additional daemon.
 
@@ -63,9 +63,9 @@ INERTIA_DEPENDENCY_ROOT=/path/to/existing/reviewed/Inertia-checkout \
 
 Observed: Node v24.22.1, existing esbuild 0.28.2 / nostr-tools 2.25.2; 5 characterization checks passed (rerun the command to reproduce; transient logs are not published). This confirms client behavior against the explicitly modeled source rule, NOT official relay enforcement, real host HTTP behavior, full worker recovery, or a repaired product. Product source was not changed. The first run encountered a test-only comparison of nostr-tools' verification symbol; comparison was corrected to canonical JSON fields and rerun successfully.
 
-## Real official-relay test plan — requires a Docker-capable isolated executor
+## Historical real-relay qualification plan
 
-Prerequisites: reviewed image digests; approved isolated Docker host; approved isolated secret procedure; private TLS endpoint trusted by Inertia; exact tenant hostname; separate native test host/company/issue and member identities. No public hostname is needed while phone is deferred. Do not use fixture keys in any exposed deployment. Docker is absent in this executor; these steps have NOT run.
+Prerequisites: reviewed image digests; approved isolated Docker host; approved isolated secret procedure; private TLS endpoint trusted by Inertia; exact tenant hostname; separate native test host/company/issue and member identities. No public hostname is needed while phone is deferred. Do not use fixture keys in any exposed deployment. These steps had not run when this baseline plan was written. Later execution evidence is scoped in QUALIFICATION.md; do not infer full plan completion.
 
 1. Start only the isolated official synthetic stack; verify each dependency healthy and relay `/_readiness`. Verify canonical tenant Host and TLS (no insecure bypass). Keep source pins and actual image digests in evidence.
 2. Bootstrap isolated owner, independently admit bridge and synthetic member, create a test channel and kind-9 root using official supported APIs/CLI. Record public IDs only. Community admission does not automatically establish channel access.

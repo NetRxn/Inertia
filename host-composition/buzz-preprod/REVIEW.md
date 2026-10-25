@@ -64,3 +64,18 @@ channel/kind filtering, membership, or read consistency. Native service timestam
 mapping is source-reviewed, not executed here. No official relay, durable worker,
 or native host HTTP path was run. Those limitations and actual-relay recovery
 gates remain explicit. No blocking fixture-review finding remains.
+
+## Sanitized qualification update review
+
+The later qualification report and ARM64 image-lock metadata were independently
+reviewed against the supplied local qualification receipt. No substantive blocker
+was found. The review confirms ARM64-only scope, synthetic-native limitation,
+unchanged installed-host private-DNS rejection, historical baseline isolation and
+OCI-metadata-only provenance. Documentation nits were corrected: the current
+structural count is 10, and the disposable topology is a reproduction procedure,
+not a claim that relay execution remains unperformed. The retained Compose
+profile is distinguished from the no-published-port qualification harness.
+
+Fresh structural validation: **10/10 passed**. This update review did not rerun
+an actual relay, repaired product regression suite or installed host integration.
+No runtime, credentials, logs or operational data are included in the update.
