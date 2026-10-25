@@ -1,0 +1,33 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "adapterVersion": "2026.1012.0",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "patch": "paperclip-2026.1012.0-codex-command-tools.patch",
+  "patch_sha256": "1a09d6a80adc52c5e7608ad263d42b88018ae5aca5f299e55f16fe42144c9cde",
+  "files": {
+    "dist/index.js": {
+      "base_sha256": "2134cafbf3122d68e79cd481273504791263303d4528cdcf35f4726e9fdaf96d",
+      "candidate_sha256": "08113c94832492ce299f298d58f13c8347c2302f963d651e97a65c34d76fd274"
+    },
+    "dist/server/acp.js": {
+      "base_sha256": "28c5a293acdb9f0d880a8f872f266ab67a182dbf4aa86febc195fe59037e64f1",
+      "candidate_sha256": "9f4873de9d728a7fa1ede0a3901f75c5728727318889ea689a7e77afbbfa9753"
+    },
+    "dist/server/codex-args.js": {
+      "base_sha256": "486f435b52af2560af87b76658d3c1ddad6c5f67c572da2cf6d5b07105499700",
+      "candidate_sha256": "89f0360e73e6fd2c8cb642b2e438db8d63e7e34131b9392a1caf477610c9690b"
+    },
+    "dist/server/codex-args.d.ts": {
+      "base_sha256": "782692462e2ebe488d7a3f676751f0738b82d0eaa8e556c9e6c006054fe476a2",
+      "candidate_sha256": "06acb3354472987410541f18d1270c6c804ac5e638729a3e44eb835d88a3494e"
+    },
+    "dist/server/test.js": {
+      "base_sha256": "c97377b9f40398a0c20e425b28b3ca37ffdf5a00583f4482d67a79c18cca3ae1",
+      "candidate_sha256": "365717556f480752b8ae0381001277ca3a70940fc3d434c587b0111ec013d1f9"
+    }
+  }
+}
