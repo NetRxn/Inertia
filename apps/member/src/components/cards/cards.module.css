@@ -195,3 +195,19 @@
 .quote {
   font: var(--text-quote);
 }
+
+/* A feed card that asks the chat about itself when tapped. */
+.askable {
+  position: relative;
+  cursor: pointer;
+}
+
+/* The keyboard path to the same question: hidden until focused. */
+.askButton:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  margin-top: var(--space-2);
+  clip-path: none;
+  white-space: normal;
+}

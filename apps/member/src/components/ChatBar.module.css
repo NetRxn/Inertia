@@ -15,8 +15,19 @@
   margin-inline: auto;
   padding: var(--space-3) var(--space-6);
   border-radius: var(--radius-pill);
+  width: 100%;
+  border: 0;
   background: var(--glass-strong);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: text;
   pointer-events: auto;
+}
+
+.bar:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .prompt {

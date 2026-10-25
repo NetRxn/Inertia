@@ -93,6 +93,20 @@ describe('createAssistantTools', () => {
     expect(Object.keys(tools).filter((name) => /claim|post|vote|send/i.test(name))).toEqual([]);
   });
 
+  it('searchMeetings with an empty query returns the most recent meetings', async () => {
+    const adapters = createFixtureAdapters();
+    const tools = createAssistantTools({ adapters, db, memberId: ana.id }, () => {});
+    const [latest] = await adapters.meetings.listMeetings(1);
+
+    // The model may send an empty query: the schema accepts it.
+    const schema = tools.searchMeetings.inputSchema as { safeParse: (v: unknown) => { success: boolean } };
+    expect(schema.safeParse({ query: '' }).success).toBe(true);
+
+    const output = (await run(tools, 'searchMeetings', { query: '' })) as { results: string[] };
+
+    expect(output.results[0]).toContain(`id="${latest.id}"`);
+  });
+
   it('results are capped at 8 and 4000 chars', async () => {
     const long = 'garden '.repeat(2000);
     const many = Array.from({ length: 12 }, (_, i) => meeting(`m${i}`, `Garden ${i}`, long));
