@@ -44,6 +44,77 @@ test('provider assignments remain configurable by role rather than fixed writer/
   const c=config(); [c.agents[0].provider,c.agents[1].provider]=[c.agents[1].provider,c.agents[0].provider];
   assert.deepEqual(prepare(c).missing,[]);
 });
+function candidate(kind='funding', provider='codex_local') {
+  const c=config(); c.stage='candidate'; c.objective=kind;
+  c.agents=c.agents.filter(agent=>agent.provider.adapterType===provider);
+  c.coordinatorAgentId=c.agents[0].agentId;
+  delete c.objectives[kind==='funding'?'memberRequest':'funding'];
+  delete c.tools.knowledgeAdmission; delete c.tools.correctionReplayDenial;
+  if (kind==='memberRequest') delete c.funding;
+  return c;
+}
+test('Codex-only candidate renders only the selected original native objective without claiming collaboration', () => {
+  const c=candidate(); const result=prepare(c);
+  assert.deepEqual(result.missing,[]);
+  assert.deepEqual(Object.keys(result.tasks),['funding']);
+  assert.deepEqual(Object.keys(result.files),['funding.md']);
+  assert.equal(result.tasks.funding.issueId,'test-funding');
+  assert.equal(result.tasks.funding.agentId,'test-codex');
+  assert.equal(result.tasks.funding.stage,'candidate');
+  assert.deepEqual(result.tasks.funding.wake.payload,{issueId:'test-funding'});
+  const text=result.files['funding.md'];
+  assert.ok(text.includes('Original objective: Prepare a current source-backed application'));
+  assert.match(text,/candidate preparation only/i);
+  assert.match(text,/independent.*review.*pending/i);
+  assert.match(text,/not.*(?:collaboration|collaborative).*complete/i);
+  assert.doesNotMatch(text,/test-claude|undefined|Independently critique exact artifact|Perform only the existing operator-approved/);
+});
+test('candidate task keys cannot collide with full rehearsal on the same original issue and run key', () => {
+  const partial=prepare(candidate()).tasks.funding,full=prepare(config()).tasks.funding;
+  assert.ok(partial);
+  assert.notEqual(partial.documentKey,full.documentKey);
+  assert.notEqual(partial.wake.idempotencyKey,full.wake.idempotencyKey);
+});
+test('member candidate needs no unrelated funding objective and provider roles remain configurable', () => {
+  const c=candidate('memberRequest','claude_local'); c.agents[0].roles=['research','assembly'];
+  const result=prepare(c);
+  assert.deepEqual(result.missing,[]);
+  assert.deepEqual(Object.keys(result.tasks),['memberRequest']);
+  assert.equal(result.tasks.memberRequest.agentId,'test-claude');
+  assert.ok(result.files['memberRequest.md'].includes('Original objective: Investigate an authorized member problem and propose a fix'));
+  assert.match(result.files['memberRequest.md'],/roles research, assembly/);
+  assert.doesNotMatch(result.files['memberRequest.md'],/test-codex|undefined/);
+});
+test('full rehearsal still reports unavailable Claude for a Codex-only roster', () => {
+  const c=config(); c.agents=[c.agents[0]];
+  const result=prepare(c);
+  assert.ok(result.missing.includes('agents.provider.claude_local'));
+  assert.deepEqual(result.files,{});
+  c.agents.push({...c.agents[0],agentId:'another-codex',workspaceRef:'another-workspace'});
+  assert.ok(prepare(c).missing.includes('agents.provider.claude_local'));
+});
+test('stage and candidate objective must be explicit and valid instead of silently broadening work', () => {
+  for (const stage of ['partial','',null]) {
+    const c=config(); c.stage=stage;
+    assert.throws(()=>prepare(c),/stage/);
+  }
+  for (const objective of [undefined,'both','',null]) {
+    const c=candidate(); c.objective=objective;
+    assert.throws(()=>prepare(c),/objective/);
+  }
+});
+test('candidate retains real input validation and requires an available coordinator', () => {
+  const c=candidate(); c.coordinatorAgentId='unavailable'; c.funding.scopeBindingRef=null;
+  c.objectives.funding.request=null; c.agents[0].provider.connectionRef=null;
+  const result=prepare(c);
+  for (const missing of ['agents.coordinatorAgentId','funding.scopeBindingRef','objectives.funding.request','agents.0.provider.connectionRef'])
+    assert.ok(result.missing.includes(missing),missing);
+  assert.deepEqual(result.files,{});
+  for (const mutate of [c=>c.sourceFacts[0].kind='finished-narrative',c=>c.sourceFacts[0].sha256='invalid',c=>c.agents[0].provider.token='forbidden']) {
+    const invalid=candidate(); mutate(invalid); assert.throws(()=>prepare(invalid));
+  }
+});
+
 test('finished narratives cannot be admitted as generation facts', () => {
   const c=config(); c.sourceFacts[0].kind='finished-narrative';
   assert.throws(()=>prepare(c),/sourceFacts/);
@@ -136,4 +207,35 @@ test('admission and retrieval cannot be claimed with blank reference arrays', ()
 test('source-backed factual sections need an explicit admitted evidence reference', () => {
   const {workspace,saved,packet}=output(); delete packet.sections.opportunity_status.evidence_ids;
   assert.equal(checkOutcome(workspace,saved,packet).readyForHumanQualityReview,false);
+});
+
+test('candidate packet without independent review and reuse cannot pass the full outcome check', () => {
+  const {workspace,saved,packet}=output(); delete packet.critique; delete packet.knowledge;
+  const result=checkOutcome(workspace,saved,packet);
+  assert.equal(result.readyForHumanQualityReview,false);
+  assert.equal(result.qualified,false);
+  assert.ok(result.errors.includes('missing exact-version independent critique'));
+  assert.ok(result.errors.includes('missing admitted-knowledge next-run reuse'));
+});
+test('CLI writes only the candidate objective, while missing full-provider input writes nothing', async () => {
+  const root=await mkdtemp(join(tmpdir(),'native-candidate-unit-'));
+  try {
+    const input=join(root,'config.json'),out=join(root,'candidate'),blocked=join(root,'full');
+    const script=new URL('./run-package.mjs',import.meta.url).pathname;
+    const run=(destination)=>spawnSync(process.execPath,[script,'prepare',input,destination],{encoding:'utf8'});
+    await writeFile(input,JSON.stringify(candidate()));
+    assert.equal(run(out).status,0);
+    assert.deepEqual((await readdir(out)).sort(),['funding.md','tasks.json']);
+    const tasks=JSON.parse(await readFile(join(out,'tasks.json'),'utf8'));
+    assert.equal(tasks.funding.stage,'candidate');
+    assert.equal(tasks.funding.wake.payload.issueId,'test-funding');
+    assert.equal((await stat(out)).mode&0o777,0o700);
+    assert.equal((await stat(join(out,'funding.md'))).mode&0o777,0o600);
+    const c=config(); c.agents=[c.agents[0]];
+    await writeFile(input,JSON.stringify(c));
+    const result=run(blocked);
+    assert.equal(result.status,1);
+    assert.ok(JSON.parse(result.stdout).missing.includes('agents.provider.claude_local'));
+    await assert.rejects(()=>stat(blocked),{code:'ENOENT'});
+  } finally { await rm(root,{recursive:true,force:true}); }
 });

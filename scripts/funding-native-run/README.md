@@ -1,6 +1,6 @@
 # Prepare the native funding and member-request rehearsals
 
-Offline test preparation for existing requirements, not a new product feature, coordinator, dispatcher or runtime. This adds no network calls or dependencies. It renders two objective documents and native wake payloads; Paperclip's existing coordinator owns decomposition, role/capacity assignment, eager acquisition, checkout, shared findings and convergence. Provider assignments stay configurable by role. John's Codex and Claude Code access belongs to one member; two agents do not establish two human members or actual teammate participation.
+Offline test preparation for existing requirements, not a new product feature, coordinator, dispatcher or runtime. This adds no network calls or dependencies. By default it renders two objective documents and native wake payloads; an explicit candidate stage renders only one selected original objective; Paperclip's existing coordinator owns decomposition, role/capacity assignment, eager acquisition, checkout, shared findings and convergence. Provider assignments stay configurable by role. John's Codex and Claude Code access belongs to one member; two agents do not establish two human members or actual teammate participation.
 
 Source inspected: Inertia develop `00b9ebc5916eb00a617b3831c089a5a237793f66`; DFW main `27736cac6f91b7927a64c4f99b8c861676ccad84`, canonical skill v3.4.1; native CLI `paperclipai` 2026.1012.0. Recheck deployed versions, not just source. DFW's four SQL reads exist; its real current scoped resolver and selected PostgreSQL binding must be supplied by the authorized host. Nothing here installs a fixture resolver or widens access.
 
@@ -12,9 +12,22 @@ Source inspected: Inertia develop `00b9ebc5916eb00a617b3831c089a5a237793f66`; DF
 
 Contributor PR60 owns the generic provenance/measurement validator. PR61 owns its rehearsal surface. Neither is copied, edited, invoked or assumed merged here. Once their owner-approved versions are adopted, use their documented validation separately. The optional checker below checks content coverage only; it never reports qualification.
 
+## Stage selection: full rehearsal or preproduction candidate
+
+`stage: "full"` (also the default when omitted) retains the complete two-provider, two-objective scenario below. Missing Codex/Claude adapters are reported explicitly; a one-provider roster is not a complete scenario.
+
+For bounded single-provider preparation, set `stage: "candidate"` and `objective: "funding"` or `objective: "memberRequest"` in the same non-secret input file:
+
+- Supply at least one actual available agent with its real existing provider, connection, model, workspace and roles. Remove unavailable roster entries rather than inventing credentials or reviewer identities. The existing `coordinatorAgentId` must be in this available roster; it may perform suitable candidate work directly through ordinary native work/checkout. Do not reassign or wake an unavailable coordinator.
+- Supply the selected original native objective, all common runtime/member/source/tool/budget inputs, and (for funding only) the real funding profile/match/skill/scope binding. The other objective and its unrelated funding fields are not needed. All supplied source facts must still be fact-only, hashed and status-labeled; source access and actual tool authorization are never relaxed.
+- `tools.knowledgeAdmission` and `tools.correctionReplayDenial` are not required for this stage because it stops at research/candidate preparation, with scoped proposal saves only where actually authorized. Preserve useful findings for later trusted admission. Admission/reuse/correction checks are pending outside this stage, not inherently blocked by Claude: single-provider work may exercise them separately when its real trusted admission/review path is available.
+- Candidate output explicitly leaves independent review, incorporated collaboration and full two-provider acceptance pending. Do not mark the original objective accepted or make up review/admission/reuse receipts. The full `check` command is unchanged and cannot pass an incomplete candidate packet.
+
+Preparation writes only the selected objective document and `tasks.json`, with `stage: "candidate"` metadata and distinct `candidate-` document/idempotency keys. Full rehearsal keeps its `rehearsal-` keys. These keys distinguish stages, not separate source objectives or duplicate native issues. No configuration choice performs a runtime or provider call.
+
 ## 1. Fill the one non-secret input file
 
-Copy `runtime-inputs.example.json` to a protected runtime directory, not into the repository. Nulls are intentionally unresolved. Fill actual existing values:
+Copy `runtime-inputs.example.json` to a protected runtime directory, not into the repository. Nulls are intentionally unresolved. For the default full rehearsal, fill actual existing values (apply the candidate-stage exceptions above only when selected):
 
 - Verified Paperclip API base, company/project, John's authenticated member reference, existing coordinator and objective issue IDs. Keep the two native issues and each agent workspace/history distinct. If objective issues do not exist, the authorized native intake/coordinator must create them and return actual IDs; never invent them.
 - At least two existing agents using the selected `codex_local` and `claude_local` adapters. Set their complementary role descriptions (research, partner discovery, assembly, review, member support, as appropriate); roles may share a provider. Include existing approved provider-connection references and actual selected models. `provider.apiBase` is the verified endpoint or the explicit value `adapter-managed` when that adapter owns it. No API keys, tokens, account files or credentials.
@@ -28,7 +41,7 @@ node --test scripts/funding-native-run/run-package.test.mjs
 node scripts/funding-native-run/run-package.mjs prepare /protected/runtime-inputs.json /protected/NEW-prepared-directory
 ```
 
-Exit 1 lists all missing runtime fields and writes nothing. Exit 2 is an invalid input/read/write error. A successful prepare writes only `funding.md`, `memberRequest.md`, and `tasks.json` into a new directory; it never contacts a host or starts a model. The example deliberately does not render until the actual values are supplied.
+Exit 1 lists all missing runtime fields and writes nothing. Exit 2 is an invalid input/read/write error. A successful full prepare writes only `funding.md`, `memberRequest.md`, and `tasks.json` (candidate preparation writes only its selected document and `tasks.json`) into a new directory; it never contacts a host or starts a model. The example deliberately does not render until the actual values are supplied.
 
 ## 2. Verify the existing runtime before a model run
 
@@ -46,9 +59,9 @@ pc issue live-runs "$FUNDING_ISSUE_ID"
 pc issue live-runs "$MEMBER_REQUEST_ISSUE_ID"
 ```
 
-Repeat agent/skill inspection for each supplied agent. Verify actual company/project/assignee, provider adapters, separate workspaces, canonical skill enablement, real scoped MCP inventory and native budget limits. Treat API reachability or installed CLI packages as only that, not provider/tool execution. Preserve sanitized readbacks in protected native documents; do not publish raw configuration/credentials.
+For candidate preparation, inspect only its selected objective and available roster; never smoke or wake an omitted provider. Repeat agent/skill inspection for each supplied agent. Verify actual company/project/assignee, provider adapters, separate workspaces, canonical skill enablement, real scoped MCP inventory and native budget limits. Treat API reachability or installed CLI packages as only that, not provider/tool execution. Preserve sanitized readbacks in protected native documents; do not publish raw configuration/credentials.
 
-One authorized provider smoke for each adapter may verify its real native run/tool invocation. Use the existing native issue/agent UI or approved adapter test flow, not a new subprocess executor. Label the smoke as smoke. Confirm all four SQL tool names and workspace/save tools are admitted; invoke only appropriate read calls with real scoped inputs. Scope-unavailable is a blocker, not zero results. Calling the stock MCP may initialize state, so this is a runtime-authorized smoke, not a supposedly inert cloud read.
+One authorized provider smoke for each adapter may verify its real native run/tool invocation. Use the existing native issue/agent UI or approved adapter test flow, not a new subprocess executor. Label the smoke as smoke. For a funding objective (including the full rehearsal), confirm all four funding SQL tool names and workspace/save tools are admitted; invoke only appropriate read calls with real scoped inputs. For a general-member candidate, verify only the tools actually needed by its selected objective, including its authorized knowledge-query and public search/read bindings; do not require unrelated funding workspace/save tools. Scope-unavailable is a blocker, not zero results. Calling the stock MCP may initialize state, so this is a runtime-authorized smoke, not a supposedly inert cloud read.
 
 ## 3. Attach objective instructions and launch through native work
 
@@ -69,7 +82,7 @@ pc issue live-runs "$ISSUE_ID"
 pc issue documents "$ISSUE_ID"
 ```
 
-`ISSUE_PAYLOAD_JSON` is the exact `tasks.json` `wake.payload` object, e.g. a real issueId supplied by the host, not a fixture value. Do not invoke `heartbeat run` as an alternate unbound launch. Repeat for the other objective when the existing coordinator/capacity policy admits it; the helper deliberately does not schedule either or manually script every child handoff. Native delegation/claims determine work. On lost wake acknowledgement, inspect native runs/issue state before retry using the same idempotency key. Do not create another issue/run to mask uncertainty.
+`ISSUE_PAYLOAD_JSON` is the exact `tasks.json` `wake.payload` object, e.g. a real issueId supplied by the host, not a fixture value. Do not invoke `heartbeat run` as an alternate unbound launch. In full mode, repeat for the other objective when the existing coordinator/capacity policy admits it; the helper deliberately does not schedule either or manually script every child handoff. Native delegation/claims determine work. On lost wake acknowledgement, inspect native runs/issue state before retry using the same idempotency key. Do not create another issue/run to mask uncertainty.
 
 Observe actual native parent/child issues, checkout claims, separate agent/provider runs, source/tool calls and incorporated outputs before calling the coordination test successful. A two-agent roster or provider smoke alone does not meet that bar. No fixed Codex-writer/Claude-reviewer allocation is required: assign by the configured roles and actual capacity, while ensuring review is independent of the output's author.
 
