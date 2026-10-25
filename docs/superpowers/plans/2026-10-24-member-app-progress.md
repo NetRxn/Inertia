@@ -13,14 +13,15 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 | 3 Member sync | Complete, review clean | `cf023dd..66ab12d` |
 | 4 Email-link login | Complete, review clean (2 fix rounds) | `66ab12d..f697715` |
 | 5 Visual system, shell, home feed | Complete, review clean | `97048b5..d00a094` |
-| 6–11 | Not started | |
+| 6 Work tab and claiming | Complete, review clean (1 pre-review fix, 1 review fix round) | `1efbb27..8f75893` |
+| 7–11 | Not started | |
 
 PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 5 onward is committed on the local worktree branch and not pushed to `feat/member-app`, so it doesn't land in #70 (ruling R11). Checkpoint 2 (after Task 7) goes up as a separate branch.
 
 ## Where things are on GitHub
 
 - `feat/member-app`: Tasks 1–4. PR checkpoint 1 is NetRxn/Inertia#70 into `develop`. It's mergeable, with no reviews yet and no CI checks configured.
-- `feat/member-app-feed`: Task 5 plus this file, stacked on `feat/member-app`. It has no PR yet; checkpoint 2 opens after Task 7.
+- `feat/member-app-feed`: Tasks 5–6 plus this file, stacked on `feat/member-app`. It has no PR yet; checkpoint 2 opens after Task 7.
 - `member-layer`: Kyle's member-layer notes (`member-layer/VISION.md`, `DASHBOARD.md`, `CLAUDE.md`). It's exploratory, with no PR until the scope in #40 is agreed.
 
 ## Coordination
@@ -29,8 +30,7 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 
 ## Resume here
 
-1. Continue with **Task 6** (Work tab and claiming). Carry this Task 5 minor: add an e2e that renders the full "Waiting for you" card for a member with a claimed task.
-2. Then Task 7 (sharing), carrying two items: the Task 4 note that seed shares are dated from `FIXTURE_NOW`, and the Task 5 note that `RecentlySharedCard` must allow only `http`/`https` links. After Task 7 comes PR checkpoint 2, "Member app: home feed, work tab and sharing".
+1. Continue with **Task 7** (sharing). It fills the Work tab's Ideas segment, which is still a placeholder, carrying two items: the Task 4 note that seed shares are dated from `FIXTURE_NOW`, and the Task 5 note that `RecentlySharedCard` must allow only `http`/`https` links. After Task 7 comes PR checkpoint 2, "Member app: home feed, work tab and sharing".
 
 ## Environment
 
@@ -55,9 +55,15 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 - **R13:** `npm run tokens` generates `src/styles/tokens.css` from `design/tokens.json`. `design/components/bundle.css` is imported as-is, and a test checks that every `var()` it uses is defined.
 - **R14:** Fonts load through `next/font/google` and are exposed as `--font-display`, `--font-sans`, `--font-voice` and `--font-mono`.
 - **R15:** Cards map to the design system's components: "Waiting for you" uses AgentAsk, "Top priorities" uses Initiative, and chat and shares use IdeaCard.
+- **R16:** `e2e/work.spec.ts` claims as Casey, with Morgan as the second claimant. It never uses Ana or Rob, whose state other specs check. The spec needs a fresh server, because claims persist within a run.
+- **R17:** The Work cards use "I'll take it" as a glass secondary button, which keeps the one tomato primary per view.
+- **R19:** "Needs a person" shows open tasks plus this member's own claimed tasks. After a successful claim the card stays in place as "Yours" with "It's yours.", and failed claims don't refresh the page.
+- **R20:** `HumanTask.prepared` is prose describing what agents already prepared. The fixtures now carry sentences instead of dates.
 - **R10:** Fix round 2 went to a fresh implementer because the round-1 implementer's context was gone.
 
 ## Deferred minor findings (for the final whole-branch review to triage)
+
+- T6: rough time appears twice on each Work card. The Ideas segment still fetches adapters. Open tasks under non-active initiatives are hidden without any note. The e2e check "main is visible" asserts nothing. `work.spec` depends on spec order.
 
 - T5: `FromChatCard` quotes a member's words without their name (carry into Task 9). Adapter contracts are undocumented: `listMeetings` returns newest first, and a lower `priority` number means more important. `ThisWeekCard` keys rows on display name. `list-style: none` drops list semantics in Safari. The "This week" empty copy isn't a question. The latest-message logic is duplicated. The Priorities ring draws a dot at 0%.
 
