@@ -153,3 +153,14 @@ The native builder intersects the fixed four producer/two reviewer names with th
 Only the trusted runtime envelope reaches Codex's managed `paperclip-assigned` gateway. The renderer verifies its role, exact tool names, assignment digest, same-origin gateway and full run/task identity, then emits per-tool `approval_mode="approve"`. It adds no server default. User/context gateway inputs cannot provide this envelope. Global `never`, workspace sandbox, command-tool absence and explicit bypass=false remain unchanged.
 
 The CLI approval is a per-run snapshot. Fresh backend grant, role, run, task, source and candidate checks still govern every call; revocation prevents execution even if a prior CLI snapshot exists. No new credentials, recipients, private scope, application acceptance or external submissions are enabled.
+
+
+## Restricted native Coordinator
+
+The opt-in [native Coordinator overlay](NATIVE-COORDINATOR.md) uses the existing
+Paperclip semantic tools and locked authorization paths with an exact project scope
+and fixed command-disable settings. Bootstrap installs the inert restrictive code;
+it does not create, configure or start an agent. `npm run test:native-coordinator`
+checks the installed source. The portable disposable qualification adds synthetic
+PostgreSQL checks and an unauthenticated pinned CLI feature check. Real native
+autonomous continuation remains a separate acceptance gate.
