@@ -55,7 +55,7 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
             </span>
             <div>
               <h3 className={`in-ask__title ${styles.askTitle}`}>{task.title}</h3>
-              <p className="in-ask__why">You took this on. It&apos;s ready when you are.</p>
+              <p className="in-ask__why">{task.prepared}</p>
             </div>
           </div>
           <div className="in-ask__ctx in-mono">

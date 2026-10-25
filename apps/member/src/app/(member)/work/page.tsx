@@ -15,7 +15,7 @@ type Segment = 'needs-person' | 'initiatives' | 'ideas';
 async function WorkContent({ segment }: { segment: Segment }) {
   const member = await requireMember();
   const adapters = getAdapters();
-  const [initiatives, tasks] = await Promise.all([
+  const [initiatives, allTasks] = await Promise.all([
     adapters.work.listInitiatives(),
     adapters.work.listHumanTasks(),
   ]);
@@ -39,6 +39,12 @@ async function WorkContent({ segment }: { segment: Segment }) {
     );
   }
 
+  // Filter tasks that need a person: open OR claimed by current member (not done)
+  // Do this server-side so other members' externalIds are never serialized to the client
+  const tasks = allTasks.filter(
+    (t) => t.status === 'open' || (t.status === 'claimed' && t.claimedBy === member.externalId)
+  );
+
   // Default: needs-person segment
   return <WorkList initiatives={sortedInitiatives} tasks={tasks} memberExternalId={member.externalId} />;
 }
@@ -61,11 +67,9 @@ export default function WorkPage({
         <p className={cardStyles.meta}>Tasks and initiatives across the DAO.</p>
       </header>
 
-      <nav className={styles.tabs} role="tablist" aria-label="Work sections">
+      <nav className={styles.tabs} aria-label="Work sections">
         <Link
           href="/work"
-          role="tab"
-          aria-selected={segment === 'needs-person'}
           aria-current={segment === 'needs-person' ? 'page' : undefined}
           className={styles.tab}
         >
@@ -73,8 +77,6 @@ export default function WorkPage({
         </Link>
         <Link
           href="/work?tab=initiatives"
-          role="tab"
-          aria-selected={segment === 'initiatives'}
           aria-current={segment === 'initiatives' ? 'page' : undefined}
           className={styles.tab}
         >
@@ -82,8 +84,6 @@ export default function WorkPage({
         </Link>
         <Link
           href="/work?tab=ideas"
-          role="tab"
-          aria-selected={segment === 'ideas'}
           aria-current={segment === 'ideas' ? 'page' : undefined}
           className={styles.tab}
         >

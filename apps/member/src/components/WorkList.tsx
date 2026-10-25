@@ -39,17 +39,27 @@ const KIND_LABELS: Record<TaskKind, string> = {
 function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaimedByCurrentMember: boolean }) {
   const [claiming, setClaiming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   async function handleClaim() {
     setClaiming(true);
     try {
       const result = await claimTask(task.id);
       setMessage(result.message);
-      // On failure, don't revalidate - keep the stale card with the error message
+      setIsSuccess(result.ok);
+    } catch (error) {
+      // Action call itself rejected - show retry message
+      setMessage("Couldn't reach the task system. Try again.");
+      setIsSuccess(false);
     } finally {
       setClaiming(false);
     }
   }
+
+  // Disable button on success or terminal failures (already-claimed, not-found)
+  // Keep enabled after retry message so "Try again" can be retried
+  const isTerminalFailure = message === 'Someone already took this.' || message === 'This task is no longer available.';
+  const shouldDisable = claiming || isSuccess || isTerminalFailure;
 
   return (
     <div className={`in-ask in-glass in-tex in-tex--orbits ${styles.ask}`}>
@@ -88,17 +98,15 @@ function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaim
         ) : null}
       </div>
 
-      {message && (
-        <p role="status" className={styles.meta} style={{ marginBottom: 'var(--space-2)' }}>
-          {message}
-        </p>
-      )}
+      <p role="status" className={`${styles.meta} ${styles.messageStatus}`}>
+        {message}
+      </p>
 
       {!isClaimedByCurrentMember && (
         <div className="in-ask__actions">
           <button
             onClick={handleClaim}
-            disabled={claiming || !!message}
+            disabled={shouldDisable}
             className="in-btn in-btn--secondary"
           >
             {claiming ? 'Taking it…' : "I'll take it"}
@@ -123,15 +131,11 @@ export function WorkList({
   tasks: HumanTask[];
   memberExternalId: string;
 }) {
-  // Group tasks that need a person: open tasks + tasks claimed by current member
+  // Group tasks by initiative (filtering is done server-side)
   const groups: InitiativeGroup[] = initiatives
     .map((initiative) => ({
       initiative,
-      tasks: tasks.filter(
-        (t) =>
-          t.initiativeId === initiative.id &&
-          (t.status === 'open' || t.claimedBy === memberExternalId)
-      ),
+      tasks: tasks.filter((t) => t.initiativeId === initiative.id),
     }))
     .filter((g) => g.tasks.length > 0);
 

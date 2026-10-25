@@ -12,14 +12,14 @@ export type { ClaimMessage };
  * Does not write to the app database; claims go through WorkSource.
  */
 export async function claimTask(taskId: string): Promise<ClaimMessage> {
+  const member = await requireMember();
+
   try {
-    const member = await requireMember();
     const adapters = getAdapters();
 
     const result = await adapters.work.claim(taskId, member.externalId);
     const message = toClaimMessage(result);
 
-    // Only revalidate on success - client will navigate after seeing the message
     if (message.ok) {
       revalidatePath('/work');
       revalidatePath('/');

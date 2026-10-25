@@ -45,8 +45,12 @@
   outline-offset: 2px;
 }
 
-.tab[aria-selected='true'] {
+.tab[aria-current='page'] {
   color: var(--ink);
   background: var(--surface);
   font-weight: 500;
+}
+
+.messageStatus {
+  margin-bottom: var(--space-2);
 }

@@ -1,3 +1,4 @@
+// Fresh server needed: claims persist per run (R5)
 import { test, expect } from '@playwright/test';
 import { login } from './helpers';
 
@@ -6,31 +7,31 @@ test.describe('Work tab', () => {
     await login(page, 'casey@example.org');
     await page.goto('/work');
 
-    // Should default to "Needs a person" tab
-    const needsTab = page.getByRole('tab', { name: 'Needs a person' });
-    await expect(needsTab).toHaveAttribute('aria-selected', 'true');
+    // Should default to "Needs a person" tab (aria-current="page")
+    const needsTab = page.getByRole('link', { name: 'Needs a person' });
+    await expect(needsTab).toHaveAttribute('aria-current', 'page');
 
     // Should show at least one task or empty state
     const mainContent = page.locator('main');
     await expect(mainContent).toBeVisible();
 
     // Click Initiatives tab
-    await page.getByRole('tab', { name: 'Initiatives' }).click();
+    await page.getByRole('link', { name: 'Initiatives' }).click();
     await page.waitForURL(/tab=initiatives/);
     await expect(page.getByRole('heading', { level: 2, name: 'Top priorities' })).toBeVisible();
 
     // Click Ideas tab
-    await page.getByRole('tab', { name: 'Ideas' }).click();
+    await page.getByRole('link', { name: 'Ideas' }).click();
     await page.waitForURL(/tab=ideas/);
     await expect(page.getByText('What should we work on together?')).toBeVisible();
 
-    // Click back to Needs a person tab
-    await needsTab.click();
-    await page.waitForURL(/\/work$/); // No query params means default tab
-
-    // Tabs should be keyboard navigable
-    await needsTab.focus();
-    await expect(needsTab).toBeFocused();
+    // Tabs are keyboard navigable: Tab to Initiatives link, press Enter
+    const initiativesLink = page.getByRole('link', { name: 'Initiatives' });
+    await initiativesLink.focus();
+    await expect(initiativesLink).toBeFocused();
+    await page.keyboard.press('Enter');
+    await page.waitForURL(/tab=initiatives/);
+    await expect(initiativesLink).toHaveAttribute('aria-current', 'page');
   });
 
   test('claiming a task shows "It\'s yours." and it appears in Waiting for you on Home', async ({ page }) => {
@@ -41,6 +42,9 @@ test.describe('Work tab', () => {
     // Find the specific task by its visible title
     const taskTitle = 'Design community garden signage';
     const taskCard = page.locator('.in-ask').filter({ hasText: taskTitle });
+
+    // Assert the prepared text appears on the Work card (Finding 3)
+    await expect(taskCard).toContainText('Inertia drafted three sign layouts and a materials list from the garden plan.');
 
     // Click the "I'll take it" button
     await taskCard.getByRole('button', { name: "I'll take it" }).click();
@@ -57,6 +61,9 @@ test.describe('Work tab', () => {
 
     // Assert the claimed task's title is shown
     await expect(waitingCard.getByRole('heading', { level: 3 })).toHaveText(taskTitle);
+
+    // Assert the prepared text appears on Home's Waiting card (Finding 3)
+    await expect(waitingCard).toContainText('Inertia drafted three sign layouts and a materials list from the garden plan.');
 
     // Assert the context shows kind and rough time (R18)
     const context = waitingCard.locator('.in-ask__ctx');
