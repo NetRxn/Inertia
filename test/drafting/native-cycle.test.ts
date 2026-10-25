@@ -29,4 +29,17 @@ it.skipIf(!home || !python)("uses unchanged six native tools to select a persist
  await f.tools.get("funding_drafting_checkpoint")({},f.producer);
  expect(f.docs.size).toBe(1);expect(f.rows.producer.status).toBe("in_review");
  expect([...f.docs.values()][0].body).toContain("not_human_accepted");
+ // Explicit administrator opt-in exercises the real private handoff protocol.
+ // This is a cold domain subprocess + native host fixture, never provider work.
+ f.binding.nativeCaseProgression=true;
+ const checkpoint=(await f.tools.get("funding_drafting_checkpoint")({},f.producer)).data;
+ expect(checkpoint).toMatchObject({version:"dfw-native-case-handoff-v1",native_run_id:f.producer.runId,
+  human_acceptance:"not_accepted",submission:"not_submitted"});
+ expect(checkpoint.case_key.opportunity_external_id).toBeTruthy();
+ expect(checkpoint.packet_hash).toMatch(/^[a-f0-9]{64}$/);
+ expect(["remaining_agent_work","awaiting_independent_review","awaiting_owner_input","awaiting_human_review"]).toContain(checkpoint.disposition);
+ const documentsAfterHandoff=f.docs.size;
+ expect(documentsAfterHandoff).toBe(2);
+ expect((await f.tools.get("funding_drafting_checkpoint")({},f.producer)).data).toEqual(checkpoint);
+ expect(f.docs.size).toBe(documentsAfterHandoff);expect(f.wakeups.size).toBe(0);
 },30000);

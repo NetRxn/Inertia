@@ -18,3 +18,20 @@ it("requires exactly separated native roles, server scope and pinned admin confi
  }
  await expect(registerConfiguredPublicDrafting(host(config(),["one","two"]).ctx)).rejects.toThrow(/one DFW/);
 });
+it("admits only an explicit boolean administrator progression opt-in",async()=>{
+ for(const nativeCaseProgression of [true,false]) {
+  const f=host({...config(),nativeCaseProgression});
+  await registerConfiguredPublicDrafting(f.ctx); expect(f.tools.size).toBe(6);
+ }
+ await expect(registerConfiguredPublicDrafting(host({...config(),nativeCaseProgression:"true"}).ctx)).rejects.toThrow();
+ expect((manifest.instanceConfigSchema as any).properties.publicDrafting.properties.nativeCaseProgression).toMatchObject({type:"boolean",default:false});
+});
+it("dependency handoff is separately default-off and requires private case progression",async()=>{
+ for(const nativeDependencyHandoff of [true,false]) {
+  const f=host({...config(),nativeCaseProgression:true,nativeDependencyHandoff});
+  await registerConfiguredPublicDrafting(f.ctx);expect(f.tools.size).toBe(6);
+ }
+ for(const extra of [{nativeDependencyHandoff:"true"},{nativeDependencyHandoff:true},{nativeCaseProgression:false,nativeDependencyHandoff:true}])
+  await expect(registerConfiguredPublicDrafting(host({...config(),...extra}).ctx)).rejects.toThrow();
+ expect((manifest.instanceConfigSchema as any).properties.publicDrafting.properties.nativeDependencyHandoff).toMatchObject({type:"boolean",default:false});
+});

@@ -39,12 +39,14 @@ export async function readNativeDocument(
 export async function writeNativeDocument(
   api: Documents,
   input: Parameters<Documents["upsert"]>[0],
+  options: { immutable?: true } = {},
 ): Promise<void> {
   const row = await latest(api, input.issueId, input.key, input.companyId);
   if (row) {
     const previous = await api.get(input.issueId, row.key, input.companyId);
     if (!previous) throw Error("Native snapshot disappeared");
     if (previous.body === input.body) return;
+    if (options.immutable) throw Error("Native immutable snapshot conflict");
   }
   const next = (row?.sequence ?? 0) + 1;
   if (next > 9_999_999_999) throw Error("Native snapshot sequence exhausted");
