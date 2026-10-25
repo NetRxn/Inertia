@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "member-app",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd apps/member && export PATH=/opt/homebrew/opt/node@24/bin:$PATH && mkdir -p data && rm -rf data/pglite-preview && MEMBER_APP_PGLITE_DIR=data/pglite-preview npm run seed && MEMBER_APP_PGLITE_DIR=data/pglite-preview MEMBER_APP_BASE_URL=http://localhost:3200 PORT=3200 npm run dev"],
+      "port": 3200
+    }
+  ]
+}
