@@ -87,3 +87,49 @@ It does not start a host, change tool grants, create credentials, or call provid
 
 See [PLUGIN-RUNTIME-DELIVERY.md](PLUGIN-RUNTIME-DELIVERY.md) for its security
 boundaries, exact-source qualification, and removal/upgrade conditions.
+
+## Restrictive Codex command tools: source-only option
+
+The exact adapter overlay adds `disableCommandExecution` as an optional strict
+boolean. Only the qualified patched CLI adapter supports `true`. It requires
+explicit `engine: "cli"` and `dangerouslyBypassApprovalsAndSandbox: false`;
+`extraArgs` and legacy `args` must be absent or empty arrays, and the legacy
+bypass alias cannot conflict. Invalid types or unsupported settings fail before
+runtime preparation. Absent/false preserves existing behavior and defaults.
+
+The shared fresh/resume/hello builder generates only
+`features.shell_tool=false` and `features.shell_snapshot=false`. It preserves
+workspace sandbox and target-network settings. The managed-connection raw
+configuration/auth override guard stays byte-identical; no alternate CLI flag,
+authentication home or provider route is used to evade it. This restricts command
+tools, not file editing, goals, MCP or all possible tool side effects.
+
+`npm run apply-codex-command-tools` verifies exact host build, adapter version,
+all five baseline/candidate file hashes, unchanged auth-guard hash and patch
+integrity before zero-fuzz application. Drift, mixed state or external symlinks
+are rejected; a qualified repeat is idempotent. Bootstrap includes the same step
+but never starts a service, changes agent configuration or creates a login.
+
+Run `npm run test:codex-command-tools` with
+`CODEX_COMMAND_NATIVE_ROOT` pointing to existing native node_modules.
+Installer tests accept `CODEX_COMMAND_BASELINE_ROOT` for an independently retained
+original adapter. To qualify actual CLI schemas, also set `CODEX_COMMAND_CLI` to
+the existing Codex0.156.1 launcher. This exact test version is an evaluation
+baseline, not a permanent upgrade policy. `CODEX_COMMAND_BINARY` can identify its
+native executable; the receipt records launcher/binary fingerprints.
+
+Run this qualification in a clean disposable nonroot container, network=none,
+read-only root, bounded tmpfs/CPU/memory/PIDs, dropped capabilities and
+no-new-privileges. It must have no personal auth, credential/home/socket mounts
+or published ports. The schema fixture uses empty temporary homes, one local
+unauthenticated deterministic HTTP response server and a read-only synthetic MCP
+server. It exercises native deferred tool discovery; the control must advertise
+command tools and both cases must load the MCP schema. It performs no model
+inference. The separate native hello test uses a synthetic executable and proves
+argument propagation only, not authentication. Existing plugin-runtime delivery
+checks remain required.
+
+A deployment/config change is separate: review the source, rebuild an exact clean
+image, preserve the existing managed connection/state and only then configure the
+approved agents with the typed setting. This source work authorizes no deployment,
+personal login, sandbox change, new recipient, central tool grant or inference.
