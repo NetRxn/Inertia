@@ -20,11 +20,11 @@
     },
     "dist/app.js": {
       "original_sha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32",
-      "candidate_sha256": "4742bf802330f3238cd08d92fc7ba053567cae1957e45e5f38bf357021351d78"
+      "candidate_sha256": "ac5577a16f22cabce8d82dea88e4e3a7fffeafe8e6db64df401f230126cd23f9"
     },
     "dist/app.d.ts": {
       "original_sha256": "82dd908b08b98ab3e20fcf387081efc727a609361d92cab99e6afd4df5d76a6b",
-      "candidate_sha256": "d77865281600281cef77461e2a6166fa348c19a9057765fb5fc4dbb9045229c7"
+      "candidate_sha256": "a11397b0f6e6ff786351fc53ce16204c8093f304d25d48418dcfabc337f0ae69"
     },
     "dist/services/plugin-host-services.js": {
       "original_sha256": "9eb7981530436f3f5c6beb8b7680aebd69f3a9a2b1f551d533e0e029f48193b9",
