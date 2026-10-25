@@ -9,6 +9,13 @@ function fields(v:unknown,allowed:string[],required=allowed):Record<string,unkno
   if(!object(v) || Object.keys(v).some(k=>!allowed.includes(k)) || required.some(k=>!Object.hasOwn(v,k))) throw Error("Invalid public drafting configuration");
   return v;
 }
+/** A false optional flag does not perturb the legacy authorization fingerprint. */
+function configurationFingerprint(value:unknown):string {
+  if(object(value) && value.nativeGapPlanReview===false) {
+    const {nativeGapPlanReview:_,...legacy}=value;return discoveryHash(legacy);
+  }
+  return discoveryHash(value);
+}
 /** Installation declares tools; enabling the fixed company connection remains separate admission. */
 export async function registerConfiguredPublicDrafting(ctx:PluginContext):Promise<void>{
   const bindings:PublicDraftingBinding[]=[];
@@ -18,21 +25,24 @@ export async function registerConfiguredPublicDrafting(ctx:PluginContext):Promis
     catch(error) {if(error instanceof Error && error.message.includes("company context is required"))continue;throw error;}
     if(!object(raw) || raw.enabled!==true)continue;
     const required=["enabled","projectId","applicantSlug","matchId","producer","reviewer","process"];
-    const c=fields(raw,[...required,"nativeCaseProgression","nativeDependencyHandoff"],required);
+    const c=fields(raw,[...required,"nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"],required);
     if(c.nativeCaseProgression!==undefined && typeof c.nativeCaseProgression!=="boolean")throw Error("Invalid native case progression configuration");
     if((c.nativeDependencyHandoff!==undefined && typeof c.nativeDependencyHandoff!=="boolean") ||
       (c.nativeDependencyHandoff===true && c.nativeCaseProgression!==true))throw Error("Invalid native dependency handoff configuration");
+    if((c.nativeGapPlanReview!==undefined && typeof c.nativeGapPlanReview!=="boolean") ||
+      (c.nativeGapPlanReview===true && (c.nativeCaseProgression!==true || c.nativeDependencyHandoff!==true)))throw Error("Invalid native gap-plan review configuration");
     fields(c.producer,["issueId","agentId","principalId"]);fields(c.reviewer,["issueId","agentId","principalId"]);
     const process=fields(c.process,["executable","args","cwd","entrypoint","configurationPath","timeoutMs","maxOutputBytes","pins"]);
     if(!Array.isArray(process.pins))throw Error("Invalid public drafting process pins");
     for(const pin of process.pins)fields(pin,["path","sha256"]);
-    const fingerprint=discoveryHash(c);
+    const fingerprint=configurationFingerprint(c);
     bindings.push({enabled:true,companyId:company.id,projectId:c.projectId as string,applicantSlug:c.applicantSlug as string,matchId:c.matchId as string,
       nativeCaseProgression:c.nativeCaseProgression===true,
       nativeDependencyHandoff:c.nativeDependencyHandoff===true,
+      nativeGapPlanReview:c.nativeGapPlanReview===true,
       producer:structuredClone(c.producer) as unknown as DraftingActor,reviewer:structuredClone(c.reviewer) as unknown as DraftingActor,
       bridge:createPublicDraftingBridge(process as unknown as DraftingProcessConfig),
-      authorize:async()=>discoveryHash((await ctx.config.get(company.id)).publicDrafting)===fingerprint,
+      authorize:async()=>configurationFingerprint((await ctx.config.get(company.id)).publicDrafting)===fingerprint,
     });
   }
   const owner=createRuntimeOwner(ctx.db,{workerId:"public-drafting:"+process.pid+":"+randomUUID(),runId:"native-plugin-worker"});

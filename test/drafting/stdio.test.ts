@@ -61,3 +61,15 @@ it("retains the caller until an already-started native write settles after child
  try {expect(settled).toBe(false);} finally {release();}
  expect(await pending).toBeInstanceOf(Error);expect(settled).toBe(true);
 });
+it("preserves the explicit UUID gap pending callback shape on bounded stdio",async()=>{
+ const request={kind:"gap_plan",request_id:"3fed4a00-4eb8-5e70-a206-883845154cf4"};
+ const f=fixture(setup+`if(n===1)console.log(JSON.stringify({type:'context',id:1}));else if(n===2)console.log(JSON.stringify({type:'review',id:2,request:${JSON.stringify(request)}}));else {console.log(JSON.stringify({type:'result',ok:true,result:q}));rl.close();}});`);
+ expect(await f.bridge.call("save_gap_progress",{}, {context:async()=>context,review:async r=>({kind:"gap_plan",state:"pending",request_id:r.request_id as string})})).toEqual({type:"review",id:2,kind:"gap_plan",state:"pending",request_id:request.request_id});
+});
+it("rejects untyped gap acknowledgements and gap SHA confusion at the transport boundary",async()=>{
+ for(const request_id of ["3fed4a00-4eb8-5e70-a206-883845154cf4","a".repeat(64)]) {
+  const request={kind:"gap_plan",request_id};
+  const f=fixture(setup+`if(n===1)console.log(JSON.stringify({type:'context',id:1}));else if(n===2)console.log(JSON.stringify({type:'review',id:2,request:${JSON.stringify(request)}}));else {console.log(JSON.stringify({type:'result',ok:true,result:q}));rl.close();}});`);
+  await expect(f.bridge.call("save_gap_progress",{}, {context:async()=>context,review:async r=>({state:"pending",request_id:r.request_id as string})})).rejects.toThrow();
+ }
+});
