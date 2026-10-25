@@ -14,7 +14,8 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 | 4 Email-link login | Complete, review clean (2 fix rounds) | `66ab12d..f697715` |
 | 5 Visual system, shell, home feed | Complete, review clean | `97048b5..d00a094` |
 | 6 Work tab and claiming | Complete, review clean (1 pre-review fix, 1 review fix round) | `1efbb27..8f75893` |
-| 7–11 | Not started | |
+| 7 Share: posts, files and link previews | Complete; unit, build and e2e green (controller self-review, no separate reviewer pass) | `de21fdc..` (this commit's parent) |
+| 8–11 | Not started | |
 
 PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 5 onward is committed on the local worktree branch and not pushed to `feat/member-app`, so it doesn't land in #70 (ruling R11). Checkpoint 2 (after Task 7) goes up as a separate branch.
 
@@ -31,7 +32,9 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 
 ## Resume here
 
-1. **Task 7** (sharing) was started and then stopped before its implementer reported back. Its brief is extracted and its rulings are made: R22 (https-only, no-referrer preview images), R23 (seed shares dated from process start, active authors, no financial text), R24 ("Recently shared" must be last), R25 (`MEMBER_APP_LINK_PREVIEWS=off` in e2e), R26 (checkpoint 2 PR based on `feat/member-app` while #70 is open) and R27 (http/https-only links at render). Restart Task 7 fresh, then open checkpoint 2. It fills the Work tab's Ideas segment, which is still a placeholder, carrying two items: the Task 4 note that seed shares are dated from `FIXTURE_NOW`, and the Task 5 note that `RecentlySharedCard` must allow only `http`/`https` links. After Task 7 comes PR checkpoint 2, "Member app: home feed, work tab and sharing".
+1. **Task 7** is done. The implementer's uncommitted work from the `member-app-tree-github-issues` worktree was moved onto the consolidated branch (`feat/member-app-all`, which already held Tasks 1–6 and `member-layer/`), checked against the brief and rulings R22–R27, and committed. Evidence: `npm run typecheck` clean, `npm test` 75/75, `npm run build` clean, `npm run e2e` 14/14 (4 new share specs). Beyond the brief: PDF serving e2e, author-delete e2e, orphaned uploads removed when a share fails validation, and `getMemberFromCookies()` so route handlers answer 401 instead of redirecting.
+2. **Next: PR checkpoint 2**, "Member app: home feed, work tab and sharing" (Tasks 5–7), based on `feat/member-app` while #70 is open (R26). It needs Kyle's OK before it goes up.
+3. Then Task 8 (assistant tool layer).
 
 ## Environment
 
@@ -64,6 +67,8 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 
 ## Deferred minor findings (for the final whole-branch review to triage)
 
+- T7: link previews check DNS and then let `fetch` resolve again, so a host that rebinds between the two lookups could reach a private address. Pinning the checked address needs a custom undici dispatcher. Uploads are read fully into memory before the 10 MB check. `DeleteShareButton` gives no message when a delete fails. The composer's chat-bar offset assumes Task 9's bar.
+
 - T6: rough time appears twice on each Work card. The Ideas segment still fetches adapters. Open tasks under non-active initiatives are hidden without any note. The e2e check "main is visible" asserts nothing. `work.spec` depends on spec order.
 
 - T5: `FromChatCard` quotes a member's words without their name (carry into Task 9). Adapter contracts are undocumented: `listMeetings` returns newest first, and a lower `priority` number means more important. `ThisWeekCard` keys rows on display name. `list-style: none` drops list semantics in Safari. The "This week" empty copy isn't a question. The latest-message logic is duplicated. The Priorities ring draws a dot at 0%.
@@ -83,5 +88,5 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
   - the unknown-email e2e doesn't assert that no mail file was written;
   - `helpers.ts` uses `waitForTimeout(500)`.
 - T4: `playwright.config` hardcodes the Homebrew node path; the html reporter opens a server; `e2e/global-setup.ts` is empty.
-- T4 (**carry into Task 7**): seed shares are dated from `FIXTURE_NOW`, so they drift under R2, and `limit(3)` picks share authors unordered, possibly including inactive members.
+- T4 (resolved in Task 7): seed shares are dated from `FIXTURE_NOW`, so they drift under R2, and `limit(3)` picks share authors unordered, possibly including inactive members.
 - T4: `Member` type lives in the Next-importing `session.ts`; the `Mailer` type lives in `auth.ts`; `generateToken` duplicates `hashToken`.

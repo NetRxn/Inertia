@@ -33,6 +33,22 @@ export async function requireMember(): Promise<Member> {
 }
 
 /**
+ * Gets the current member from the session cookie, or null.
+ * Route handlers use this to answer 401 themselves, where requireMember's
+ * redirect would be wrong.
+ */
+export async function getMemberFromCookies(): Promise<Member | null> {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (!sessionToken) {
+    return null;
+  }
+
+  return getMemberForSession(getDb(), sessionToken);
+}
+
+/**
  * Gets the session cookie name (useful for setting cookies in route handlers).
  */
 export function getSessionCookieName(): string {

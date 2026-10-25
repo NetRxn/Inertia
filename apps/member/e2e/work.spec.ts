@@ -23,7 +23,8 @@ test.describe('Work tab', () => {
     // Click Ideas tab
     await page.getByRole('link', { name: 'Ideas' }).click();
     await page.waitForURL(/tab=ideas/);
-    await expect(page.getByText('What should we work on together?')).toBeVisible();
+    // Task 7: the Ideas segment lists shared posts.
+    await expect(page.getByRole('heading', { level: 2, name: 'Ideas' })).toBeVisible();
 
     // Tabs are keyboard navigable: Tab to Initiatives link, press Enter
     const initiativesLink = page.getByRole('link', { name: 'Initiatives' });

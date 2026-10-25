@@ -33,7 +33,9 @@ test.describe('Home feed', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
 
     expect(present[0]).toBe('Waiting for you');
-    if (present.includes('Recently shared')) expect(present.at(-1)).toBe('Recently shared');
+    // Seeded shares mean the feed always ends with Recently shared (R24).
+    expect(present).toContain('Recently shared');
+    expect(present.at(-1)).toBe('Recently shared');
 
     // Ana has nothing claimed in the fixture, so the waiting card shows its empty state.
     await expect(page.getByText('Nothing waiting for you. See Work for things you could take on.')).toBeVisible();

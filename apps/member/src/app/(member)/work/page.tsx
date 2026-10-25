@@ -1,9 +1,13 @@
 import { Suspense, use } from 'react';
 import Link from 'next/link';
 import { getAdapters } from '../../../adapters';
+import { getDb } from '../../../db/client';
 import { requireMember } from '../../../identity/session';
+import { listShares } from '../../../shares/shares';
+import { ShareComposer } from '../../../components/ShareComposer';
 import { WorkList } from '../../../components/WorkList';
 import { PrioritiesCard } from '../../../components/cards/PrioritiesCard';
+import { RecentlySharedCard } from '../../../components/cards/RecentlySharedCard';
 import cardStyles from '../../../components/cards/cards.module.css';
 import styles from './work.module.css';
 
@@ -14,6 +18,18 @@ type Segment = 'needs-person' | 'initiatives' | 'ideas';
 
 async function WorkContent({ segment }: { segment: Segment }) {
   const member = await requireMember();
+  // Inside the Suspense boundary, after a dynamic access, so the page keeps a
+  // static shell (Cache Components rejects prerendering `new Date()`).
+  const now = new Date();
+
+  if (segment === 'ideas') {
+    const shares = (await listShares(getDb(), { limit: 50 })).map((share) => ({
+      ...share,
+      isMine: share.authorExternalId === member.externalId,
+    }));
+    return <RecentlySharedCard shares={shares} now={now} label="Ideas" showDelete />;
+  }
+
   const adapters = getAdapters();
   const [initiatives, allTasks] = await Promise.all([
     adapters.work.listInitiatives(),
@@ -27,16 +43,6 @@ async function WorkContent({ segment }: { segment: Segment }) {
 
   if (segment === 'initiatives') {
     return <PrioritiesCard initiatives={sortedInitiatives} />;
-  }
-
-  if (segment === 'ideas') {
-    return (
-      <section className={`in-glass in-tex in-tex--stars ${cardStyles.card}`} aria-labelledby="ideas-placeholder">
-        <p id="ideas-placeholder" className={cardStyles.meta}>
-          What should we work on together?
-        </p>
-      </section>
-    );
   }
 
   // Filter tasks that need a person: open OR claimed by current member (not done)
@@ -94,6 +100,8 @@ export default function WorkPage({
       <Suspense fallback={<p className="in-mono">Loading…</p>}>
         <WorkContent segment={segment} />
       </Suspense>
+
+      <ShareComposer />
     </>
   );
 }
