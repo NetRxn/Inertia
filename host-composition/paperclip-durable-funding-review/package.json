@@ -19,6 +19,8 @@
     "apply-plugin-runtime": "node scripts/apply-plugin-runtime.mjs",
     "test:plugin-runtime": "node --test tests/plugin-runtime-delivery.test.mjs tests/plugin-runtime-installer.test.mjs",
     "apply-codex-command-tools": "node scripts/apply-codex-command-tools.mjs",
-    "test:codex-command-tools": "node --test tests/codex-command-tools.test.mjs tests/codex-command-installer.test.mjs tests/codex-command-capability.test.mjs"
+    "test:codex-command-tools": "node --test tests/codex-command-tools.test.mjs tests/codex-command-installer.test.mjs tests/codex-command-capability.test.mjs",
+    "apply-mcp-effect-metadata": "node scripts/apply-mcp-effect-metadata.mjs",
+    "test:mcp-effect-metadata": "node --test tests/mcp-effect-metadata.test.mjs tests/codex-effect-approval.test.mjs"
   }
 }

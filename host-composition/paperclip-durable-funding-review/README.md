@@ -133,3 +133,11 @@ A deployment/config change is separate: review the source, rebuild an exact clea
 image, preserve the existing managed connection/state and only then configure the
 approved agents with the typed setting. This source work authorizes no deployment,
 personal login, sandbox change, new recipient, central tool grant or inference.
+
+### MCP effect metadata compatibility (source qualification only)
+
+The pinned native manifest validator, plugin registry/dispatcher and HTTP MCP projection discard effect annotations. `apply-mcp-effect-metadata` preserves only explicitly declared boolean MCP hints; missing, malformed or unknown hints remain absent and conservative. It changes no tool grant, caller binding, callback validation, approval mode or managed-auth guard. This overlay is not implicitly activated by bootstrap.
+
+All six funding tools acquire native ownership and may update issue lifecycle, documents or domain state. They are declared `readOnlyHint=false`, `destructiveHint=true`, `openWorldHint=false`, `idempotentHint=false`. The destructive hint remains conservative even without deletion: MCP defines false as additive-only updates. Metadata correction therefore does **not** authorize headless lifecycle writes under Codex's `approval_policy=never`. No tool may be relabeled to avoid required approval.
+
+The owner decision, if desired, is scoped CLI preapproval of the existing exact Alpha producer tools and Beta reviewer tools using native `mcp_servers.<assigned-server>.tools.<exact-name>.approval_mode="approve"`. This would remove CLI per-call prompts for those existing bounded writes while retaining fresh Paperclip grants, run/task/role checks and command-disabled sandbox. It is a separate policy change requiring approval and a trusted per-run builder implementation; arbitrary managed-auth config flags remain rejected. No such override is installed or configured by this repair.

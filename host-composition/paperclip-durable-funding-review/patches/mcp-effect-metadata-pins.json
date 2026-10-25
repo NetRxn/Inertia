@@ -1,0 +1,24 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch": "paperclip-2026.1012.0-mcp-effect-metadata.patch",
+  "patch_sha256": "8f1cc771590fd1772ed3569c409b965a67d0ec1a7444c8d56d857d8d565601d4",
+  "files": {
+    "dist/services/plugin-tool-registry.js": {
+      "base_sha256": "5184e7e5d5b0df0fc41eb70568699ce35343575cc74f5d1e11261c0be4649943",
+      "candidate_sha256": "184e62b726075b94189e70eef99a51fbc662956e19550e36ca1c39882f9946b8"
+    },
+    "dist/services/plugin-tool-dispatcher.js": {
+      "base_sha256": "02a6f069ef622917d921829e46cf26e559867f995f757881b95b8f28fca40872",
+      "candidate_sha256": "99e5e1cba172e401f2b23d4bb93059e3d9126d95d0c4e06b39a78c803896aa06"
+    },
+    "dist/routes/tool-gateway.js": {
+      "base_sha256": "a408cdc9950743908501a6362edc221687f4b91a8a337921a1a1eead601db396",
+      "candidate_sha256": "6d9f5b48468c33f7f77864650b9dc456110aae3ecdbd93e1dc90cd5818e9ca23"
+    },
+    "dist/services/plugin-manifest-validator.js": {
+      "base_sha256": "852eb42c1bc0a0e6a53e80a3ec6806919d3ebd02757da5b7d1693146f25a3ecd",
+      "candidate_sha256": "7982729d2465b166e80a0cf75b10a11b9619bf8e340d5fe13d4749c4dac3457a"
+    }
+  }
+}
