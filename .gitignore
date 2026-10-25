@@ -245,3 +245,5 @@ scripts/cloud-rehearsal/host/node_modules
 runs-discovery-rehearsal-*/
 runs-funding-facts-native-*/
 scripts/discovery-rehearsal/cold-fixture.json
+
+.superpowers/
