@@ -13,13 +13,13 @@ describe('syncMembers', () => {
 
     const result = await syncMembers(db, adapters.directory, FIXTURE_NOW);
 
-    // Expect: { added: 12, updated: 0, deactivated: 1 }
+    // Expect: { added: 13, updated: 0, deactivated: 1 }
     // The inactive fixture member (m-pat) counts as both added and deactivated
-    expect(result).toEqual({ added: 12, updated: 0, deactivated: 1 });
+    expect(result).toEqual({ added: 13, updated: 0, deactivated: 1 });
 
     // Verify all members were added
     const allMembers = await db.select().from(members);
-    expect(allMembers).toHaveLength(12);
+    expect(allMembers).toHaveLength(13);
 
     // Verify emails are lowercase
     for (const member of allMembers) {
@@ -91,9 +91,9 @@ describe('syncMembers', () => {
     expect(deactivatedMember).toHaveLength(1);
     expect(deactivatedMember[0].status).toBe('inactive');
 
-    // Verify total count is still 12
+    // Verify total count is still 13
     const allMembers = await db.select().from(members);
-    expect(allMembers).toHaveLength(12);
+    expect(allMembers).toHaveLength(13);
   });
 
   it('reactivates a member who returns active', async () => {
