@@ -21,13 +21,14 @@ Execution method: Tasks 1–7 used subagent-driven development (a fresh implemen
 | 11 Full journey, README, final checks | Complete (inline, TDD); app typecheck/unit/build/e2e 20/20 and root test/typecheck/test:package green | `a9af7ae` |
 | Final whole-branch review | Complete: no Critical, 3 Important fixed in one TDD pass; unit 124/124, e2e 20/20, build clean | `76ac76a` |
 
-PR checkpoint 1 (Tasks 1–4) is NetRxn/Inertia#70 into `develop`. PR checkpoint 2 (Tasks 5–7) is NetRxn/Inertia#74 from `feat/member-app-feed` into `feat/member-app`. Tasks 8–11 and the review fixes are only on `feat/member-app-all` so far.
+PR checkpoint 1 (Tasks 1–4) is NetRxn/Inertia#70 into `develop`. PR checkpoint 2 (Tasks 5–7) is NetRxn/Inertia#74 from `feat/member-app-feed` into `feat/member-app`. PR checkpoint 3 (Tasks 8–11 plus the review fixes) is NetRxn/Inertia#75 from `feat/member-app-sections` into `feat/member-app-feed`.
 
 ## Where things are on GitHub
 
 - `feat/member-app-all`: **the working branch.** Tasks 1–11, the final-review fixes, plus Kyle's `member-layer/` notes. All new work is committed here (R28, R29).
 - `feat/member-app`: Tasks 1–4. PR checkpoint 1 is NetRxn/Inertia#70 into `develop`, with no CI checks configured.
 - `feat/member-app-feed`: Tasks 5–7, stacked on `feat/member-app`. PR checkpoint 2 is NetRxn/Inertia#74 into `feat/member-app`.
+- `feat/member-app-sections`: Tasks 8–11 and the final-review fixes, cherry-picked from `feat/member-app-all` and stacked on `feat/member-app-feed`. PR checkpoint 3 is NetRxn/Inertia#75 into `feat/member-app-feed`; retarget it to `feat/member-app` once #74 merges.
 - `member-layer`: Kyle's member-layer notes only. Exploratory, with no PR until the scope in #40 is agreed. `member-layer/` files must never enter a checkpoint PR (`member-layer/CLAUDE.md`).
 - Checkpoints are cut by cherry-picking the app commits from `feat/member-app-all` onto `feat/member-app-feed` (or a new branch stacked on it); the cherry-picks are clean because member-layer commits touch only `member-layer/` (R29).
 
@@ -38,9 +39,9 @@ PR checkpoint 1 (Tasks 1–4) is NetRxn/Inertia#70 into `develop`. PR checkpoint
 
 ## Resume here
 
-Tasks 1–11 and the final whole-branch review are done (2026-10-25, cloud session). What's left needs Kyle:
+Tasks 1–11 and the final whole-branch review are done (2026-10-25, cloud session). What's left:
 
-1. **PR checkpoint 3**, "Member app: assistant, chat and sections" (Tasks 8–11 plus the review fixes): cherry-pick `a5743ca`, `bd8a2e7`, `a3bb684`, `a9af7ae`, `76ac76a` onto a branch stacked on `feat/member-app-feed`, then open it into `feat/member-app`. Needs Kyle's OK before it goes up.
+1. **PR checkpoints:** review and merge #70, #74 and #75 in order, retargeting each once its base merges. #75 was opened 2026-10-25 after a local rerun on Kyle's Mac (unit 124/124, e2e 20/20, build clean).
 2. Triage the deferred minors below, including the final review's list.
 3. Real adapters wait on #40/#46 (see Coordination).
 
