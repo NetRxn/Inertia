@@ -6,6 +6,7 @@ import { members } from '../db/schema';
 import type { ShareSummary } from '../feed/build-feed';
 import { getDocument, saveDocument, type Document } from '../documents/documents';
 import { listShares } from '../shares/shares';
+import { byPriority, taskKind } from '../work/initiatives';
 import { wrapSourceDataCapped } from './source-data';
 
 /** At most this many blocks per tool call, each at most this long (tags included). */
@@ -71,10 +72,12 @@ function initiativeSource(initiative: Initiative): Source {
   return {
     ref: ref('initiative', initiative.id, initiative.title),
     text: [
-      `Status: ${initiative.status} (${initiative.statusLabel})`,
-      `Progress: ${Math.round(initiative.progress * 100)}%`,
-      `Priority: ${initiative.priority} (lower is more important)`,
-    ].join('\n'),
+      initiative.statusLabel ? `Status: ${initiative.status} (${initiative.statusLabel})` : `Status: ${initiative.status}`,
+      initiative.progress != null ? `Progress: ${Math.round(initiative.progress * 100)}%` : null,
+      initiative.priority != null ? `Priority: ${initiative.priority} (lower is more important)` : null,
+    ]
+      .filter((line): line is string => line !== null)
+      .join('\n'),
   };
 }
 
@@ -85,7 +88,7 @@ function taskSource(task: HumanTask, initiativeTitle: string | undefined): Sourc
     text: [
       `Initiative: ${initiativeTitle ?? 'unknown'}`,
       `Status: ${task.status === 'open' ? 'open, needs a person' : task.status}`,
-      `Kind: ${task.kind}`,
+      `Kind: ${taskKind(task)}`,
       task.estimateMinutes != null ? `Rough time: ${task.estimateMinutes} minutes` : null,
       task.due ? `Due: ${task.due}` : null,
       `Already prepared: ${task.prepared}`,
@@ -183,12 +186,12 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
           ctx.adapters.work.listInitiatives(),
           ctx.adapters.work.listHumanTasks(),
         ]);
-        const byPriority = [...initiatives].sort((a, b) => a.priority - b.priority);
+        const ranked = [...initiatives].sort(byPriority);
         const titles = new Map(initiatives.map((initiative) => [initiative.id, initiative.title]));
         const open = tasks.filter((task) => task.status === 'open');
         return results([
           ...open.map((task) => taskSource(task, titles.get(task.initiativeId))),
-          ...byPriority.map(initiativeSource),
+          ...ranked.map(initiativeSource),
         ]);
       },
     }),

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { HumanTask, TaskKind } from '../../adapters/types';
+import { taskKind } from '../../work/initiatives';
 import { formatDay, plural } from './format';
 import styles from './cards.module.css';
 
@@ -51,7 +52,7 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
         <>
           <div className="in-ask__body">
             <span className="in-gicon in-gicon--signal in-gicon--sm" aria-hidden="true">
-              <svg viewBox="0 0 24 24">{KIND_GLYPHS[task.kind]}</svg>
+              <svg viewBox="0 0 24 24">{KIND_GLYPHS[taskKind(task)]}</svg>
             </span>
             <div>
               <h3 className={`in-ask__title ${styles.askTitle}`}>{task.title}</h3>
@@ -60,7 +61,7 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
           </div>
           <div className="in-ask__ctx in-mono">
             <span>
-              kind · <b>{KIND_LABELS[task.kind]}</b>
+              kind · <b>{KIND_LABELS[taskKind(task)]}</b>
             </span>
             {task.estimateMinutes ? (
               <span>

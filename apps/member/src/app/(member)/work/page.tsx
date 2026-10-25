@@ -4,6 +4,7 @@ import { getAdapters } from '../../../adapters';
 import { getDb } from '../../../db/client';
 import { requireMember } from '../../../identity/session';
 import { listShares } from '../../../shares/shares';
+import { byPriority } from '../../../work/initiatives';
 import { ShareComposer } from '../../../components/ShareComposer';
 import { WorkList } from '../../../components/WorkList';
 import { PrioritiesCard } from '../../../components/cards/PrioritiesCard';
@@ -39,7 +40,7 @@ async function WorkContent({ segment }: { segment: Segment }) {
   // Sort initiatives by priority
   const sortedInitiatives = initiatives
     .filter((i) => i.status === 'active')
-    .sort((a, b) => a.priority - b.priority);
+    .sort(byPriority);
 
   if (segment === 'initiatives') {
     return <PrioritiesCard initiatives={sortedInitiatives} />;

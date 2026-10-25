@@ -1,5 +1,6 @@
 import type { Adapters, ChatThread, DaoEvent, HumanTask, Initiative, Meeting, Proposal } from '../adapters/types';
 import type { Member } from '../identity/session';
+import { byPriority } from '../work/initiatives';
 import { weekBounds } from './week';
 
 /**
@@ -76,7 +77,7 @@ export async function buildFeed(
 
   const priorities = initiatives
     .filter((i) => i.status === 'active')
-    .sort((a, b) => a.priority - b.priority)
+    .sort(byPriority)
     .slice(0, 3);
   if (priorities.length > 0) cards.push({ type: 'priorities', initiatives: priorities });
 

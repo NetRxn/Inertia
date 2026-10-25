@@ -6,24 +6,26 @@ const CIRCUMFERENCE = 2 * Math.PI * ORBIT;
 
 /**
  * The initiative as a small planet: a tide body with its moss ring, progress drawn
- * along its orbit in moss, and a pollen moon. Only the top priority's moon turns
+ * along its orbit in moss (left out when the source doesn't track it), and a pollen moon. Only the top priority's moon turns
  * (one thing moves at a time); the bundle stops it under reduced motion.
  */
-function Planet({ progress, turning }: { progress: number; turning: boolean }) {
-  const travelled = Math.min(Math.max(progress, 0), 1) * CIRCUMFERENCE;
+function Planet({ progress, turning }: { progress: number | undefined; turning: boolean }) {
+  const travelled = progress == null ? null : Math.min(Math.max(progress, 0), 1) * CIRCUMFERENCE;
 
   return (
     <svg className={`in-init__sys ${styles.planet}`} viewBox="0 0 200 200" aria-hidden="true" focusable="false">
       <circle className="ring" cx="100" cy="100" r="92" />
       <circle className="ring ring--sig" cx="100" cy="100" r={ORBIT} />
-      <circle
-        className={styles.progress}
-        cx="100"
-        cy="100"
-        r={ORBIT}
-        strokeDasharray={`${travelled} ${CIRCUMFERENCE}`}
-        transform="rotate(-90 100 100)"
-      />
+      {travelled != null ? (
+        <circle
+          className={styles.progress}
+          cx="100"
+          cy="100"
+          r={ORBIT}
+          strokeDasharray={`${travelled} ${CIRCUMFERENCE}`}
+          transform="rotate(-90 100 100)"
+        />
+      ) : null}
       <path className="band" d="M48 100 A52 12 0 0 1 152 100" transform="rotate(-16 100 100)" />
       <circle className="planet" cx="100" cy="100" r="34" />
       <path className="band" d="M48 100 A52 12 0 0 0 152 100" transform="rotate(-16 100 100)" />
@@ -47,10 +49,12 @@ export function PrioritiesCard({ initiatives }: { initiatives: Initiative[] }) {
             <Planet progress={initiative.progress} turning={index === 0} />
             <div className={styles.priorityText}>
               <h3 className={styles.itemTitle}>{initiative.title}</h3>
-              <p className={styles.meta}>{initiative.statusLabel}</p>
-              <div className={styles.chips}>
-                <span className="in-chip in-chip--moss">{Math.round(initiative.progress * 100)}% along</span>
-              </div>
+              {initiative.statusLabel ? <p className={styles.meta}>{initiative.statusLabel}</p> : null}
+              {initiative.progress != null ? (
+                <div className={styles.chips}>
+                  <span className="in-chip in-chip--moss">{Math.round(initiative.progress * 100)}% along</span>
+                </div>
+              ) : null}
             </div>
           </li>
         ))}
