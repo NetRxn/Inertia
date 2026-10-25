@@ -357,3 +357,62 @@ test('a withdrawal never erases a completed contribution', () => {
   Object.assign(r.measurements.asks, {accepted: 1, withdrawn: 1});
   assert.deepEqual(validateReceipt(r).errors.map(e => `${e.code} ${e.path}`), ['MEASUREMENT_INCONSISTENT measurements.asks.completed']);
 });
+
+// Direct-API guards: malformed enum and reference objects must return shape errors, never throw.
+test('malformed artifactRef objects in artifacts array are rejected with shape errors', () => {
+  for (const bad of [{toString: null}, {valueOf: null, toString: null}, Object.create(null), [], 123, true]) {
+    const r = load('valid-synthetic');
+    r.artifacts[0].artifactRef = bad;
+    let report;
+    assert.doesNotThrow(() => { report = validateReceipt(r); }, `artifactRef=${JSON.stringify(bad)} should not throw`);
+    assert.equal(report.valid, false);
+    assert.ok(report.errors.some(e => e.code === 'SHAPE' && e.path.startsWith('artifacts[')));
+  }
+});
+
+test('malformed version objects in artifacts array are rejected with shape errors', () => {
+  for (const bad of [{toString: null}, {valueOf: null, toString: null}, Object.create(null), [], 123, true]) {
+    const r = load('valid-synthetic');
+    r.artifacts[0].version = bad;
+    let report;
+    assert.doesNotThrow(() => { report = validateReceipt(r); }, `version=${JSON.stringify(bad)} should not throw`);
+    assert.equal(report.valid, false);
+    assert.ok(report.errors.some(e => e.code === 'SHAPE' && e.path.startsWith('artifacts[')));
+  }
+});
+
+test('malformed artifactRef objects in contribution artifact references are rejected', () => {
+  const r = load('valid-synthetic');
+  r.contributions[0].artifactRefs[0] = {artifactRef: {toString: null}, version: 'v1'};
+  let report;
+  assert.doesNotThrow(() => { report = validateReceipt(r); });
+  assert.equal(report.valid, false);
+  assert.ok(report.errors.some(e => e.code === 'SHAPE'));
+});
+
+test('malformed version objects in contribution artifact references are rejected', () => {
+  const r = load('valid-synthetic');
+  r.contributions[0].artifactRefs[0] = {artifactRef: 'art:nsf-prep', version: {toString: null}};
+  let report;
+  assert.doesNotThrow(() => { report = validateReceipt(r); });
+  assert.equal(report.valid, false);
+  assert.ok(report.errors.some(e => e.code === 'SHAPE'));
+});
+
+test('malformed outcome artifact references are rejected without throwing', () => {
+  const r = load('partial-as-complete');
+  r.outcome = {artifactRef: {toString: null}, version: 'v1'};
+  let report;
+  assert.doesNotThrow(() => { report = validateReceipt(r); });
+  assert.equal(report.valid, false);
+  assert.ok(report.errors.some(e => e.code === 'SHAPE'));
+});
+
+test('malformed reference objects never leak into diagnostics', () => {
+  const r = load('valid-synthetic');
+  r.artifacts[0].artifactRef = {toString: () => SENTINEL};
+  r.artifacts[0].version = {toString: () => SENTINEL};
+  const report = validateReceipt(r);
+  assert.equal(report.valid, false);
+  assertNoSentinel(report);
+});

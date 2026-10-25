@@ -159,6 +159,7 @@ export function validateReceipt(receipt) {
   const artifacts = new Map(), artifactRefs = new Set();
   arr(receipt.artifacts).forEach((a, i) => {
     if (!isObj(a)) return err('SHAPE', `artifacts[${i}]`, 'expected an object');
+    if ((a.artifactRef !== undefined && typeof a.artifactRef !== 'string') || (a.version !== undefined && typeof a.version !== 'string')) return err('SHAPE', `artifacts[${i}]`, 'artifactRef and version must be strings');
     const key = `${a.artifactRef}@${a.version}`, prior = artifacts.get(key);
     if (!prior) { artifacts.set(key, a); artifactRefs.add(a.artifactRef); }
     else if (prior.contentSha256 !== a.contentSha256) err('VERSION_CONFLICT', `artifacts[${i}].contentSha256`, 'the same artifact version is recorded with two different digests');
@@ -166,6 +167,7 @@ export function validateReceipt(receipt) {
   });
   const resolveArtifact = (ref, path) => {
     if (!isObj(ref)) return err('SHAPE', path, 'expected {artifactRef, version}');
+    if ((ref.artifactRef !== undefined && typeof ref.artifactRef !== 'string') || (ref.version !== undefined && typeof ref.version !== 'string')) return err('SHAPE', path, 'artifactRef and version must be strings');
     const a = artifacts.get(`${ref.artifactRef}@${ref.version}`);
     if (!a && artifactRefs.has(ref.artifactRef)) err('VERSION_CONFLICT', `${path}.version`, 'artifact is not recorded at this version');
     else if (!a) err('LINK_UNRESOLVED', `${path}.artifactRef`, 'unknown artifact');

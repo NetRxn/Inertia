@@ -15,6 +15,9 @@ node scripts/demo-evidence/validate-receipt.mjs scripts/demo-evidence/fixtures/v
 
 The command prints a JSON array with one report per file. Exit codes: `0` if every receipt is valid, `1` if any is invalid, `2` for a usage, read, size or JSON parse error. Each report has `valid`, `receiptFormat`, `evidenceClass`, `claimScope`, `qualificationClaimed`, `qualificationEligible`, `errors[]` and `warnings[]` (each `{code, path, message}`) and the fixed `nonClaims`.
 
+
+**Direct API.** `validateReceipt()` returns a report for any JSON-like input and never throws. Malformed enum or reference objects (for example `{toString: null}`) are rejected with `SHAPE` errors, never raised as exceptions.
+
 `qualificationEligible` is true only for a valid `system-produced`, `complete-application-outcome` receipt. It means the receipt is structurally ready for qualification review, not that qualification happened. Whether a run covers the #54/#48 demonstration (run, tool, source, artifact and member-event evidence, plus useful incorporated output) is tracked in those issues, not by this flag.
 
 **Diagnostics never echo receipt content.** Messages are fixed text. Paths name schema keys and array indexes only; any other key appears as `<unrecognized>`. Report metadata (`receiptFormat`, `evidenceClass`, `claimScope`) is returned only when it is an allowed value, otherwise `null`. CLI read and parse errors are fixed messages without parser snippets or stack traces.
