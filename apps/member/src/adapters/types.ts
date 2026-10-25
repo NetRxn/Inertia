@@ -1,5 +1,15 @@
 export type SourceRef = {
-  kind: 'meeting' | 'chat' | 'proposal' | 'task' | 'initiative' | 'share' | 'event' | 'document';
+  kind:
+    | 'meeting'
+    | 'chat'
+    | 'proposal'
+    | 'task'
+    | 'initiative'
+    | 'share'
+    | 'event'
+    | 'document'
+    | 'opportunity'
+    | 'application';
   id: string;
   title: string;
   url?: string;
@@ -41,9 +51,11 @@ export interface Initiative {
   id: string;
   title: string;
   status: 'active' | 'paused' | 'done';
-  progress: number; // 0..1
-  statusLabel: string;
-  priority: number;
+  // The next three are optional: a source may not track them. The UI drops the
+  // progress arc and status line, and unranked initiatives sort last in source order.
+  progress?: number; // 0..1
+  statusLabel?: string;
+  priority?: number; // lower is more important
 }
 
 export type TaskKind = 'creative' | 'outreach' | 'review' | 'real-world';
@@ -52,7 +64,7 @@ export interface HumanTask {
   id: string;
   initiativeId: string;
   title: string;
-  kind: TaskKind;
+  kind?: TaskKind; // read through taskKind(), which defaults to 'review'
   estimateMinutes: number | null;
   due: string | null;
   prepared: string;
@@ -118,6 +130,51 @@ export interface EventSource {
   listUpcoming(from: Date, limit: number): Promise<DaoEvent[]>;
 }
 
+// Funding: the grant finder's output, read-only. Agents find and prepare;
+// members see the picture and confirm packets where the funding system lives.
+
+/** How the DAO would pursue an opportunity, as the grant finder assessed it. */
+export type FundingRoute = 'direct' | 'partner' | 'next-cycle' | 'monitor' | 'standing-benefit';
+
+export interface FundingOpportunity {
+  id: string;
+  sponsor: string;
+  program: string;
+  route: FundingRoute;
+  summary: string;
+  /** An ISO timestamp for an exact cutoff, YYYY-MM-DD when only the day is known, null when unknown or rolling. */
+  deadline: string | null;
+  benefit: string | null; // e.g. "Up to $25,000"; unknown stays null
+  effort: string | null;
+  nextStep: string;
+  /** The official page the finding was validated against. */
+  sourceUrl: string;
+  /** When the grant finder last checked the source. */
+  observedAt: string;
+  initiativeId: string | null;
+}
+
+export type ApplicationStage = 'drafting' | 'agent-review' | 'needs-members' | 'ready' | 'submitted';
+
+export interface FundingApplication {
+  id: string;
+  opportunityId: string;
+  title: string;
+  stage: ApplicationStage;
+  /** Answered requirements out of all of them, when the source tracks it. */
+  readiness: { answered: number; total: number } | null;
+  /** What members still need to decide or supply, and what each one blocks. */
+  decisionsNeeded: { id: string; question: string; blocks: string }[];
+  submittedAt: string | null;
+  /** Where members review and confirm the exact packet. Null until that flow is live. */
+  packetUrl: string | null;
+}
+
+export interface FundingSource {
+  listOpportunities(): Promise<FundingOpportunity[]>;
+  listApplications(): Promise<FundingApplication[]>;
+}
+
 // Adapters collection
 export interface Adapters {
   directory: MemberDirectory;
@@ -126,4 +183,5 @@ export interface Adapters {
   meetings: MeetingSource;
   chat: ChatSource;
   events: EventSource;
+  funding: FundingSource;
 }

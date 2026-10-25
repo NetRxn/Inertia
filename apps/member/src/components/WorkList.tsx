@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { HumanTask, Initiative, TaskKind } from '../adapters/types';
+import { taskKind } from '../work/initiatives';
 import { claimTask } from '../work/claim';
 import { formatDay } from './cards/format';
 import styles from './cards/cards.module.css';
@@ -75,7 +76,7 @@ function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaim
 
       <div className="in-ask__body">
         <span className="in-gicon in-gicon--signal in-gicon--sm" aria-hidden="true">
-          <svg viewBox="0 0 24 24">{KIND_GLYPHS[task.kind]}</svg>
+          <svg viewBox="0 0 24 24">{KIND_GLYPHS[taskKind(task)]}</svg>
         </span>
         <div>
           <p className="in-ask__why">{task.prepared}</p>
@@ -84,7 +85,7 @@ function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaim
 
       <div className="in-ask__ctx in-mono">
         <span>
-          kind · <b>{KIND_LABELS[task.kind]}</b>
+          kind · <b>{KIND_LABELS[taskKind(task)]}</b>
         </span>
         {task.estimateMinutes ? (
           <span>

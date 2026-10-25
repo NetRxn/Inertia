@@ -7,6 +7,7 @@ const CARD_ORDER = [
   'Top priorities',
   'Coming up',
   "Robert's Rules",
+  'Funding',
   'Last meeting',
   'This week',
   'From the chat',
@@ -47,7 +48,7 @@ test.describe('Home feed', () => {
 
     const menu = page.getByRole('navigation', { name: 'Sections' });
     const labels = await menu.getByRole('link').evaluateAll((links) => links.map((l) => l.getAttribute('aria-label')));
-    expect(labels).toEqual(['Home', 'Votes', 'Work', 'Calendar', 'Docs', 'Profile']);
+    expect(labels).toEqual(['Home', 'Votes', 'Work', 'Funding', 'Calendar', 'Docs', 'Profile']);
     await expect(menu.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

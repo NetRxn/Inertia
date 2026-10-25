@@ -1,0 +1,99 @@
+/* Shared layout for the thin sections: Votes, Funding, Calendar, Docs and Profile. */
+
+.header {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.title {
+  font: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+}
+
+.sections {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.groupTitle {
+  font: var(--text-heading);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+  padding-left: var(--space-6);
+  list-style: disc;
+}
+
+.detail {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.detail > summary {
+  display: grid;
+  gap: var(--space-1);
+  cursor: pointer;
+  list-style: none;
+}
+
+.detail > summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail > summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.detailHint {
+  font: var(--text-small);
+  color: var(--signal-text);
+}
+
+.detail[open] .detailHint {
+  display: none;
+}
+
+.detailBody {
+  display: grid;
+  gap: var(--space-4);
+  padding-top: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-2) var(--space-4);
+}
+
+.fields dt {
+  color: var(--ink-muted);
+}
+
+.fields dd {
+  overflow-wrap: anywhere;
+}
+
+.target {
+  scroll-margin-top: 96px;
+}
+
+/* A draft's text, shown as written: plain text with its line breaks kept. */
+.prose {
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

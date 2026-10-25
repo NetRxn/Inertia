@@ -46,6 +46,7 @@ describe('buildFeed', () => {
       'priorities',
       'coming-up',
       'proposals',
+      'funding',
       'last-meeting',
       'this-week',
       'from-chat',
@@ -81,7 +82,7 @@ describe('buildFeed', () => {
       { displayName: 'Casey Thompson', count: 3 },
       { displayName: 'Ana Rodriguez', count: 2 },
     ]);
-    expect(thisWeek.openItems).toBe(2);
+    expect(thisWeek.openItems).toBe(3);
     expect(asked).toEqual({
       from: new Date('2026-10-19T05:00:00Z'),
       to: new Date('2026-10-26T05:00:00Z'),

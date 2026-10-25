@@ -6,6 +6,8 @@ import type {
   Meeting,
   ChatThread,
   DaoEvent,
+  FundingOpportunity,
+  FundingApplication,
 } from '../types';
 
 export const FIXTURE_NOW = new Date('2026-10-24T15:00:00Z');
@@ -18,6 +20,8 @@ export interface FixtureData {
   meetings: Meeting[];
   chatThreads: ChatThread[];
   events: DaoEvent[];
+  opportunities: FundingOpportunity[];
+  applications: FundingApplication[];
 }
 
 /**
@@ -35,7 +39,7 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
   const DAY = 24 * 60 * 60 * 1000;
   const HOUR = 60 * 60 * 1000;
 
-  // 12 members (one inactive)
+  // 13 members (one inactive). Lee is the full-journey e2e's own member.
   const members: DirectoryMember[] = [
     { externalId: 'm-ana', email: 'ana@example.org', displayName: 'Ana Rodriguez', active: true },
     { externalId: 'm-rob', email: 'rob@example.org', displayName: 'Rob Chen', active: true },
@@ -48,6 +52,7 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     { externalId: 'm-taylor', email: 'taylor@example.org', displayName: 'Taylor Johnson', active: true },
     { externalId: 'm-quinn', email: 'quinn@example.org', displayName: 'Quinn Brown', active: true },
     { externalId: 'm-drew', email: 'drew@example.org', displayName: 'Drew Wilson', active: true },
+    { externalId: 'm-lee', email: 'lee@example.org', displayName: 'Lee Okafor', active: true },
     { externalId: 'm-pat', email: 'pat@example.org', displayName: 'Pat Garcia', active: false },
   ];
 
@@ -104,6 +109,19 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
       estimateMinutes: 90,
       due: relativeDate(7 * DAY),
       prepared: 'Inertia compiled contact info for three nearby schools and drafted an intro email.',
+      status: 'open',
+      claimedBy: null,
+      completedBy: null,
+      completedAt: null,
+    },
+    {
+      id: 'task-8',
+      initiativeId: 'init-coding',
+      title: 'Photograph the first coding night',
+      kind: 'real-world',
+      estimateMinutes: 45,
+      due: relativeDate(5 * DAY),
+      prepared: 'Inertia listed the shots the grant report needs and checked the library photo policy.',
       status: 'open',
       claimedBy: null,
       completedBy: null,
@@ -357,6 +375,110 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     },
   ];
 
+
+  // The grant finder's output: one opportunity per route, with an exact cutoff,
+  // a date-only deadline and an unknown one. Sponsors and links are invented.
+  const dateOnly = (offsetMs: number): string => relativeDate(offsetMs).slice(0, 10);
+  const opportunities: FundingOpportunity[] = [
+    {
+      id: 'opp-garden',
+      sponsor: 'Tarrant Neighborhood Fund (example)',
+      program: 'Community Green Spaces grant',
+      route: 'direct',
+      summary: 'Small grants for resident-led gardens and green spaces in Tarrant County neighborhoods.',
+      deadline: relativeDate(6 * DAY + 2 * HOUR),
+      benefit: 'Up to $15,000',
+      effort: 'Medium: narrative, budget and two letters of support',
+      nextStep: 'Members confirm the match amount and the site lease letter.',
+      sourceUrl: 'https://grants.example.org/green-spaces',
+      observedAt: relativeDate(-1 * DAY),
+      initiativeId: 'init-garden',
+    },
+    {
+      id: 'opp-coding',
+      sponsor: 'Lone Star Digital Futures (example)',
+      program: 'Youth Digital Skills partner program',
+      route: 'partner',
+      summary: 'Funds coding programs for teens when a library or school leads the application.',
+      deadline: dateOnly(18 * DAY),
+      benefit: 'Up to $40,000 shared with the lead partner',
+      effort: 'High: the lead partner files; we draft our capability section',
+      nextStep: 'Ask the library branch whether they will lead.',
+      sourceUrl: 'https://grants.example.org/digital-futures',
+      observedAt: relativeDate(-2 * DAY),
+      initiativeId: 'init-coding',
+    },
+    {
+      id: 'opp-arts',
+      sponsor: 'Fort Worth Arts Council (example)',
+      program: 'Neighborhood arts mini-grants',
+      route: 'next-cycle',
+      summary: 'This cycle closed last month. The next one is expected to open in the spring.',
+      deadline: null,
+      benefit: 'Up to $5,000',
+      effort: 'Low',
+      nextStep: 'Recheck when the spring cycle is announced.',
+      sourceUrl: 'https://grants.example.org/arts-mini',
+      observedAt: relativeDate(-5 * DAY),
+      initiativeId: null,
+    },
+    {
+      id: 'opp-civic',
+      sponsor: 'North Texas Civic Tech Foundation (example)',
+      program: 'Open civic data awards',
+      route: 'monitor',
+      summary: 'Eligibility for DAOs is unclear on the official page, so this is being watched rather than pursued.',
+      deadline: dateOnly(40 * DAY),
+      benefit: null,
+      effort: null,
+      nextStep: 'Wait for the sponsor to answer the eligibility question.',
+      sourceUrl: 'https://grants.example.org/civic-data',
+      observedAt: relativeDate(-3 * DAY),
+      initiativeId: null,
+    },
+    {
+      id: 'opp-software',
+      sponsor: 'Example Cloud Nonprofit Program',
+      program: 'Donated software credits',
+      route: 'standing-benefit',
+      summary: 'Free hosting and office software for registered nonprofits, renewed yearly.',
+      deadline: null,
+      benefit: '$2,000 a year in credits',
+      effort: 'Low: one form, renewed yearly',
+      nextStep: 'Renew before the current credits expire.',
+      sourceUrl: 'https://grants.example.org/cloud-credits',
+      observedAt: relativeDate(-7 * DAY),
+      initiativeId: null,
+    },
+  ];
+
+  const applications: FundingApplication[] = [
+    {
+      id: 'app-garden',
+      opportunityId: 'opp-garden',
+      title: 'Community garden: Green Spaces application',
+      stage: 'needs-members',
+      readiness: { answered: 11, total: 14 },
+      decisionsNeeded: [
+        { id: 'dec-match', question: 'Confirm the $3,000 in-kind match', blocks: 'the budget and match sections' },
+        { id: 'dec-lease', question: 'Upload the site lease letter', blocks: 'the site control requirement' },
+        { id: 'dec-letters', question: 'Name who will ask for the two letters of support', blocks: 'the attachments' },
+      ],
+      submittedAt: null,
+      packetUrl: null,
+    },
+    {
+      id: 'app-coding',
+      opportunityId: 'opp-coding',
+      title: 'Youth coding nights: Digital Skills capability section',
+      stage: 'drafting',
+      readiness: { answered: 3, total: 9 },
+      decisionsNeeded: [],
+      submittedAt: null,
+      packetUrl: null,
+    },
+  ];
+
   return {
     members,
     proposals,
@@ -365,5 +487,7 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     meetings,
     chatThreads,
     events,
+    opportunities,
+    applications,
   };
 }

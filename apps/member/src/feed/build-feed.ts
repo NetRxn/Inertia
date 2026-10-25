@@ -1,5 +1,17 @@
-import type { Adapters, ChatThread, DaoEvent, HumanTask, Initiative, Meeting, Proposal } from '../adapters/types';
+import type {
+  Adapters,
+  ChatThread,
+  DaoEvent,
+  FundingApplication,
+  FundingOpportunity,
+  HumanTask,
+  Initiative,
+  Meeting,
+  Proposal,
+} from '../adapters/types';
+import { fundingHighlights } from '../funding/funding';
 import type { Member } from '../identity/session';
+import { byPriority } from '../work/initiatives';
 import { weekBounds } from './week';
 
 /**
@@ -28,6 +40,7 @@ export type FeedCard =
   | { type: 'priorities'; initiatives: Initiative[] }
   | { type: 'coming-up'; events: DaoEvent[] }
   | { type: 'proposals'; proposals: Proposal[] }
+  | { type: 'funding'; opportunities: FundingOpportunity[]; applications: FundingApplication[] }
   | { type: 'last-meeting'; meeting: Meeting }
   | { type: 'this-week'; top: { displayName: string; count: number }[]; openItems: number }
   | { type: 'from-chat'; threads: { thread: ChatThread; line: string }[] }
@@ -56,16 +69,19 @@ export async function buildFeed(
   const week = weekBounds(now);
   const chatSince = new Date(nowMs - 7 * DAY_MS);
 
-  const [tasks, initiatives, events, proposals, meetings, completions, directory, threads] = await Promise.all([
-    adapters.work.listHumanTasks(),
-    adapters.work.listInitiatives(),
-    adapters.events.listUpcoming(now, 4),
-    adapters.proposals.listProposals(),
-    adapters.meetings.listMeetings(1),
-    adapters.work.completionsBetween(week.from, week.to),
-    adapters.directory.listMembers(),
-    adapters.chat.listRecentThreads(chatSince),
-  ]);
+  const [tasks, initiatives, events, proposals, meetings, completions, directory, threads, opportunities, applications] =
+    await Promise.all([
+      adapters.work.listHumanTasks(),
+      adapters.work.listInitiatives(),
+      adapters.events.listUpcoming(now, 4),
+      adapters.proposals.listProposals(),
+      adapters.meetings.listMeetings(1),
+      adapters.work.completionsBetween(week.from, week.to),
+      adapters.directory.listMembers(),
+      adapters.chat.listRecentThreads(chatSince),
+      adapters.funding.listOpportunities(),
+      adapters.funding.listApplications(),
+    ]);
 
   const cards: FeedCard[] = [];
 
@@ -76,7 +92,7 @@ export async function buildFeed(
 
   const priorities = initiatives
     .filter((i) => i.status === 'active')
-    .sort((a, b) => a.priority - b.priority)
+    .sort(byPriority)
     .slice(0, 3);
   if (priorities.length > 0) cards.push({ type: 'priorities', initiatives: priorities });
 
@@ -90,6 +106,9 @@ export async function buildFeed(
   if (open.length + recentlyClosed.length > 0) {
     cards.push({ type: 'proposals', proposals: [...open, ...recentlyClosed] });
   }
+
+  const funding = fundingHighlights(opportunities, applications, now);
+  if (funding) cards.push({ type: 'funding', ...funding });
 
   // Meeting sources list newest first.
   const [lastMeeting] = meetings;

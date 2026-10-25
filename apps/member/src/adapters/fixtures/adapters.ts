@@ -14,6 +14,9 @@ import type {
   ChatSource,
   DaoEvent,
   EventSource,
+  FundingOpportunity,
+  FundingApplication,
+  FundingSource,
 } from '../types';
 import type { FixtureData } from './dao';
 import { defaultFixture } from './dao';
@@ -145,6 +148,17 @@ export function createFixtureAdapters(data?: FixtureData): Adapters {
     },
   };
 
+  // Funding source adapter (read-only)
+  const funding: FundingSource = {
+    async listOpportunities(): Promise<FundingOpportunity[]> {
+      return [...fixtureData.opportunities];
+    },
+
+    async listApplications(): Promise<FundingApplication[]> {
+      return [...fixtureData.applications];
+    },
+  };
+
   return {
     directory,
     proposals,
@@ -152,5 +166,6 @@ export function createFixtureAdapters(data?: FixtureData): Adapters {
     meetings,
     chat,
     events,
+    funding,
   };
 }

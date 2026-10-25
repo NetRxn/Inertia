@@ -28,8 +28,9 @@ test.describe('Login flow', () => {
     await login(page, 'rob@example.org');
     await expect(page).toHaveURL('/');
 
-    // Sign out
-    await page.click('button:has-text("Sign out")');
+    // Sign out from Profile
+    await page.goto('/profile');
+    await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL('/login');
 
     // Try to use the same link again

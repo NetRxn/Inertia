@@ -241,4 +241,25 @@ describe('listShares', () => {
     const list = await listShares(db, { limit: 2 });
     expect(list.map((s) => s.description)).toEqual(['three', 'two']);
   });
+
+  it('withFile lists only shares that carry a file, beyond the newest text-only posts', async () => {
+    const [file] = await db
+      .insert(filesTable)
+      .values({ name: 'plan.pdf', path: '/tmp/none', mimeType: 'application/pdf', size: 3, uploadedBy: author.id })
+      .returning();
+    const withFile = await createShare(
+      db,
+      author.id,
+      { description: 'The plan', fileId: file.id },
+      { fetchPreview: noPreview },
+    );
+    for (const text of ['one', 'two']) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      await createShare(db, other.id, { description: text }, { fetchPreview: noPreview });
+    }
+
+    const list = await listShares(db, { limit: 1, withFile: true });
+    expect(list.map((s) => s.id)).toEqual([withFile.id]);
+    expect(list[0].fileName).toBe('plan.pdf');
+  });
 });

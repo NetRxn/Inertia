@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getDb } from '../../../../db/client';
 import { getMemberFromCookies } from '../../../../identity/session';
 import { files } from '../../../../db/schema';
+import { contentDisposition } from '../../../../shares/files';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -42,8 +43,6 @@ export async function GET(
     return notFound();
   }
 
-  // Only characters that survive the quoting reach the filename.
-  const filename = JSON.stringify(file.name.replace(/["\\\r\n]/g, ''));
   const disposition = file.mimeType === 'application/pdf' ? 'attachment' : 'inline';
 
   return new NextResponse(new Blob([new Uint8Array(bytes)]), {
@@ -51,7 +50,7 @@ export async function GET(
     headers: {
       'Content-Type': file.mimeType,
       'X-Content-Type-Options': 'nosniff',
-      'Content-Disposition': `${disposition}; filename=${filename}`,
+      'Content-Disposition': contentDisposition(disposition, file.name),
       // Uploads are immutable per id, so a member's browser may keep its copy.
       'Cache-Control': 'private, max-age=3600',
     },

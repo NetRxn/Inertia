@@ -90,3 +90,16 @@ export async function deleteUpload(db: Db, fileId: string): Promise<void> {
     // The bytes may already be gone; the row is what matters.
   });
 }
+
+/**
+ * A Content-Disposition value for an upload's original name. Header values
+ * must be Latin-1, so the full name rides as RFC 5987 `filename*` (UTF-8,
+ * percent-encoded) beside a printable-ASCII `filename` fallback.
+ */
+export function contentDisposition(type: 'inline' | 'attachment', name: string): string {
+  let fallback = name.replace(/[^\x20-\x7e]|["\\]/g, '').trim();
+  const extension = /\.[A-Za-z0-9]+$/.exec(fallback)?.[0] ?? '';
+  if (!fallback.slice(0, fallback.length - extension.length).trim()) fallback = `file${extension}`;
+  const encoded = encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return `${type}; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+}
