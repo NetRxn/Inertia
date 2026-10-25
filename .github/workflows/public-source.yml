@@ -1,0 +1,100 @@
+name: Public source CI
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-source-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  root-package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      # These optional fixtures need private repositories; never admit them here.
+      DFW_TEST_ROOT: ''
+      DFW_TEST_PYTHON: ''
+      NATIVE_CYCLE_DFW_HOME: ''
+      NATIVE_CYCLE_PYTHON: ''
+      EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Check out exact source head
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node 24 LTS
+        id: node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          package-manager-cache: false
+
+      - name: Verify and record source identity
+        id: identity
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          printf 'Source: %s\nNode: %s\nnpm: %s\n' "$EXPECTED_SHA" "$(node --version)" "$(npm --version)"
+          sha256sum package-lock.json
+
+      - name: Install locked public dependencies
+        id: install
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck
+        id: typecheck
+        run: npm run typecheck
+
+      - name: Build
+        id: build
+        run: npm run build
+
+      - name: Test public root package (private fixtures skipped)
+        id: tests
+        run: npm test -- --maxWorkers=1
+
+      - name: Verify clean production package
+        id: package
+        run: npm run test:package
+
+      - name: Report outcomes and qualification boundary
+        if: always()
+        env:
+          CHECKOUT: ${{ steps.checkout.outcome }}
+          NODE: ${{ steps.node.outcome }}
+          IDENTITY: ${{ steps.identity.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          TYPECHECK: ${{ steps.typecheck.outcome }}
+          BUILD: ${{ steps.build.outcome }}
+          TESTS: ${{ steps.tests.outcome }}
+          PACKAGE: ${{ steps.package.outcome }}
+        run: |
+          {
+            printf '## Public root-package qualification\n\nRequested source: `%s`\n\n' "$EXPECTED_SHA"
+            printf '| Step | Actual outcome |\n| --- | --- |\n'
+            printf '| Checkout | %s |\n| Node setup | %s |\n| Exact SHA verification | %s |\n' "$CHECKOUT" "$NODE" "$IDENTITY"
+            printf '| Lockfile install | %s |\n| Typecheck | %s |\n| Build | %s |\n' "$INSTALL" "$TYPECHECK" "$BUILD"
+            printf '| Root tests | %s |\n| Clean production package | %s |\n\n' "$TESTS" "$PACKAGE"
+            printf '%s\n' \
+              'Failed, skipped, or cancelled steps are not passes. See test logs for actual test counts and skips.' \
+              '' \
+              '### Intentionally unavailable private fixtures — NOT qualified' \
+              '- `test/central/real-bridge.test.ts`: DFW_TEST_ROOT / DFW_TEST_PYTHON are absent.' \
+              '- `test/drafting/native-cycle.test.ts`: NATIVE_CYCLE_DFW_HOME / NATIVE_CYCLE_PYTHON are absent.' \
+              '' \
+              'Native PostgreSQL/Paperclip host, nested-package suites, private integration, live providers/relay/Drive/website, deployment and production readiness are NOT qualified by this check.'
+          } >> "$GITHUB_STEP_SUMMARY"
