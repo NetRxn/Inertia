@@ -1,20 +1,27 @@
 # Inertia connected application delivery plan
 
-Revision: INERTIA-2026-10-25-r25
+Revision: INERTIA-2026-10-25-r26
 Updated: 2026-10-25 (UTC)
 Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 core/capture/delivery source is merged; Packet UI is draft PR62 and production member actions remain unqualified. Legacy source/records remain intact; PR51 is draft/inactive.
+
+## Status checkpoint 2026-10-25
+
+[PR73](https://github.com/NetRxn/Inertia/pull/73) command-free drafting source is merged and installed in durable preproduction. Restart verification passed. The initial Codex subscription smoke remains the only live inference proof: actual funding execution has produced zero candidates and zero reviews. Agents remain paused. The independently reviewed command-disable adapter repair is local-only; not yet installed. Trusted-central knowledge/review/admission changes are local-only; not yet published or activated.
+
+Contributor PR60/61 are merged and recovery alignment is resolved. PR62 Packet UI remains draft, with conflict reconciliation and real-browser QA in progress. Member PR70/74/75 remain fixture-only drafts; preview DNS, upload buffering and old-email-token source issues remain unresolved, while PR75 fixes Unicode handling.
+
 
 ## Current baseline
 
 [PR58](https://github.com/NetRxn/Inertia/pull/58) adds merged trusted native exact-action capture to the [packet-v2 core](https://github.com/NetRxn/Inertia/pull/56). Source/synthetic checks passed; missing trusted authority/retention callbacks keep the path disabled. Owning-domain packet-v2 and named SQL tools retain their recorded local PostgreSQL qualification.
 
-[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. Browser walkthrough, mutually agreed #48 recovery/workflow, production authority/runtime/domain/Buzz and the actual system run remain pending. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
+[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. PR62 conflict reconciliation and real-browser QA are in progress. Production authority/runtime/domain/Buzz and the actual system run remain pending. Shared recovery alignment is resolved. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
 
 Public [PR53](https://github.com/NetRxn/Inertia/pull/53) provides source-qualified, default-disabled host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled reproduction fixture. Bounded receipt-read allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates.
 
 The existing source still contains v1 named/specialist-role review and packet-freeze paths. The additive v2 packet contract/freeze core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56); native capture is merged while real authority/runtime/domain/Buzz integration remains pending. New work must not reinterpret v1 approvals, accepted instructions, cancellation state or historical packets. Documentation decisions are not evidence of a deployed change.
 
-Shared recovery and rehearsal changes require mutual agreement with their contributors before adoption. The simpler same-pending-ID re-entry in draft PR62 is a candidate, not an agreed shared workflow; it adds no retirement endpoint, new store or payload persistence. [PR60](https://github.com/NetRxn/Inertia/pull/60) has a scoped re-review pass awaiting its contributor’s readiness/nonblocking-note choice. [PR61](https://github.com/NetRxn/Inertia/pull/61) still awaits its action-surface clarification and R-02 alignment. Preserve those isolated contributor-owned files. [PR59](https://github.com/NetRxn/Inertia/pull/59) remains discussion-only.
+Contributor [PR60](https://github.com/NetRxn/Inertia/pull/60) validator and [PR61](https://github.com/NetRxn/Inertia/pull/61) rehearsal are merged after mutual recovery alignment. R02 retains system-run recovery; R03 retains the member same-request-ID path. The rehearsal is valid but NOT qualified. PR62 remains draft with merge-conflict reconciliation and real-browser QA in progress; recovery agreement is no longer the blocker. Preserve contributor-owned files. [PR59](https://github.com/NetRxn/Inertia/pull/59) remains discussion-only.
 
 ## Recommended remaining work
 
@@ -31,7 +38,7 @@ Recommended Pareto order, led by the largest useful outcomes rather than another
 
 Helix, Y2 and extra UI polish are deferred. The first two task proposals have been brought back to John; hold a new external work split until that review is clear. Existing contributor-owned work remains isolated.
 
-John plans to deploy the shared runtime before Wednesday. Docker preproduction Codex subscription smoke passed, not the funding packet. Single-provider workflow qualification, including sustained research/draft/reuse, is next. Claude connection/inference waits until Monday; the two-provider rehearsal follows. Preproduction is not the shared deployment. Two-provider scenarios test existing requirements; they add no coordinator, dispatcher or framework. See the [scenario mapping](testing.md#two-provider-scenarios-for-existing-requirements).
+John plans to deploy the shared runtime before Wednesday. Docker preproduction Codex subscription smoke passed, not the funding packet. Durable preproduction and command-free drafting installation are verified, but sustained research/draft/reuse is pending command-disable runtime integration. Actual funding execution has zero candidates and zero reviews. Claude connection/inference waits until Monday; the two-provider rehearsal follows. Preproduction is not the shared deployment. Two-provider scenarios test existing requirements; they add no coordinator, dispatcher or framework. See the [scenario mapping](testing.md#two-provider-scenarios-for-existing-requirements).
 
 Park Place is historical human-submitted proof. The approximately one-hour figure is user-reported elapsed time, not measured active time or deployed automation. No automatic extra submission is planned.
 
