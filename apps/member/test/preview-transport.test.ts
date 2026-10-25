@@ -140,4 +140,10 @@ describe('preview connection boundary', () => {
     expect(callbackErrors).toEqual([]);
     expect(bodies[0].destroyed).toBe(true);
   });
+
+  it('identifies itself with a User-Agent, since some sites refuse requests without one', async () => {
+    await fetchLinkPreview('https://example.org/story', { lookup: async () => ['93.184.216.34'] });
+    const headers = attempts[0].options.headers as Record<string, string>;
+    expect(headers['user-agent']).toMatch(/^InertiaMemberApp\//);
+  });
 });

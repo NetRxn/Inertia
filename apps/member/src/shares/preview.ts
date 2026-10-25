@@ -82,6 +82,8 @@ async function fetchAddress(host: string, lookup: (host: string) => Promise<stri
   return addresses.length > 0 && addresses.every((address) => !isPrivateAddress(address)) ? addresses[0] : null;
 }
 
+const USER_AGENT = 'InertiaMemberApp/0.1 (link preview)';
+
 /** Keep the URL hostname for Host and TLS verification; only DNS is replaced. */
 function fetchPinned(url: URL, address: string, signal: AbortSignal): Promise<Response> {
   return new Promise((resolve, reject) => {
@@ -90,7 +92,8 @@ function fetchPinned(url: URL, address: string, signal: AbortSignal): Promise<Re
       signal,
       family: isIP(address),
       lookup: (_host, _options, callback) => callback(null, address, isIP(address)),
-      headers: { accept: 'text/html', 'accept-encoding': 'identity' },
+      // Without a User-Agent some sites (Wikimedia, for one) answer 403.
+      headers: { accept: 'text/html', 'accept-encoding': 'identity', 'user-agent': USER_AGENT },
     }, (response) => {
       // The callback runs after the Promise executor returns: conversion
       // errors must reject explicitly, not escape as process exceptions.
