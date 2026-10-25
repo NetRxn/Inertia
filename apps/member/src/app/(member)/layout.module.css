@@ -1,7 +1,7 @@
 .shell {
   min-height: 100dvh;
   padding-inline: var(--space-4);
-  /* Room below the footer so the fixed chat bar never covers the end of the page. */
+  /* Room at the end so the fixed chat bar never covers the last of the page. */
   padding-bottom: 112px;
 }
 
@@ -40,13 +40,6 @@
   top: 55%;
   left: calc(50% + 20px);
   background: var(--tide);
-}
-
-.footer {
-  display: flex;
-  justify-content: center;
-  max-width: 608px;
-  margin: var(--space-8) auto 0;
 }
 
 @media (min-width: 768px) {
