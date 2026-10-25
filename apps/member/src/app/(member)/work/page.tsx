@@ -13,7 +13,7 @@ export const instant = false;
 type Segment = 'needs-person' | 'initiatives' | 'ideas';
 
 async function WorkContent({ segment }: { segment: Segment }) {
-  await requireMember();
+  const member = await requireMember();
   const adapters = getAdapters();
   const [initiatives, tasks] = await Promise.all([
     adapters.work.listInitiatives(),
@@ -40,7 +40,7 @@ async function WorkContent({ segment }: { segment: Segment }) {
   }
 
   // Default: needs-person segment
-  return <WorkList initiatives={sortedInitiatives} tasks={tasks} />;
+  return <WorkList initiatives={sortedInitiatives} tasks={tasks} memberExternalId={member.externalId} />;
 }
 
 export default function WorkPage({
@@ -63,7 +63,7 @@ export default function WorkPage({
 
       <nav className={styles.tabs} role="tablist" aria-label="Work sections">
         <Link
-          href="/work?tab=needs-person"
+          href="/work"
           role="tab"
           aria-selected={segment === 'needs-person'}
           aria-current={segment === 'needs-person' ? 'page' : undefined}

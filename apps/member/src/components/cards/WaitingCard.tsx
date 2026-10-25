@@ -62,12 +62,16 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
             <span>
               kind · <b>{KIND_LABELS[task.kind]}</b>
             </span>
+            {task.estimateMinutes ? (
+              <span>
+                rough time · <b>~{task.estimateMinutes} min</b>
+              </span>
+            ) : null}
             {task.due ? (
               <span>
                 due · <b>{formatDay(task.due)}</b>
               </span>
             ) : null}
-            <span>prepared by Inertia · {formatDay(task.prepared)}</span>
           </div>
           <div className="in-ask__actions">
             <Link href="/work" className="in-btn in-btn--primary">

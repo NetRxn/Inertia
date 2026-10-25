@@ -36,7 +36,7 @@ const KIND_LABELS: Record<TaskKind, string> = {
   'real-world': 'real world',
 };
 
-function TaskCard({ task }: { task: HumanTask }) {
+function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaimedByCurrentMember: boolean }) {
   const [claiming, setClaiming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -45,6 +45,7 @@ function TaskCard({ task }: { task: HumanTask }) {
     try {
       const result = await claimTask(task.id);
       setMessage(result.message);
+      // On failure, don't revalidate - keep the stale card with the error message
     } finally {
       setClaiming(false);
     }
@@ -54,8 +55,12 @@ function TaskCard({ task }: { task: HumanTask }) {
     <div className={`in-ask in-glass in-tex in-tex--orbits ${styles.ask}`}>
       <div className="in-ask__head">
         <span className="in-dot" aria-hidden="true" />
-        <h3 className="in-label">{task.title}</h3>
-        {task.estimateMinutes ? <span className="in-chip in-chip--signal">~{task.estimateMinutes} min</span> : null}
+        <h3 className="in-ask__title">{task.title}</h3>
+        {isClaimedByCurrentMember ? (
+          <span className="in-chip in-chip--moss">Yours</span>
+        ) : task.estimateMinutes ? (
+          <span className="in-chip in-chip--signal">~{task.estimateMinutes} min</span>
+        ) : null}
       </div>
 
       <div className="in-ask__body">
@@ -76,18 +81,24 @@ function TaskCard({ task }: { task: HumanTask }) {
             rough time · <b>~{task.estimateMinutes} min</b>
           </span>
         ) : null}
-        <span>prepared by Inertia · {formatDay(task.prepared)}</span>
+        {task.due ? (
+          <span>
+            due · <b>{formatDay(task.due)}</b>
+          </span>
+        ) : null}
       </div>
 
-      {message ? (
-        <div className="in-ask__actions">
-          <p role="status" className={styles.meta}>{message}</p>
-        </div>
-      ) : (
+      {message && (
+        <p role="status" className={styles.meta} style={{ marginBottom: 'var(--space-2)' }}>
+          {message}
+        </p>
+      )}
+
+      {!isClaimedByCurrentMember && (
         <div className="in-ask__actions">
           <button
             onClick={handleClaim}
-            disabled={claiming}
+            disabled={claiming || !!message}
             className="in-btn in-btn--secondary"
           >
             {claiming ? 'Taking it…' : "I'll take it"}
@@ -106,15 +117,21 @@ interface InitiativeGroup {
 export function WorkList({
   initiatives,
   tasks,
+  memberExternalId,
 }: {
   initiatives: Initiative[];
   tasks: HumanTask[];
+  memberExternalId: string;
 }) {
-  // Group open tasks by initiative
+  // Group tasks that need a person: open tasks + tasks claimed by current member
   const groups: InitiativeGroup[] = initiatives
     .map((initiative) => ({
       initiative,
-      tasks: tasks.filter((t) => t.initiativeId === initiative.id && t.status === 'open'),
+      tasks: tasks.filter(
+        (t) =>
+          t.initiativeId === initiative.id &&
+          (t.status === 'open' || t.claimedBy === memberExternalId)
+      ),
     }))
     .filter((g) => g.tasks.length > 0);
 
@@ -122,7 +139,7 @@ export function WorkList({
     return (
       <section className={`in-glass in-tex in-tex--stars ${styles.card}`} aria-labelledby="empty-work">
         <p id="empty-work" className={styles.meta}>
-          Nothing needs a person right now. All tasks are claimed or done.
+          Nothing needs a person right now. Have an idea for what should come next?
         </p>
       </section>
     );
@@ -135,7 +152,11 @@ export function WorkList({
           <h2 className={`in-label ${styles.eyebrowMoss}`}>{initiative.title}</h2>
           <div className={styles.feed}>
             {groupTasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                isClaimedByCurrentMember={task.claimedBy === memberExternalId}
+              />
             ))}
           </div>
         </section>

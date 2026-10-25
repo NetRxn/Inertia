@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 import { login } from './helpers';
 
 test.describe('Work tab', () => {
-  // Run this first so tasks are still available
   test('segmented control switches between Needs a person, Initiatives, and Ideas', async ({ page }) => {
     await login(page, 'casey@example.org');
     await page.goto('/work');
@@ -35,22 +34,19 @@ test.describe('Work tab', () => {
   });
 
   test('claiming a task shows "It\'s yours." and it appears in Waiting for you on Home', async ({ page }) => {
-    // Casey claims a task
+    // Casey claims "Design community garden signage" (R16)
     await login(page, 'casey@example.org');
     await page.goto('/work');
 
-    // Find any task with an "I'll take it" button (specific tasks might be claimed from previous runs)
-    const availableTask = page.locator('.in-ask').filter({ has: page.getByRole('button', { name: "I'll take it" }) }).first();
-
-    // Get the task title for later verification
-    const taskTitle = await availableTask.getByRole('heading', { level: 3 }).textContent();
-    expect(taskTitle).toBeTruthy();
+    // Find the specific task by its visible title
+    const taskTitle = 'Design community garden signage';
+    const taskCard = page.locator('.in-ask').filter({ hasText: taskTitle });
 
     // Click the "I'll take it" button
-    await availableTask.getByRole('button', { name: "I'll take it" }).click();
+    await taskCard.getByRole('button', { name: "I'll take it" }).click();
 
-    // Should see success message (wait a bit for the server action to complete)
-    await expect(availableTask.getByRole('status')).toHaveText("It's yours.", { timeout: 10000 });
+    // Should see success message (R19: card stays mounted through revalidation)
+    await expect(taskCard.getByRole('status')).toHaveText("It's yours.", { timeout: 10000 });
 
     // Navigate to home page
     await page.goto('/');
@@ -60,44 +56,49 @@ test.describe('Work tab', () => {
     await expect(waitingCard).toBeVisible();
 
     // Assert the claimed task's title is shown
-    await expect(waitingCard.getByRole('heading', { level: 3 })).toHaveText(taskTitle!);
+    await expect(waitingCard.getByRole('heading', { level: 3 })).toHaveText(taskTitle);
 
     // Assert the context shows kind and rough time (R18)
     const context = waitingCard.locator('.in-ask__ctx');
-    await expect(context).toContainText('kind ·');
-    await expect(context).toContainText('rough time ·');
+    await expect(context).toContainText('kind · creative');
+    await expect(context).toContainText('rough time · ~120 min');
   });
 
-  test('a second member claiming the same task sees "Someone already took this."', async ({ page }) => {
-    // First, Casey claims a task
-    await login(page, 'casey@example.org');
-    await page.goto('/work');
+  test('a second member claiming the same task sees "Someone already took this."', async ({ browser }) => {
+    // Two browser contexts: Morgan opens /work first while task is still open,
+    // Casey claims it in another context, then Morgan tries (R19)
 
-    // Find any available task
-    const availableTask = page.locator('.in-ask').filter({ has: page.getByRole('button', { name: "I'll take it" }) }).first();
-    const taskTitle = await availableTask.getByRole('heading', { level: 3 }).textContent();
+    const morganContext = await browser.newContext();
+    const morganPage = await morganContext.newPage();
 
-    await availableTask.getByRole('button', { name: "I'll take it" }).click();
-    await expect(availableTask.getByRole('status')).toHaveText("It's yours.", { timeout: 10000 });
+    const caseyContext = await browser.newContext();
+    const caseyPage = await caseyContext.newPage();
 
-    // Now Morgan tries to claim the same task
-    await login(page, 'morgan@example.org');
-    await page.goto('/work');
+    try {
+      // Morgan opens /work and sees "Reach out to local schools"
+      await login(morganPage, 'morgan@example.org');
+      await morganPage.goto('/work');
 
-    // The task might not be visible if the page was revalidated, but if it is,
-    // clicking claim should show the already-claimed message
-    // Since claims persist between specs (R5), the task may no longer be in the open list
-    const taskCardLocator = page.locator('.in-ask').filter({ hasText: taskTitle! });
-    const taskCount = await taskCardLocator.count();
+      const taskTitle = 'Reach out to local schools';
+      const morganTaskCard = morganPage.locator('.in-ask').filter({ hasText: taskTitle });
+      await expect(morganTaskCard.getByRole('button', { name: "I'll take it" })).toBeVisible();
 
-    if (taskCount > 0) {
-      // Task is still shown (before revalidation), try to claim it
-      await taskCardLocator.getByRole('button', { name: "I'll take it" }).click();
-      await expect(taskCardLocator.getByRole('status')).toHaveText('Someone already took this.');
-    } else {
-      // Task is no longer in the open list (already claimed and revalidated away)
-      // This is the expected behavior after Casey's claim
-      expect(taskCount).toBe(0);
+      // Casey claims the same task in a different context
+      await login(caseyPage, 'casey@example.org');
+      await caseyPage.goto('/work');
+
+      const caseyTaskCard = caseyPage.locator('.in-ask').filter({ hasText: taskTitle });
+      await caseyTaskCard.getByRole('button', { name: "I'll take it" }).click();
+      await expect(caseyTaskCard.getByRole('status')).toHaveText("It's yours.", { timeout: 10000 });
+
+      // Now Morgan clicks "I'll take it" on their stale card
+      await morganTaskCard.getByRole('button', { name: "I'll take it" }).click();
+
+      // Morgan should see the already-claimed message (R19: failures don't revalidate)
+      await expect(morganTaskCard.getByRole('status')).toHaveText('Someone already took this.', { timeout: 10000 });
+    } finally {
+      await morganContext.close();
+      await caseyContext.close();
     }
   });
 });
