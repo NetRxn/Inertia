@@ -111,14 +111,23 @@ export function createAcceptanceRouter(config = {}) {
       res.status(400).json({error: 'invalid_query'}); return;
     }
     // Preserve the source cursor even when another applicant's rows were filtered.
-    const page = await list(db, {companyId: scope.companyId, afterId: afterId ?? null, limit: Number(limit)});
+    const page = await list(db, {companyId: scope.companyId, applicantId: scope.applicantId, sourceScope: scope.sourceScope, afterId: afterId ?? null, limit: Number(limit)});
     const pageByteBudget = MAX_RESPONSE_BYTES - Number(limit) * 40 - 256;
     const receipts = [];
     const deferredAcceptanceIds = [];
     let nextCursor = page.nextCursor;
     let consumedId = afterId ?? null;
     const size = values => Buffer.byteLength(JSON.stringify({scope, receipts: values, deferredAcceptanceIds, nextCursor: page.nextCursor}), 'utf8');
-    for (const receipt of page.receipts) {
+    // Merge bounded source deferrals into the existing UUID progress order.
+    // Do not expose a later deferred ID if the response budget stops earlier.
+    const candidates = [...page.receipts.map(receipt => ({id: receipt.acceptanceId, receipt})),
+      ...(page.deferredAcceptanceIds ?? []).map(id => ({id, receipt: null}))]
+      .sort((a, b) => a.id.localeCompare(b.id));
+    for (const candidate of candidates) {
+      if (candidate.receipt === null) {
+        deferredAcceptanceIds.push(candidate.id); consumedId = candidate.id; continue;
+      }
+      const receipt = candidate.receipt;
       const value = await envelope(receipt);
       if (value) {
         if (size([value]) > pageByteBudget) {

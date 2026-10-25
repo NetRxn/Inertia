@@ -35,7 +35,7 @@ The optional owning-host capability applies trusted limits to `netrxn.inertia` h
 
 Request metadata is capped by the reconciler before calling the SDK, including endpoint/credential component caps before JSON measurement. The actual host rejects excess metadata/declared length before DNS/socket work. Response declared length/compression are rejected before collection. The opted-in collector uses fixed bounded storage, aborts overflow/deadline and releases it on completion/failure before RPC; invalid UTF-8 is rejected instead of expanded. JSON-RPC escaping adds a bounded expansion, so this is a 1 MiB raw-body limit, not a claim of a 1 MiB total RPC message or total process memory. The SDK still omits AbortSignal; the host deadline is the actual socket/DNS enforcement.
 
-Source allocation remains a distinct gate: capture reads full activity rows before validation; trusted binding strings/arrays have no per-row byte maximum. The 4,000-character reason and 500-row page limits do not establish a source-memory byte bound. Smaller pages alone cannot close that gate. Byte paging/defer semantics remain unchanged and no database/archive policy is invented.
+Receipt readers now apply action/company/human/responsible-user provenance predicates in SQL and return a fixed-field JSON projection only when its PostgreSQL UTF-8 representation is at most 32 KiB. Member readers additionally prefilter their existing historical application scope; the legacy transport supplies its trusted applicant/source scope before projection. This bounds receipt payload bytes delivered to the driver (at most 500 × 32 KiB per legacy page, plus fixed identity/timestamp overhead), not PostgreSQL execution memory, all process memory, or database scan cost. Oversized candidates retain their IDs in the existing deferred page contract; point reads fail unavailable rather than missing. Response-budget splits merge receipts and deferred IDs in UUID order, and full sweeps retry deferred identities after restart. Member request/history reads also use the bound, so an oversized prior request cannot be treated as missing and reminted. Own-row post-persist verification retains the existing trusted writer contract, including legacy registration sizes; this reader hardening introduces no new write-side size policy. Existing valid receipt contents, UUID cursors, current authority checks and retention requirements are unchanged; no database/archive policy is invented. A native PostgreSQL regression run remains required in addition to the in-process PGlite source-bound tests.
 
 Each invocation permits at most six HTTP requests, including scope handshakes and reserved uncertain-result readback, for at most 90 seconds of opted-in host HTTP time. Company-scoped native state checkpoints each processed/deferred ID. Exhaustion uses existing `ctx.state.delete` (same write capability); get/set-only adapters use a tiny JSON reset marker instead of invalid SQL NULL. Legacy UUID cursors and malformed/unknown state remain conservatively readable as before, and complete sweeps restart from the beginning.
 
@@ -83,3 +83,20 @@ functional rehearsal, not qualification of the actual SDK HTTP/RPC resource boun
 The explicit disposable writer fence is not a production writer/grant policy. Approved
 production writer inventory/fencing, lifecycle/retention, scheduling and a real authenticated
 human walkthrough remain activation gates. No deployment, scheduler or live grant is added.
+
+### Receipt allocation regression checks
+
+After the root build and a locally bootstrapped exact host bundle, run the in-process
+SQL and installer checks with a workspace-local temporary directory:
+
+```sh
+mkdir -p .receipt-test-tmp
+TMPDIR="$PWD/.receipt-test-tmp" node --test --test-concurrency=1 tests/receipt-read-bounds.test.mjs tests/receipt-read-installer.test.mjs
+```
+
+Run from `host-composition/paperclip-durable-funding-review`. These checks use the
+root development PGlite dependency and the actual Drizzle/native reader modules.
+They do not open a database listener or activate the host. They cover pre-driver
+projection, exact UTF-8 byte boundaries, deferred cursor splits, scoped filtering,
+prior-request recovery and source-patch/version guards; they are not a substitute
+for the existing native PostgreSQL qualification suite.

@@ -12,11 +12,11 @@
     },
     "dist/services/funding-review-capture.js": {
       "original_sha256": null,
-      "candidate_sha256": "0b32ae9742072c2a37eae65f16d869e611f59c2b6a6a32e28758845d55df436c"
+      "candidate_sha256": "e16f8d2ff07e23ae4c02d52f478727afdcc3e0f20d3fd30b571b03db9f1ee89b"
     },
     "dist/services/funding-review-capture.d.ts": {
       "original_sha256": null,
-      "candidate_sha256": "d44da630f0740ffd317805cf8daa2930985fee6da8f026f29e4d9cee40db774c"
+      "candidate_sha256": "38e85b378f4bf62687828fce77ae047a0b8f0bac34a028f27eb0e9e3ca0c1a80"
     },
     "dist/app.js": {
       "original_sha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32",
@@ -44,11 +44,15 @@
     },
     "dist/services/member-packet-capture.js": {
       "original_sha256": null,
-      "candidate_sha256": "a6bccf454e7cca3e156616a6549c9fb2c729749ee72106928699255e7e449a65"
+      "candidate_sha256": "d35319c725b22a75ca8f0ed5932af7147f187c9b53ab2eef41ba9957a77ef62c"
     },
     "dist/services/member-packet-capture.d.ts": {
       "original_sha256": null,
-      "candidate_sha256": "b2f1a76578e0ddf466917dedfb33282173db3c5993af7248dce18c132d613a4d"
+      "candidate_sha256": "7fb4d8a600d05f8270717aefbc6c0cb63ce41695c3801e919eee7240380283cf"
+    },
+    "dist/services/activity-receipt-read.js": {
+      "original_sha256": null,
+      "candidate_sha256": "e651acedec84c7bd07441cd4f099fac50de78c22e6fdcb49dcea5a0c6f52a4da"
     }
   }
 }

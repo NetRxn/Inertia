@@ -67,12 +67,13 @@
      pullRequestCacheTtlMs?: number;
 --- a/dist/services/funding-review-capture.js
 +++ b/dist/services/funding-review-capture.js
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,109 @@
 +// Opt-in trusted host extension for pinned Paperclip 2026.1012.0. Not a plugin SDK API.
 +import { createHash } from 'node:crypto';
 +import { and, asc, eq, gt, sql } from 'drizzle-orm';
 +import { activityLog, companies, companyMemberships, documents, issueDocuments, issues, principalPermissionGrants } from '@paperclipai/db';
 +import { persistActivity } from './activity-log.js';
++import {receiptProjection,receiptProvenance,receiptRow,receiptPage} from './activity-receipt-read.js';
 +const SCHEMA = 'inertia.funding-acceptance.v1';
 +const ACTION = 'funding.review.accepted';
 +const ROLES = new Set(['program','fiscal','legal_compliance','partner','authorized_representative']);
@@ -147,7 +148,7 @@
 +                if (item.verdict==='defer') continue;
 +                const command={decisionKey:key(b),binding:structuredClone(b),actorUserId:actor.userId,action:b.kind==='proposal'?(item.verdict==='approve'?'accepted':'rejected'):(item.verdict==='approve'?'approved':'changes_requested'),reason:item.reason??'',resolvedAt:new Date(item.resolvedAt).toISOString()};
 +                const details={schema:SCHEMA,command,commandHash:digest(command)};
-+                const prior=await tx.select().from(activityLog).where(and(eq(activityLog.companyId,b.companyId),eq(activityLog.action,ACTION),eq(activityLog.actorType,'user'),sql`${activityLog.details}->'command'->>'decisionKey' = ${command.decisionKey}`));
++                const prior=await tx.select({id:activityLog.id}).from(activityLog).where(and(eq(activityLog.companyId,b.companyId),eq(activityLog.action,ACTION),eq(activityLog.actorType,'user'),sql`${activityLog.details}->'command'->>'decisionKey' = ${command.decisionKey}`)).limit(1);
 +                requireValue(prior.length===0,'Native item already has an acceptance; refusing to remint');
 +                const persisted=await persistActivity(tx,{companyId:b.companyId,actorType:'user',actorId:actor.userId,responsibleUserIdOverride:actor.userId,action:ACTION,entityType:'issue',entityId:b.issueId,details});
 +                const [stored]=await tx.select().from(activityLog).where(eq(activityLog.id,persisted.activity.id));
@@ -159,15 +160,20 @@
 +        /** Read existing activity only. Never reconstruct authority from current cards. */
 +        async readAcceptance(db,acceptanceId) {
 +            if (typeof acceptanceId!=='string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(acceptanceId)) return null;
-+            const [row]=await db.select().from(activityLog).where(eq(activityLog.id,acceptanceId));return row && readableCompanies.has(row.companyId) ? validateStored(row) : null;
++            const [row]=await db.select(receiptProjection).from(activityLog).where(and(eq(activityLog.id,acceptanceId),receiptProvenance(ACTION,[...readableCompanies])));return validateStored(receiptRow(row));
 +        },
 +        /** A reconciliation sweep must restart from null after exhausting pages.
 +         * UUID/order is not commit order; a permanent high-water mark can miss commits. */
-+        async listAcceptances(db,{companyId,afterId=null,limit=100}) {
++        async listAcceptances(db,{companyId,afterId=null,limit=100,applicantId,sourceScope}) {
 +            requireValue(readableCompanies.has(companyId),'Receipt reader company scope mismatch');
 +            requireValue(Number.isSafeInteger(limit) && limit>=1 && limit<=500,'Invalid receipt page size');
-+            const rows=await db.select().from(activityLog).where(and(eq(activityLog.companyId,companyId),eq(activityLog.action,ACTION),eq(activityLog.actorType,'user'),...(afterId?[gt(activityLog.id,afterId)]:[]))).orderBy(asc(activityLog.id)).limit(limit);
-+            return {receipts:rows.map(validateStored).filter(Boolean),nextCursor:rows.length===limit?rows.at(-1).id:null};
++            requireValue(afterId===null||typeof afterId==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(afterId),'Invalid receipt cursor');
++            // Optional trusted transport scope excludes foreign oversized candidates
++            // before projection; it never replaces exact receipt validation.
++            const scoped=applicantId!==undefined||sourceScope!==undefined;
++            requireValue(!scoped||[applicantId,sourceScope].every(v=>typeof v==='string'&&v.length>0&&v.length<=256),'Invalid receipt transport scope');
++            const rows=await db.select(receiptProjection).from(activityLog).where(and(receiptProvenance(ACTION,[companyId]),...(scoped?[sql`${activityLog.details} #>> '{command,binding,applicantId}' = ${applicantId}`,sql`${activityLog.details} #>> '{command,binding,sourceScope}' = ${sourceScope}`]:[]),...(afterId?[gt(activityLog.id,afterId)]:[]))).orderBy(asc(activityLog.id)).limit(limit);
++            return receiptPage(rows,validateStored,limit);
 +        },
 +    };
 +}
@@ -213,7 +219,7 @@
 +    captureInTransaction: NonNullable<IssueThreadInteractionServiceOptions['captureItemVerdictsInTransaction']>;
 +    readAcceptance(db: Db, acceptanceId: string): Promise<FundingAcceptanceReceipt | null>;
 +    /** Restart full sweeps after every exhausted scan; UUID order is not commit order. */
-+    listAcceptances(db: Db, input: {companyId:string;afterId?:string|null;limit?:number}): Promise<{receipts:FundingAcceptanceReceipt[];nextCursor:string|null}>;
++    listAcceptances(db: Db, input: {companyId:string;afterId?:string|null;limit?:number;applicantId?:string;sourceScope?:string}): Promise<{receipts:FundingAcceptanceReceipt[];deferredAcceptanceIds?:string[];nextCursor:string|null}>;
 +};
 --- a/dist/app.js
 +++ b/dist/app.js
@@ -640,11 +646,12 @@
          flushPendingFeedbackTraces(input?: {
 --- a/dist/services/member-packet-capture.js
 +++ b/dist/services/member-packet-capture.js
-@@ -0,0 +1,98 @@
+@@ -0,0 +1,99 @@
 +// Trusted native host composition only. No plugin/agent/request authority entrypoint.
 +import {and,asc,eq,gt,sql} from 'drizzle-orm';
 +import {activityLog,authUsers,companies,companyMemberships,documents,issueDocuments,issues} from '@paperclipai/db';
 +import {persistActivity} from './activity-log.js';
++import {receiptProjection,receiptProvenance,receiptApplicationScope,receiptRow,receiptPage} from './activity-receipt-read.js';
 +import {assertIssueReviewVerdictActorAllowed} from './issue-review-policy.js';
 +const ACTION='member.packet.review.accepted';
 +const SCHEMA='inertia.member-native-storage.v2';
@@ -731,11 +738,11 @@
 +   }
 +   return publications;
 +  },
-+  async readAcceptance(db,id){if(typeof id!=='string'||!UUID.test(id))return null;const [row]=await db.select().from(activityLog).where(eq(activityLog.id,id));return stored(row);},
++  async readAcceptance(db,id){if(typeof id!=='string'||!UUID.test(id))return null;const [row]=await db.select(receiptProjection).from(activityLog).where(and(eq(activityLog.id,id),receiptProvenance(ACTION,bindings.map(b=>b.companyId)),receiptApplicationScope(bindings)));return stored(receiptRow(row));},
 +  async listAcceptances(db,{companyId,afterId=null,limit=100}){
 +   requireValue(bindings.some(b=>b.companyId===companyId)&&Number.isSafeInteger(limit)&&limit>=1&&limit<=500&&(afterId===null||typeof afterId==='string'&&UUID.test(afterId)),'Invalid scoped member acceptance page');
-+   const rows=await db.select().from(activityLog).where(and(eq(activityLog.companyId,companyId),eq(activityLog.action,ACTION),...(afterId?[gt(activityLog.id,afterId)]:[]))).orderBy(asc(activityLog.id)).limit(limit);
-+   return{receipts:rows.map(stored).filter(Boolean),nextCursor:rows.length===limit?rows.at(-1).id:null};
++   const rows=await db.select(receiptProjection).from(activityLog).where(and(receiptProvenance(ACTION,[companyId]),receiptApplicationScope(bindings),...(afterId?[gt(activityLog.id,afterId)]:[]))).orderBy(asc(activityLog.id)).limit(limit);
++   return receiptPage(rows,stored,limit);
 +  }
 + });
 +}
@@ -794,7 +801,7 @@
 + handlesNativeReview(companyId:string,issueId:string,interactionId:string):boolean;
 + captureInTransaction(tx:Tx,source:MemberNativeSource):Promise<ActivityPublication[]>;
 + readAcceptance(db:Db,id:string):Promise<MemberNativeAcceptance|null>;
-+ listAcceptances(db:Db,input:{companyId:string;afterId?:string|null;limit?:number}):Promise<{receipts:MemberNativeAcceptance[];nextCursor:string|null}>;
++ listAcceptances(db:Db,input:{companyId:string;afterId?:string|null;limit?:number}):Promise<{receipts:MemberNativeAcceptance[];deferredAcceptanceIds?:string[];nextCursor:string|null}>;
 +}
 +export declare function createMemberPacketCapture(config?:{enabled?:false}):MemberPacketCapture;
 +export declare function createMemberPacketCapture(config:{
@@ -806,3 +813,17 @@
 +}):MemberPacketCapture;
 +/** Root database capability, supplied only by owning app construction. */
 +export interface MemberPacketReviewCapability extends Pick<MemberPacketCapture,'handlesNativeReview'|'captureInTransaction'> {readonly db:Db;}
+--- a/dist/services/activity-receipt-read.js
++++ b/dist/services/activity-receipt-read.js
+@@ -0,0 +1,11 @@
++/** Fixed SQL projection: bound driver/JS receipt allocation, not PostgreSQL
++ * execution memory. Oversized candidates retain their UUID for deferred sweeps. */
++import {and,eq,inArray,isNull,or,sql} from 'drizzle-orm';
++import {activityLog} from '@paperclipai/db';
++export const MAX_ACTIVITY_RECEIPT_BYTES=32768;
++const source=sql`jsonb_build_object('id',${activityLog.id},'companyId',${activityLog.companyId},'actorType',${activityLog.actorType},'actorId',${activityLog.actorId},'agentId',${activityLog.agentId},'runId',${activityLog.runId},'action',${activityLog.action},'entityType',${activityLog.entityType},'entityId',${activityLog.entityId},'responsibleUserId',${activityLog.responsibleUserId},'createdAt',${activityLog.createdAt},'details',${activityLog.details})`;
++export const receiptProjection=Object.freeze({id:activityLog.id,createdAt:activityLog.createdAt,payload:sql`case when octet_length(${source}::text)<=${MAX_ACTIVITY_RECEIPT_BYTES} then ${source} else null end`});
++export function receiptProvenance(action,companyIds){return and(eq(activityLog.action,action),eq(activityLog.actorType,'user'),isNull(activityLog.agentId),isNull(activityLog.runId),eq(activityLog.entityType,'issue'),eq(activityLog.responsibleUserId,activityLog.actorId),companyIds.length?inArray(activityLog.companyId,[...new Set(companyIds)]):sql`false`);}
++export function receiptApplicationScope(bindings){return bindings.length?or(...bindings.map(b=>and(eq(activityLog.companyId,b.companyId),sql`${activityLog.details} #>> '{binding,policy,scope,applicationId}' = ${b.policy.scope.applicationId}`))):sql`false`;}
++export function receiptRow(row){if(!row)return null;if(row.payload===null)throw Error('Native receipt source exceeds its bound');return{...row.payload,createdAt:row.createdAt};}
++export function receiptPage(rows,decode,limit){return{receipts:rows.filter(row=>row.payload!==null).map(row=>decode(receiptRow(row))).filter(Boolean),deferredAcceptanceIds:rows.filter(row=>row.payload===null).map(row=>row.id),nextCursor:rows.length===limit?rows.at(-1).id:null};}
