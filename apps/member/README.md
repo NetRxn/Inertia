@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inertia member app
 
-## Getting Started
+The place where FWTX DAO members see and touch Inertia. A verified member logs in with their email and gets a feed of what's happening in the DAO, the work that needs a person, a place to share ideas, and an assistant that answers questions about anything the DAO knows and cites where each answer came from.
 
-First, run the development server:
+It's a self-contained Next.js app. Every outside system sits behind a TypeScript adapter, and v1 runs entirely on synthetic fixture data, so it can be built and tried before partner access exists. The app never keeps its own task or approval ledger, and Robert's Rules proposals are read-only.
+
+Design: [`docs/superpowers/specs/2026-10-24-member-app-design.md`](../../docs/superpowers/specs/2026-10-24-member-app-design.md). Plan: [`docs/superpowers/plans/2026-10-24-member-app.md`](../../docs/superpowers/plans/2026-10-24-member-app.md).
+
+## Setup
+
+Requires Node 24.11 or later. Run everything from `apps/member/`:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+cp .env.example .env.local   # optional: every variable has a working default
+npm run seed                 # migrates the local PGlite database, syncs fixture members, adds sample shares
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The database lives in `data/pglite` (git-ignored). No Docker is needed. Set `DATABASE_URL` to use a real Postgres instead; the app's tables live in the `member_app` schema.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Logging in
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Open http://localhost:3000 and enter a fixture email, such as `ana@example.org`. Every fixture member is invented; the list is in `src/adapters/fixtures/dao.ts` (`pat@example.org` is the inactive one and can't log in).
+2. In development no mail is sent. The login link is printed in the dev server's console and written to `data/dev-mail/<email>.txt`.
+3. Open that link. It works once and expires after 15 minutes. Unknown emails get the same "check your email" response, and no link.
 
-## Learn More
+## The chat assistant
 
-To learn more about Next.js, take a look at the following resources:
+The chat runs on the Vercel AI SDK, so the provider is a setting. Put these in `.env.local`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+MEMBER_APP_MODEL_PROVIDER=anthropic
+MEMBER_APP_MODEL=claude-opus-5-5
+ANTHROPIC_API_KEY=...
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Any OpenAI-compatible server (a local model, for example) works with `MEMBER_APP_MODEL_PROVIDER=openai-compatible`, `MEMBER_APP_MODEL_BASE_URL` and `MEMBER_APP_MODEL_API_KEY`. Without a provider, the rest of the app works and the chat says it isn't configured yet.
 
-## Deploy on Vercel
+The assistant reads through tools over the adapters and treats all meeting, chat and share text as data, never as instructions. Its only tool that writes anything is `draftDocument`, which saves to the member's own drafts (Docs → My drafts, downloadable as Markdown).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Tests
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run typecheck
+npm test          # Vitest
+npm run build
+npm run e2e       # Playwright; needs Chromium: npx playwright install chromium
+```
+
+E2E starts its own dev server on port 3100 with a fresh database, link previews off and a scripted mock model (`MEMBER_APP_MODEL_PROVIDER=mock`), so it needs no API key. Each spec logs in as members no other spec uses, because claims and shares persist for the run.
+
+## Adapters
+
+| Adapter | Real source (later) | Provides | Status |
+|---|---|---|---|
+| `MemberDirectory` | Robert's Rules member list | members: id, email, display name, active | Fixture only |
+| `ProposalSource` | Robert's Rules | proposals: title, status, dates, tallies, link | Fixture only |
+| `WorkSource` | Paperclip | initiatives, tasks needing a person, weekly completions, `claim` | Fixture only |
+| `MeetingSource` | Roundtable output / DAO Postgres | meetings: summary, decisions, open questions, action items | Fixture only |
+| `ChatSource` | Buzz via the bridge / DAO Postgres | threads and recent messages | Fixture only |
+| `EventSource` | To be decided | upcoming events | Fixture only |
+
+The interfaces are in `src/adapters/types.ts`, and `MEMBER_APP_ADAPTERS` selects the set (only `fixture` exists). Nothing in the UI or the assistant knows which implementation is active.
+
+## Questions for partners
+
+These don't block the local build. For NetRxn:
+
+1. Should the member app live in `NetRxn/Inertia` (as `apps/member`) or in its own repo?
+2. Which Paperclip API should the app use to read tasks needing a person and to record a claim?
+3. Can the app have its own `member_app` schema and role on the DAO Postgres, and who provisions it?
+4. Can the app read meeting summaries and Buzz messages through the SQL knowledge tools?
+
+For the Robert's Rules builder:
+
+5. How can Inertia read the member list, and should login verify the email itself or delegate to Robert's Rules?
+6. Is there a way to read proposals and vote tallies?

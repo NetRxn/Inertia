@@ -35,7 +35,7 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
   const DAY = 24 * 60 * 60 * 1000;
   const HOUR = 60 * 60 * 1000;
 
-  // 12 members (one inactive)
+  // 13 members (one inactive). Lee is the full-journey e2e's own member.
   const members: DirectoryMember[] = [
     { externalId: 'm-ana', email: 'ana@example.org', displayName: 'Ana Rodriguez', active: true },
     { externalId: 'm-rob', email: 'rob@example.org', displayName: 'Rob Chen', active: true },
@@ -48,6 +48,7 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     { externalId: 'm-taylor', email: 'taylor@example.org', displayName: 'Taylor Johnson', active: true },
     { externalId: 'm-quinn', email: 'quinn@example.org', displayName: 'Quinn Brown', active: true },
     { externalId: 'm-drew', email: 'drew@example.org', displayName: 'Drew Wilson', active: true },
+    { externalId: 'm-lee', email: 'lee@example.org', displayName: 'Lee Okafor', active: true },
     { externalId: 'm-pat', email: 'pat@example.org', displayName: 'Pat Garcia', active: false },
   ];
 
@@ -104,6 +105,19 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
       estimateMinutes: 90,
       due: relativeDate(7 * DAY),
       prepared: 'Inertia compiled contact info for three nearby schools and drafted an intro email.',
+      status: 'open',
+      claimedBy: null,
+      completedBy: null,
+      completedAt: null,
+    },
+    {
+      id: 'task-8',
+      initiativeId: 'init-coding',
+      title: 'Photograph the first coding night',
+      kind: 'real-world',
+      estimateMinutes: 45,
+      due: relativeDate(5 * DAY),
+      prepared: 'Inertia listed the shots the grant report needs and checked the library photo policy.',
       status: 'open',
       claimedBy: null,
       completedBy: null,
