@@ -56,6 +56,29 @@ beforeEach(async () => {
 });
 
 describe('createAssistantTools', () => {
+  it('names action-item owners and chat authors by display name, never by member id', async () => {
+    const withPeople: Meeting = {
+      ...meeting('m1', 'Garden planning', 'We picked the north lot.'),
+      actionItems: [
+        { text: 'Submit the grant', owner: 'm-ana' },
+        { text: 'Order soil', owner: 'm-gone' },
+        { text: 'Design signs', owner: null },
+      ],
+    };
+    const adapters = adaptersWithMeetings([withPeople]);
+    const tools = createAssistantTools({ adapters, db, memberId: ana.id }, () => {});
+
+    const meetings = (await run(tools, 'searchMeetings', { query: '' })) as { results: string[] };
+    expect(meetings.results[0]).toContain('- Submit the grant (Ana Rodriguez)');
+    expect(meetings.results[0]).toContain('- Order soil (a member)');
+    expect(meetings.results[0]).toContain('- Design signs\n');
+    expect(meetings.results[0]).not.toMatch(/\bm-(ana|gone)\b/);
+
+    const chat = (await run(tools, 'searchChat', { query: 'garden grant' })) as { results: string[] };
+    expect(chat.results.join('\n')).toContain('Ana Rodriguez (');
+    expect(chat.results.join('\n')).not.toMatch(/\bm-ana\b/);
+  });
+
   it('exposes exactly the seven tools', () => {
     const tools = createAssistantTools({ adapters: createFixtureAdapters(), db, memberId: ana.id }, () => {});
     expect(Object.keys(tools).sort()).toEqual(

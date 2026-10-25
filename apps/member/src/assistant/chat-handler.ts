@@ -81,7 +81,10 @@ export function createChatHandler(deps: ChatHandlerDeps) {
     }
 
     const history = await listMessages(deps.db, conversationId);
-    const messages: ModelMessage[] = history.map((m) => ({ role: m.role, content: m.content }));
+    // An empty message would reach the provider as empty content, which it rejects.
+    const messages: ModelMessage[] = history
+      .filter((m) => m.content.trim())
+      .map((m) => ({ role: m.role, content: m.content }));
     if (history.length === 0) {
       // A new conversation: hand the assistant what changed so it can greet.
       const greeting = await buildGreetingContext(deps.adapters, member, null, deps.now?.() ?? new Date());
@@ -109,7 +112,10 @@ export function createChatHandler(deps: ChatHandlerDeps) {
       stopWhen: isStepCount(MAX_STEPS),
       onEnd: async ({ text }) => {
         await appendMessage(deps.db, conversationId, { role: 'user', content: body.message, sources: [] });
-        await appendMessage(deps.db, conversationId, { role: 'assistant', content: text, sources: dedupe(collected) });
+        // A reply with no text (every step spent on tool calls) isn't kept.
+        if (text.trim()) {
+          await appendMessage(deps.db, conversationId, { role: 'assistant', content: text, sources: dedupe(collected) });
+        }
       },
     });
 

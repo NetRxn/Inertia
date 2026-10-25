@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createTestDb } from '../src/db/test-db';
 import type { Db } from '../src/db/client';
 import { members, files as filesTable } from '../src/db/schema';
-import { saveUpload } from '../src/shares/files';
+import { contentDisposition, saveUpload } from '../src/shares/files';
 import { ShareValidationError } from '../src/shares/shares';
 
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x00]);
@@ -126,5 +126,27 @@ describe('saveUpload', () => {
     // The directory holds exactly one file: the random key.
     const stored = await fs.readdir(storageDir);
     expect(stored).toEqual([row.path.slice(storageDir.length + 1)]);
+  });
+});
+
+describe('contentDisposition', () => {
+  it('keeps a non-Latin name as filename* and an ASCII fallback, so the header is always valid', () => {
+    const header = contentDisposition('inline', '会议纪要 🌱.png');
+    expect(header).toBe(`inline; filename="file.png"; filename*=UTF-8''${encodeURIComponent('会议纪要 🌱.png')}`);
+    expect(() => new Response(null, { headers: { 'Content-Disposition': header } })).not.toThrow();
+  });
+
+  it('passes a plain ASCII name through and strips quotes, backslashes and line breaks', () => {
+    expect(contentDisposition('attachment', 'garden plan.pdf')).toBe(
+      `attachment; filename="garden plan.pdf"; filename*=UTF-8''garden%20plan.pdf`,
+    );
+    const header = contentDisposition('attachment', 'a"b\\c\r\nd.pdf');
+    expect(header.startsWith('attachment; filename="abcd.pdf";')).toBe(true);
+    expect(header).not.toMatch(/[\r\n]/);
+    expect(() => new Response(null, { headers: { 'Content-Disposition': header } })).not.toThrow();
+  });
+
+  it('keeps the ASCII part of a mixed name', () => {
+    expect(contentDisposition('inline', 'Café menu.png')).toMatch(/^inline; filename="Caf menu\.png"; filename\*=/);
   });
 });

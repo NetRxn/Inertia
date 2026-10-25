@@ -2,6 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { Adapters, ChatThread, HumanTask, Initiative, Meeting, Proposal, SourceRef } from '../adapters/types';
 import type { Db } from '../db/client';
+import { members } from '../db/schema';
 import type { ShareSummary } from '../feed/build-feed';
 import { getDocument, saveDocument, type Document } from '../documents/documents';
 import { listShares } from '../shares/shares';
@@ -26,7 +27,17 @@ function lines(label: string, items: string[]): string[] {
   return items.length ? [`${label}:`, ...items.map((item) => `- ${item}`)] : [];
 }
 
-function meetingSource(meeting: Meeting): Source {
+/** Turns a member external id into the name people know them by. */
+type NameOf = (externalId: string) => string;
+
+/** Display names by external id, so no member id ever reaches the model. */
+async function memberNames(db: Db): Promise<NameOf> {
+  const rows = await db.select({ externalId: members.externalId, displayName: members.displayName }).from(members);
+  const names = new Map(rows.map((row) => [row.externalId, row.displayName]));
+  return (externalId) => names.get(externalId) ?? 'a member';
+}
+
+function meetingSource(meeting: Meeting, nameOf: NameOf): Source {
   return {
     ref: ref('meeting', meeting.id, meeting.title, meeting.transcriptUrl),
     text: [
@@ -36,7 +47,7 @@ function meetingSource(meeting: Meeting): Source {
       ...lines('Open questions', meeting.openQuestions),
       ...lines(
         'Action items',
-        meeting.actionItems.map((item) => (item.owner ? `${item.text} (${item.owner})` : item.text)),
+        meeting.actionItems.map((item) => (item.owner ? `${item.text} (${nameOf(item.owner)})` : item.text)),
       ),
     ].join('\n'),
   };
@@ -84,13 +95,13 @@ function taskSource(task: HumanTask, initiativeTitle: string | undefined): Sourc
   };
 }
 
-function chatSource(thread: ChatThread): Source {
+function chatSource(thread: ChatThread, nameOf: NameOf): Source {
   return {
     ref: ref('chat', thread.id, thread.title),
     text: [
       `Channel: ${thread.channel}`,
       thread.summary ? `Summary: ${thread.summary}` : null,
-      ...thread.messages.map((message) => `${message.author} (${message.at}): ${message.text}`),
+      ...thread.messages.map((message) => `${nameOf(message.author)} (${message.at}): ${message.text}`),
     ]
       .filter((line): line is string => line !== null)
       .join('\n'),
@@ -153,7 +164,8 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
         const meetings = query.trim()
           ? await ctx.adapters.meetings.search(query)
           : await ctx.adapters.meetings.listMeetings(MAX_RESULTS);
-        return results(meetings.map(meetingSource));
+        const nameOf = await memberNames(ctx.db);
+        return results(meetings.map((meeting) => meetingSource(meeting, nameOf)));
       },
     }),
 
@@ -184,7 +196,10 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
     searchChat: tool({
       description: 'Search chat threads by title, summary and messages.',
       inputSchema: query,
-      execute: async ({ query }) => results((await ctx.adapters.chat.search(query)).map(chatSource)),
+      execute: async ({ query }) => {
+        const [threads, nameOf] = await Promise.all([ctx.adapters.chat.search(query), memberNames(ctx.db)]);
+        return results(threads.map((thread) => chatSource(thread, nameOf)));
+      },
     }),
 
     searchShares: tool({
