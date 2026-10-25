@@ -2,7 +2,10 @@ import type { Adapters, ChatThread, DaoEvent, HumanTask, Initiative, Meeting, Pr
 import type { Member } from '../identity/session';
 import { weekBounds } from './week';
 
-/** A member's post, as the home feed shows it. Task 7 fills these from the shares table. */
+/**
+ * A member's post, as the home feed shows it. Task 7 fills these from the
+ * shares table; the Task 7 fields are additive so Task 5 consumers keep working.
+ */
 export type ShareSummary = {
   id: string;
   kind: 'idea' | 'resource' | 'event' | 'update';
@@ -11,6 +14,13 @@ export type ShareSummary = {
   previewTitle: string | null;
   authorName: string;
   createdAt: string;
+  /** Task 7 additions (all optional). */
+  authorExternalId?: string;
+  isMine?: boolean;
+  previewDescription?: string | null;
+  previewImageUrl?: string | null;
+  fileId?: string | null;
+  fileName?: string | null;
 };
 
 export type FeedCard =

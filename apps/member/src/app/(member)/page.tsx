@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { getAdapters } from '../../adapters';
 import { requireMember } from '../../identity/session';
+import { getDb } from '../../db/client';
+import { listShares } from '../../shares/shares';
 import { buildFeed } from '../../feed/build-feed';
 import { FeedCards } from '../../components/cards/FeedCards';
 import { firstName } from '../../components/cards/format';
@@ -9,8 +11,11 @@ import styles from './home.module.css';
 async function HomeFeed() {
   const member = await requireMember();
   const now = new Date();
-  // Shares arrive with Task 7; until then the feed has none.
-  const cards = await buildFeed(getAdapters(), member, [], now);
+  const shares = (await listShares(getDb(), { limit: 3 })).map((share) => ({
+    ...share,
+    isMine: share.authorExternalId === member.externalId,
+  }));
+  const cards = await buildFeed(getAdapters(), member, shares, now);
 
   return (
     <>
