@@ -126,6 +126,28 @@ Do not force a grant application onto this objective. Link an actual funding opp
   return {missing:[],tasks,files};
 }
 
+// Offline setup check only: snapshots grant no authority and are never mutated.
+export function checkDraftingTasks(binding,producer,reviewer) {
+  const errors=[];
+  const object=v=>!!v && typeof v==='object' && !Array.isArray(v);
+  const actors=[binding?.producer,binding?.reviewer];
+  if (!object(binding) || !['companyId','projectId'].every(k=>present(binding[k])) ||
+      actors.some(a=>!object(a)||!present(a.issueId)||!present(a.agentId)) ||
+      actors[0]?.issueId===actors[1]?.issueId || actors[0]?.agentId===actors[1]?.agentId)
+    errors.push('missing or non-independent configured drafting task identities');
+  for (const [index,row] of [producer,reviewer].entries()) {
+    if (!object(row) || row.id!==actors[index]?.issueId || row.companyId!==binding?.companyId ||
+        row.projectId!==binding?.projectId || row.assigneeAgentId!==actors[index]?.agentId)
+      errors.push(index===0?'producer task readback does not match configured binding':'reviewer task readback does not match configured binding');
+  }
+  if (!Array.isArray(reviewer?.blockedBy) || reviewer.blockedBy.some(row=>!object(row)||!present(row.id)))
+    errors.push('reviewer requires a fresh native issue-get readback with explicit blockedBy relations');
+  else if (reviewer.blockedBy.some(row=>row.id===binding?.producer?.issueId))
+    errors.push('reviewer must not depend on producer completion while producer awaits its review; retain parent hierarchy and unrelated dependencies');
+  return {reviewDependencyValid:errors.length===0,qualified:false,errors,
+    note:'Offline task-binding/dependency snapshot check only. Not authorization, live wake readiness, candidate review or runtime qualification. No task or dependency was changed.'};
+}
+
 // Content/coverage check only. Native provenance and measurements belong to PR60.
 export function checkOutcome(workspace,saved,packet) {
   const errors=[];
@@ -173,9 +195,13 @@ async function main(args) {
     await mkdir(args[2],{recursive:false,mode:0o700});
     for (const [name,body] of Object.entries({...result.files,'tasks.json':JSON.stringify(result.tasks,null,2)})) await writeFile(resolve(args[2],name),body,{flag:'wx',mode:0o600});
     console.log('Prepared native task documents only; no host, tool or model was called.');
+  } else if (args[0]==='check-drafting-tasks' && args.length===4) {
+    const inputs=await Promise.all(args.slice(1).map(async p=>JSON.parse(await readFile(p,'utf8'))));
+    inputs.forEach(rejectSecrets);
+    const result=checkDraftingTasks(...inputs); console.log(JSON.stringify(result,null,2)); process.exitCode=result.reviewDependencyValid?0:1;
   } else if (args[0]==='check' && args.length===4) {
     const inputs=await Promise.all(args.slice(1).map(async p=>JSON.parse(await readFile(p,'utf8'))));
     const result=checkOutcome(...inputs); console.log(JSON.stringify(result,null,2)); process.exitCode=result.readyForHumanQualityReview?0:1;
-  } else { console.error('Usage: node run-package.mjs prepare runtime-inputs.json NEW_OUTPUT_DIRECTORY | check workspace.json save-response.json packet-checklist.json'); process.exitCode=2; }
+  } else { console.error('Usage: node run-package.mjs prepare runtime-inputs.json NEW_OUTPUT_DIRECTORY | check workspace.json save-response.json packet-checklist.json | check-drafting-tasks binding.json producer-issue.json reviewer-issue.json'); process.exitCode=2; }
 }
 if (process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) main(process.argv.slice(2)).catch(()=>{console.error('Input or preparation error; inspect inputs locally. No remote action was attempted.');process.exitCode=2;});

@@ -33,6 +33,17 @@ Limits: initial request 128 KiB; each frame at most 1 MiB; at most 1,024 callbac
 
 A saved candidate links to the existing suggestion before review dispatch. The reviewer gets an immutable native issue document containing only public work plus a wake with `idempotencyKey=request_id`. Pending returns promptly. Native document JSON is not reviewer identity proof. The reviewer completion tool authenticates its own current run and the private domain admits an authoritative `CandidateReviewRecord`. Only then does the host wake the configured producer using `dfw-public-review-completed:<request_id>`. Wake retries reuse these native keys; the existing candidate/suggestion/review rows provide domain idempotency. There is no new coordinator or task ledger. Optional gap-plan review and automatic repair remain disabled in this adapter.
 
+Task setup must allow that review before producer completion. The reviewer can
+retain the producer as its native parent, but must not have a `blockedBy`
+completion dependency on that producer while the producer awaits review. That
+cycle causes the native scheduler to reject review wakes as
+`issue_dependencies_blocked`. Check fresh native issue readbacks with the existing
+[offline task-binding preflight](../scripts/funding-native-run/README.md#independent-reviewer-dependency-prerequisite)
+before waking review. An authorized operator may remove only that task-owned
+edge through the supported task UI/API, preserving parent hierarchy, unrelated
+dependencies and all security/recovery holds. No adapter code rewrites the graph,
+marks the producer complete, or bypasses exact candidate/run/role authorization.
+
 The domain record remains authoritative if a response or wake is lost. Retrying the original proposal consumes the stored review. An identical completion replay by the configured reviewer can recover the producer wake without rewriting the original review identity; changed artifacts, wrong principals and stale workspace evidence are rejected.
 
 ## Qualification boundary
