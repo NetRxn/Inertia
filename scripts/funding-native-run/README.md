@@ -63,6 +63,51 @@ For candidate preparation, inspect only its selected objective and available ros
 
 One authorized provider smoke for each adapter may verify its real native run/tool invocation. Use the existing native issue/agent UI or approved adapter test flow, not a new subprocess executor. Label the smoke as smoke. For a funding objective (including the full rehearsal), confirm all four funding SQL tool names and workspace/save tools are admitted; invoke only appropriate read calls with real scoped inputs. For a general-member candidate, verify only the tools actually needed by its selected objective, including its authorized knowledge-query and public search/read bindings; do not require unrelated funding workspace/save tools. Scope-unavailable is a blocker, not zero results. Calling the stock MCP may initialize state, so this is a runtime-authorized smoke, not a supposedly inert cloud read.
 
+### Independent reviewer dependency prerequisite
+
+When the producer awaits independent review, the reviewer may remain its child
+(`parentId` points to the producer), but must not depend on that producer's
+completion through `blockedBy`. Such an edge makes the producer wait for review
+while the native scheduler refuses to wake the reviewer with
+`issue_dependencies_blocked`. Parent hierarchy does not require this completion
+dependency. Do not mark the producer done to release review.
+
+Before the review wake, capture fresh authorized `issue get` readbacks for the
+configured producer and reviewer. Use their native issue objects, including the
+reviewer's explicit `blockedBy` array of related issues with `id` fields; a
+missing array is not evidence of no dependencies. Keep these snapshots protected.
+Create a non-secret binding file from the existing trusted `publicDrafting`
+mapping, containing only:
+
+```json
+{
+  "companyId": "ACTUAL_COMPANY_ID",
+  "projectId": "ACTUAL_PROJECT_ID",
+  "producer": {"issueId": "ACTUAL_PRODUCER_ISSUE_ID", "agentId": "ACTUAL_PRODUCER_AGENT_ID"},
+  "reviewer": {"issueId": "ACTUAL_REVIEWER_ISSUE_ID", "agentId": "ACTUAL_REVIEWER_AGENT_ID"}
+}
+```
+
+```sh
+node scripts/funding-native-run/run-package.mjs check-drafting-tasks /protected/binding.json /protected/producer-issue.json /protected/reviewer-issue.json
+```
+
+This offline check matches both issue/company/project/assignee identities and
+rejects the reviewer-to-producer completion edge. Exit 0 means this snapshot
+passes that narrow setup invariant; exit 1 reports a mismatch, missing readback
+or prohibited edge; exit 2 indicates invalid JSON/CLI/read inputs. It neither
+fetches nor edits tasks, grants authorization, checks all dependencies, or proves
+live wake readiness. Unrelated prerequisites may still legitimately block work.
+
+If that task-owned producer-completion edge is present, an authorized operator
+must reconcile it through the supported native task UI/API: remove only the
+producer's ID from `blockedByIssueIds`, preserving all other dependencies and
+`parentId`. Use `blockedByIssueIds: []` only when it was the sole dependency.
+Read back both tasks, repeat the check, and inspect native wake/run receipts.
+Do not remove security holds, execution recovery controls, other prerequisites,
+or any candidate/hash/actor checks. The helper performs no automatic removal or
+dependency-graph rewrite, and stale snapshots are not live permission.
+
 ## 3. Attach objective instructions and launch through native work
 
 Do this only after runtime access and the bounded model run are authorized. For one objective, copy `ISSUE_ID`, `DOCUMENT_KEY`, coordinator `AGENT_ID`, and `IDEMPOTENCY_KEY` from `tasks.json`; `TASK_FILE` is the corresponding prepared Markdown file. These are ordinary existing native commands, not an execution script:

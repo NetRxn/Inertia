@@ -6,6 +6,44 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { prepare, checkOutcome } from './run-package.mjs';
 
+test('task preflight rejects the real native reviewer completion cycle without treating parent hierarchy as a dependency', async () => {
+  const root=await mkdtemp(join(tmpdir(),'review-dependency-unit-'));
+  const binding={companyId:'company',projectId:'project',producer:{issueId:'producer',agentId:'alpha'},reviewer:{issueId:'reviewer',agentId:'beta'}};
+  const producer={id:'producer',companyId:'company',projectId:'project',assigneeAgentId:'alpha',parentId:null,status:'blocked',blockedBy:[],blocks:[]};
+  const reviewer={id:'reviewer',companyId:'company',projectId:'project',assigneeAgentId:'beta',parentId:'producer',status:'todo',blockedBy:[],blocks:[]};
+  const blocker={id:'producer',identifier:'INE-2',title:'Funding preparation',status:'in_progress',priority:'medium',assigneeAgentId:'alpha',assigneeUserId:null,scheduledRetry:null,activeRecoveryAction:null};
+  try {
+    const paths=['binding','producer','reviewer'].map(n=>join(root,n+'.json'));
+    const run=async (b,p,r)=>{
+      const bytes=[b,p,r].map(v=>JSON.stringify(v));
+      await Promise.all(paths.map((p,i)=>writeFile(p,bytes[i])));
+      const result=spawnSync(process.execPath,[new URL('./run-package.mjs',import.meta.url).pathname,'check-drafting-tasks',...paths],{encoding:'utf8'});
+      assert.deepEqual(await Promise.all(paths.map(p=>readFile(p,'utf8'))),bytes,'Preflight must not rewrite task/dependency snapshots');
+      return result;
+    };
+    const cycle=await run(binding,producer,{...reviewer,blockedBy:[blocker]});
+    assert.equal(cycle.status,1,cycle.stderr);
+    assert.match(cycle.stdout,/reviewer must not depend on producer completion/i);
+    for(const blockedBy of [[],[{...blocker,id:'unrelated-prerequisite'}]]) {
+      const result=await run(binding,producer,{...reviewer,blockedBy});
+      assert.equal(result.status,0,result.stderr);
+      assert.equal(JSON.parse(result.stdout).reviewDependencyValid,true);
+      assert.equal(JSON.parse(result.stdout).qualified,false);
+    }
+    const {blockedBy:_,...missing}=reviewer;
+    for(const r of [missing,{...reviewer,blockedBy:null},{...reviewer,blockedBy:[{issueId:'producer'}]},{...reviewer,companyId:'other'},{...reviewer,projectId:'other'},{...reviewer,id:'other'},{...reviewer,assigneeAgentId:'other'}]) {
+      const result=await run(binding,producer,r);assert.equal(result.status,1,result.stderr);
+      assert.equal(JSON.parse(result.stdout).reviewDependencyValid,false);
+    }
+    for(const field of ['id','companyId','projectId','assigneeAgentId']) {
+      const result=await run(binding,{...producer,[field]:'other'},reviewer);assert.equal(result.status,1,result.stderr);
+    }
+    for(const b of [{...binding,reviewer:binding.producer},{...binding,reviewer:{...binding.reviewer,agentId:'alpha'}}]) {
+      const result=await run(b,producer,reviewer);assert.equal(result.status,1,result.stderr);
+    }
+  } finally {await rm(root,{recursive:true,force:true});}
+});
+
 // These are deliberately synthetic unit-test inputs, never runtime defaults.
 const config = () => ({
   runKey: 'unit-test', paperclipApiBase: 'http://127.0.0.1:9999', companyId: 'test-company',
