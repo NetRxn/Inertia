@@ -46,6 +46,7 @@ describe('buildFeed', () => {
       'priorities',
       'coming-up',
       'proposals',
+      'funding',
       'last-meeting',
       'this-week',
       'from-chat',

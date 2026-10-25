@@ -37,7 +37,7 @@ ANTHROPIC_API_KEY=...
 
 Any OpenAI-compatible server (a local model, for example) works with `MEMBER_APP_MODEL_PROVIDER=openai-compatible`, `MEMBER_APP_MODEL_BASE_URL` and `MEMBER_APP_MODEL_API_KEY`. Without a provider, the rest of the app works and the chat says it isn't configured yet.
 
-The assistant reads through tools over the adapters and treats all meeting, chat and share text as data, never as instructions. Its only tool that writes anything is `draftDocument`, which saves to the member's own drafts (Docs → My drafts, downloadable as Markdown).
+The assistant reads through tools over the adapters and treats all meeting, chat and share text as data, never as instructions. `listFunding` reads the grant finder's opportunities and applications; members confirm or submit applications in the funding system, never through the app or the assistant. Its only tool that writes anything is `draftDocument`, which saves to the member's own drafts (Docs → My drafts, downloadable as Markdown).
 
 ## Tests
 
@@ -60,6 +60,7 @@ E2E starts its own dev server on port 3100 with a fresh database, link previews 
 | `MeetingSource` | Roundtable output / DAO Postgres | meetings: summary, decisions, open questions, action items | Fixture only |
 | `ChatSource` | Buzz via the bridge / DAO Postgres | threads and recent messages | Fixture only |
 | `EventSource` | To be decided | upcoming events | Fixture only |
+| `FundingSource` | The grant finder (DFW funding domain via Paperclip) | opportunities: sponsor, program, route, deadline, benefit, next step, official source; applications: stage, readiness, decisions members still need to make | Fixture only |
 
 The interfaces are in `src/adapters/types.ts`, and `MEMBER_APP_ADAPTERS` selects the set (only `fixture` exists). Nothing in the UI or the assistant knows which implementation is active.
 

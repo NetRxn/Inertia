@@ -1,4 +1,4 @@
-/* Shared layout for the thin sections: Votes, Calendar, Docs and Profile. */
+/* Shared layout for the thin sections: Votes, Funding, Calendar, Docs and Profile. */
 
 .header {
   display: grid;

@@ -79,10 +79,19 @@ describe('createAssistantTools', () => {
     expect(chat.results.join('\n')).not.toMatch(/\bm-ana\b/);
   });
 
-  it('exposes exactly the seven tools', () => {
+  it('exposes exactly the eight tools', () => {
     const tools = createAssistantTools({ adapters: createFixtureAdapters(), db, memberId: ana.id }, () => {});
     expect(Object.keys(tools).sort()).toEqual(
-      ['draftDocument', 'getDocument', 'listProposals', 'listWork', 'searchChat', 'searchMeetings', 'searchShares'].sort(),
+      [
+        'draftDocument',
+        'getDocument',
+        'listFunding',
+        'listProposals',
+        'listWork',
+        'searchChat',
+        'searchMeetings',
+        'searchShares',
+      ].sort(),
     );
   });
 

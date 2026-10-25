@@ -1,6 +1,17 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import type { Adapters, ChatThread, HumanTask, Initiative, Meeting, Proposal, SourceRef } from '../adapters/types';
+import type {
+  Adapters,
+  ChatThread,
+  FundingApplication,
+  FundingOpportunity,
+  HumanTask,
+  Initiative,
+  Meeting,
+  Proposal,
+  SourceRef,
+} from '../adapters/types';
+import { ROUTE_LABELS, safeHttpUrl } from '../funding/funding';
 import type { Db } from '../db/client';
 import { members } from '../db/schema';
 import type { ShareSummary } from '../feed/build-feed';
@@ -92,6 +103,42 @@ function taskSource(task: HumanTask, initiativeTitle: string | undefined): Sourc
       task.estimateMinutes != null ? `Rough time: ${task.estimateMinutes} minutes` : null,
       task.due ? `Due: ${task.due}` : null,
       `Already prepared: ${task.prepared}`,
+    ]
+      .filter((line): line is string => line !== null)
+      .join('\n'),
+  };
+}
+
+function opportunitySource(opportunity: FundingOpportunity): Source {
+  return {
+    ref: ref('opportunity', opportunity.id, opportunity.program, safeHttpUrl(opportunity.sourceUrl)),
+    text: [
+      `Sponsor: ${opportunity.sponsor}`,
+      `Route: ${ROUTE_LABELS[opportunity.route]}`,
+      `Summary: ${opportunity.summary}`,
+      `Deadline: ${opportunity.deadline ?? 'none published'}`,
+      opportunity.benefit ? `Benefit: ${opportunity.benefit}` : null,
+      opportunity.effort ? `Effort: ${opportunity.effort}` : null,
+      `Next step: ${opportunity.nextStep}`,
+      `Checked at the official source: ${opportunity.observedAt}`,
+    ]
+      .filter((line): line is string => line !== null)
+      .join('\n'),
+  };
+}
+
+/** Applications come first in listFunding: they're what members can act on. */
+function applicationSource(application: FundingApplication, program: string | undefined): Source {
+  return {
+    ref: ref('application', application.id, application.title),
+    text: [
+      `For: ${program ?? 'an opportunity no longer listed'}`,
+      `Stage: ${application.stage}`,
+      application.readiness
+        ? `Readiness: ${application.readiness.answered} of ${application.readiness.total} requirements answered`
+        : null,
+      ...application.decisionsNeeded.map((d) => `Decision needed: ${d.question} (blocks ${d.blocks})`),
+      application.submittedAt ? `Submitted: ${application.submittedAt}` : null,
     ]
       .filter((line): line is string => line !== null)
       .join('\n'),
@@ -202,6 +249,23 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
       execute: async ({ query }) => {
         const [threads, nameOf] = await Promise.all([ctx.adapters.chat.search(query), memberNames(ctx.db)]);
         return results(threads.map((thread) => chatSource(thread, nameOf)));
+      },
+    }),
+
+    listFunding: tool({
+      description:
+        "List the grant finder's results: applications in progress (with the decisions members still need to make) and funding opportunities with their route, deadline, benefit and next step.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const [opportunities, applications] = await Promise.all([
+          ctx.adapters.funding.listOpportunities(),
+          ctx.adapters.funding.listApplications(),
+        ]);
+        const programs = new Map(opportunities.map((o) => [o.id, o.program]));
+        return results([
+          ...applications.map((a) => applicationSource(a, programs.get(a.opportunityId))),
+          ...opportunities.map(opportunitySource),
+        ]);
       },
     }),
 

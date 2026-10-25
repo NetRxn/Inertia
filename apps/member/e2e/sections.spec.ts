@@ -27,6 +27,22 @@ test.describe('Sections', () => {
     await expect(page).toHaveURL('/work');
     await expect(main.getByRole('heading', { level: 1, name: 'Work' })).toBeVisible();
 
+    await menu.getByRole('link', { name: 'Funding' }).click();
+    await expect(page).toHaveURL('/funding');
+    await expect(main.getByRole('heading', { level: 1, name: 'Funding' })).toBeVisible();
+    const waiting = main.getByRole('region', { name: 'Waiting for members' });
+    await expect(waiting.getByRole('heading', { name: 'Community garden: Green Spaces application' })).toBeVisible();
+    await expect(waiting.getByText('Confirm the $3,000 in-kind match')).toBeVisible();
+    const applyNow = main.getByRole('region', { name: 'Apply now' });
+    await expect(applyNow.getByRole('heading', { name: 'Community Green Spaces grant' })).toBeVisible();
+    await expect(applyNow.getByRole('link', { name: /Official page/ }).first()).toHaveAttribute(
+      'href',
+      'https://grants.example.org/green-spaces',
+    );
+    await expect(
+      main.getByRole('region', { name: 'Later and ongoing' }).getByRole('heading', { name: 'Donated software credits' }),
+    ).toBeVisible();
+
     await menu.getByRole('link', { name: 'Calendar' }).click();
     await expect(page).toHaveURL('/calendar');
     await expect(main.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible();
@@ -68,6 +84,14 @@ test.describe('Sections', () => {
     await expect(meeting).toHaveAttribute('open', '');
     await expect(meeting.getByText('Require two approvers for expenses over $500')).toBeVisible();
     await expect(page.locator('#meeting-meeting-1')).not.toHaveAttribute('open', '');
+  });
+
+  test('the home Funding card links to the application on the Funding page', async ({ page }) => {
+    await login(page, 'alex@example.org');
+    const card = page.getByRole('main').getByRole('region', { name: 'Funding' });
+    await card.getByRole('link', { name: 'Community garden: Green Spaces application' }).click();
+    await expect(page).toHaveURL('/funding#application-app-garden');
+    await expect(page.locator('#application-app-garden').getByText('Upload the site lease letter')).toBeVisible();
   });
 
   test('sign out returns to /login and / redirects there', async ({ page }) => {

@@ -41,6 +41,17 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    href: '/funding',
+    label: 'Funding',
+    glyph: (
+      <>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M14.5 9.6c-.5-.8-1.4-1.3-2.5-1.3-1.4 0-2.5.8-2.5 1.9 0 2.6 5 1.4 5 4 0 1.1-1.1 1.9-2.5 1.9-1.1 0-2-.5-2.5-1.3" />
+        <path d="M12 6.6v1.7M12 15.8v1.6" />
+      </>
+    ),
+  },
+  {
     href: '/calendar',
     label: 'Calendar',
     glyph: (

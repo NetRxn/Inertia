@@ -3,6 +3,7 @@ import { WaitingCard } from './WaitingCard';
 import { PrioritiesCard } from './PrioritiesCard';
 import { ComingUpCard } from './ComingUpCard';
 import { ProposalsCard } from './ProposalsCard';
+import { FundingCard } from './FundingCard';
 import { LastMeetingCard } from './LastMeetingCard';
 import { ThisWeekCard } from './ThisWeekCard';
 import { FromChatCard } from './FromChatCard';
@@ -21,6 +22,8 @@ function renderCard(card: FeedCard, now: Date): React.ReactNode {
       return <ComingUpCard events={card.events} />;
     case 'proposals':
       return <ProposalsCard proposals={card.proposals} />;
+    case 'funding':
+      return <FundingCard opportunities={card.opportunities} applications={card.applications} />;
     case 'last-meeting':
       return <LastMeetingCard meeting={card.meeting} />;
     case 'this-week':
