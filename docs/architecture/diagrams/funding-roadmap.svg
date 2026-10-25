@@ -47,7 +47,7 @@
 <title>V</title>
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="270,-330 13,-330 13,-240 270,-240 270,-330"/>
 <text text-anchor="middle" x="141.5" y="-308.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 exact-version member action</text>
-<text text-anchor="middle" x="141.5" y="-290.2" font-family="Arial" font-size="16.00" fill="#132e38">Core merged; wiring pending</text>
+<text text-anchor="middle" x="141.5" y="-290.2" font-family="Arial" font-size="16.00" fill="#132e38">Capture merged; UI draft</text>
 <text text-anchor="middle" x="141.5" y="-272.2" font-family="Arial" font-size="16.00" fill="#132e38">Submitted fact and optional later</text>
 <text text-anchor="middle" x="141.5" y="-254.2" font-family="Arial" font-size="16.00" fill="#132e38">evidence</text>
 </g>

@@ -1,0 +1,32 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch": "paperclip-2026.1012.0-plugin-runtime.patch",
+  "files": {
+    "dist/services/heartbeat.js": {
+      "base_sha256": "a8afeea6df9b7d8517230c9cdbed8ad6e81d05df916a9f09b8025442408f0176",
+      "candidate_sha256": "e0c90a489d931d218878980d9b9f97af5e8ec1fa4aff68ca220a09f14c9c13f9"
+    },
+    "dist/services/tool-gateway.js": {
+      "base_sha256": "6eb33b0557f020cbcc7010c31c9d2ab9c02db4249f6e4ab162830bedfb4b5cb5",
+      "candidate_sha256": "3cbf18e06ba7a063243e38ab752acb880181031acb58fd455b40628c135ec80a"
+    },
+    "dist/services/tool-gateway.d.ts": {
+      "base_sha256": "dfc0c66a8fa7bcf6e67c8ee6168dc7af887f9b5df502a2dac7d18bea67bfc592",
+      "candidate_sha256": "95a97a88fb8dd5839213344d8366a9e3bda9abce4b6b692bbf26d995d0839ff5"
+    },
+    "dist/services/native-runtime/runtime-context.js": {
+      "base_sha256": "075ec2ab6b3abaf1caaa7b04d5fc9ec5694f6099d519ee659a57981766b99848",
+      "candidate_sha256": "f2cacc07d4556cb4650f83835c3f1f044b2e3fb5c3421e2f26afba2862df31c0"
+    },
+    "dist/services/native-runtime/assigned-mcp-tools.js": {
+      "base_sha256": "dce544542929aa0783c33dbd98d1fde6bbd12af8a330f3b5c6493c17bf119fe5",
+      "candidate_sha256": "bb81c48238c91b37651615ae80fe9febf2fbfefb90df19d2863a6e66feae4149"
+    },
+    "dist/services/native-runtime/assigned-mcp-tools.d.ts": {
+      "base_sha256": "2668a51a359c94ca9896154c276408670c5d1657a0f472e2fa92f0801d4fa870",
+      "candidate_sha256": "7643550cc7625c0463a65e87497a1202dbc62fac222fc9d4b407289c3724b8be"
+    }
+  },
+  "patch_sha256": "07be813824a293451950aca5c6eb9d15d18c5b1a4c0051ea2122dd6ba3ac8beb"
+}

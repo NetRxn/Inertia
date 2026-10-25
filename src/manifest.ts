@@ -1,3 +1,6 @@
+import { objectiveIntakeJobDeclaration, objectiveSourceContextToolDeclaration, objectiveIntakeCapabilities } from "./intake/host.js";
+import { meetingExtractionTools } from "./roundtable/extraction.js";
+import { publicDraftingTools, publicDraftingCapabilities } from "./drafting/host.js";
 import { fundingDiscoveryManifest } from "./discovery/host.js";
 import { roundtableJobDeclaration } from "./roundtable/host.js";
 import { configurationSchema } from "./config.js";
@@ -15,6 +18,8 @@ export const manifest: PaperclipPluginManifestV1 = {
   capabilities: [
     ...fundingDiscoveryManifest.capabilities,
     "ui.detailTab.register",
+    ...objectiveIntakeCapabilities,
+    ...publicDraftingCapabilities,
     "companies.read",
     "issues.read",
     "issues.create",
@@ -34,10 +39,11 @@ export const manifest: PaperclipPluginManifestV1 = {
   entrypoints: { worker: "dist/src/worker.js", ui: "dist/ui" },
   ui: { slots: [{ type: "detailTab", id: "member-packet", displayName: "Packet", exportName: "MemberPacketTab", entityTypes: ["issue"] }] },
   database: { migrationsDir: "migrations" },
-  tools: fundingDiscoveryManifest.tools,
+  tools: [...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration],
   jobs: [
     ...fundingDiscoveryManifest.jobs,
     roundtableJobDeclaration,
+    objectiveIntakeJobDeclaration,
     {
       jobKey: "backfill-conversations",
       displayName: "Backfill connected conversations",

@@ -75,3 +75,15 @@ The fixture and caller command share one disposable cluster lifetime. For an aut
 Use the DFW project's locked Python3.14 environment, with DFW_PROJECT_ROOT pointing to its government-funding-dfw directory and NATIVE_CAPTURE_ROOT pointing to this bundle. Run that Python on cross-domain/run.py. It runs proposal apply, packet-role apply, and cancellation-first across actual native capture and actual disposable DFW SQLite domain service; DFW's separate owning-service PostgreSQL suite remains required too. Source/authority mutations after native acceptance and duplicate/offline replay are covered. The native child drops the project-location variable, but never drops inherited database-routing rejection.
 
 No production activation is authorized by a green qualification. Scope remains exact acceptance capture and transport, not grant submission.
+
+## Plugin-only agent tool delivery
+
+The additive exact-hash repair in `patches/paperclip-2026.1012.0-plugin-runtime.patch`
+connects authorized plugin tools to Paperclip's existing aggregate runtime MCP path.
+`npm run bootstrap` and `npm run verify-and-patch` apply it after the original
+capture overlay. For an existing qualified local installation, run
+`npm run apply-plugin-runtime`; this edits only this bundle's installed source.
+It does not start a host, change tool grants, create credentials, or call providers.
+
+See [PLUGIN-RUNTIME-DELIVERY.md](PLUGIN-RUNTIME-DELIVERY.md) for its security
+boundaries, exact-source qualification, and removal/upgrade conditions.

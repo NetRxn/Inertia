@@ -1,13 +1,13 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-24-r22
-Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 packet core source is merged; native/Buzz actions and live authority integration remain unqualified. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Revision: INERTIA-2026-10-25-r25
+Updated: 2026-10-25 (UTC)
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Qualification record
 
-Chosen Wednesday scope: existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred. The v2 packet core is merged; end-to-end confirmation/Mark submitted through native/Buzz remains unqualified. Existing legacy v1 role-bound receipts/freeze behavior remains historical/regression scope, not a universal new approval requirement. Source/fixture qualification is distinct from actual generated output and live integration.
+Chosen Wednesday scope: existing authorized PostgreSQL/domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred. V2 core/native capture are merged; reviewed draft Packet UI does not qualify end-to-end confirmation/Mark submitted or real authority/domain/Buzz. Existing legacy v1 role-bound receipts/freeze behavior remains historical/regression scope, not a universal new approval requirement. Source/fixture qualification is distinct from actual generated output and live integration.
 
 The merged core retains independently reviewed PostgreSQL/native-service and historical embedded-Helix evidence. Controlled source/relay/human fixtures are not live-source, model-quality or human-delivery evidence. Exact source/configuration identities and historical test counts remain in the linked qualification records and repository history, rather than being repeated throughout this plan. No tests are rerun by this editorial revision.
 
@@ -20,9 +20,19 @@ The merged core retains independently reviewed PostgreSQL/native-service and his
 
 ### Packet-v2 and named SQL tools
 
-[PR56](https://github.com/NetRxn/Inertia/pull/56) merged the additive member packet-v2 contract/freeze core: one authenticated member review binds the exact packet under trusted policy, formal obligations remain separate and no submission authority is granted. Owning-domain packet-v2 and named SQL knowledge tools are also merged, with local PostgreSQL facade qualification. Native capture is the current bounded task in [#40](https://github.com/NetRxn/Inertia/issues/40); UI/signed-human Buzz wiring, real current-authority resolver/transport, provider execution and the end-to-end human run remain unqualified.
+[PR58](https://github.com/NetRxn/Inertia/pull/58) adds merged trusted native exact-action capture to the [packet-v2 core](https://github.com/NetRxn/Inertia/pull/56). Source/synthetic checks passed; missing trusted authority/retention callbacks keep the path disabled. Owning-domain packet-v2 and named SQL tools retain their recorded local PostgreSQL qualification.
+
+[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. Browser walkthrough, mutually agreed #48 recovery/workflow, production authority/runtime/domain/Buzz and the actual system run remain pending. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
 
 Public packet-v2 source/synthetic tests and owning-domain CI/local PostgreSQL facade checks passed within their recorded scope. Recorded skipped lanes are not qualification evidence. These checks do not establish real membership/application authorization, native/Buzz wiring or actual provider output. Runtime tests were not rerun for this status-only artifact revision.
+
+### Native capture and draft Packet UI
+
+[PR58](https://github.com/NetRxn/Inertia/pull/58) source/synthetic qualification covers trusted exact-action capture, with absent authority/retention callbacks default-disabled. [Draft PR62](https://github.com/NetRxn/Inertia/pull/62) source review and 50 focused checks, types/build and a fresh isolated 136-file production package passed. Its aggregate retry passed 648/648 after an earlier fixture-hook timeout/relation-collision attempt. A prior dependency-install failure occurred before package assertions; the later isolated full pass does not establish that failure’s cause. Preserve every attempt in the linked evidence; no browser or live qualification is inferred.
+
+The [#42 read-only assessment](https://github.com/NetRxn/Inertia/issues/42#issuecomment-6389560049) found receipt readers can load full activity rows before admission/byte bounds. Generic records are rejected by provenance checks; no generic acceptance-forgery path was established. The remaining proposed slice is early SQL filtering plus bounded receipt projection with pending identity retained for reconciliation. This is not an implementation claim or an approved new page interface.
+
+Browser walkthrough, mutually agreed #48 recovery/workflow, real authority/runtime/domain/Buzz and actual run evidence remain pending. PR59 is discussion-only; contributor PR60 readiness/cleanup and PR61 clarification/R-02 alignment remain their decisions. No contributor proposal, validator or rehearsal file is changed here.
 
 ### Meeting source and native composition
 
@@ -40,11 +50,26 @@ Public packet-v2 source/synthetic tests and owning-domain CI/local PostgreSQL fa
 
 Merged transport remains default-disabled. The [implementation](host-composition/paperclip-durable-funding-review/transport/README.md) and [independent review](host-composition/paperclip-durable-funding-review/transport/REVIEW.md) cover authenticated scoped receipt routes, ID-only delivery/readback, keyset pagination/replay, exact terminal acknowledgement, changed mappings and revoked transport access. Earlier local-file and cross-HTTP SQLite lanes retain their narrower scope. The independently reviewed all-PostgreSQL cross-service reproduction fixture is published in [PR52](https://github.com/NetRxn/Inertia/pull/52).
 
-[PR53](https://github.com/NetRxn/Inertia/pull/53) adds source-qualified, default-disabled owning-host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete cursor reset; independent functional review passed. This is not a deployment or live activation. Source-row database allocation, remaining adapter/deployment/state/secret-latency compatibility, approved lifecycle/authentication/network bindings, retention/archive, actual role/source mappings, production writer fencing and the live human walkthrough remain gates. Exact-version authority survives later native changes/disconnect; cancellation requires DFW confirmation and cannot undo an already-applied effect. Current domain authorization/evidence/head/artifact checks still reject stale effects. Preserve accepted receipts through terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival. No indefinite deletion lock is approved.
+[PR53](https://github.com/NetRxn/Inertia/pull/53) adds source-qualified, default-disabled owning-host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and native state-delete cursor reset; independent functional review passed. This is not a deployment or live activation. Bounded receipt-read allocation, remaining adapter/deployment/state/secret-latency compatibility, approved lifecycle/authentication/network bindings, retention/archive, actual role/source mappings, production writer fencing and the live human walkthrough remain gates. Exact-version authority survives later native changes/disconnect; cancellation requires DFW confirmation and cannot undo an already-applied effect. Current domain authorization/evidence/head/artifact checks still reject stale effects. Preserve accepted receipts through terminal DFW acknowledgement or qualified durable transfer, then allow ordinary archival. No indefinite deletion lock is approved.
+
+### Two-provider scenarios for existing requirements
+
+These are test cases for the existing native coordination and portable-runtime requirements, not new requirements. Configure two John-owned Codex/Claude subscription agents with separate workspace/history and a configurable provider/role roster. Do not hard-code one provider as writer and the other as checker. The native coordinator decomposes and claims work by role/capacity using existing issues, checkout, budgets and review.
+
+- Funding case: query admitted knowledge, research missing facts and partners, assemble the packet, independently review it, save useful findings and reuse them next run. Maps to R-F01–04/R-F06–08, R-K01–08, R-C01–05 and R-O01; T-K05/T-K10/T-K12 and T-C01–04.
+- General member case: complete a meeting-derived task or innovation/problem/bug bounty without forcing it through grant preparation. Maps to R-I01–04, R-C01–05 and R-O01; existing objective/funding acceptance and T-C01–04.
+
+Record native task/checkout ownership, scoped tools, actual outputs, critique/corrections and one durable result per revision. Keep agent attribution separate from human confirmation. Two John-owned agents are not two independent human members. Docker preproduction Codex smoke passed; single-provider research/draft/reuse qualification is next. Claude connection/inference waits until Monday, followed by the two-provider rehearsal.
+
+### Runtime checkpoint
+
+Docker preproduction Paperclip-to-Codex subscription smoke passed: the native agent returned the expected short output without an API key. Single-provider workflow qualification is next, including substantial funding research, a draft packet and durable SQL reuse. The official Claude CLI is installed; connection/inference remains pending until Monday, with the two-provider rehearsal later. Earlier cloud read-only-home and laptop daemon-access failures remain historical attempts, not authentication failures. Shared deployment and member/team integration remain pending.
 
 ### Member candidate boundary
 
 [PR37](https://github.com/NetRxn/Inertia/pull/37) independently qualified scoped candidate inputs, hostile-artifact denial, membership/checkout rejection, concurrent immutable receipt replay and lost-acknowledgement recovery. [Draft PR51](https://github.com/NetRxn/Inertia/pull/51) proposes authenticated ingress/per-attempt authority. Source-only correction review passed; independent runtime security and full-host qualification remain open. It is unmerged and inactive. Native review/completion, live enrollment/provider execution and R-C05 follow-up remain engineering work.
+
+[PR66 native delivery](https://github.com/NetRxn/Inertia/pull/66) and the owning-service implementation are merged; activation remains disabled. Connected disposable native approval and frozen Task2 submission each produced one real PostgreSQL domain effect and exited successfully. Replay, lost-response recovery and retained readback after current source-transport revocation passed with synthetic current authority. Public source checks passed 598 aggregate tests, 15 offline-script tests, typecheck/build and the 131-file/seven-migration package check. Owning-service complete-checkout and post-merge CI passed 1,478 tests with five skips, plus audit/lint/types/build/migration checks. Actual original-human current DAO membership/application/action authority, production transport/lifecycle/writer qualification, member/team integration and the PR62 UI walkthrough remain pending. These controlled results do not establish a production workflow.
 
 ### Historical PR17 archive
 
@@ -104,7 +129,7 @@ The pinned public plugin loader, migration runner and native workers passed disp
 
 ## Full HTTP/API qualification
 
-The [historical Docker HTTP receipt](docs/qualification/docker-http-receipt.json) retains the exact source/image/package identity. It exercised the unmodified pinned host with synthetic disabled configuration in a bounded, non-root isolated container, then cleaned up. Browser UI and live external integration remained separate. PR53 source qualification covers owning-host assembly and early SDK byte/deadline checks. Actual deployment/authentication/network/lifecycle compatibility, source-row allocation and the live walkthrough still need qualification; earlier native RPC or HTTP fixtures are insufficient.
+The [historical Docker HTTP receipt](docs/qualification/docker-http-receipt.json) retains the exact source/image/package identity. It exercised the unmodified pinned host with synthetic disabled configuration in a bounded, non-root isolated container, then cleaned up. Browser UI and live external integration remained separate. PR53 source qualification covers owning-host assembly and early SDK byte/deadline checks. Actual deployment/authentication/network/lifecycle compatibility, bounded receipt-read allocation and the live walkthrough still need qualification; earlier native RPC or HTTP fixtures are insufficient.
 
 ## Connected workflow rehearsal verification
 
@@ -164,7 +189,7 @@ Preserve currentness/deadline/signoff checks, exact artifact bytes, packet/revie
 
 ## Native grant review acceptance (default-disabled)
 
-V2 packet primitives are merged, while real native/Buzz action integration remains pending: any authenticated, currently verified DAO member with current application action access may contribute and approve the exact immutable version. No named human owner or default five-specialist gates. Agents perform quality review, never human approval. Actual sponsor/DAO requirements remain case-specific. Existing v1 default-disabled source and its role/capture/cancellation records stay isolated and historically intact.
+V2 core/native capture are merged, while draft UI and production authority/domain/Buzz integration remain pending: any authenticated, currently verified DAO member with current application action access may contribute and approve the exact immutable version. No named human owner or default five-specialist gates. Agents perform quality review, never human approval. Actual sponsor/DAO requirements remain case-specific. Existing v1 default-disabled source and its role/capture/cancellation records stay isolated and historically intact.
 
 | ID | Fixture | Required result |
 |---|---|---|
@@ -179,7 +204,7 @@ V2 packet primitives are merged, while real native/Buzz action integration remai
 | T-G14 | v1 records/source and v2 actions coexist | V1 approvals, immutable packets, receipts and cancellation state retain their original meaning. V2 is distinct/versioned and cannot loosen legacy fences, manufacture specialist approvals or reuse old records as new approvals. |
 | T-G15 | Case with actual required sponsor signature or DAO/Vocdoni decision, versus a case without it | Apply the genuine requirement and exact packet/action/finality evidence where applicable; do not impose a universal named-owner, five-human or final-vote ceremony. No automatic extra submission. |
 
-Retain v1 exact-command authority/cancellation/replay and terminal-acknowledgement/qualified-transfer regressions. Settled retention planning does not enable deletion. Actual v2 current membership/application ACL, guarded writes, source-row allocation, remaining deployment/latency/lifecycle/authentication/network compatibility, production fencing and human walkthrough remain gates. Source-qualified PR53 is not deployed v2.
+Retain v1 exact-command authority/cancellation/replay and terminal-acknowledgement/qualified-transfer regressions. Settled retention planning does not enable deletion. Actual v2 current membership/application ACL, guarded writes, bounded receipt-read allocation, remaining deployment/latency/lifecycle/authentication/network compatibility, production fencing and human walkthrough remain gates. Source-qualified PR53 is not deployed v2.
 
 ## Domain suite
 

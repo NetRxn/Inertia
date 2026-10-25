@@ -1,8 +1,8 @@
 # Needed from team
 
-Updated 2026-10-24 · INERTIA-2026-10-24-r22
+Updated 2026-10-25 · INERTIA-2026-10-25-r25
 
-Please consolidate the remaining operational inputs once, using protected references rather than posting credentials, member records or private documents here. Reply with **NTF ID · reference/ready/missing · operational contact · next action**. Existing data/connections should be reused before asking for new copies.
+Use this only for missing operational inputs, not another ownership or handoff exercise. Reuse existing data/connections and provide a protected reference or say what is missing. Credentials, member records and private documents do not belong here. The [remaining task order](plan.md#recommended-remaining-work) puts generated funding work and SQL knowledge reuse first.
 
 The Wednesday October 28 path is PostgreSQL-native knowledge plus the existing authorized Buzz agent. Helix/Y2 are deferred. Any authenticated, currently verified DAO member with current application action access may contribute/approve an exact version under the explicit v2 policy, whose packet core is merged while live action integration remains pending. No named application owner or default five-specialist reviewer setup is needed. Retention defaults and conditional actual governance are settled; do not re-ask those decisions.
 
@@ -22,11 +22,11 @@ Approved Drive/Gemini folders and existing connection, transcript-plus-notes/cor
 
 ### NTF04 P0 Existing deployment and SQL binding
 
-Existing deployment/runtime and authorized PostgreSQL domain-tool connection references, application scope and restore/record owner. SQL architecture is settled. Confirm the actual selected binding, availability and qualification target without asking to choose Helix or a new database. Paperclip/domain ownership remains separate. No deployment/migration or new permission grant is performed by this checklist.
+Existing deployment/runtime and authorized PostgreSQL domain-tool connection references, application scope and restore/record owner. SQL architecture is settled. John plans the shared runtime deployment before Wednesday; identify its existing SQL binding and availability. Laptop Docker is for local development, not the shared deployment. Paperclip/domain ownership remains separate. No deployment/migration or new permission grant is performed by this checklist.
 
 ### NTF05 P0 Existing authorized runtime
 
-Existing model/research/browser/domain-tool access and bounded pilot budget through protected connection references. Reuse the authorized Buzz agent and selected application, rather than requiring new member-runtime enrollment or hiring. Engineering verifies tools and actual system output. Broader Codex/Claude/local/untrusted runtime qualification is separate.
+Existing model/research/browser/domain-tool access and bounded pilot budget through protected connection references. Reuse the authorized Buzz path. For the two-provider test, use a configurable role roster and the existing native coordinator; this tests existing funding and general member-objective requirements. Docker preproduction Codex subscription smoke passed without an API key. Single-provider workflow qualification, including substantial research/draft/reuse, is next. Claude CLI is installed; connection/inference waits until Monday and the two-provider rehearsal follows. Broader untrusted runtime qualification remains separate.
 
 ### NTF06 P0 Retained records and operational binding
 
@@ -42,7 +42,7 @@ Provide the existing operative DAO/Vocdoni example/rules only for a decision tha
 
 ### NTF09 Superseded role setup; P0 current access walkthrough
 
-The earlier named-reviewer/five-specialist setup request is superseded by the chosen v2 policy. Use NTF02's trusted membership/application ACL and one available verified member for exact-version confirmation, correction and Mark submitted/readback. V2 packet primitives are merged; engineering is implementing native capture and must qualify actual current-access/Buzz bindings before a live claim. V1 history stays intact. No new duplicate input form or reviewer-admin UI is required.
+[PR58](https://github.com/NetRxn/Inertia/pull/58) capture is merged source; [PR62](https://github.com/NetRxn/Inertia/pull/62) Packet UI/attestation remains reviewed draft source, not merged/live. The earlier named-reviewer/five-specialist setup request is superseded by the chosen v2 policy. Use NTF02's trusted membership/application ACL and one available verified member for exact-version confirmation, correction and Mark submitted/readback. V2 core/capture/delivery source is merged and controlled PostgreSQL approval/submission passed. Packet UI remains draft PR62; the actual original-human current-access mapping and production member/domain/Buzz bindings still require qualification. V1 history stays intact. No new duplicate input form or reviewer-admin UI is required.
 
 ### NTF10 Deferred Y2
 
@@ -50,7 +50,7 @@ Y2 is explicitly deferred from Wednesday. Preserve this ID and future interest/u
 
 ### NTF11 P0 Contribution participant; broader enrollment deferred
 
-Use the existing authorized Buzz agent for the achievable Wednesday contribution within the application packet. Identify any participating verified member and current application access through NTF02/07. A member can contribute/approve without owning the application. Full untrusted member runtime enrollment/isolation, draft PR51 and native authoritative completion remain separate unqualified work, not a prerequisite or an implied demo success.
+Coordinate the shared recovery/rehearsal flow with the contributor under #48 by mutual agreement; draft PR62 re-entry and PR61 R-02 are not an adopted common workflow. Use the existing authorized Buzz agent for the achievable Wednesday contribution within the application packet. Identify any participating verified member and current application access through NTF02/07. A member can contribute/approve without owning the application. Full untrusted member runtime enrollment/isolation, draft PR51 and native authoritative completion remain separate unqualified work, not a prerequisite or an implied demo success.
 
 ### NTF12 P0 Organizational and partner evidence
 

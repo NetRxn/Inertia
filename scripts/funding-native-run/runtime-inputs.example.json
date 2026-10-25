@@ -1,0 +1,42 @@
+{
+  "stage": "full",
+  "runKey": null,
+  "paperclipApiBase": null,
+  "companyId": null,
+  "projectId": null,
+  "memberRef": null,
+  "coordinatorAgentId": null,
+  "agents": [
+    {
+      "agentId": null,
+      "workspaceRef": null,
+      "roles": [],
+      "provider": {"adapterType": "codex_local", "connectionRef": null, "model": null, "apiBase": null}
+    },
+    {
+      "agentId": null,
+      "workspaceRef": null,
+      "roles": [],
+      "provider": {"adapterType": "claude_local", "connectionRef": null, "model": null, "apiBase": null}
+    }
+  ],
+  "objectives": {
+    "funding": {"issueId": null, "origin": null, "request": null},
+    "memberRequest": {"issueId": null, "origin": null, "request": null}
+  },
+  "funding": {
+    "profileSlug": null,
+    "matchId": null,
+    "fundingSkillRef": null,
+    "scopeBindingRef": null
+  },
+  "tools": {
+    "search": null,
+    "read": null,
+    "knowledgeAdmission": null,
+    "knowledgeQuery": null,
+    "correctionReplayDenial": null
+  },
+  "sourceFacts": [],
+  "limits": {"maxReworkRounds": 2, "maxWallClockMinutes": null, "maxProviderCostUsd": null}
+}

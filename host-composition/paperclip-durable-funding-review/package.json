@@ -11,10 +11,12 @@
     "paperclipai": "2026.1012.0"
   },
   "scripts": {
-    "bootstrap": "npm ci --ignore-scripts --registry=https://registry.npmjs.org --cache=.cache/npm --no-audit --no-fund && node scripts/bootstrap.mjs",
-    "verify-and-patch": "node scripts/bootstrap.mjs",
+    "bootstrap": "npm ci --ignore-scripts --registry=https://registry.npmjs.org --cache=.cache/npm --no-audit --no-fund && node scripts/bootstrap.mjs && node scripts/apply-plugin-runtime.mjs",
+    "verify-and-patch": "node scripts/bootstrap.mjs && node scripts/apply-plugin-runtime.mjs",
     "test": "./tests/with-disposable-pg.sh node --test tests/*.test.mjs",
     "test:launcher": "python3 -m unittest discover -s tests -p test_launcher_safety.py -v",
-    "check-upstream": "node scripts/check-upstream.mjs"
+    "check-upstream": "node scripts/check-upstream.mjs",
+    "apply-plugin-runtime": "node scripts/apply-plugin-runtime.mjs",
+    "test:plugin-runtime": "node --test tests/plugin-runtime-delivery.test.mjs tests/plugin-runtime-installer.test.mjs"
   }
 }

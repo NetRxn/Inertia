@@ -2,6 +2,8 @@
 
 ## Status and boundaries
 
+Subsequent source completion: [native meeting extraction and local preproduction](native-meeting-extraction.md) replaces the original transcript-copy transform with protected native extraction tools, an owner-file source path and explicit private SQL local publication/readback. Missing extraction binding stays pending, never empty-success publication. The original lifecycle/security contract below remains in force; actual model quality and live connectors remain separate qualification.
+
 Additive caller composition around the unchanged website v1.1 adapter. Default disabled. The native manifest registers `reconcile-roundtable-sources` without a schedule. Neither registration nor the tests provision credentials, grant live permissions, publish real meetings, create production issues, or deploy a website route.
 
 Modules:
@@ -34,7 +36,7 @@ Private state is scoped by company, fixed website origin and stable meeting iden
 
 401/403 from source or website pauses durably, including the first source read before any operation exists. A timer cannot resume it: explicit new admission is required. Retry-not-before survives reconstruction. Withdrawal is a durable stopped state and is not inferred from a failed source read. Local withdrawal stops this caller; it is not a website deletion API and does not claim remote content was erased. Website withdrawal receipts also stop the meeting. Retention and erasure remain separately authorized administrative actions.
 
-Configuration is checked before source/secret work, after asynchronous secret resolution and before each source/website HTTP request, including the GET-absence to POST boundary. Disabled configuration makes no source, secret or native issue calls. Enabling does not create a recurring schedule. Tests use only synthetic content, including hostile instructions that remain inert transcript text. The host's deterministic extractive candidates retain unchanged full lines; they create no classified decisions, owners or executable actions.
+Configuration is checked before source/secret work, after asynchronous secret resolution and before each source/website HTTP request, including the GET-absence to POST boundary. Disabled configuration makes no source, secret or native issue calls. Enabling does not create a recurring schedule. Tests use only synthetic content, including hostile instructions that remain inert transcript text. The host now obtains candidate classifications through the explicitly configured native extraction task. Exact full-line validation and null-owner/unverified candidate restrictions remain; no configured extractor means pending, not a transcript-copy notes substitute. See the native extraction contract for section limits, source checks and local-mode distinctions.
 
 ## Native work, not a second backlog
 

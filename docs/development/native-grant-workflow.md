@@ -1,16 +1,18 @@
 # Native and Buzz application review contract
 
-The chosen v2 member policy below supersedes the earlier named-owner/default specialist-human review design for new work. Its additive packet primitives are merged in [PR56](https://github.com/NetRxn/Inertia/pull/56), while native/Buzz and live authority integration remain pending. Legacy v1 and default-disabled host assembly remain as recorded in [PR53](https://github.com/NetRxn/Inertia/pull/53). Preserve v1 approvals, immutable packets, receipts, cancellation state and historical meaning without reinterpretation.
+The chosen v2 member policy below supersedes the earlier named-owner/default specialist-human review design for new work. Its additive packet primitives are merged in [PR56](https://github.com/NetRxn/Inertia/pull/56), with merged native capture in [PR58](https://github.com/NetRxn/Inertia/pull/58); draft Packet UI and real authority/runtime/domain/Buzz remain pending. Legacy v1 and default-disabled host assembly remain as recorded in [PR53](https://github.com/NetRxn/Inertia/pull/53). Preserve v1 approvals, immutable packets, receipts, cancellation state and historical meaning without reinterpretation.
 
 ## Current member target
 
-The public packet-v2 contract/freeze core and owning-domain packet-v2 source are merged. Native action capture is being implemented under [#40](https://github.com/NetRxn/Inertia/issues/40); real identity/application authority, UI/signed-human Buzz and end-to-end live action qualification remain pending.
+The public packet-v2 contract/freeze core and owning-domain packet-v2 source are merged. Native exact-action capture is merged in [PR58](https://github.com/NetRxn/Inertia/pull/58); reviewed [draft PR62](https://github.com/NetRxn/Inertia/pull/62) adds Packet UI/attestation source only. Real authority/runtime/domain/Buzz, browser and mutually agreed recovery/workflow remain pending.
 
 Any authenticated, currently verified DAO member with current application action access can contribute and approve the exact version. No named human application owner or default five-specialist gates. Agents do preparation and independent quality review, never human approval. Public visibility, a repository/native role, Buzz pairing or forwarded actor flag alone establishes neither current DAO membership nor application action access.
 
 Trusted action handling resolves current identity/membership/application rights for contribution, exact packet confirmation, recording submission and attaching evidence. It fails closed when the authoritative current-access adapter is unavailable. Reuse existing native/Buzz identity and application ACL facilities rather than inventing another permission system. Native denial remains authoritative.
 
 A v2 confirmation binds an explicit policy/version, immutable packet/version/hash, exact artifact bytes and real human action. Source/readiness checks apply to approval. Corrections create new versions needing their own confirmation. One member action cannot generate fabricated specialist approvals. Actual sponsor signatures/certifications and DAO/Vocdoni decisions apply when required by the selected case, not as universal ceremony.
+
+Draft PR62’s same-pending-ID re-entry is a candidate awaiting mutual #48 recovery/workflow agreement. It adds no retirement endpoint, new store or payload persistence and does not adopt the contributor’s rehearsal contract. Production authority/retention callbacks, runtime/domain/Buzz and browser walkthrough remain separate gates.
 
 ## Mark submitted records an external fact
 
@@ -32,7 +34,7 @@ Existing v1 source includes named/specialist-role binding and direct-application
 
 The legacy durable path captures authority for one exact command/version atomically with the native verdict. Later native changes/disconnect do not cancel that accepted instruction. Current domain authorization/evidence/head/artifact checks still gate effects; DFW-confirmed cancellation is serialized with apply and cannot undo an applied effect. Preserve per-item actor/decision identity, replay conflicts, authoritative readback and unknown-outcome hold. No cross-database atomicity is claimed. Do not migrate those records into v2 approval without an explicit qualified version transition.
 
-PR53 source-qualified assembly, early SDK byte/deadline bounds, manual-only invocation and native state-delete reset remain default-disabled. Source-row allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates. The published PR52 fixture is controlled evidence, not deployment. Legacy accepted receipts remain protected through terminal acknowledgement or qualified durable transfer.
+PR53 source-qualified assembly, early SDK byte/deadline bounds, manual-only invocation and native state-delete reset remain default-disabled. Bounded receipt-read allocation, remaining adapter/deployment/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates. The published PR52 fixture is controlled evidence, not deployment. Legacy accepted receipts remain protected through terminal acknowledgement or qualified durable transfer.
 
 ## Retention and acceptance
 

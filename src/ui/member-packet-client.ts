@@ -38,7 +38,7 @@ export function createMemberPacketClient(options:{issueId:string;sessionUserId:s
  interface Pending {requestId:string;token:string;body:string;wireBody:string;reentered:boolean;uncertain:boolean;flight?:Promise<MemberActionResponse>}
  let pending:Pending|null=null;
  const saved=()=>{try{return options.storage?.getItem(key)??null;}catch{return null;}};
- const save=(token:string)=>{try{options.storage?.setItem(key,token);}catch{/* No session storage does not change server authority. */}};
+ const save=(token:string)=>{try{if(!options.storage||options.storage.getItem(key)!==null)return false;options.storage.setItem(key,token);return options.storage.getItem(key)===token;}catch{return false;}};
  const tokenFor=(requestId:string)=>JSON.stringify({schema:'inertia.packet.pending.v2',requestId,ownerNonce:crypto.randomUUID()});
  function clearOwned(token:string){if(pending?.token===token)pending=null;try{if(options.storage?.getItem(key)===token)options.storage.removeItem(key);}catch{/* Never clear another client's correlation. */}}
  function savedIdentity(){const token=saved();if(token===null)return null;try{const r=row(JSON.parse(token),['schema','requestId','ownerNonce']);check(r.schema==='inertia.packet.pending.v2');return{token,requestId:id(r.requestId),ownerNonce:id(r.ownerNonce)};}catch{throw new MemberPacketClientError('pending','An unresolved report correlation needs recovery before another action.');}}
@@ -60,7 +60,7 @@ export function createMemberPacketClient(options:{issueId:string;sessionUserId:s
   const content=JSON.stringify({selectionVersion:hash(selectionVersion),intent});
   if(pending&&pending.body!==content)return Promise.reject(new MemberPacketClientError('pending','Resolve the original report before changing it.'));
   if(!pending&&saved()!==null)return Promise.reject(new MemberPacketClientError('pending','An earlier report is unresolved. Check the original report before starting another.'));
-  if(!pending){const requestId=id((options.newRequestId??(()=>crypto.randomUUID()))()),token=tokenFor(requestId);pending=entry(requestId,token,intent,selectionVersion,false);save(token);}
+  if(!pending){const requestId=id((options.newRequestId??(()=>crypto.randomUUID()))()),token=tokenFor(requestId);if(!save(token))return Promise.reject(new MemberPacketClientError('pending','Pending recovery state could not be retained. No report was sent. Restore session storage before recording a report.'));pending=entry(requestId,token,intent,selectionVersion,false);}
   return send(pending);
  }};
 }

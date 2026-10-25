@@ -1,35 +1,45 @@
 # Inertia connected application delivery plan
 
-Revision: INERTIA-2026-10-24-r22
-Updated: 2026-10-24 (UTC)
-Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 packet core source is merged; end-to-end member actions remain unqualified. Legacy source/records remain intact; PR51 is draft/inactive.
+Revision: INERTIA-2026-10-25-r25
+Updated: 2026-10-25 (UTC)
+Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 core/capture/delivery source is merged; Packet UI is draft PR62 and production member actions remain unqualified. Legacy source/records remain intact; PR51 is draft/inactive.
 
 ## Current baseline
 
-[PR56](https://github.com/NetRxn/Inertia/pull/56) merged the additive member packet-v2 contract/freeze core: one authenticated member review binds the exact packet under trusted policy, formal obligations remain separate and no submission authority is granted. Owning-domain packet-v2 and named SQL knowledge tools are also merged, with local PostgreSQL facade qualification. Native capture is the current bounded task in [#40](https://github.com/NetRxn/Inertia/issues/40); UI/signed-human Buzz wiring, real current-authority resolver/transport, provider execution and the end-to-end human run remain unqualified.
+[PR58](https://github.com/NetRxn/Inertia/pull/58) adds merged trusted native exact-action capture to the [packet-v2 core](https://github.com/NetRxn/Inertia/pull/56). Source/synthetic checks passed; missing trusted authority/retention callbacks keep the path disabled. Owning-domain packet-v2 and named SQL tools retain their recorded local PostgreSQL qualification.
 
-Public [PR53](https://github.com/NetRxn/Inertia/pull/53) provides source-qualified, default-disabled host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled reproduction fixture. Source-row allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates.
+[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. Browser walkthrough, mutually agreed #48 recovery/workflow, production authority/runtime/domain/Buzz and the actual system run remain pending. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
 
-The existing source still contains v1 named/specialist-role review and packet-freeze paths. The additive v2 packet contract/freeze core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56); native capture and live authority integration remain pending. New work must not reinterpret v1 approvals, accepted instructions, cancellation state or historical packets. Documentation decisions are not evidence of a deployed change.
+Public [PR53](https://github.com/NetRxn/Inertia/pull/53) provides source-qualified, default-disabled host assembly, early SDK pre-buffer byte/deadline bounds, manual-only native invocation and state-delete cursor reset. [PR52](https://github.com/NetRxn/Inertia/pull/52) publishes the controlled reproduction fixture. Bounded receipt-read allocation, remaining deployment/adapter/latency compatibility, approved lifecycle/authentication/network bindings, production writer fencing and live walkthrough remain gates.
 
-## Chosen delivery sequence
+The existing source still contains v1 named/specialist-role review and packet-freeze paths. The additive v2 packet contract/freeze core is merged in [PR56](https://github.com/NetRxn/Inertia/pull/56); native capture is merged while real authority/runtime/domain/Buzz integration remains pending. New work must not reinterpret v1 approvals, accepted instructions, cancellation state or historical packets. Documentation decisions are not evidence of a deployed change.
 
-Goal: operational at the **Wednesday October 28 Roundtable**. Friday event submission closes **October 30 at 11:00am CDT, 16:00 UTC**. Do not substitute Friday-afternoon timing for that deadline.
+Shared recovery and rehearsal changes require mutual agreement with their contributors before adoption. The simpler same-pending-ID re-entry in draft PR62 is a candidate, not an agreed shared workflow; it adds no retirement endpoint, new store or payload persistence. [PR60](https://github.com/NetRxn/Inertia/pull/60) has a scoped re-review pass awaiting its contributor’s readiness/nonblocking-note choice. [PR61](https://github.com/NetRxn/Inertia/pull/61) still awaits its action-surface clarification and R-02 alignment. Preserve those isolated contributor-owned files. [PR59](https://github.com/NetRxn/Inertia/pull/59) remains discussion-only.
 
-1. Bind existing authorized data, connections, deployment/runtime, current DAO membership/application action access and Buzz agent/relay identity. Reuse existing PostgreSQL domain tools rather than requiring Helix. Consolidate missing operational references once through [Needed from team](Needed-from-team.md); architecture, retention defaults and universal-reviewer policy are already decided.
-2. Run the actual system on current sources. Produce substantial research/preparation and a near-complete application draft, with claim-specific evidence, honest unknowns and prepared next decisions. Exemplary NSF preparation is sufficient for that case; select an achievable current backup too. Keep reference packets and answer keys separate from generated outputs.
-3. Have the existing authorized Buzz agent contribute within the same packet outcome and provide independent quality critique. Show source/version/task links, a correction and query-first SQL reuse/writeback/next-run retrieval. This is not qualification of PR51 or a full untrusted member-owned runtime.
-4. Qualify one exact-version human confirmation from any authenticated, currently verified DAO member with current application review access. No named human application owner or default five-specialist gates. Agents never provide human approval. Apply real sponsor signatures or DAO/Vocdoni governance only when actually required.
-5. Connect and qualify Mark submitted or equivalent authenticated Buzz intent to record the selected immutable packet/date, reporter and evidence level. Optional receipt image/email/reference may follow later. Missing prior approvals remain missing. This records what happened externally; it does not submit an application or invent provider verification.
-6. Demonstrate authorized meeting source/publication/readback and the actual connected application experience. Capture the exact qualified build, measured results, limitations and recording before the Friday deadline. Label unqualified segments as pending/fixtures, never equivalent completion.
+## Recommended remaining work
 
-Park Place is a real historical human-submitted case. The approximately one-hour figure is user-reported elapsed time, not measured active time or deployed automation. Use it honestly as historical context, not as a generated-output or performance claim. No automatic extra submission is planned.
+Goal: operational at the **Wednesday October 28 Roundtable**. Friday event submission closes **October 30 at 11:00am CDT, 16:00 UTC**.
+
+Recommended Pareto order, led by the largest useful outcomes rather than another owner/dependency ledger:
+
+1. **Generate substantial funding research and a near-complete draft.** Run the actual system on a current case, with claim-specific evidence, honest unknowns and agent critique. Keep reference packets separate. NSF exemplary preparation and an achievable backup are sufficient. R-G01–02, R-F01–08.
+2. **Read, admit and reuse PostgreSQL knowledge.** Use the existing authorized domain tools, save useful source-bound findings, then retrieve them on a second run. Include correction, replay and denied access. R-K01–08.
+3. **Connect member review to a durable outcome.** Qualify current DAO/application access, exact-version confirmation, corrections and honest Mark submitted/readback. Preserve v1 history. R-G02–04, R-C01–04.
+4. **Exercise autonomous collaboration on meeting and bounty objectives.** Configure complementary provider/agent roles; let the native coordinator decompose, claim and review work using existing checkout and budgets. Test both funding and general member objectives. R-I01–04, R-C01–05, R-O01.
+5. **Finish meeting cleanup, website publication and readback.** Use real approved sources, a faithful transcript and separate notes; verify the member audience. R-M01–04.
+6. **Run a measured rehearsal.** Capture the exact build, generated output, correction/replay, timing, observable cost and remaining gaps before recording. T-K05/T-K10/T-K12, T-C01–04, T-J01–06.
+
+Helix, Y2 and extra UI polish are deferred. The first two task proposals have been brought back to John; hold a new external work split until that review is clear. Existing contributor-owned work remains isolated.
+
+John plans to deploy the shared runtime before Wednesday. Docker preproduction Codex subscription smoke passed, not the funding packet. Single-provider workflow qualification, including sustained research/draft/reuse, is next. Claude connection/inference waits until Monday; the two-provider rehearsal follows. Preproduction is not the shared deployment. Two-provider scenarios test existing requirements; they add no coordinator, dispatcher or framework. See the [scenario mapping](testing.md#two-provider-scenarios-for-existing-requirements).
+
+Park Place is historical human-submitted proof. The approximately one-hour figure is user-reported elapsed time, not measured active time or deployed automation. No automatic extra submission is planned.
 
 ## Implementation work and boundaries
 
 ### Current member review and submitted record
 
-Engineering connects the merged v2 packet primitives to native capture and real authorization, preserving an explicit policy/version with trusted current identity, verified DAO membership and application action access. Public visibility or a generic native/Buzz/repository role alone grants no contribution or review authority. Preserve immutable packet/artifact/evidence/policy binding, stale/conflict denial, idempotent replay and audited corrections. Preserve v1 source/records and their original cancellation semantics.
+Engineering connects the merged native capture and reviewed draft Packet UI to real authorization/domain/Buzz, preserving an explicit policy/version with trusted current identity, verified DAO membership and application action access. Public visibility or a generic native/Buzz/repository role alone grants no contribution or review authority. Preserve immutable packet/artifact/evidence/policy binding, stale/conflict denial, idempotent replay and audited corrections. Preserve v1 source/records and their original cancellation semantics.
 
 Record submission as member attestation/reference/image/email evidence without automatically upgrading it to provider-verified. Preserve reporter separately from a claimed actual submitter. A historical selected packet/date can be recorded honestly without manufacturing old approvals or forcing the old current-readiness ceremony. Qualify the exact native/Buzz action and current access at each new action. Missing trusted access integration fails closed. No broad new permission system or manual reviewer-role setup is a demo prerequisite.
 

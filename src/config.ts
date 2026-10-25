@@ -1,3 +1,5 @@
+import { objectiveIntakeSchema } from "./intake/schema.js";
+import { publicDraftingSchema } from "./drafting/schema.js";
 import { fundingDiscoverySchema } from "./discovery/schema.js";
 import { roundtableSchema } from "./roundtable/host.js";
 import { validOutboundComments } from "./bridge/outbound-comments.js";
@@ -19,8 +21,10 @@ export const configurationSchema: JsonSchema = {
   type: "object",
   properties: {
     roundtable: roundtableSchema,
+    objectiveIntake: objectiveIntakeSchema,
     enabled: { type: "boolean", default: false },
     fundingDiscovery: fundingDiscoverySchema,
+    publicDrafting: publicDraftingSchema,
     relayUrl: relay,
     bridgePubkey: hex,
     signingKeyRef: object(

@@ -46,8 +46,8 @@
 <polygon fill="#fffaf0" stroke="#b1853e" stroke-width="1.2" stroke-dasharray="5,2" points="394.5,-522 129.5,-522 129.5,-432 394.5,-432 394.5,-522"/>
 <text text-anchor="middle" x="262" y="-500.2" font-family="Arial" font-size="16.00" fill="#132e38">Any eligible current DAO member</text>
 <text text-anchor="middle" x="262" y="-482.2" font-family="Arial" font-size="16.00" fill="#132e38">Current application action access</text>
-<text text-anchor="middle" x="262" y="-464.2" font-family="Arial" font-size="16.00" fill="#132e38">V2 core merged; action wiring</text>
-<text text-anchor="middle" x="262" y="-446.2" font-family="Arial" font-size="16.00" fill="#132e38">pending</text>
+<text text-anchor="middle" x="262" y="-464.2" font-family="Arial" font-size="16.00" fill="#132e38">Native capture merged</text>
+<text text-anchor="middle" x="262" y="-446.2" font-family="Arial" font-size="16.00" fill="#132e38">Packet UI draft; live pending</text>
 </g>
 
 <g id="diagram-grant-review-governance-edge-3" class="edge">

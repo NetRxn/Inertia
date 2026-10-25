@@ -1,3 +1,4 @@
+import { MeetingExtractionPending } from "./extraction.js";
 import { prepare, type Transformer } from "./ingestion.js";
 import { sha256 } from "./codec.js";
 import {
@@ -15,6 +16,7 @@ import {
 } from "./source.js";
 export interface MeetingJobConfig extends DriveMeetingBinding, WebsiteBinding {
   enabled: boolean;
+  publicationMode?: "local" | "website";
   admission: string;
   withdrawn: boolean;
   meeting: MeetingMetadata;
@@ -60,6 +62,7 @@ export type MeetingJobResult = {
   code?: string;
   retryAt?: number;
   nativeIntake?: string;
+  publicationMode?: "local" | "website";
 };
 function bindingHash(c: MeetingJobConfig) {
   return sha256(
@@ -72,6 +75,7 @@ function bindingHash(c: MeetingJobConfig) {
       c.fileId,
       c.artifact,
       c.transcriptName ?? null,
+      ...(c.publicationMode==="local"?["local-publication-v1"]:[]),
     ]),
   );
 }
@@ -80,6 +84,7 @@ function valid(c: MeetingJobConfig) {
     const u = new URL(c.origin);
     return (
       validDriveBinding(c) &&
+      (c.publicationMode===undefined || ["website","local"].includes(c.publicationMode)) &&
       u.protocol === "https:" &&
       u.origin === c.origin &&
       typeof c.principalId === "string" &&
@@ -247,11 +252,25 @@ export async function runMeetingJob(
             )
               return { state: "conflict", code: "stale_publication" };
             const previous = saved?.operation ?? undefined;
-            const prepared = await prepare(
-              source,
-              deps.transform,
-              old?.publication.outputHash ?? null,
-            );
+            let prepared;
+            try {
+              prepared = await prepare(source,deps.transform,old?.publication.outputHash ?? null);
+            } catch(error) {
+              if(!(error instanceof MeetingExtractionPending))throw error;
+              await deps.store.save(scope,{
+                principalId:cfg.principalId,bindingHash:fingerprint,admission:cfg.admission,
+                operation:saved?.operation??null,previous:saved?.previous??null,outcome:saved?.outcome??null,withdrawn:false,
+                sourceReference:{sourceId:source.sourceId,meetingId:source.meetingId,kind:source.kind},
+              });
+              return {state:"pending",code:error.code};
+            }
+            // A native agent can take time. Revalidate the full source after classification,
+            // before durable publication bytes are admitted. Pending old writes still reconcile unchanged.
+            const confirmed = await deps.readSource(cfg);
+            if(confirmed.state!=="ready" || confirmed.source.meetingId!==source.meetingId || confirmed.source.sourceId!==source.sourceId ||
+              confirmed.source.revision!==source.revision || confirmed.source.audience!==source.audience || confirmed.source.kind!==source.kind ||
+              confirmed.source.ready!==true || sha256(confirmed.source.text)!==sha256(source.text))
+              return {state:"pending",code:"source_changed_during_extraction"};
             const operation = prepareWebsiteOperation(
               prepared,
               cfg.meeting,
@@ -314,6 +333,7 @@ export async function runMeetingJob(
       })) ?? { state: "blocked", code: "owner_busy_or_recovery_required" }
     );
   } catch (error) {
+    if (error instanceof MeetingExtractionPending) return {state:"pending",code:error.code};
     return {
       state: "blocked",
       code:
