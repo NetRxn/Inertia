@@ -14,6 +14,8 @@ export interface PublicDraftingBinding {
   projectId: string;
   applicantSlug: string;
   matchId: string;
+  /** Administrator opt-in for the private immutable case handoff protocol. */
+  nativeCaseProgression?: boolean;
   producer: DraftingActor;
   reviewer: DraftingActor;
   bridge: PublicDraftingBridge;
@@ -23,6 +25,18 @@ const pendingCount=(value:unknown):value is number=>Number.isSafeInteger(value) 
 const hash = (value: unknown) => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 const text = (value: unknown) => typeof value === "string" && !!value.trim() && value.length <= 128;
+function caseHandoff(value: unknown, runId: string): Record<string, unknown> {
+  const r=exact(value,["version","selection_id","case_key","semantic_hash","native_run_id","workspace_hash","disposition","human_acceptance","submission","packet_hash"]);
+  const key=exact(r.case_key,["applicant_id","opportunity_namespace","opportunity_external_id"]);
+  const bounded=(v:unknown,max:number)=>typeof v==="string" && !!v.trim() && v.length<=max;
+  if(r.version!=="dfw-native-case-handoff-v1" || !text(r.selection_id) || !bounded(key.applicant_id,36) ||
+    !bounded(key.opportunity_namespace,64) || !bounded(key.opportunity_external_id,255) ||
+    !hash(r.semantic_hash) || !hash(r.workspace_hash) || !hash(r.packet_hash) || r.native_run_id!==runId ||
+    r.human_acceptance!=="not_accepted" || r.submission!=="not_submitted" ||
+    !["remaining_agent_work","awaiting_independent_review","awaiting_owner_input","awaiting_human_review"].includes(String(r.disposition)))
+    throw Error("Invalid authoritative native case handoff");
+  return r;
+}
 /** Native documents are summaries of domain state, never a second authority store. */
 function checkpointBody(operation:string,result:Record<string,unknown>,packet:Record<string,unknown>):string {
   const {research_evidence: _evidence,requirements:_requirements,knowledge_conflicts:_conflicts,...publicPacket}=packet;
@@ -67,7 +81,8 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   if (bindings.length > 1) throw Error("Only one DFW company database binding is supported");
   for (const b of bindings) {
     if ([b.companyId,b.projectId,b.applicantSlug,b.matchId,...Object.values(b.producer),...Object.values(b.reviewer)].some(v=>!text(v)) ||
-        b.producer.issueId===b.reviewer.issueId || b.producer.agentId===b.reviewer.agentId || b.producer.principalId===b.reviewer.principalId || typeof b.authorize!=="function")
+        b.producer.issueId===b.reviewer.issueId || b.producer.agentId===b.reviewer.agentId || b.producer.principalId===b.reviewer.principalId || typeof b.authorize!=="function" ||
+        (b.nativeCaseProgression!==undefined && typeof b.nativeCaseProgression!=="boolean"))
       throw Error("Invalid independent public drafting bindings");
   }
   async function configured(b: PublicDraftingBinding, signal?: AbortSignal) {
@@ -121,11 +136,18 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
       }
       if(Buffer.byteLength(JSON.stringify(params))>128*1024) throw Error("Public drafting parameters too large");
       await preflight();
-      const snapshot=async(input:Parameters<typeof writeNativeDocument>[1],signal?:AbortSignal)=>{
+      const snapshot=async(input:Parameters<typeof writeNativeDocument>[1],signal?:AbortSignal,immutable=false)=>{
         if(input.body.length>524288) throw Error("Public drafting checkpoint too large");
         await authorize(signal);
         // Recheck after helper reads, immediately before the actual native write.
-        await writeNativeDocument({...ctx.issues.documents,upsert:async value=>{await authorize(signal);if(value.issueId!==b[role].issueId)await target(b,b.reviewer,signal);return ctx.issues.documents.upsert(value);}},input);
+        await writeNativeDocument({...ctx.issues.documents,upsert:async value=>{
+          if(immutable) {
+            const current=await readNativeDocument(ctx.issues.documents,input.issueId,input.key,input.companyId);
+            if(current)throw Error(current.body===input.body?"Native immutable snapshot appeared; retry":"Native immutable snapshot conflict");
+          }
+          await authorize(signal);if(value.issueId!==b[role].issueId)await target(b,b.reviewer,signal);
+          return ctx.issues.documents.upsert(value);
+        }},input,immutable?{immutable:true}:{});
         await authorize(signal);
       };
       const result=await owner.own({companyId:b.companyId,namespaceScope:"inertia:public-drafting",key:discoveryHash([b.projectId,b.applicantSlug,b.matchId])},async()=>{
@@ -144,7 +166,7 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
         };
         try {
         await authorize();
-        const result=await b.bridge.call(op==="checkpoint"?"workspace":op,op==="review"?{...params,replay_only:reviewReplayOnly}:params,{
+        const result=await b.bridge.call(op==="checkpoint" && !b.nativeCaseProgression?"workspace":op,op==="review"?{...params,replay_only:reviewReplayOnly}:params,{
           context: authorize,
           review: async (request,signal)=>{
             if(role!=="producer" || !object(request) || !hash(request.request_id) || Buffer.byteLength(JSON.stringify(request))>128*1024)
@@ -187,7 +209,20 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
           await authorize();
           await ctx.issues.update(b.reviewer.issueId,{status:result.pending_review_count===0?"in_review":"in_progress"},b.companyId,{actorAgentId:run.agentId,actorRunId:run.runId});
         }
-        if(op==="checkpoint" || op==="save" || op==="save_gap_progress") {
+        if(op==="checkpoint" && b.nativeCaseProgression) {
+          const handoff=caseHandoff(result,run.runId);
+          const key="public-drafting-case:"+discoveryHash([handoff.selection_id,handoff.packet_hash,handoff.native_run_id]);
+          const body=JSON.stringify(handoff);
+          const old=await readNativeDocument(ctx.issues.documents,b.producer.issueId,key,b.companyId);
+          await authorize();
+          if(old && old.body!==body)throw Error("Native case handoff snapshot conflict");
+          if(!old)await snapshot({issueId:b.producer.issueId,companyId:b.companyId,key,body,
+            title:"Public funding case handoff; not human accepted or submitted",format:"markdown"},undefined,true);
+          await authorize();
+          const status=handoff.disposition==="awaiting_independent_review"?"blocked":handoff.disposition==="remaining_agent_work"?"in_progress":"in_review";
+          await ctx.issues.update(b.producer.issueId,{status},b.companyId,{actorAgentId:run.agentId,actorRunId:run.runId});
+        }
+        else if(op==="checkpoint" || op==="save" || op==="save_gap_progress") {
           const expected=op==="checkpoint" && object(result)?result.workspace_hash:params.workspace_hash;
           if(!object(result) || !object(result.packet) || !hash(expected) || result.packet.workspace_hash!==expected ||
             result.packet.status!=="public_machine_reviewed_draft_not_human_accepted" || !pendingCount(result.packet.pending_review_count) ||

@@ -5,6 +5,7 @@ export const publicDraftingSchema:JsonSchema={
   type:"object",additionalProperties:false,
   properties:{
     enabled:{type:"boolean",default:false},projectId:text,applicantSlug:text,matchId:text,producer:actor,reviewer:actor,
+    nativeCaseProgression:{type:"boolean",default:false,description:"Administrator opt-in to immutable private case checkpoint receipts. Requires matching pinned domain protocol; does not schedule new runs."},
     process:{type:"object",description:"Administrator-selected executable, entrypoint, single-company configurationPath and SHA-256 pins. Not model input.",additionalProperties:false,
       properties:{executable:{type:"string"},args:{type:"array",items:{type:"string"},maxItems:30},cwd:{type:"string"},entrypoint:{type:"string"},configurationPath:{type:"string"},timeoutMs:{type:"integer",minimum:100,maximum:120000},maxOutputBytes:{type:"integer",minimum:1024,maximum:4194304},pins:{type:"array",minItems:2,maxItems:128,items:{type:"object",properties:{path:{type:"string"},sha256:{type:"string",pattern:"^[a-f0-9]{64}$"}},required:["path","sha256"],additionalProperties:false}}},
       required:["executable","args","cwd","entrypoint","configurationPath","timeoutMs","maxOutputBytes","pins"]},
