@@ -1,3 +1,4 @@
+import { publicDraftingTools, publicDraftingCapabilities } from "./drafting/host.js";
 import { fundingDiscoveryManifest } from "./discovery/host.js";
 import { roundtableJobDeclaration } from "./roundtable/host.js";
 import { configurationSchema } from "./config.js";
@@ -14,6 +15,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   minimumHostVersion: "2026.1012.0",
   capabilities: [
     ...fundingDiscoveryManifest.capabilities,
+    ...publicDraftingCapabilities,
     "companies.read",
     "issues.read",
     "issues.create",
@@ -32,7 +34,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   ],
   entrypoints: { worker: "dist/src/worker.js" },
   database: { migrationsDir: "migrations" },
-  tools: fundingDiscoveryManifest.tools,
+  tools: [...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool)],
   jobs: [
     ...fundingDiscoveryManifest.jobs,
     roundtableJobDeclaration,

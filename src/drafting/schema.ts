@@ -1,0 +1,12 @@
+import type { JsonSchema } from "@paperclipai/plugin-sdk";
+const text={type:"string",minLength:1,maxLength:128};
+const actor={type:"object",properties:{issueId:text,agentId:text,principalId:text},required:["issueId","agentId","principalId"],additionalProperties:false};
+export const publicDraftingSchema:JsonSchema={
+  type:"object",additionalProperties:false,
+  properties:{
+    enabled:{type:"boolean",default:false},projectId:text,applicantSlug:text,matchId:text,producer:actor,reviewer:actor,
+    process:{type:"object",description:"Administrator-selected executable, entrypoint, single-company configurationPath and SHA-256 pins. Not model input.",additionalProperties:false,
+      properties:{executable:{type:"string"},args:{type:"array",items:{type:"string"},maxItems:30},cwd:{type:"string"},entrypoint:{type:"string"},configurationPath:{type:"string"},timeoutMs:{type:"integer",minimum:100,maximum:120000},maxOutputBytes:{type:"integer",minimum:1024,maximum:4194304},pins:{type:"array",minItems:2,maxItems:128,items:{type:"object",properties:{path:{type:"string"},sha256:{type:"string",pattern:"^[a-f0-9]{64}$"}},required:["path","sha256"],additionalProperties:false}}},
+      required:["executable","args","cwd","entrypoint","configurationPath","timeoutMs","maxOutputBytes","pins"]},
+  },
+};

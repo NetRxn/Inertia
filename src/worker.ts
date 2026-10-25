@@ -1,3 +1,4 @@
+import { registerConfiguredPublicDrafting } from "./drafting/setup.js";
 import { registerConfiguredFundingDiscovery } from "./discovery/setup.js";
 import {
   registerRoundtableJobs,
@@ -61,6 +62,7 @@ export function createPlugin() {
     multiCompanyConfig: true,
     async setup(ctx) {
       await registerConfiguredFundingDiscovery(ctx);
+      await registerConfiguredPublicDrafting(ctx);
       roundtableStatus = registerRoundtableJobs(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
