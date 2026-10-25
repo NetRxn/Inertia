@@ -1,0 +1,47 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patchSha256": "fd42c6cf1697dbd1dd99ebca752d174bc7607897608b9d23c09f0617db8509bf",
+  "files": {
+    "dist/agent-auth-jwt.d.ts": {
+      "originalSha256": "2075d3c5e17da78ddcd4c276a8b3650b7d392c6ebaa8c9c46d314b55881b5227",
+      "candidateSha256": "78c8a2bb24f19840b7fb9b0859768433e067281bafd451c0e324a86ec7f556bb"
+    },
+    "dist/agent-auth-jwt.js": {
+      "originalSha256": "f0d42df5889a544a8aaca0bda5a7e9101be483e5fb79249b11b8b5d3ce959eed",
+      "candidateSha256": "9d30ab16110c574050eea34f111858984614ad5a8ffb38ef54546c4d23865ab1"
+    },
+    "dist/app.d.ts": {
+      "originalSha256": "82dd908b08b98ab3e20fcf387081efc727a609361d92cab99e6afd4df5d76a6b",
+      "candidateSha256": "43f3904a65ef59c1bc4dc2eef70874332a9307d2a2e3d77251d7c85c05c77294"
+    },
+    "dist/app.js": {
+      "originalSha256": "cc96420060547914c1c3ef9f19f625e30be22dd19648c4d8dc1005de9d2ecf32",
+      "candidateSha256": "cf448d341e3a9a09cf1118ec486c8ff9df6ee28b985bdd0c5f4e0662fcc90036"
+    },
+    "dist/middleware/auth.d.ts": {
+      "originalSha256": "374350defc30a10b7cd8619e8142b57f0424fec0068070c843f885907bf0d34d",
+      "candidateSha256": "be490f3cf526744d1338d46b17261fff9b9bde864b718820bd9712d727b38f71"
+    },
+    "dist/middleware/auth.js": {
+      "originalSha256": "f9024ca81754d0270c67458cf42033ae68b2e3eaaa512d950c327553e692274d",
+      "candidateSha256": "dd73c53443723e8708affaefa020008d615c434bac637a93a99c1c8cf928b119"
+    },
+    "dist/routes/issues.d.ts": {
+      "originalSha256": "6168f698c7f88ebad1e36c58a50f196e48aafa7001972666d03a1a80411d2b45",
+      "candidateSha256": "a74b249f0b74b0cedcc67751e77ec8e7ed245c884cbfe6ffde2743b5f50d939b"
+    },
+    "dist/routes/issues.js": {
+      "originalSha256": "743bc9f972322a2c383f7fa8400d7513c2105fca669b8d56c105812186264ace",
+      "candidateSha256": "191101012001f3ece8fb02567682be803ada7ebe865deb331c5fa755259ec8b8"
+    },
+    "dist/services/heartbeat.d.ts": {
+      "originalSha256": "3e03a63c130421f9352424112998d8d0397d330036ac84045c2112d41fd47eb7",
+      "candidateSha256": "bb9775df165250018b3d6b1ce50d04f4b5134c764e238b65bc88b483f1d2fd79"
+    },
+    "dist/services/heartbeat.js": {
+      "originalSha256": "a8afeea6df9b7d8517230c9cdbed8ad6e81d05df916a9f09b8025442408f0176",
+      "candidateSha256": "ce44f5cee4ad1d9a2fd6a8eefe3c504533a574422b165cd7050b4e009de2a6d4"
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import {checkMemberFunctional} from './check-member-functional.mjs';
+import {checkMemberIngress} from './check-member-ingress.mjs';
 import {checkMemberBoundary} from './check-member-boundary.mjs';
 import {manifest} from './plugin/dist/src/manifest.js';
 import {checkNativeMembers} from './check-native-members.mjs';
@@ -48,8 +50,13 @@ try{
  const health=await wm.call(p.id,'health',{});assert.equal(health.status,'degraded');assert.equal(health.message,'Enable a company connection to begin.');
  const memberServices=m.buildHostServices(db,p.id,'netrxn.inertia',eb,()=>{},{});
  disposers.push(()=>memberServices.dispose());
+ if(process.env.MEMBER_FUNCTIONAL_ONLY==='true'){
+  await checkMemberFunctional({db,sql,companyId:company.id,issueService});
+ }else{
  await checkNativeMembers({db,sql,companyId:company.id,services:memberServices,issueService});
  await checkMemberBoundary({db,sql,companyId:company.id,services:memberServices,issueService,pluginDatabase:m.pluginDatabaseService(db),pluginId:p.id});
+ await checkMemberIngress({db,sql,companyId:company.id,services:memberServices,issueService,pluginDatabase:m.pluginDatabaseService(db),pluginId:p.id});
+ }
  await checkHostBinding(m.pluginDatabaseService(db),p.id,company.id);
  const disabled=await lc.disable(p.id,'Synthetic disabled lifecycle qualification');assert.equal(disabled.status,'disabled');console.log('LIFECYCLE_DISABLED',disabled.status);
  console.log('QUALIFICATION_ASSERTIONS_PASSED');

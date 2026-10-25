@@ -19,7 +19,8 @@ async function port() {
   const value=server.address().port; await new Promise((yes,no)=>server.close(e=>e?no(e):yes()));return value;
 }
 async function main() {
-  if(process.argv.length>2) throw Error('Usage: node scripts/cloud-rehearsal/run.mjs (no arguments)');
+  if(process.argv.length>3||(process.argv[2]!==undefined&&process.argv[2]!=='--member-functional')) throw Error('Usage: node scripts/cloud-rehearsal/run.mjs [--member-functional]');
+  const memberFunctionalOnly=process.argv[2]==='--member-functional';
   const host=join(here,'host'),hostPackage=JSON.parse(await readFile(join(host,'node_modules/paperclipai/package.json'),'utf8'));
   checkPrerequisites({version:hostPackage.version,env:process.env,platform:process.platform,arch:process.arch});
   const pg=join(here,'node_modules/@embedded-postgres/linux-x64/native');
@@ -42,12 +43,15 @@ async function main() {
     const url=`postgres://fixture:${password}@127.0.0.1:${pgPort}/postgres`;
     const local=join(work,'host');await mkdir(join(local,'plugin'),{recursive:true});
     await symlink(join(host,'node_modules'),join(local,'node_modules'),'dir');
-    for(const f of ['qualify-runtime.mjs','migration-inventory.mjs','check-host-binding.mjs','check-native-members.mjs','check-member-boundary.mjs','check-pg-recovery.mjs'])await cp(join(here,f),join(local,f));
+    for(const f of ['qualify-runtime.mjs','migration-inventory.mjs','check-host-binding.mjs','check-native-members.mjs','check-member-boundary.mjs','check-member-ingress.mjs','check-member-hook.mjs','check-member-functional.mjs','check-pg-recovery.mjs'])await cp(join(here,f),join(local,f));
     for(const f of ['package.json','README.md','LICENSE','migrations','docs','dist/src'])await cp(join(root,f),join(local,'plugin',f),{recursive:true});
     await symlink(join(root,'node_modules'),join(local,'plugin/node_modules'),'dir');
-    const dbEnv={QUALIFICATION_DATABASE_URL:url};
+    await cp(join(root,'host-composition/paperclip-durable-funding-review/member'),join(local,'member'),{recursive:true});
+    const dbEnv={QUALIFICATION_DATABASE_URL:url,MEMBER_FUNCTIONAL_ONLY:memberFunctionalOnly?'true':'false'};
     await run('migrations',process.execPath,['--input-type=module','-e',"import {applyPendingMigrations} from '@paperclipai/db'; await applyPendingMigrations(process.env.QUALIFICATION_DATABASE_URL)"],local,dbEnv);
     await run('native',process.execPath,['qualify-runtime.mjs'],local,dbEnv);
+    if(memberFunctionalOnly){receipt.memberFunctionalRegression=true;receipt.securitySignoff=false;}else{receipt.memberHttp=true;receipt.memberNativeProcessAdapter=true;receipt.memberAttemptAuthority='native-signed-jti/postgres/owning-controller';}
+    receipt.memberSourcePatchSha256=createHash('sha256').update(await readFile(join(root,'host-composition/paperclip-durable-funding-review/member/patches/native-attempt.patch'))).digest('hex');
     await run('seed',process.execPath,['check-pg-recovery.mjs','seed'],local,dbEnv);
     await run('crash',join(pg,'bin/pg_ctl'),['-D',join(work,'db'),'-m','immediate','stop']);
     knownStopped=false;
