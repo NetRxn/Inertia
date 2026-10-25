@@ -156,12 +156,19 @@ try{
     const documents=await wire.services.issueDocuments.list({issueId:reviewer.issueId,companyId});
     assert.equal(documents.length,1);
     const document=await wire.services.issueDocuments.get({issueId:reviewer.issueId,companyId,key:documents[0].key});
-    request=JSON.parse(document.body).request;
+    const protectedContext=await call('funding_review_context',{},reviewer);
+    assert.equal(protectedContext.requests.length,1);
+    request=protectedContext.requests[0];
+    assert.deepEqual(request,JSON.parse(document.body).request);
     assert.equal(request.request_id,saved.results[0].request_id);
     assert.ok(!document.body.includes('PRIVATE-'));
     assert.ok(!document.body.includes(producer.principalId));
+    // Editable native artifact content is deliberately not reviewer authority.
+    await db.update(schema.documents).set({latestBody:JSON.stringify({request:{request_id:'f'.repeat(64),principal_id:'forged-reviewer',candidate:{value:'FORGED-DOCUMENT-TEXT'}}})}).where(eq(schema.documents.id,document.id));
+    const authoritative=await call('funding_review_context',{request_id:request.request_id},reviewer);
+    assert.deepEqual(authoritative.requests,[request]);
   });
-  await check('native review document supplies the complete strict machine-review output contract',async()=>{
+  await check('protected command-free review context supplies the complete strict machine-review output contract',async()=>{
     const contract=request.output_contract;
     assert.equal(contract.type,'object');
     assert.equal(contract.additionalProperties,false);
@@ -180,6 +187,19 @@ try{
     assert.deepEqual(new Set(finding.properties.support.enum),new Set(['supported','partial','unsupported','contradicted']));
     for(const key of ['excerpt','rationale']){assert.equal(finding.properties[key].type,'string');assert.equal(finding.properties[key].minLength,1);}
   });
+  await check('protected reviewer context rejects producer, identity arguments and unknown request hashes',async()=>{
+    await assert.rejects(()=>call('funding_review_context'),/actor denied/);
+    await assert.rejects(()=>call('funding_review_context',{principal_id:reviewer.principalId},reviewer),/Invalid public drafting parameters/);
+    await assert.rejects(()=>call('funding_review_context',{request_id:'f'.repeat(64)},reviewer),/rejected request/);
+    const exact=await call('funding_review_context',{request_id:request.request_id},reviewer);
+    assert.deepEqual(exact.requests,[request]);
+  });
+  await check('producer handoff stays blocked while the independent review is pending',async()=>{
+    const result=await call('funding_drafting_checkpoint');
+    assert.equal(result.packet.pending_review_count,1);
+    const issue=await wire.services.issues.get({issueId:producer.issueId,companyId});
+    assert.equal(issue.status,'blocked');
+  });
   const artifact={candidate_hash:request?.candidate.candidate_hash,requirement_hash:request?.candidate.requirement_hash,evidence_set_hash:request?.candidate.evidence_set_hash,rubric_version:'qualification-deterministic-v1',requirement_supported:true,findings:[{claim_start:0,claim_end:text.length,support:'supported',excerpt:'Describe the program and measurable outcomes.',rationale:'Deterministic fixture judgment, not live model quality.'}]};
   await check('reviewer identity comes from native callback, never candidate JSON',async()=>{
     await assert.rejects(()=>call('review_funding_candidate',{request_id:request.request_id,artifact}),/actor denied/);
@@ -188,10 +208,16 @@ try{
     await assert.rejects(()=>call('review_funding_candidate',{request_id:'f'.repeat(64),artifact},reviewer),/rejected request/);
     assert.equal(inspect().reviews.length,0);
     const result=await call('review_funding_candidate',{request_id:request.request_id,artifact},reviewer);
-    assert.deepEqual(result,{request_id:request.request_id,state:'supported'});
+    assert.deepEqual(result,{request_id:request.request_id,state:'supported',pending_review_count:0});
     assert.ok(contexts.some(x=>x.op==='review'&&x.context.principal_id===reviewer.principalId&&x.context.run_id===reviewer.runId));
     assert.equal(wire.wakeups.length,2);
     assert.equal(wire.wakeups[1].issueId,producer.issueId);
+  });
+  await check('protected exact context recovers the recorded artifact for in-review completion replay',async()=>{
+    const result=await call('funding_review_context',{request_id:request.request_id},reviewer);
+    assert.deepEqual(result.requests[0].completed_review,artifact);
+    const issue=await wire.services.issues.get({issueId:reviewer.issueId,companyId});
+    assert.equal(issue.status,'in_review');
   });
   await check('producer retry reuses reviewed durable candidate without human acceptance',async()=>{
     const result=await call('save_funding_proposals',saveParams);
@@ -208,11 +234,31 @@ try{
     await db.insert(schema.heartbeatRuns).values({id:successor.runId,companyId,agentId:reviewer.agentId,status:'running',contextSnapshot:{issueId:reviewer.issueId,projectId}});
     await db.update(schema.issues).set({checkoutRunId:successor.runId,executionRunId:successor.runId}).where(eq(schema.issues.id,reviewer.issueId));
     const result=await call('review_funding_candidate',{request_id:request.request_id,artifact},successor);
-    assert.deepEqual(result,{request_id:request.request_id,state:'supported'});
+    assert.deepEqual(result,{request_id:request.request_id,state:'supported',pending_review_count:0});
     const changed=structuredClone(artifact);changed.findings[0].rationale='Changed review bytes must not overwrite the accepted machine artifact.';
     await assert.rejects(()=>call('review_funding_candidate',{request_id:request.request_id,artifact:changed},successor),/rejected request/);
     assert.equal(wire.wakeups.length,2);
     assert.ok(contexts.some(x=>x.op==='review'&&x.context.run_id===successor.runId));
+  });
+  await check('new Alpha workspace reload returns reviewed output without original tool arguments or shell',async()=>{
+    const result=await call('funding_drafting_workspace');
+    assert.equal(result.packet.pending_review_count,0);
+    assert.equal(result.packet.workspace_hash,result.workspace_hash);
+    assert.equal(result.packet.draft_candidates[0].human_acceptance,'not_accepted');
+    const critic=await wire.services.issues.get({issueId:reviewer.issueId,companyId});
+    assert.equal(critic.status,'in_review');
+    const noPending=await call('funding_review_context',{}, {...reviewer,runId:contexts.filter(x=>x.op==='review').at(-1).context.run_id});
+    assert.deepEqual(noPending.requests,[]);
+  });
+  await check('canonical preparation handoff is in_review, retryable, and ordinary save stays closed',async()=>{
+    const result=await call('funding_drafting_checkpoint');
+    assert.equal(result.packet.pending_review_count,0);
+    const issue=await wire.services.issues.get({issueId:producer.issueId,companyId});
+    assert.equal(issue.status,'in_review');
+    const before=(await wire.services.issueDocuments.list({issueId:producer.issueId,companyId})).length;
+    await call('funding_drafting_checkpoint');
+    assert.equal((await wire.services.issueDocuments.list({issueId:producer.issueId,companyId})).length,before);
+    await assert.rejects(()=>call('save_funding_proposals',saveParams),/assignment unavailable/);
   });
   const domainSnapshot=inspect();
   await check('durable domain SQL records exact independent identities and only one effect',async()=>{
@@ -228,7 +274,7 @@ try{
     assert.equal(domainSnapshot.applicant_field_count,baseline.applicant_field_count);
     assert.equal(domainSnapshot.outcome_count,baseline.outcome_count);
   });
-  const receipt={scope:'Controlled native gateway integration; no HTTP authentication, deployed runtime, real model, source acquisition, or live wake qualification.',nativeVersion:'2026.1012.0',migrationCount,nativeDatabase:'isolated in-memory PGlite with all pinned migrations and constraints',domainDatabase:'isolated SQLite using real DFW domain services',fixtures:['authenticated-route actor identity','native company/project/issues/agents/runs and tool allow policy','owner serialization callback','reviewer wake queue and deterministic candidate judgment','public sponsor evidence'],realPath:['createToolGatewayService.executePluginTool','createPluginToolDispatcher.executeTool','createPluginToolRegistry.executeTool','startWorkerRpcHost executeTool JSON-RPC','registerPublicDrafting callback','native buildHostServices issue reads/checkout/documents','createPublicDraftingBridge','public_drafting_stdio.py','PublicDraftingService'],checks,bridgeCalls,freshContextReads:contexts.length,wakeRequests:wire.wakeups.length,workDirectory:work};
+  const receipt={scope:'Controlled native gateway integration; no HTTP authentication, deployed runtime, real model, source acquisition, or live wake qualification.',nativeVersion:'2026.1012.0',migrationCount,nativeDatabase:'isolated in-memory PGlite with all pinned migrations and constraints',domainDatabase:'isolated SQLite using real DFW domain services',fixtures:['authenticated-route actor identity','native company/project/issues/agents/runs and tool allow policy','owner serialization callback','reviewer wake queue and deterministic candidate judgment','public sponsor evidence'],realPath:['createToolGatewayService.executePluginTool','createPluginToolDispatcher.executeTool','createPluginToolRegistry.executeTool','startWorkerRpcHost executeTool JSON-RPC','registerPublicDrafting callback','native buildHostServices issue reads/checkout/documents/update','createPublicDraftingBridge','public_drafting_stdio.py','PublicDraftingService'],checks,bridgeCalls,freshContextReads:contexts.length,wakeRequests:wire.wakeups.length,workDirectory:work};
   receipt.domainSnapshot=domainSnapshot;
   receipt.sourcePins=selectedPins;
   receipt.publicSourceHashes={};

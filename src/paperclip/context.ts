@@ -5,6 +5,8 @@ export interface NativeTaskBinding {
   issueId: string;
   agentId: string;
   authorize: () => Promise<boolean>;
+  /** Only bounded read/completion replay may opt in; ordinary task writes stay closed. */
+  allowInReview?: true;
 }
 const text = (value: unknown) => typeof value === "string" && !!value.trim() && value.length <= 128;
 async function admitted(binding: Pick<NativeTaskBinding,"authorize">, signal?: AbortSignal) {
@@ -17,7 +19,7 @@ export async function validateNativeTaskRun(ctx: Pick<PluginContext,"issues">, b
   if(![b.companyId,b.projectId,b.issueId,b.agentId,r.runId].every(text) || r.companyId!==b.companyId || r.projectId!==b.projectId || r.agentId!==b.agentId)
     throw Error("Native task actor denied");
   await admitted(b,signal);
-  const matches=(row:Awaited<ReturnType<PluginContext["issues"]["get"]>>)=>!!row && row.id===b.issueId && row.companyId===b.companyId && row.projectId===b.projectId && row.assigneeAgentId===b.agentId && ["todo","in_progress","blocked"].includes(row.status);
+  const matches=(row:Awaited<ReturnType<PluginContext["issues"]["get"]>>)=>!!row && row.id===b.issueId && row.companyId===b.companyId && row.projectId===b.projectId && row.assigneeAgentId===b.agentId && (["todo","in_progress","blocked"].includes(row.status) || (b.allowInReview === true && row.status === "in_review"));
   if(!matches(await ctx.issues.get(b.issueId,b.companyId)))throw Error("Native task assignment unavailable");
   const tree=await ctx.issues.getSubtree(b.issueId,b.companyId,{includeActiveRuns:true,includeAssignees:true});
   const active=tree.activeRuns?.[b.issueId]?.find(active=>active.id===r.runId),agent=tree.assignees?.[b.agentId];

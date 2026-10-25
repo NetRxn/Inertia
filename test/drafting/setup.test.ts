@@ -6,7 +6,7 @@ const processConfig={executable:"/usr/bin/python3",args:["/opt/dfw/bridge.py","-
 const config=()=>({enabled:true,projectId:"project",applicantSlug:"dao",matchId:"match",producer:{issueId:"p",agentId:"a",principalId:"p"},reviewer:{issueId:"r",agentId:"b",principalId:"r"},process:processConfig});
 function host(value:any,companies=["company"]){const tools=new Map();return {tools,ctx:{companies:{list:async()=>companies.map(id=>({id}))},config:{get:async()=>({publicDrafting:value})},tools:{register:(name:string,_:any,fn:any)=>tools.set(name,fn)},issues:{},db:{namespace:BRIDGE_NAMESPACE}} as any};}
 it("is disabled by default and starts no process or native actions",async()=>{
- const f=host(undefined);await registerConfiguredPublicDrafting(f.ctx);expect(f.tools.size).toBe(4);
+ const f=host(undefined);await registerConfiguredPublicDrafting(f.ctx);expect(f.tools.size).toBe(6);
  await expect(f.tools.get("funding_drafting_workspace")({},{companyId:"company",agentId:"a",runId:"r",projectId:"project"})).rejects.toThrow(/disabled/);
  expect((manifest.instanceConfigSchema as any).properties.publicDrafting.properties.enabled.default).toBe(false);
  expect(manifest.capabilities).toContain("issue.subtree.read");

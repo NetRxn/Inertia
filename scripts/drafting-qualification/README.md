@@ -102,3 +102,10 @@ The final domain assertions require exactly one candidate, one independent revie
 one still-`suggested` proposal and one gap checkpoint. Producer and reviewer
 principal/run IDs come from their separate native runs. No new applicant field,
 human acceptance, signoff, outcome event or submission is created.
+
+The command-free continuation additionally qualifies protected reviewer request discovery,
+canonical native checkpoints, blocked/in-review preparation lifecycle, and Alpha workspace
+reload after Beta without remembered proposal arguments. Actor authentication, model judgment
+and wake scheduling remain fixtures. No claim is made that Docker shell commands work; the
+application route uses plugin MCP callbacks only. The source harness itself runs local test
+commands, which is not a deployed Codex command capability.
