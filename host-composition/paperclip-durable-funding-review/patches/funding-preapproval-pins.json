@@ -1,0 +1,41 @@
+{
+  "version": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch": "paperclip-2026.1012.0-funding-preapproval.patch",
+  "patch_sha256": "9d2a252bca04db1cfc769fd97c52f74ecfbb7c6084abb3e7af7218e25792ebae",
+  "files": {
+    "@paperclipai/server/dist/services/heartbeat.js": {
+      "base_sha256": "e0c90a489d931d218878980d9b9f97af5e8ec1fa4aff68ca220a09f14c9c13f9",
+      "candidate_sha256": "b15b823e013f3420dbdef7a9f8a9f6395f872cb74cf3261ca427ce8b987902e0"
+    },
+    "@paperclipai/adapter-codex-local/dist/server/execute.js": {
+      "base_sha256": "a3c34bcddaebe1346c1292b1d70e16c23a3154b1e7a68f40cd1912d7c8593f04",
+      "candidate_sha256": "452472908613160cf95f7e3a683ef6583ef87efa9c4cfa09581b688c733f9c40"
+    },
+    "@paperclipai/adapter-codex-local/dist/server/codex-home.js": {
+      "base_sha256": "b2d5d6b950abfac9b7434f8c57959cf534c2d7c2890db7b6fcf7ba091b60a115",
+      "candidate_sha256": "847bda3dcf61a39532a862d205846e198de138e6d364120732998dad3e62bf1d"
+    },
+    "@paperclipai/server/dist/services/native-runtime/funding-tool-preapproval.js": {
+      "base_sha256": null,
+      "candidate_sha256": "c51b799fd85f4addb2a1679b4f738e2b9d676d6ba9a172f9f25f9717f11b5cdf"
+    }
+  },
+  "unchangedGuards": {
+    "@paperclipai/server/dist/services/plugin-tool-registry.js": "184e62b726075b94189e70eef99a51fbc662956e19550e36ca1c39882f9946b8",
+    "@paperclipai/server/dist/services/plugin-tool-dispatcher.js": "99e5e1cba172e401f2b23d4bb93059e3d9126d95d0c4e06b39a78c803896aa06",
+    "@paperclipai/server/dist/routes/tool-gateway.js": "6d9f5b48468c33f7f77864650b9dc456110aae3ecdbd93e1dc90cd5818e9ca23",
+    "@paperclipai/server/dist/services/plugin-manifest-validator.js": "7982729d2465b166e80a0cf75b10a11b9619bf8e340d5fe13d4749c4dac3457a",
+    "@paperclipai/server/dist/services/ai-connection-runtime.js": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874",
+    "@paperclipai/adapter-codex-local/dist/server/codex-args.js": "89f0360e73e6fd2c8cb642b2e438db8d63e7e34131b9392a1caf477610c9690b",
+    "@paperclipai/server/dist/services/tool-gateway.js": "3cbf18e06ba7a063243e38ab752acb880181031acb58fd455b40628c135ec80a",
+    "@paperclipai/server/dist/services/tool-gateway.d.ts": "95a97a88fb8dd5839213344d8366a9e3bda9abce4b6b692bbf26d995d0839ff5",
+    "@paperclipai/server/dist/services/native-runtime/runtime-context.js": "f2cacc07d4556cb4650f83835c3f1f044b2e3fb5c3421e2f26afba2862df31c0",
+    "@paperclipai/server/dist/services/native-runtime/assigned-mcp-tools.js": "bb81c48238c91b37651615ae80fe9febf2fbfefb90df19d2863a6e66feae4149",
+    "@paperclipai/server/dist/services/native-runtime/assigned-mcp-tools.d.ts": "7643550cc7625c0463a65e87497a1202dbc62fac222fc9d4b407289c3724b8be",
+    "@paperclipai/adapter-codex-local/dist/index.js": "08113c94832492ce299f298d58f13c8347c2302f963d651e97a65c34d76fd274",
+    "@paperclipai/adapter-codex-local/dist/server/acp.js": "9f4873de9d728a7fa1ede0a3901f75c5728727318889ea689a7e77afbbfa9753",
+    "@paperclipai/adapter-codex-local/dist/server/codex-args.d.ts": "06acb3354472987410541f18d1270c6c804ac5e638729a3e44eb835d88a3494e",
+    "@paperclipai/adapter-codex-local/dist/server/test.js": "365717556f480752b8ae0381001277ca3a70940fc3d434c587b0111ec013d1f9"
+  }
+}

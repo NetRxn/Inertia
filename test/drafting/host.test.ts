@@ -67,3 +67,16 @@ it("fails closed on checkout denial and reviewer target reassignment",async()=>{
   const g=fixture();g.rows.reviewer.assigneeAgentId="replacement";g.bridge.call=async (_:any,__:any,c:any)=>c.review({request_id:"a".repeat(64)});
   await expect(g.tools.get("save_funding_proposals")({workspace_hash:"a".repeat(64),proposals:[{}]},g.producer)).rejects.toThrow();expect(g.docs.size).toBe(0);expect(g.wakeups.size).toBe(0);
 });
+
+it("declares observed native ownership transitions as writes with conservative destructive hints",async()=>{
+  for(const declaration of publicDraftingTools){
+    const f=fixture(),reviewer=["review","review_context"].includes(declaration.operation);
+    const params=declaration.operation==="save"?{workspace_hash:"a".repeat(64),proposals:[{}]}:declaration.operation==="save_gap_progress"?{workspace_hash:"a".repeat(64),progress:{}}:declaration.operation==="review"?{request_id:"a".repeat(64),artifact:{}}:{};
+    // Some fixture bridge responses deliberately lack downstream domain fields;
+    // the observed ownership transition happens before that response is consumed.
+    await f.tools.get(declaration.name)(params,reviewer?f.reviewer:f.producer).catch(()=>{});
+    expect(f.events).toContain("checkout:"+(reviewer?"reviewer":"producer"));
+    expect(f.seen.length).toBeGreaterThan(0);
+    expect(declaration.annotations).toEqual({readOnlyHint:false,destructiveHint:true,openWorldHint:false,idempotentHint:false});
+  }
+});

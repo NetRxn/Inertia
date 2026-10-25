@@ -1,0 +1,69 @@
+--- a/dist/services/plugin-tool-registry.js
++++ b/dist/services/plugin-tool-registry.js
+@@ -28,6 +28,14 @@
+  * Example: `"acme.linear:search-issues"`
+  */
+ export const TOOL_NAMESPACE_SEPARATOR = ":";
++/** Preserve only explicit boolean MCP effect hints. Unknown/malformed metadata stays absent and conservative. */
++export function validatedToolAnnotations(value) {
++    if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
++    const keys = Object.keys(value);
++    const allowed = ["readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint"];
++    if (!keys.length || keys.some(key => !allowed.includes(key) || typeof value[key] !== "boolean")) return undefined;
++    return Object.fromEntries(keys.map(key => [key, value[key]]));
++}
+ // ---------------------------------------------------------------------------
+ // Factory: createPluginToolRegistry
+ // ---------------------------------------------------------------------------
+@@ -92,6 +100,7 @@
+             displayName: decl.displayName,
+             description: decl.description,
+             parametersSchema: decl.parametersSchema,
++            ...(validatedToolAnnotations(decl.annotations) ? { annotations: validatedToolAnnotations(decl.annotations) } : {}),
+         };
+         byNamespace.set(namespacedName, entry);
+         let pluginTools = byPlugin.get(pluginId);
+--- a/dist/services/plugin-tool-dispatcher.js
++++ b/dist/services/plugin-tool-dispatcher.js
+@@ -103,6 +103,7 @@
+             displayName: tool.displayName,
+             description: tool.description,
+             parametersSchema: tool.parametersSchema,
++            ...(tool.annotations ? { annotations: { ...tool.annotations } } : {}),
+             pluginId: tool.pluginDbId,
+         };
+     }
+--- a/dist/routes/tool-gateway.js
++++ b/dist/routes/tool-gateway.js
+@@ -1,3 +1,4 @@
++import { validatedToolAnnotations } from "../services/plugin-tool-registry.js";
+ import { Router } from "express";
+ import { and, desc, eq, gte, ilike, inArray, lt, or, sql } from "drizzle-orm";
+ import { agents, toolApplications, toolCallEvents, toolConnections, toolInvocations } from "@paperclipai/db";
+@@ -110,6 +111,7 @@
+                             title: tool.displayName,
+                             description: tool.description,
+                             inputSchema: tool.parametersSchema ?? { type: "object", properties: {} },
++                            ...(validatedToolAnnotations(tool.annotations) ? { annotations: validatedToolAnnotations(tool.annotations) } : {}),
+                         })),
+                         {
+                             name: "paperclip_list_resources",
+--- a/dist/services/plugin-manifest-validator.js
++++ b/dist/services/plugin-manifest-validator.js
+@@ -1,3 +1,4 @@
++import { validatedToolAnnotations } from "./plugin-tool-registry.js";
+ /**
+  * PluginManifestValidator — schema validation for plugin manifest files.
+  *
+@@ -53,7 +54,10 @@
+             if (result.success) {
+                 return {
+                     success: true,
+-                    manifest: result.data,
++                    manifest: { ...result.data, ...(result.data.tools ? { tools: result.data.tools.map((tool, index) => {
++                        const annotations = validatedToolAnnotations(input?.tools?.[index]?.annotations);
++                        return { ...tool, ...(annotations ? { annotations } : {}) };
++                    }) } : {}) },
+                 };
+             }
+             const details = result.error.issues.map((issue) => ({
