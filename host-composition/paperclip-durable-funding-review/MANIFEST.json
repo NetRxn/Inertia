@@ -8,7 +8,7 @@
     ".gitignore": "287d651d96bb11ef15b965252311b5f3f486b52e21936020e0fd11fc977e4981",
     "ACTIVATION-CONTRACT.md": "b755fdc8f800304037d170684578c9fb8713530a754674074921fa4b7a8b22c6",
     "LICENSE.paperclip": "7f8a27f0979bded50e240caa8c8c29f3088ddf87032cb83e5a9732bff91d18b4",
-    "README.md": "8e2df77bc7dc24c253387e28b85a3e9873bdbf961e92530151b4ca06b8400966",
+    "README.md": "8d23755a55f4787f8e1b0949e00b84a677f997db76c3e1dc5d90a831dee5a470",
     "UPGRADE.md": "c23ad4a96277f1cc7b110ddd6ed887a7f603928cb20247f453f8b72ab64c4401",
     "UPSTREAM-NOTICE.md": "16d7f6a005a62567b12f546df324e8299b4a3e0d2142ccc0693815c0d825b120",
     "cross-domain/dfw-host.py": "ec989ff4fb44e8ac1b4c7e021a37fbb2d8a90c19a66a58bfbde7493e8fedca50",
@@ -32,7 +32,7 @@
     "evidence/types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "evidence/upstream-interactions.log": "2100eb3c5c30d4f84289fdf77e2c880d495e812eaaa39cf3a7e1f341e05798e1",
     "package-lock.json": "2aa5e2abc6dfb23e40b2921c3d9e1820d5be3d87099d40cdaa8182c2612bd7df",
-    "package.json": "8fd508791d3d30e7ec9e11fdf76f8dc4f06cebc42fd0842c1370eb2ec95ba038",
+    "package.json": "20c75c8327bb0ec341a59776d3bf9291bbaa24eb52435400f61ab6dc196adc7a",
     "patches/paperclip-2026.1012.0-durable-capture.patch": "8bb9cd51ffb5eb692dee4c0d7acd3e82b4ec85bcce9230696c4e8e86917986bc",
     "patches/pinned-files.json": "565f97b9a2d8ecd958ab607ae20950de0c64dc305882ddf645fee8a5679b9b02",
     "scripts/bootstrap.mjs": "8f59582f3343755c8760fd7dd64c8ee37ec254b4feed0c7a3d4e46c5ecb6e9c4",
@@ -102,7 +102,13 @@
     "transport/tests/member-delivery.test.mjs": "b61a0a32e8072ee120274644c382fb12487286f783ddd3504d726733407af4d3",
     "transport/tests/member-mount.test.mjs": "4312a58ac851e50867c310b20483c544903748fdae3caaeec1213c936679bb0b",
     "transport/tests/member-source.test.mjs": "ec998379981f2b23651e062a645430b00d41dfbfc47812bdaf490aad8a70ce3d",
-    "transport/tests/run-member-cross-domain-postgres.sh": "b65cb972233eaa2f0f3c791809956724aab26fff8f3e66c0198f12d38a60afde"
+    "transport/tests/run-member-cross-domain-postgres.sh": "b65cb972233eaa2f0f3c791809956724aab26fff8f3e66c0198f12d38a60afde",
+    "PLUGIN-RUNTIME-DELIVERY.md": "c9557a12e7f6d70b914a6dbb388f8dd6cc2c6e2c6fdf67f3689ef5c304f990b6",
+    "patches/paperclip-2026.1012.0-plugin-runtime.patch": "07be813824a293451950aca5c6eb9d15d18c5b1a4c0051ea2122dd6ba3ac8beb",
+    "patches/plugin-runtime-pins.json": "abeb3dff49c8ecf405922d8ee40ddab6d7ed8807cdf1b5f5877d68a50fe8338b",
+    "scripts/apply-plugin-runtime.mjs": "2c282f7f18b10b8c07cae8440f00da1ea4bb2ca67461dee280ef11f21e188ac2",
+    "tests/plugin-runtime-delivery.test.mjs": "d3cd05f7be2bd43e9c6b54d74796672248624d0a0f8cca7d996af32a89b296fb",
+    "tests/plugin-runtime-installer.test.mjs": "a41329ef8839eae472f4f145ee0e67a5c36bbefdcadaad86cd5d4d97b1a15821"
   },
   "memberPacketCapture": {
     "state": "source-only Task 1; synthetic admission; independent review pending",
@@ -111,5 +117,14 @@
     "schema": "inertia.member-packet-acceptance.v2",
     "decisionProofSchema": "inertia.native-member-access-decision.v2",
     "nativeSourceSha256": "a6bccf454e7cca3e156616a6549c9fb2c729749ee72106928699255e7e449a65"
+  },
+  "pluginRuntimeDelivery": {
+    "kind": "exact-source additive runtime delivery repair",
+    "sourceVersion": "2026.1012.0",
+    "latestCheckedVersion": "2026.1023.0",
+    "checkedDate": "2026-10-25",
+    "ordinaryManagedConnectionGate": "unchanged",
+    "schemaMigration": false,
+    "liveActivation": false
   }
 }
