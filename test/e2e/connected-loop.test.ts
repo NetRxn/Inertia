@@ -518,3 +518,52 @@ it("reports all scoped unknown mutations even when a different company fills the
     await f.pg.close();
   }
 });
+it('recovers an old business receipt with a fresh first transport timestamp', async () => {
+ const f=await fixture(); try {
+  const key={relay:binding.relay,eventId:f.event.id};
+  await f.store.claim(key,{destination:binding,command:{},receiptKey:'recovered-old'});
+  await f.store.saveOutcome(key,'applied',{nativeId:'old-comment',message:'Comment added.'});
+  await f.db.execute(`UPDATE ${BRIDGE_NAMESPACE}.bridge_inbox SET created_at='2020-01-01T00:00:00Z' WHERE receipt_key='recovered-old'`);
+  await createBridge(f.deps).reconcile();
+  expect(f.receipts).toHaveLength(1);
+  expect(f.receipts[0].created_at).toBe(1000);
+  expect(JSON.parse(f.receipts[0].content).sourceCreatedAt).toBe('2020-01-01T00:00:00.000Z');
+  expect((await f.store.getOutbox('recovered-old'))?.state).toBe('delivered');
+ } finally { await f.pg.close(); }
+});
+it.each([false,true])('keeps an interrupted receipt claim until stopped-worker recovery (possible acceptance=%s)', async accepted => {
+ const f=await fixture(); try {
+  const event=finalizeEvent({kind:9,created_at:1000,tags:[['h',binding.channelId],['e',binding.rootId,'','root'],['e',binding.rootId,'','reply']],content:JSON.stringify({issueId:'issue'})},bridgeKey);
+  await f.store.putOutbox({receiptKey:'interrupted',relay:binding.relay,eventId:event.id,event});
+  await f.deps.runtime.scopeReceipt('interrupted','issue');
+  expect(await f.store.claimCommentDelivery('interrupted','stopped-worker')).toBe(true);
+  if(accepted) await f.store.markDeliveryAttempt('interrupted','stopped-worker');
+  const paths:string[]=[];
+  f.deps.buzz=makeBuzzHttpClient({relayUrl:binding.relay,signer:t=>finalizeEvent(t,bridgeKey),clock:()=>2000,sleep:async()=>{},fetch:(async(url,init)=>{
+   paths.push(String(url)); expect(JSON.parse(String(init?.body))).toEqual([{ids:[event.id]}]);
+   return new Response(JSON.stringify(accepted?[event]:[]));
+  }) as typeof fetch});
+  const health=await createBridge(f.deps).reconcile();
+  expect(health.state).toBe('uncertain');expect(health.inFlightPublications).toBe(1);expect(health.message).toContain('prior worker is verified stopped');
+  expect(paths).toEqual([]);
+  expect(await f.store.recoverCommentDelivery('interrupted','wrong-worker')).toBe(false);
+  // Explicit administrative recovery is only permitted after verifying the old worker stopped.
+  expect(await f.store.recoverCommentDelivery('interrupted','stopped-worker')).toBe(true);
+  await createBridge(f.deps).reconcile();
+  expect(paths).toEqual(['https://buzz.example/query']);
+  expect(await f.store.getOutbox('interrupted')).toMatchObject({eventId:event.id,state:accepted?'delivered':'pending',deliveryAttempted:true});
+  expect(f.calls()).toBe(0);
+ } finally {await f.pg.close();}
+});
+it('durably defers an aged exact-ID readback according to relay Retry-After', async () => {
+ const f=await fixture();try {
+  const event=finalizeEvent({kind:9,created_at:1000,tags:[['h',binding.channelId],['e',binding.rootId,'','root'],['e',binding.rootId,'','reply']],content:JSON.stringify({issueId:'issue'})},bridgeKey);
+  await f.store.putOutbox({receiptKey:'aged-defer',relay:binding.relay,eventId:event.id,event});
+  let queries=0;
+  f.deps.buzz=makeBuzzHttpClient({relayUrl:binding.relay,signer:t=>finalizeEvent(t,bridgeKey),clock:()=>2000,sleep:async()=>{},fetch:(async(url)=>{expect(String(url)).toBe('https://buzz.example/query');queries++;return new Response('',{status:429,headers:{'retry-after':'120'}});}) as typeof fetch});
+  await createBridge(f.deps).reconcile();
+  expect(queries).toBe(1); expect(await f.store.listOutbox()).toEqual([]);
+  expect(await f.store.getOutbox('aged-defer')).toMatchObject({state:'pending',deliveryAttempted:true,eventId:event.id});
+  await createBridge(f.deps).reconcile();expect(queries).toBe(1);
+ }finally {await f.pg.close();}
+});

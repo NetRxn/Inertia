@@ -21,7 +21,15 @@ export interface BuzzClientConfig {
 }
 export interface BuzzClient {
   query(filters: readonly Filter[]): Promise<VerifiedBuzzEvent[]>;
-  publish(event: Event): Promise<{ eventId: string }>;
+  publish(
+    event: Event,
+    options?: {
+      /** Durable caller knowledge that an earlier delivery may have succeeded. */
+      priorUncertain?: boolean;
+      /** Original persisted JSON bytes; must encode this exact signed event. */
+      serializedEvent?: string;
+    },
+  ): Promise<{ eventId: string }>;
 }
 export class BuzzConfigurationError extends Error {
   override name = "BuzzConfigurationError";
@@ -167,10 +175,13 @@ export function makeBuzzHttpClient(config: BuzzClientConfig): BuzzClient {
   async function request(
     path: "/query" | "/events",
     body: string,
+    priorUncertain = false,
+    publication?: Event,
   ): Promise<{ value: unknown; priorUncertain: boolean }> {
     const url = relay.origin + path;
-    let priorUncertain = false;
     for (let attempt = 0; attempt < 3; attempt++) {
+      if (publication && Math.abs(config.clock() - publication.created_at) > 900)
+        return reconcile(publication);
       const template: EventTemplate = {
         kind: 27235,
         created_at: config.clock(),
@@ -204,6 +215,9 @@ export function makeBuzzHttpClient(config: BuzzClientConfig): BuzzClient {
           cause,
         });
       }
+      // Signing may be asynchronous: never send a now-stale publication.
+      if (publication && Math.abs(config.clock() - publication.created_at) > 900)
+        return reconcile(publication);
       let response: Response;
       try {
         response = await config.fetch(url, {
@@ -261,6 +275,34 @@ export function makeBuzzHttpClient(config: BuzzClientConfig): BuzzClient {
     }
     throw new Error("Buzz request exhausted");
   }
+  async function reconcile(event: Event): Promise<{
+    value: unknown;
+    priorUncertain: boolean;
+  }> {
+    try {
+      const { value } = await request(
+        "/query",
+        JSON.stringify([{ ids: [event.id] }]),
+      );
+      if (!Array.isArray(value))
+        throw new BuzzResponseError("Expected Buzz event array");
+      const events = value.map(boundEvent);
+      // Verification alone is insufficient: require the original signature too.
+      if (
+        !events.some(
+          (found) => JSON.stringify(found.event) === JSON.stringify(event),
+        )
+      )
+        throw new BuzzResponseError("Exact signed publication not found");
+      return {
+        value: { event_id: event.id, accepted: true },
+        priorUncertain: true,
+      };
+    } catch (cause) {
+      // Absence, membership denial, and query failures cannot prove non-delivery.
+      throw new BuzzDeliveryUnknown(event.id, { cause });
+    }
+  }
   return {
     async query(filters) {
       const { value } = await request("/query", JSON.stringify(filters));
@@ -268,15 +310,31 @@ export function makeBuzzHttpClient(config: BuzzClientConfig): BuzzClient {
         throw new BuzzResponseError("Expected Buzz event array");
       return value.map(boundEvent);
     },
-    async publish(raw) {
+    async publish(raw, options = {}) {
       const { event } = boundEvent(raw);
+      let body = JSON.stringify(event);
+      if (options.serializedEvent !== undefined) {
+        try {
+          if (Buffer.byteLength(options.serializedEvent) > eventLimit)
+            throw new Error("Persisted event exceeds byte limit");
+          const persisted = boundEvent(JSON.parse(options.serializedEvent)).event;
+          if (JSON.stringify(persisted) !== body)
+            throw new Error("Persisted bytes do not match the signed event");
+          body = options.serializedEvent;
+        } catch (cause) {
+          throw new BuzzConfigurationError("Invalid persisted publication bytes", {
+            cause,
+          });
+        }
+      }
       let result: { value: unknown; priorUncertain: boolean };
       try {
-        result = await request("/events", JSON.stringify(event));
+        result = await request("/events", body, options.priorUncertain, event);
       } catch (cause) {
         if (
           cause instanceof BuzzConfigurationError ||
-          cause instanceof BuzzRequestRejected
+          cause instanceof BuzzRequestRejected ||
+          cause instanceof BuzzDeliveryUnknown
         )
           throw cause;
         throw new BuzzDeliveryUnknown(event.id, { cause });

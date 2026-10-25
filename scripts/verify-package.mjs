@@ -62,6 +62,7 @@ try {
     "migrations/004_runtime_state.sql",
     "migrations/005_outbound_comments.sql",
     "migrations/006_publication_claim.sql",
+    "migrations/008_transport_delivery.sql",
     "docs/native-comment-mirroring.md",
   ])
     assert(files.includes(required), `Missing runtime artifact: ${required}`);

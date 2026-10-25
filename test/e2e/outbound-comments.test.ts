@@ -211,3 +211,74 @@ it("durably requests suppression of company claims when the whole connection is 
   expect((await plugin.definition.onHealth!()).details?.inFlightPublications).toBe(1);
  }finally{await f.pg.close();}
 });
+it('separates first transport timestamp from native comment history and persists before I/O', async () => {
+ const f=await fixture(); try {
+  f.deps.clock=()=>1792803600;
+  let persisted: any;
+  f.deps.buzz.publish=async event=>{ persisted=(await f.store.getOutbox(event.tags.find((t: string[])=>t[0]==='inertia')![1]!)); f.sent.push(event); return {eventId:event.id}; };
+  await f.bridge().reconcile();
+  expect(f.sent).toHaveLength(1);
+  expect(f.sent[0].created_at).toBe(1792803600);
+  expect(JSON.parse(f.sent[0].content).createdAt).toBe('2026-10-23T01:00:00.000Z');
+  expect(persisted.eventBytes).toBe(JSON.stringify(f.sent[0]));
+  expect(persisted.deliveryAttempted).toBe(true);
+ } finally { await f.pg.close(); }
+});
+it('carries prior delivery uncertainty into a reconstructed publisher', async () => {
+ const f=await fixture(); try {
+  f.fail(true); await f.bridge().reconcile();
+  let context: any;
+  f.deps.buzz.publish=async (event: any, options?: any)=>{ context=options; return {eventId:event.id}; };
+  await f.bridge().reconcile();
+  expect(context.priorUncertain).toBe(true);
+  expect(context.serializedEvent).toBe(JSON.stringify(f.sent[0]));
+ } finally { await f.pg.close(); }
+});
+it('reads uncertainty after winning a comment claim rather than from a stale batch', async () => {
+ const f=await fixture(); try {
+  let context: any;
+  const claim=f.store.claimCommentDelivery;
+  f.store.claimCommentDelivery=async (receiptKey,token)=>{
+   await claim(receiptKey,'previous-owner');
+   await f.store.markDeliveryAttempt(receiptKey,'previous-owner');
+   await f.store.finishCommentDelivery(receiptKey,'previous-owner','pending');
+   return claim(receiptKey,token);
+  };
+  f.deps.buzz.publish=async (event:any,options?:any)=>{context=options;return {eventId:event.id};};
+  await f.bridge().reconcile();
+  expect(context.priorUncertain).toBe(true);
+ } finally { await f.pg.close(); }
+});
+it('claims ordinary receipt publication so concurrent reconcilers cannot lose attempt history', async () => {
+ const f=await fixture(); try {
+  f.comments.splice(0);
+  const event=await f.deps.signer({kind:9,created_at:1792717200,tags:[['h',binding.channelId],['e',binding.rootId,'','root'],['e',binding.rootId,'','reply']],content:JSON.stringify({issueId:'issue'})});
+  await f.store.putOutbox({receiptKey:'ordinary',relay:binding.relay,eventId:event.id,event});
+  await f.runtime.scopeReceipt('ordinary','issue');
+  let release!:()=>void,reached!:()=>void;
+  const paused=new Promise<void>(r=>{reached=r;}), resume=new Promise<void>(r=>{release=r;});
+  f.deps.buzz.publish=async e=>{f.sent.push(e);if(f.sent.length>1)return {eventId:e.id};reached();await resume;throw new BuzzDeliveryUnknown(e.id);};
+  const running=f.bridge().reconcile(); await paused;
+  try { await f.bridge().reconcile(); expect(f.sent).toHaveLength(1); }
+  finally { release(); await running; }
+  expect((await f.store.getOutbox('ordinary'))?.deliveryAttempted).toBe(true);
+ } finally { await f.pg.close(); }
+});
+it('keeps all company-owned interrupted publication claims visible after unbinding or relay change', async () => {
+ const f=await fixture();try {
+  for(const receiptKey of ['ordinary','card:held','alert:held','foreign','pending','blocked']) {
+   const event=await f.deps.signer({kind:9,created_at:1792717200,tags:[['h',binding.channelId],['e',binding.rootId,'','root'],['e',binding.rootId,'','reply']],content:JSON.stringify({issueId:'removed-issue',receiptKey})});
+   await f.store.putOutbox({receiptKey,relay:binding.relay,eventId:event.id,event});
+   const runtime=receiptKey==='foreign'?runtimeState(f.db,'other',binding.relay):f.runtime;
+   await runtime.scopeReceipt(receiptKey,'removed-issue');
+   if(receiptKey==='blocked')await f.store.markBlocked(receiptKey);
+   else if(receiptKey!=='pending')await f.store.claimCommentDelivery(receiptKey,'stopped');
+  }
+  f.config.bindings=[];
+  const health=await f.bridge().reconcile();
+  expect(health.state).toBe('uncertain');expect(health.inFlightPublications).toBe(3);
+  const changed=await runtimeState(f.db,'co','https://new-relay.example').deliveryHealth([]);
+  expect(changed).toMatchObject({publishing:3,pending:0,blocked:0});
+  expect(f.sent).toHaveLength(0);
+ }finally{await f.pg.close();}
+});

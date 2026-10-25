@@ -73,3 +73,45 @@ it('pages delivery with a stable timestamp and receipt key instead of starving l
     expect(first.map(r => r.receiptKey)).toEqual(['a', 'b']);
     expect(second.map(r => r.receiptKey)).toEqual(['c']);
 });
+it('persists exact signed bytes and write-ahead uncertainty across reconstruction', async () => {
+ const s = createBridgeStore(db);
+ const record = { receiptKey:'wire', relay:key.relay, eventId:'wire-id', event:{ id:'wire-id', content:'body', tags:[['inertia','wire']] } };
+ await s.putOutbox(record);
+ expect((await s.getOutbox('wire'))?.eventBytes).toBe(JSON.stringify(record.event));
+ expect((await s.getOutbox('wire'))?.deliveryAttempted).toBe(false);
+ expect(await s.markDeliveryAttempt('wire')).toBe(true);
+ expect((await createBridgeStore(db).getOutbox('wire'))?.deliveryAttempted).toBe(true);
+ await s.putOutbox({...record,eventId:'replacement',event:{...record.event,id:'replacement'}});
+ expect((await s.getOutbox('wire'))?.eventBytes).toBe(JSON.stringify(record.event));
+ await s.markDelivered('wire');
+ expect(await s.markDeliveryAttempt('wire')).toBe(false);
+});
+it('requires the current publication token before recording guarded I/O', async () => {
+ const s=createBridgeStore(db); await s.putOutbox({receiptKey:'comment:wire',relay:key.relay,eventId:'wire-id',event:{id:'wire-id'}});
+ await s.claimCommentDelivery('comment:wire','owner');
+ expect(await s.markDeliveryAttempt('comment:wire','wrong')).toBe(false);
+ expect((await s.getOutbox('comment:wire'))?.deliveryAttempted).toBe(false);
+ expect(await s.markDeliveryAttempt('comment:wire','owner')).toBe(true);
+ await s.finishCommentDelivery('comment:wire','owner','pending');
+ expect((await createBridgeStore(db).getOutbox('comment:wire'))?.deliveryAttempted).toBe(true);
+});
+it('migrates legacy signed identities conservatively without inventing original wire bytes', async () => {
+ await pg.exec(`ALTER TABLE ${BRIDGE_NAMESPACE}.bridge_outbox DROP COLUMN event_bytes; ALTER TABLE ${BRIDGE_NAMESPACE}.bridge_outbox DROP COLUMN delivery_attempted;`);
+ await pg.query(`INSERT INTO ${BRIDGE_NAMESPACE}.bridge_outbox (receipt_key,relay,event_id,event) VALUES ('legacy',$1,'old-id',$2::jsonb)`,[key.relay,JSON.stringify({id:'old-id'})]);
+ await pg.exec(await readFile(new URL('../../migrations/008_transport_delivery.sql',import.meta.url),'utf8'));
+ const s=createBridgeStore(db);
+ expect(await s.getOutbox('legacy')).toMatchObject({eventId:'old-id',event:{id:'old-id'},eventBytes:null,deliveryAttempted:true});
+ await s.putOutbox({receiptKey:'new',relay:key.relay,eventId:'new-id',event:{id:'new-id'}});
+ expect(await s.getOutbox('new')).toMatchObject({eventBytes:'{"id":"new-id"}',deliveryAttempted:false});
+});
+it('rejects stale token finalization after recovery and retains delivered facts', async () => {
+ const s=createBridgeStore(db);await s.putOutbox({receiptKey:'ordinary',relay:key.relay,eventId:'id',event:{id:'id'}});
+ await s.claimCommentDelivery('ordinary','old');await s.markDeliveryAttempt('ordinary','old');
+ expect(await s.recoverCommentDelivery('ordinary','old')).toBe(true);
+ expect(await s.claimCommentDelivery('ordinary','new')).toBe(true);
+ expect(await s.finishCommentDelivery('ordinary','old','delivered')).toBe(false);
+ expect(await s.finishCommentDelivery('ordinary','new','delivered')).toBe(true);
+ expect(await s.finishCommentDelivery('ordinary','new','pending')).toBe(false);
+ expect(await s.suppressOutbox('ordinary')).toBe(false);
+ expect(await s.getOutbox('ordinary')).toMatchObject({state:'delivered',deliveryAttempted:true,publishToken:null});
+});

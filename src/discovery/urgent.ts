@@ -57,6 +57,8 @@ export interface UrgentBuzzDependencies {
   destination: UrgentBuzzDestination;
   loadConfig(): Promise<UrgentBuzzConfig | null>;
   signer: EventSigner;
+  /** Unix seconds at first signing; observation time remains business payload data. */
+  clock?: () => number;
   buzz: BuzzClient;
   store: BridgeStore;
   runtime: RuntimeState;
@@ -209,7 +211,6 @@ export function createUrgentBuzzDelivery(
       !sourceValid(payload.sourceRef) ||
       !sourceEqual(payload.sourceRef, input.sourceRef) ||
       !instant(payload.observedAt) ||
-      event.created_at !== Math.floor(Date.parse(payload.observedAt) / 1000) ||
       typeof payload.body !== "string" ||
       !payload.body.trim() ||
       Buffer.byteLength(payload.body) > 16384 ||
@@ -281,7 +282,7 @@ export function createUrgentBuzzDelivery(
           };
           const template: EventTemplate = {
             kind: 9,
-            created_at: Math.floor(Date.parse(input.observedAt) / 1000),
+            created_at: d.clock ? d.clock() : Math.floor(Date.now() / 1000),
             content: JSON.stringify(payload),
             tags: tags(receiptKey),
           };
@@ -354,8 +355,24 @@ export function createUrgentBuzzDelivery(
             row,
           );
         }
+        // Persist possible exposure before transport; failures must never permit I/O.
+        if (!(await d.store.markDeliveryAttempt(receiptKey, token))) {
+          // No I/O occurred: safely release only our own claim so revocation can settle.
+          await d.store.finishCommentDelivery(receiptKey, token, "pending");
+          const current = await d.store.getOutbox(receiptKey);
+          return result(
+            current?.state === "suppressed" ? "suppressed" : "pending",
+            current ?? row,
+          );
+        }
         try {
-          const accepted = await d.buzz.publish(event);
+          const accepted = await d.buzz.publish(event, {
+            // The claim snapshot includes any attempt completed after our initial read.
+            priorUncertain: claimed.deliveryAttempted,
+            ...(claimed.eventBytes === null
+              ? {}
+              : { serializedEvent: claimed.eventBytes }),
+          });
           if (accepted.eventId !== row.eventId)
             throw new BuzzDeliveryUnknown(row.eventId);
         } catch (error) {
