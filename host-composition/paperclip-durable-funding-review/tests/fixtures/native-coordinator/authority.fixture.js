@@ -1,8 +1,9 @@
 import {beforeAll,beforeEach,afterAll,describe,it,expect} from 'vitest';
 import {randomUUID} from 'node:crypto';
 import {eq} from 'drizzle-orm';
-import {companies,agents,projects,issues,heartbeatRuns,createDb} from '@paperclipai/db';
+import {companies,agents,projects,issues,heartbeatRuns,issueThreadInteractions,createDb} from '@paperclipai/db';
 import {startEmbeddedPostgresTestDatabase} from '../../__tests__/helpers/embedded-postgres.js';
+import {issueThreadInteractionService} from '../issue-thread-interactions.js';
 import {documentService} from '../documents.js';
 import {PaperclipRunnerToolAuthority} from './paperclip-runner-tool-authority.js';
 describe('restricted native coordinator database authorization',()=>{
@@ -67,4 +68,31 @@ describe('restricted native coordinator database authorization',()=>{
   await expect(call('write_document',{targetTaskId:child,idempotencyKey:'target-write',key:'result',title:'No',body:'No'})).rejects.toThrow(/native_coordination_target_denied/);
   await expect(call('request_human_input',{interactionKind:'confirmation',prompt:'Synthetic scope?',idempotencyKey:'target-question',payload:{target:{type:'issue_document',issueId:other,key:'result'}}})).rejects.toThrow(/native_coordination_interaction_target_denied/);
  });
+ for (const restricted of [true, false]) it(`human input persists ${restricted ? 'explicit human-only' : 'stock inherited anyone'} resolution policy and replays one receipt`, async()=>{
+  const taskId=randomUUID(), runId=randomUUID();
+  await db.insert(issues).values({id:taskId,companyId:co,projectId:project,title:'Synthetic question policy',status:'in_progress',workMode:'standard',assigneeAgentId:actor});
+  await db.insert(heartbeatRuns).values({id:runId,companyId:co,agentId:actor,status:'running',runtimeMode:'native',nativeIssueId:taskId,invocationSource:'assignment',triggerDetail:'system',contextSnapshot:{issueId:taskId}});
+  await db.update(issues).set({executionRunId:runId}).where(eq(issues.id,taskId));
+  const binding={companyId:co,agentId:actor,issueId:taskId,runId,...(restricted?{nativeCoordinatorPolicy:{version:1,companyId:co,agentId:actor,projectIds:[project]}}:{})};
+  const a=new PaperclipRunnerToolAuthority(db,binding);
+  const args={idempotencyKey:'policy-question',interactionKind:'questions',title:'Synthetic question',prompt:'Choose one',continuationPolicy:'wake_assignee',payload:{questions:[{id:'choice',prompt:'Choose one',options:[{id:'first',label:'First'},{id:'second',label:'Second'}]}]}};
+  const first=await a.execute({tool:'request_human_input',callId:'initial',arguments:args});
+  // A new authority retries the same mutation after a lost acknowledgement.
+  const replay=await new PaperclipRunnerToolAuthority(db,binding).execute({tool:'request_human_input',callId:'lost-ack-retry',arguments:args});
+  expect(replay).toEqual(first);
+  const rows=await db.select().from(issueThreadInteractions).where(eq(issueThreadInteractions.issueId,taskId));
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({requestedResolverPolicy:restricted?'human_only':'anyone',effectiveResolverPolicy:restricted?'human_only':'anyone',resolverPolicyProvenance:restricted?'explicit':'inherited',status:'pending'});
+  const [task]=await db.select().from(issues).where(eq(issues.id,taskId));
+  const svc=issueThreadInteractionService(db),answer={answers:[{questionId:'choice',optionIds:['first']}]};
+  if(restricted){
+   await expect(svc.answerQuestions(task,rows[0].id,answer,{agentId:actor,runId})).rejects.toMatchObject({status:403});
+   const [unchanged]=await db.select().from(issueThreadInteractions).where(eq(issueThreadInteractions.id,rows[0].id));
+   expect(unchanged.status).toBe('pending');expect(unchanged.result).toBeNull();
+  }else{
+   const result=await svc.answerQuestions(task,rows[0].id,answer,{agentId:actor,runId});
+   expect(result.status).toBe('answered');
+  }
+ });
+
 });

@@ -45,5 +45,7 @@
     "red-parser.log": "bfadc4c8c8cfec7ac7051743486882e4b60d34da6f65290ce57ea8b1dfc3698f",
     "red-entry.log": "b1c576e96f6245535ad5a33fd3cf4f4409fdd600933adaa04beb47b664d38c73",
     "red-replay.log": "139d066ddc3d4a3e8c48c51c48bd9dece98a40cbbe0dd2aa139e67f674a0f676"
-  }
+  },
+  "artifactStatus": "Historical qualification for patch_sha256 above; superseded by the source-only human-input policy correction. These database passes do not qualify the corrected patch.",
+  "currentQualification": "evidence/native-coordinator-human-input.json"
 }
