@@ -25,7 +25,7 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
    6. Unique constraints on `loginTokens.tokenHash` and `sessions.tokenHash`, with the 0000 migration regenerated.
    7. The build has no Next.js prerender warnings about `new Date()`, fixed at the root cause per the bundled Next docs.
 2. When the re-review passes, **open PR checkpoint 1 into `develop`**: "Member app: scaffold, fixtures, identity sync and login". Kyle asked for the PR only after this re-review passes.
-3. Continue with **Task 5** (visual system, shell, home feed). The plan is otherwise unchanged.
+3. Continue with **Task 5** (visual system, shell, home feed). Its Step 5 now uses Kyle's Inertia design system, copied into `apps/member/design/` (see `SOURCE.md` there), in place of a new frontend-design pass. The plan is otherwise unchanged.
 
 ## Environment
 

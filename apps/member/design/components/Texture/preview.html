@@ -1,0 +1,21 @@
+<!-- @dsCard group="Foundations" height=260 subtitle="Grain, starfield, orbits, weave" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Texture — preview</title>
+<style>
+  body { background-image: none; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); padding: var(--space-6); }
+  .sw { height: 168px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line); display: flex; align-items: flex-end; padding: var(--space-4); box-sizing: border-box; }
+  .sw span { font: 500 11px/16px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); }
+  .planet { position: absolute; width: 36px; height: 36px; border-radius: var(--radius-pill); background: var(--signal); top: 28px; right: 28px; }
+</style></head>
+<body>
+<div class="grid">
+  <div class="sw in-tex in-tex--grain"><span>Grain</span></div>
+  <div class="sw in-tex in-tex--stars"><div class="planet"></div><span>Starfield</span></div>
+  <div class="sw in-tex in-tex--orbits"><span>Orbits</span></div>
+  <div class="sw in-tex in-tex--weave"><span>Weave</span></div>
+</div>
+<script></script>
+</body>
+</html>

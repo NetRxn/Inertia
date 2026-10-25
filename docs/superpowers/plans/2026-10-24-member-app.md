@@ -227,7 +227,7 @@ apps/member/
 - [ ] **Step 2:** Run `npm test -- week feed`. Expected: FAIL.
 - [ ] **Step 3:** Implement `weekBounds` with `Intl.DateTimeFormat` offsets (no date library) and `buildFeed`.
 - [ ] **Step 4:** Run `npm test -- week feed`. Expected: PASS.
-- [ ] **Step 5: Visual system.** Invoke the frontend-design skill and set the direction: modern, human, inviting, alive, unthreatening. Use `feed-v3.html` for layout only. Define color, type and spacing tokens in `globals.css`, with light and dark themes. Build the layout:
+- [ ] **Step 5: Visual system.** Use Kyle's Inertia design system in `apps/member/design/` (see its `SOURCE.md`). Its `README.md` sets the direction, and the frontend-design skill is not needed to choose one. Generate the CSS custom properties in `globals.css` from `design/tokens.json`, with Night as the default theme and Day as an equal. Bring in the `in-` classes from `design/components/bundle.css`, load the three Google Fonts it names, and serve the logo SVGs from `design/assets/Logos/` via `public/`. Use the component READMEs and previews as the reference markup, mapping cards to their realms: tasks and asks to AgentAsk, priorities to Initiative, ideas and shares to IdeaCard. Use `feed-v3.html` for layout only. Build the layout:
   - `FloatingMenu`: a sticky translucent pill near the top, showing the six sections in order. The active section is marked, and each icon has an accessible label.
   - `ChatBar`: fixed at the bottom with the text "Ask the DAO anything…". Not interactive until Task 9.
   - One component per card type, plus the home page, which calls `buildFeed` on the server.
