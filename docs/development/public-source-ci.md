@@ -18,15 +18,30 @@ precede publication/activation; a passing run never authorizes merge by itself.
 ## Checks and limits
 
 The job uses one standard GitHub-hosted `ubuntu-24.04` runner, Node 24 LTS,
-the committed lockfile, one Vitest worker, and a 25-minute timeout. It runs:
+the committed lockfile and a 25-minute timeout. Automatic PR and `develop`
+push runs are fast checks only:
 
 ```sh
 npm ci --ignore-scripts --no-audit --no-fund
 npm run typecheck
 npm run build
+```
+
+Full root tests (one worker) and package verification run only on explicit
+`workflow_dispatch` integration checkpoints, never automatically on pushes or
+ready-for-review events. The same existing commands remain available manually
+from the selected exact source checkout:
+
+```sh
 npm test -- --maxWorkers=1
 npm run test:package
 ```
+
+Use focused tests alongside changed code during development. Reserve aggregate
+tests/package for explicit integration checkpoints rather than making CI
+maintenance or repeated full-suite runs a prerequisite for draft/partner work.
+Fast-mode summaries explicitly mark full tests/package as skipped and **not
+qualified**; a passing fast check is not an aggregate test or package pass.
 
 Install lifecycle scripts are disabled; explicitly requested build/test scripts
 still run. The lock includes the Linux x64 esbuild optional binary and koffi
@@ -60,8 +75,11 @@ and independent-review gates remain mandatory where applicable.
   head, not GitHub's synthetic merge commit. Post-merge `develop` pushes check
   the resulting integrated commit separately.
 - Manual dispatch checks the selected ref; GitHub exposes this trigger only
-  after the workflow exists on the repository's default branch. It accepts no
-  source/command inputs and creates no recurring work.
+  after the workflow exists on the repository's default branch, currently `main`.
+  Until then, use the existing manual commands at an explicit integration
+  checkpoint. Do not change `main`, the default branch or branch protection just
+  to expose dispatch. It accepts no source/command inputs and creates no recurring
+  work; no labels or alternate trigger framework are added.
 - Newer runs cancel obsolete runs for the same event/PR or event/ref.
 - Only `contents: read` is granted. Checkout does not persist credentials;
   setup-node caching is explicitly disabled. No secrets, private checkout,
