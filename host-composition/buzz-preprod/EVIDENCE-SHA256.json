@@ -1,0 +1,23 @@
+{
+  "evidence/block-buzz/crates/buzz-auth/src/nip98.rs": "a3399ec98c704fe323672d8f19563c75c336e5db6528b589130f30ead9708d9b",
+  "evidence/block-buzz/crates/buzz-cli/src/client.rs": "3add259ea0d4c60dc16fef86b93f0b26d127b12594e829638da9970cf950e77c",
+  "evidence/block-buzz/crates/buzz-relay/src/api/bridge.rs": "8e8a816387bb2337fb268b6293fb38ce03e81257bc68dc53b3a5038d798f3d1c",
+  "evidence/block-buzz/crates/buzz-relay/src/api/invites.rs": "4554ed7ff2f572f7ec90cdb0bd6ea9a7a43aaac0231ed8f75040287cb8a582cb",
+  "evidence/block-buzz/crates/buzz-relay/src/handlers/ingest.rs": "a1c6a5082d25702d6c99236ac168ae1a087d86466aefedcb3691f5fa3cffe819",
+  "evidence/block-buzz/mobile/lib/features/invites/invite_create_provider.dart": "a6e9a82ca797ac952ab20f67868d4d426f30140e0720539ecb9ee71a53b1f8b1",
+  "evidence/block-buzz/mobile/lib/features/invites/invite_join_provider.dart": "52c728db3a2b6e39434ca48d9a8a7279108ec2306dc78eb4c9e22e3a30f65c3c",
+  "evidence/independent-review.md": "105e19b162db5907461f498f9702ba3ec1f43b9cb3aba50316bd7ac1859a70d6",
+  "evidence/inertia/SHA256SUMS": "514b8261b3733a66b60211227170af30f000bf02e746486bf228781087226798",
+  "evidence/inertia/src/bridge/reconcile.ts": "d29c210ae7e8e98f83e7a5e89d92cf32a20b8af3cb7896ab648b87a078a97e54",
+  "evidence/inertia/src/bridge/service.ts": "2c91a09810061b4d4a769caf09edbebeab22f04fe7f57572dd8bda2e3fc646ad",
+  "evidence/inertia/src/buzz/events.ts": "57c3af84102494e9dbb5b02422c86b15ea0c0ceb0ff34d4b33d91140cc7b22e3",
+  "evidence/inertia/src/buzz/http.ts": "093a89811280aad26dd9643503f6de87dedb8646fad751cda48c3f72db519e53",
+  "evidence/inertia/src/worker.ts": "7804d237c4ddf4eea694a42398f202e0092d178d7e1dcba726187930d89c2614",
+  "upstream/.env.example": "368587a78d9e1fee8f6aaadfa6c85cf1edbefce8174926d5b1ef7ecc064e1d06",
+  "upstream/Caddyfile": "0b962c2b95fa211335bdbdaffe9bca3e456055d7786fcf8b32b114eac0332e9f",
+  "upstream/LICENSE": "3ed45fabd9c122add960239bade614e91985387b60462a8f2a7f1ef558b0f28d",
+  "upstream/README.md": "0dd88218b22f66403e02ed71bc6443257cc504ce428f4d670094dba6e2953aa3",
+  "upstream/compose.caddy.yml": "157136b7d3be1458ad1e1f78a2824951fe1d881982752606c0548e298056c510",
+  "upstream/compose.yml": "0289e805fbe7d6c0391e88732a60c834ba350fc61d160b31592103919299f8bd",
+  "upstream/run.sh": "6aae40b1538a2d5c36890c84cf49a64d937d81cf954deb6603687023bacf614c"
+}
