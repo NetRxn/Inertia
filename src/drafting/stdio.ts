@@ -10,7 +10,7 @@ export interface DraftingCallbacks {
   review(request: Record<string,unknown>,signal?: AbortSignal): Promise<{state:"pending";request_id:string}>;
 }
 export interface PublicDraftingBridge {
-  call(operation:"workspace"|"save"|"save_gap_progress"|"review"|"review_context",params:Record<string,unknown>,callbacks:DraftingCallbacks):Promise<unknown>;
+  call(operation:"workspace"|"checkpoint"|"save"|"save_gap_progress"|"review"|"review_context",params:Record<string,unknown>,callbacks:DraftingCallbacks):Promise<unknown>;
 }
 /** Public operation and authority contract is unchanged; only bounded transport is shared. */
 export function createPublicDraftingBridge(configuration:DraftingProcessConfig):PublicDraftingBridge {
