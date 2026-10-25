@@ -1,5 +1,6 @@
 import { objectiveIntakeJobDeclaration, objectiveSourceContextToolDeclaration, objectiveIntakeCapabilities } from "./intake/host.js";
 import { meetingExtractionTools } from "./roundtable/extraction.js";
+import { centralTools, centralCapabilities } from "./central/host.js";
 import { publicDraftingTools, publicDraftingCapabilities } from "./drafting/host.js";
 import { fundingDiscoveryManifest } from "./discovery/host.js";
 import { roundtableJobDeclaration } from "./roundtable/host.js";
@@ -19,6 +20,7 @@ export const manifest: PaperclipPluginManifestV1 = {
     ...fundingDiscoveryManifest.capabilities,
     ...objectiveIntakeCapabilities,
     ...publicDraftingCapabilities,
+    ...centralCapabilities,
     "companies.read",
     "issues.read",
     "issues.create",
@@ -37,7 +39,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   ],
   entrypoints: { worker: "dist/src/worker.js" },
   database: { migrationsDir: "migrations" },
-  tools: [...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration],
+  tools: [...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
   jobs: [
     ...fundingDiscoveryManifest.jobs,
     roundtableJobDeclaration,

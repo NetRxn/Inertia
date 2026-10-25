@@ -1,4 +1,5 @@
 import { registerObjectiveIntake, type ObjectiveIntakeStatus } from "./intake/host.js";
+import { registerConfiguredTrustedCentral } from "./central/setup.js";
 import { registerConfiguredPublicDrafting } from "./drafting/setup.js";
 import { registerConfiguredFundingDiscovery } from "./discovery/setup.js";
 import {
@@ -65,6 +66,7 @@ export function createPlugin() {
     async setup(ctx) {
       await registerConfiguredFundingDiscovery(ctx);
       await registerConfiguredPublicDrafting(ctx);
+      await registerConfiguredTrustedCentral(ctx);
       roundtableStatus = registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
