@@ -8,8 +8,8 @@ test.describe('Login flow', () => {
     // Should be on home page
     await expect(page).toHaveURL('/');
 
-    // Should see welcome message
-    await expect(page.locator('h1')).toContainText('Welcome, Ana Rodriguez');
+    // Should see the home greeting, by first name
+    await expect(page.locator('h1')).toHaveText('Welcome, Ana');
   });
 
   test('unknown email sees the same confirmation', async ({ page }) => {

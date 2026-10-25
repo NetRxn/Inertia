@@ -1,0 +1,70 @@
+.menu {
+  position: sticky;
+  top: var(--space-3);
+  z-index: 10;
+  width: fit-content;
+  margin: var(--space-3) auto var(--space-6);
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+}
+
+.list {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.link {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  color: var(--ink-muted);
+  transition: background 160ms cubic-bezier(.2, .8, .2, 1), color 160ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.link svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.link:hover {
+  color: var(--ink);
+  background: var(--glass);
+}
+
+/* The current section: ink glyph on a stronger glass disc, with a small dot beneath. */
+.link[aria-current="page"] {
+  position: relative;
+  color: var(--ink);
+  background: var(--glass-strong);
+  box-shadow: inset 0 0 0 1px var(--glass-edge);
+}
+
+.link[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+}
+
+@media (max-width: 359px) {
+  .link {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+}

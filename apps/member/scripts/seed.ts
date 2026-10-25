@@ -3,8 +3,8 @@ import { getDb } from '../src/db/client';
 import { runMigrations } from '../src/db/migrate';
 import { syncMembers } from '../src/identity/sync';
 import { getAdapters } from '../src/adapters';
-import { shares } from '../src/db/schema';
-import { FIXTURE_NOW } from '../src/adapters';
+import { shares, members } from '../src/db/schema';
+import { eq } from 'drizzle-orm';
 
 async function seed() {
   console.log('Running migrations...');
@@ -23,31 +23,39 @@ async function seed() {
   if (existingShares.length === 0) {
     console.log('Creating sample shares...');
 
-    // Get some member IDs
-    const { members } = await import('../src/db/schema');
-    const memberList = await db.select().from(members).limit(3);
+    // Active members only, in a fixed order (by email), so the sample shares
+    // are the same whoever runs the seed. Dates are relative to process start.
+    const activeMembers = await db
+      .select()
+      .from(members)
+      .where(eq(members.status, 'active'))
+      .orderBy(members.email);
 
-    if (memberList.length >= 3) {
+    if (activeMembers.length >= 3) {
+      const now = Date.now();
+      const day = 24 * 60 * 60 * 1000;
+      const [first, second, third] = activeMembers;
+
       await db.insert(shares).values([
         {
-          memberId: memberList[0].id,
+          memberId: first.id,
           kind: 'idea',
           description: 'Community garden partnership with local schools',
-          createdAt: new Date(FIXTURE_NOW.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+          createdAt: new Date(now - 2 * day),
         },
         {
-          memberId: memberList[1].id,
+          memberId: second.id,
           kind: 'resource',
           description: 'Open-source governance tools',
           linkUrl: 'https://github.com/topics/governance',
           linkTitle: 'GitHub: Governance Tools',
-          createdAt: new Date(FIXTURE_NOW.getTime() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+          createdAt: new Date(now - 5 * day),
         },
         {
-          memberId: memberList[2].id,
+          memberId: third.id,
           kind: 'update',
-          description: 'Treasury balance: $12,450',
-          createdAt: new Date(FIXTURE_NOW.getTime() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+          description: 'The tool library shed opens Saturdays — borrow a spade, leave a trowel.',
+          createdAt: new Date(now - 1 * day),
         },
       ]);
 

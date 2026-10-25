@@ -16,6 +16,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "sync": "tsx scripts/sync-members.ts",
+    "tokens": "tsx scripts/build-tokens.ts",
     "e2e": "playwright test"
   },
   "dependencies": {

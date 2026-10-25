@@ -1,0 +1,197 @@
+/* Shared card styles for the home feed. Realm material comes from the in- classes. */
+
+.feed {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* A glass card: the organization's and the agent's panels. */
+.card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+.eyebrow {
+  color: var(--ink-muted);
+}
+
+.eyebrowTide {
+  color: var(--tide-text);
+}
+
+.eyebrowMoss {
+  color: var(--moss-text);
+}
+
+.rows {
+  display: grid;
+}
+
+.rows > li {
+  padding-block: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.rows > li:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.rows > li:last-child {
+  padding-bottom: 0;
+}
+
+.itemTitle {
+  font: var(--text-heading);
+}
+
+.body {
+  color: var(--ink);
+}
+
+.meta {
+  font: var(--text-small);
+  color: var(--ink-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.textLink {
+  color: var(--signal-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Waiting for you: the AgentAsk panel, sized to the feed column. */
+.ask:global(.in-ask) {
+  max-width: none;
+}
+
+.askTitle {
+  overflow-wrap: anywhere;
+}
+
+/* Top priorities: an initiative per row, each a small planet beside its words. */
+.priority {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.planet:global(.in-init__sys) {
+  width: 64px;
+  height: 64px;
+}
+
+.planet .moon {
+  fill: var(--pollen);
+}
+
+.planet .progress {
+  fill: none;
+  stroke: var(--moss);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.priorityText {
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* Coming up: a date tile beside each event. */
+.event {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.tile {
+  display: grid;
+  justify-items: center;
+  padding-block: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--tide-wash);
+  color: var(--tide-text);
+}
+
+.tileDay {
+  font: var(--text-heading);
+  color: var(--ink);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* This week: first-name credit with moss chips. */
+.credit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* From the chat and Recently shared: people-realm hearth cards in a column. */
+.ideas {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.idea:global(.in-idea) {
+  max-width: none;
+}
+
+.idea p {
+  overflow-wrap: anywhere;
+}
+
+/* A share's link preview: the image tile beside the title and host. */
+.shareLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.previewImage {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.linkBody {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.linkHint {
+  font: var(--text-mono);
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.fileLink {
+  color: var(--signal-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+  justify-self: start;
+}
+
+.quote {
+  font: var(--text-quote);
+}
