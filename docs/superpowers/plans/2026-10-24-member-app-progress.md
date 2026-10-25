@@ -11,21 +11,14 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 | 1 Scaffold app + database | Complete, review clean | `0ba513c..aac8b69` |
 | 2 Adapters + synthetic DAO | Complete, review clean | `aac8b69..cf023dd` |
 | 3 Member sync | Complete, review clean | `cf023dd..66ab12d` |
-| 4 Email-link login | **Fix round 1 committed; re-review pending** | `66ab12d..80e8ad5` |
+| 4 Email-link login | Complete, review clean (2 fix rounds) | `66ab12d..f697715` |
 | 5–11 | Not started | |
+
+PR checkpoint 1 (Tasks 1–4) is open into `develop`.
 
 ## Resume here
 
-1. **Re-review Task 4's fix round 1** (fix range `720d9f7..80e8ad5`). The implementer was stopped before writing its fix report. The controller has only verified unit tests (26/26) and typecheck. The re-review must also run `npm run e2e -- login` and `npm run build` and confirm the build prints no warnings. These are the findings it must verdict:
-   1. Single-use not atomic: concurrent `consumeLoginToken` calls both succeeded. Needs a conditional `UPDATE … WHERE used_at IS NULL RETURNING`, plus a `Promise.all` test with exactly one `ok`. The 5-per-hour cap must also be safe under parallel requests.
-   2. Every verify failure (missing, invalid, expired, used, inactive) renders one page: "This link has expired or was already used. Request a new one.", with no duplicated HTML and no deactivation reveal.
-   3. Login confirmation is exactly "Check your email for a sign-in link." for every input.
-   4. `request-login` must not leak membership through timing or status. Respond `{ ok: true }` immediately and do the work in `after()` with errors caught.
-   5. Sign-out is POST-only with a 303 to `/login`, no duplicated logic, and the form uses `method="POST"`.
-   6. Unique constraints on `loginTokens.tokenHash` and `sessions.tokenHash`, with the 0000 migration regenerated.
-   7. The build has no Next.js prerender warnings about `new Date()`, fixed at the root cause per the bundled Next docs.
-2. When the re-review passes, **open PR checkpoint 1 into `develop`**: "Member app: scaffold, fixtures, identity sync and login". Kyle asked for the PR only after this re-review passes.
-3. Continue with **Task 5** (visual system, shell, home feed). Its Step 5 now uses Kyle's Inertia design system, copied into `apps/member/design/` (see `SOURCE.md` there), in place of a new frontend-design pass. The plan is otherwise unchanged.
+1. Continue with **Task 5** (visual system, shell, home feed). Its Step 5 now uses Kyle's Inertia design system, copied into `apps/member/design/` (see `SOURCE.md` there), in place of a new frontend-design pass. The plan is otherwise unchanged.
 
 ## Environment
 
@@ -44,11 +37,17 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 - **R6:** The controller (not implementers) pushes the feature branch and opens PRs into `develop` at the plan's checkpoints.
 - **R7:** The email test pins both rules: mixed-case inserts are rejected by the check constraint, and duplicate lowercase emails are rejected by the unique constraint.
 - **R8:** The `getAdapters()` singleton lives on `globalThis`, with a test-only reset, so all Next module graphs share one fixture state.
+- **R9:** Task 4 fix round 1 had no implementer fix report, so the controller's own run of the covering suites served as its test evidence.
+- **R10:** Fix round 2 went to a fresh implementer because the round-1 implementer's context was gone.
 
 ## Deferred minor findings (for the final whole-branch review to triage)
 
 - T1: `migrate.ts` keeps two `as any` casts to pass the union `Db` into driver-specific migrators.
 - T3: the instrumentation guard flag is set before the interval starts, so a throw in between leaves sync disabled until restart.
+- T4: the `(member)` auth guard sits inside `<Suspense>`, so a signed-out GET `/` gets a 200 with a streamed meta redirect rather than a 307, and the dev log prints a `NEXT_REDIRECT` trace.
+- T4: `request-login` calls `await request.json()` outside its try/catch, so a malformed body is an unhandled 500.
+- T4: `consumeLoginToken` spends the token and inserts the session without a transaction.
+- T4: since mail is now sent in `after()`, `waitForTimeout(500)` in `e2e/helpers.ts` is the only thing ordering the mail write before the e2e reads it (flake risk).
 - T4: `requireMember` runs twice per request; wrap it in React `cache()`. The layout awaits the session at the top level.
 - T4: `devMailer` is wired unconditionally; guard it before production.
 - T4: redirects are built from `request.url` instead of `MEMBER_APP_BASE_URL`.
