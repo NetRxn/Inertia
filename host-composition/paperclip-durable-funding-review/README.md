@@ -164,3 +164,12 @@ it does not create, configure or start an agent. `npm run test:native-coordinato
 checks the installed source. The portable disposable qualification adds synthetic
 PostgreSQL checks and an unauthenticated pinned CLI feature check. Real native
 autonomous continuation remains a separate acceptance gate.
+
+### Native runner image architecture
+
+The [runner packaging correction](NATIVE-RUNNER-PACKAGING.md) makes explicit
+runner selection fail closed, rejects incompatible Linux ELF machines and adds
+a read-only image preflight. Its additive Docker layer reuses only the matching
+native runner from the exact official multi-architecture build; it does not
+replace Codex, authentication or state. A verified source-image digest and
+target-platform qualification remain required before rollout.

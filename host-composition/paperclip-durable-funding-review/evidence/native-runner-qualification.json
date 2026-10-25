@@ -1,0 +1,108 @@
+{
+  "kind": "source-only-native-runner-packaging-qualification",
+  "sourceBase": "493da7cbe7b01f00c04ba1deecfb52b74ba04f4c",
+  "paperclipVersion": "2026.1012.0",
+  "paperclipBuildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patchSha256": "7f0c92f80ec0e56ad852e5e11579501325029839330663d0f2fd8cabbe711d5e",
+  "platform": "linux",
+  "executionArchitecture": "x64",
+  "resolverSyntheticArchitectures": [
+    "x64",
+    "arm64"
+  ],
+  "tests": {
+    "command": "npm run test:native-runner",
+    "passed": 48,
+    "failed": 0,
+    "skipped": 1,
+    "skip": "Unauthenticated pinned Codex CLI feature inspection requires QUALIFY_NATIVE_CODEX=1; command/tool restrictions are covered by source tests."
+  },
+  "redGreen": [
+    "Missing explicit executable previously fell back to packaged binary; now refused.",
+    "Wrong explicit and default ELF machine previously admitted; now refused.",
+    "Correct explicit x64 and ARM64 ELF selections retained.",
+    "Image preflight refuses missing/non-native/loader-invalid artifacts.",
+    "ENOEXEC shell fallback reproduced; direct Node24 execve metadata probe has no shell fallback or scratch side effect.",
+    "Independent review FIFO-blocking finding reproduced with timeout; nonblocking open plus fstat rejects it."
+  ],
+  "probe": {
+    "mode": "build-metadata-only",
+    "x64BinarySha256": "859d6730c58422416528aacb8c1e5522e841321d185c1b72839e4f1a7a38a514",
+    "binaryContractVersion": 2,
+    "environment": "empty",
+    "listenersStarted": 0,
+    "providersStarted": 0
+  },
+  "security": {
+    "coordinatorOverlayUnchanged": true,
+    "managedAuthGuardSha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874",
+    "credentialsAccessed": false,
+    "newCredentials": false,
+    "dataOrRuntimeChanges": false
+  },
+  "review": {
+    "kind": "independent-source-review",
+    "finding": "One Important FIFO blocking issue; no other source blockers found.",
+    "disposition": "Fixed with nonblocking open; covering test RED then GREEN; final focused suite passed.",
+    "unreviewed": [
+      "official-image-digest-provenance",
+      "actual-Docker-build",
+      "ARM64-execution-and-ABI",
+      "runtime-effective-override",
+      "provider-acceptance",
+      "deployment"
+    ]
+  },
+  "limits": [
+    "Docker and ARM64 image build not executed in this cloud source workspace.",
+    "No authenticated provider or autonomous continuation acceptance.",
+    "No PostgreSQL/browser listeners or aggregate regression sweeps.",
+    "Not deployed; preserve the healthy runtime until target-image qualification."
+  ],
+  "artifactInput": {
+    "evidence": "evidence/native-runner-image.json",
+    "indexDigest": "sha256:1661b3dd3fdf7a9b59542d1ced464c3faf9dc8309798b4d15a9923ed32795307",
+    "arm64BinarySha256": "1427907b42c18e1102f0a22711ded63355368e869d4412a7ed5e904d6401262a",
+    "arm64MaximumRequiredGlibcVersion": "2.39",
+    "arm64Executed": false
+  },
+  "supplementalCodexFeatureCheck": {
+    "command": "QUALIFY_NATIVE_CODEX=1 node --test --test-name-pattern=\"pinned unauthenticated Codex\" tests/native-coordinator.test.mjs",
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "version": "0.156.1",
+    "platform": "linux/x64",
+    "shell_tool": false,
+    "shell_snapshot": false,
+    "binarySha256": "0b2e9301d6100dddda3b9d5c80ebaeaa3a2f1962388f2f36f6b96a9f08b1f33f",
+    "packages": [
+      {
+        "alias": "codex",
+        "name": "@openai/codex",
+        "version": "0.156.1",
+        "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.156.1.tgz",
+        "bytes": 4904,
+        "integrity": "sha512-nI1iVl/n2SO2lSvlwEsJx63zdSI4C4Me2gR7AG0OWMJiGSakz2tY2hx43E39Zq5aEoeB5bZjJXzp5Sqhog6vyA==",
+        "sha1": "21a6a1f6226562c56ccece8f7ebea5bda1fe3768",
+        "integrityVerified": true
+      },
+      {
+        "alias": "codex-linux-x64",
+        "name": "@openai/codex",
+        "version": "0.156.1-linux-x64",
+        "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.156.1-linux-x64.tgz",
+        "bytes": 148522874,
+        "integrity": "sha512-2ePo0wgOcnONKsuzp8vBjOmNY+IdsKaouaDDIdiKq9HOWNuV/GI22OeXft2A/1GaoL71ictO0/pLAsCEnQ6wew==",
+        "sha1": "04927933fda85cbe2ad2cdd5b62f92875a8ab8b2",
+        "integrityVerified": true
+      }
+    ],
+    "home": "new empty temporary directory",
+    "globalInstall": false,
+    "personalAuthAccess": false,
+    "providerCalls": 0,
+    "listeners": 0,
+    "priorCliSkipClosed": true
+  }
+}

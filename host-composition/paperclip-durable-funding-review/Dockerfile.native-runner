@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+# Build-only correction on an already qualified coordinator candidate image.
+# Official bba6a45 release index; raw manifests/config/provenance verified.
+ARG PAPERCLIP_RUNNER_IMAGE_DIGEST=sha256:1661b3dd3fdf7a9b59542d1ced464c3faf9dc8309798b4d15a9923ed32795307
+ARG PAPERCLIP_CANDIDATE_IMAGE
+FROM --platform=$TARGETPLATFORM ghcr.io/paperclipai/paperclip@${PAPERCLIP_RUNNER_IMAGE_DIGEST} AS runner-artifact
+FROM ${PAPERCLIP_CANDIDATE_IMAGE} AS candidate
+
+# The existing package location is operator-supplied, never inferred from a
+# user's home or credentials. Keep the base image's USER/ENTRYPOINT/CMD/mounts.
+ARG PAPERCLIP_NATIVE_PACKAGE_ROOT
+COPY patches/native-runner-resolution.patch patches/native-runner-resolution-pins.json patches/native-coordinator-pins.json /opt/inertia-native-runner/patches/
+COPY scripts/apply-native-runner-resolution.mjs scripts/preflight-native-runner.mjs /opt/inertia-native-runner/scripts/
+COPY --from=runner-artifact --chmod=755 /app/server/dist/vendor/paperclip-runner/bin/paperclip-runnerd /opt/inertia-native-runner/paperclip-runnerd
+COPY --from=runner-artifact /app/server/dist/build-info.json /opt/inertia-native-runner/source-build-info.json
+
+# This is Paperclip's native runner, NOT Codex. Preserve the existing Codex
+# launcher/version, encrypted connection, key, data and auth mounts unchanged.
+ENV PAPERCLIP_RUNNER_BINARY=/opt/inertia-native-runner/paperclip-runnerd
+RUN test -n "${PAPERCLIP_NATIVE_PACKAGE_ROOT}" \
+    && PAPERCLIP_NATIVE_PACKAGE_ROOT="${PAPERCLIP_NATIVE_PACKAGE_ROOT}" node /opt/inertia-native-runner/scripts/apply-native-runner-resolution.mjs \
+    && PAPERCLIP_NATIVE_PACKAGE_ROOT="${PAPERCLIP_NATIVE_PACKAGE_ROOT}" node /opt/inertia-native-runner/scripts/preflight-native-runner.mjs /opt/inertia-native-runner/source-build-info.json

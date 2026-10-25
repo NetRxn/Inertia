@@ -1,0 +1,74 @@
+--- a/dist/services/native-runtime/native-codex-runner.js
++++ b/dist/services/native-runtime/native-codex-runner.js
+@@ -1,6 +1,6 @@
+ import { spawn } from "node:child_process";
+ import { createHash } from "node:crypto";
+-import { accessSync, chmodSync, constants, mkdirSync, readFileSync } from "node:fs";
++import { accessSync, chmodSync, closeSync, constants, fstatSync, mkdirSync, openSync, readFileSync, readSync } from "node:fs";
+ import { dirname, isAbsolute, resolve } from "node:path";
+ import { fileURLToPath } from "node:url";
+ import { and, eq } from "drizzle-orm";
+@@ -112,25 +112,52 @@
+     return process.platform === "win32" ? "paperclip-runnerd.exe" : "paperclip-runnerd";
+ }
+ export function resolvePaperclipRunnerBinary(configuredPath = process.env.PAPERCLIP_RUNNER_BINARY) {
+-    const candidates = [
+-        configuredPath,
++    if (configuredPath && !isAbsolute(configuredPath)) {
++        throw new Error("PAPERCLIP_RUNNER_BINARY must be an absolute path");
++    }
++    const machine = { x64: 62, arm64: 183 }[process.arch];
++    if (process.platform === "linux" && !machine) {
++        throw new Error(`paperclip_runner_binary_unsupported_platform: linux/${process.arch}`);
++    }
++    // An explicit operator selection is authoritative, never a hint that may
++    // silently fall back to a different executable after a packaging error.
++    const candidates = configuredPath ? [configuredPath] : [
+         resolve(moduleDirectory, "../../vendor/paperclip-runner/bin", executableName()),
+         resolve(moduleDirectory, "../../../../packages/paperclip-runner/dist/bin", executableName()),
+         resolve(moduleDirectory, "../../../../packages/paperclip-runner/runner/target/release", executableName()),
+-    ].filter((candidate) => Boolean(candidate));
+-    if (configuredPath && !isAbsolute(configuredPath)) {
+-        throw new Error("PAPERCLIP_RUNNER_BINARY must be an absolute path");
+-    }
++    ];
+     for (const candidate of candidates) {
+         try {
+             accessSync(candidate, constants.R_OK | (process.platform === "win32" ? 0 : constants.X_OK));
+-            return candidate;
+         }
+         catch {
+-            // Continue through the fixed production and workspace locations.
+-        }
+-    }
+-    throw new Error("paperclip_runner_binary_missing: build @paperclipai/paperclip-runner or set PAPERCLIP_RUNNER_BINARY");
++            continue;
++        }
++        // A FIFO/device must not block before the regular-file check.
++        const fd = openSync(candidate, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0));
++        try {
++            if (!fstatSync(fd).isFile()) {
++                throw new Error(`paperclip_runner_binary_invalid: not a regular file: ${candidate}`);
++            }
++            if (process.platform === "linux") {
++                const header = Buffer.alloc(64);
++                if (readSync(fd, header, 0, header.length, 0) !== header.length ||
++                    !header.subarray(0, 4).equals(Buffer.from([0x7f, 0x45, 0x4c, 0x46])) ||
++                    header[4] !== 2 || header[5] !== 1 || header[6] !== 1 ||
++                    ![2, 3].includes(header.readUInt16LE(16)) || header.readUInt32LE(20) !== 1) {
++                    throw new Error(`paperclip_runner_binary_invalid: expected ELF64 little-endian executable: ${candidate}`);
++                }
++                if (header.readUInt16LE(18) !== machine) {
++                    throw new Error(`paperclip_runner_binary_architecture_mismatch: expected linux/${process.arch} (ELF machine ${machine}), received ${header.readUInt16LE(18)}: ${candidate}`);
++                }
++            }
++        }
++        finally {
++            closeSync(fd);
++        }
++        return candidate;
++    }
++    throw new Error("paperclip_runner_binary_missing: build @paperclipai/paperclip-runner or set PAPERCLIP_RUNNER_BINARY to an existing readable executable for this platform");
+ }
+ export function buildNativeRunnerArguments(input) {
+     return [

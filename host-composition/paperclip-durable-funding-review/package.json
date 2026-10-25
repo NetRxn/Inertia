@@ -11,8 +11,8 @@
     "paperclipai": "2026.1012.0"
   },
   "scripts": {
-    "bootstrap": "npm ci --ignore-scripts --registry=https://registry.npmjs.org --cache=.cache/npm --no-audit --no-fund && node scripts/bootstrap.mjs && node scripts/apply-plugin-runtime.mjs && node scripts/apply-codex-command-tools.mjs && node scripts/apply-native-coordinator.mjs",
-    "verify-and-patch": "node scripts/bootstrap.mjs && node scripts/apply-plugin-runtime.mjs && node scripts/apply-codex-command-tools.mjs && node scripts/apply-native-coordinator.mjs",
+    "bootstrap": "npm ci --ignore-scripts --registry=https://registry.npmjs.org --cache=.cache/npm --no-audit --no-fund && node scripts/bootstrap.mjs && node scripts/apply-plugin-runtime.mjs && node scripts/apply-codex-command-tools.mjs && node scripts/apply-native-coordinator.mjs && node scripts/apply-native-runner-resolution.mjs",
+    "verify-and-patch": "node scripts/bootstrap.mjs && node scripts/apply-plugin-runtime.mjs && node scripts/apply-codex-command-tools.mjs && node scripts/apply-native-coordinator.mjs && node scripts/apply-native-runner-resolution.mjs",
     "test": "./tests/with-disposable-pg.sh node --test tests/*.test.mjs",
     "test:launcher": "python3 -m unittest discover -s tests -p test_launcher_safety.py -v",
     "check-upstream": "node scripts/check-upstream.mjs",
@@ -26,6 +26,9 @@
     "test:funding-preapproval": "node --test tests/funding-preapproval*.test.mjs tests/codex-funding-preapproval.test.mjs",
     "apply-native-coordinator": "node scripts/apply-native-coordinator.mjs",
     "test:native-coordinator": "node --test tests/native-coordinator*.test.mjs",
-    "qualify:native-coordinator": "node tests/qualify-native-coordinator.mjs"
+    "qualify:native-coordinator": "node tests/qualify-native-coordinator.mjs",
+    "apply-native-runner-resolution": "node scripts/apply-native-runner-resolution.mjs",
+    "test:native-runner": "node --test tests/native-runner-*.test.mjs tests/native-coordinator*.test.mjs",
+    "preflight:native-runner": "node scripts/preflight-native-runner.mjs"
   }
 }

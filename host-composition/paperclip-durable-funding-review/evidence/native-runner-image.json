@@ -1,0 +1,106 @@
+{
+  "kind": "verified-public-native-runner-image-input",
+  "verifiedDate": "2026-10-25",
+  "registry": "ghcr.io/paperclipai/paperclip",
+  "releaseTagObserved": "2026.1012.0",
+  "indexDigest": "sha256:1661b3dd3fdf7a9b59542d1ced464c3faf9dc8309798b4d15a9923ed32795307",
+  "expectedBuildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "platforms": {
+    "amd64": {
+      "manifestDigest": "sha256:bf78a4ad83f4aabf8c673e0c06c4a91f6185aaed28419d423365a535a8a4ee05",
+      "configDigest": "sha256:8610a8f4e99595c93932f0ebc397ce5c2386b60273a27278a277e318c659bb73",
+      "os": "linux",
+      "architecture": "amd64",
+      "revision": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+      "version": "2026.1012.0",
+      "attestationManifestDigest": "sha256:730f746a4079677d77db6cbccdf3bb2e6c1543076cca75058f4482c431e45d13",
+      "provenanceStatementDigest": "sha256:d4f1fc82f037f62b0c02c3ccc265f328709b728c6c0f504e0d327571caf690b4",
+      "provenanceType": "https://slsa.dev/provenance/v1",
+      "provenanceSubjectVerified": true,
+      "provenanceVcsRevisionVerified": true,
+      "builder": "https://github.com/paperclipai/paperclip/actions/runs/38308573238/attempts/1"
+    },
+    "arm64": {
+      "manifestDigest": "sha256:f40c29335cf2ff74dbbdd86ef0a2cb067bbadc1129058eb8c90bb0b6bef13c31",
+      "configDigest": "sha256:5daeee76f8a4216a4a312dfcec13bfa6edbeb26227f72bbcbe3753700d282dc1",
+      "os": "linux",
+      "architecture": "arm64",
+      "revision": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+      "version": "2026.1012.0",
+      "attestationManifestDigest": "sha256:60f079acf78fd6f527814a8639daf50810afe4e50fa3b3a0b60647ce2d0a9d14",
+      "provenanceStatementDigest": "sha256:6b95a9b4fe8329567a36c591ffadc6cb35ab557a15092dbc2adfe7d5d721c1b0",
+      "provenanceType": "https://slsa.dev/provenance/v1",
+      "provenanceSubjectVerified": true,
+      "provenanceVcsRevisionVerified": true,
+      "builder": "https://github.com/paperclipai/paperclip/actions/runs/38308573238/attempts/1"
+    }
+  },
+  "workflow": {
+    "url": "https://github.com/paperclipai/paperclip/actions/runs/38308573238",
+    "headSha": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+    "event": "workflow_dispatch",
+    "headBranch": "v2026.1012.0",
+    "conclusion": "success"
+  },
+  "verification": {
+    "rawIndexManifestConfigAndStatementDigests": true,
+    "sourceRevisionAndVersion": true,
+    "publicAnonymousPullOnly": true,
+    "personalCredentialsUsed": false,
+    "signatureVerification": "not performed; attached BuildKit provenance is content-addressed metadata, not a verified signer identity"
+  },
+  "limits": [
+    "ARM64 artifact extracted and ELF/build stamp verified; actual ARM64 --build-metadata remains the target preflight.",
+    "No ARM64 executable/provider invocation or Docker image build in this source workspace.",
+    "The candidate runtime still requires target preflight with its effective override before replacement."
+  ],
+  "arm64Artifact": {
+    "layerDigest": "sha256:69b0235f9c2fdbbbfb7413337779434ce83f7eae724728059a2d180ee0ff3968",
+    "layerSize": 853912862,
+    "artifacts": {
+      "app/server/dist/build-info.json": {
+        "file": "runner-source-build-info.json",
+        "size": 59,
+        "sha256": "77931ace31e4bbe538650c4d3c11668b84d3deaebd4d8c3e483be0f55d7e4eba"
+      },
+      "app/server/dist/vendor/paperclip-runner/bin/paperclip-runnerd": {
+        "file": "paperclip-runnerd-linux-arm64",
+        "size": 34139312,
+        "sha256": "1427907b42c18e1102f0a22711ded63355368e869d4412a7ed5e904d6401262a"
+      }
+    },
+    "elf": {
+      "class": 64,
+      "endian": "little",
+      "machine": 183,
+      "architecture": "arm64"
+    },
+    "buildInfo": {
+      "commit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb"
+    },
+    "executed": false,
+    "abi": {
+      "interpreter": "/lib/ld-linux-aarch64.so.1",
+      "neededLibraries": [
+        "libgcc_s.so.1",
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "maximumRequiredGlibcVersion": "2.39",
+      "inspectedWith": "file and readelf; executable not invoked"
+    }
+  },
+  "internalTransferArchive": {
+    "name": "paperclip-runner-linux-arm64-bba6a45.tar.gz",
+    "size": 11588169,
+    "sha256": "bd0b5be368a3339bf768e8455dfd88a889481ce8e9f6ced5ee6a8f7062178c94",
+    "files": [
+      "paperclip-runnerd",
+      "build-info.json",
+      "artifact-provenance.json",
+      "LICENSE.paperclip"
+    ],
+    "upstreamBinaryUnmodified": true,
+    "trackedInGit": false
+  }
+}
