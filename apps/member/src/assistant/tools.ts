@@ -146,9 +146,15 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
 
   return {
     searchMeetings: tool({
-      description: 'Search meeting summaries, decisions, open questions and action items.',
-      inputSchema: query,
-      execute: async ({ query }) => results((await ctx.adapters.meetings.search(query)).map(meetingSource)),
+      description:
+        'Search meeting summaries, decisions, open questions and action items. Leave the query empty for the most recent meetings.',
+      inputSchema: z.object({ query: z.string().max(200).describe('Words to look for, or empty for the latest') }),
+      execute: async ({ query }) => {
+        const meetings = query.trim()
+          ? await ctx.adapters.meetings.search(query)
+          : await ctx.adapters.meetings.listMeetings(MAX_RESULTS);
+        return results(meetings.map(meetingSource));
+      },
     }),
 
     listProposals: tool({
