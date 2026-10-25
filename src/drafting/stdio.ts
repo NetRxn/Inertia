@@ -13,7 +13,7 @@ export interface DraftingCallbacks {
   review(request: Record<string,unknown>,signal?: AbortSignal): Promise<{state:"pending";request_id:string}>;
 }
 export interface PublicDraftingBridge {
-  call(operation:"workspace"|"save"|"save_gap_progress"|"review",params:Record<string,unknown>,callbacks:DraftingCallbacks):Promise<unknown>;
+  call(operation:"workspace"|"save"|"save_gap_progress"|"review"|"review_context",params:Record<string,unknown>,callbacks:DraftingCallbacks):Promise<unknown>;
 }
 const object=(v:unknown):v is Record<string,unknown>=>!!v && typeof v==="object" && !Array.isArray(v);
 const keys=(v:Record<string,unknown>,fields:string[])=>Object.keys(v).length===fields.length && fields.every(k=>Object.hasOwn(v,k));
