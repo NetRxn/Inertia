@@ -1,8 +1,8 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-24-r24
-Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core and native capture source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Revision: INERTIA-2026-10-25-r25
+Updated: 2026-10-25 (UTC)
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Implementation status
@@ -20,7 +20,7 @@ The host/resource milestone remains [Inertia PR53](https://github.com/NetRxn/Ine
 | Buzz and native work | Signed bridge, native comments/confirmations and durable recovery are merged | Qualify the existing authorized agent/relay and return the same work/results to members |
 | Meeting publication | Source/native composition is merged and qualified with controlled source/website I/O, default-disabled | Real approved Drive-to-member-portal transcript/notes/readback; summary-only website output remains partial |
 | Funding preparation | Existing acquisition, scoped candidates, gap preparation and independent agent review are merged | Actual system-generated substantial research and a near-complete current application draft |
-| Human packet review | V2 packet core and native exact-action capture merged; v1 intact | Packet UI/attestation is reviewed draft PR62; browser, current authority and domain/Buzz qualification remain pending |
+| Human packet review | V2 core/capture/delivery merged; controlled PostgreSQL approval/submission passed; v1 intact | Packet UI is draft PR62; original-human current DAO authority and production member/Buzz qualification remain pending |
 | Submission record | Legacy source conflates readiness/authorization with recording a past fact | V2 Mark submitted or equivalent authenticated Buzz intent records the selected immutable packet/date and reporter/evidence level; no external submission |
 | Knowledge | SQL/evidence core and named owning-domain tool facade merged; older Helix core remains historical | Wednesday uses existing authorized PostgreSQL domain tools for query-first reuse and durable writeback; live SQL wiring still requires qualification |
 | Agent contribution | PR37 stages scoped inert candidates; PR51 ingress/per-attempt authority is draft, unmerged and inactive | Use the existing authorized Buzz agent for the achievable contribution path within the packet outcome. Full untrusted member-owned isolation, review and authoritative completion remain unqualified engineering work |
@@ -34,7 +34,7 @@ Legacy v1 approvals, receipts, cancellation state and meaningful historical reco
 
 From a development checkout with Node 24.11+ and dependencies installed, `npm run demo:workflow` prints the connected journey and writes `runs/workflow-receipt.json`. The receipt links the meeting revision/output hash, fixture-seeded native work, exact packet version/hash, paired acknowledgment and signed receipt. Reconstructing the bridge and replaying the same reply creates no second native mutation. External I/O is synthetic; ordinary acknowledgment remains separate from the grant governance evaluation. Website publication and unfinished live adapters remain explicitly pending.
 
-Cloud remains the default development and verification environment. Laptop Docker is sufficient for authorized local development with the user’s own credentials; the shared runtime is planned for deployment before Wednesday. Local development is not shared-runtime qualification. Exact live-adapter inputs, outputs and acceptance checks are in [live handoff checklist](docs/implementation/live-handoff-checklist.md).
+Cloud remains the default development and verification environment. Laptop Docker is sufficient for authorized local development with the user’s own credentials; the shared runtime is planned for deployment before Wednesday. Local Docker preproduction Paperclip-to-Codex subscription smoke passed with a short output, not a funding packet. Single-provider workflow qualification is next. Claude connection/inference remains pending until Monday; the two-provider rehearsal comes later. Preproduction is not shared-runtime qualification. Exact live-adapter inputs, outputs and acceptance checks are in [live handoff checklist](docs/implementation/live-handoff-checklist.md).
 
 ## 1. Product outcome
 

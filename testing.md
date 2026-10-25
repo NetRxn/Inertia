@@ -1,8 +1,8 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-24-r24
-Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core and native capture source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Revision: INERTIA-2026-10-25-r25
+Updated: 2026-10-25 (UTC)
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Qualification record
@@ -59,17 +59,17 @@ These are test cases for the existing native coordination and portable-runtime r
 - Funding case: query admitted knowledge, research missing facts and partners, assemble the packet, independently review it, save useful findings and reuse them next run. Maps to R-F01–04/R-F06–08, R-K01–08, R-C01–05 and R-O01; T-K05/T-K10/T-K12 and T-C01–04.
 - General member case: complete a meeting-derived task or innovation/problem/bug bounty without forcing it through grant preparation. Maps to R-I01–04, R-C01–05 and R-O01; existing objective/funding acceptance and T-C01–04.
 
-Record native task/checkout ownership, scoped tools, actual outputs, critique/corrections and one durable result per revision. Keep agent attribution separate from human confirmation. Two John-owned agents are not two independent human members. Preparation exists locally; no model run or successful native coordination is claimed yet.
+Record native task/checkout ownership, scoped tools, actual outputs, critique/corrections and one durable result per revision. Keep agent attribution separate from human confirmation. Two John-owned agents are not two independent human members. Docker preproduction Codex smoke passed; single-provider research/draft/reuse qualification is next. Claude connection/inference waits until Monday, followed by the two-provider rehearsal.
 
 ### Runtime checkpoint
 
-The cloud CLI attempt stopped at a read-only Codex home before model execution or authentication. The installed Paperclip path requires Codex-home writes; this establishes neither an authentication failure nor an API-key requirement. Native local-AI subscription connection is supported; a new sign-in still needs the exact user approval. Laptop Docker inspection was blocked by daemon-socket permission, then the laptop went offline; no container start or token change occurred. Resume local verification when it is connected. John plans a shared deployment before Wednesday; local Docker remains a development path.
+Docker preproduction Paperclip-to-Codex subscription smoke passed: the native agent returned the expected short output without an API key. Single-provider workflow qualification is next, including substantial funding research, a draft packet and durable SQL reuse. The official Claude CLI is installed; connection/inference remains pending until Monday, with the two-provider rehearsal later. Earlier cloud read-only-home and laptop daemon-access failures remain historical attempts, not authentication failures. Shared deployment and member/team integration remain pending.
 
 ### Member candidate boundary
 
 [PR37](https://github.com/NetRxn/Inertia/pull/37) independently qualified scoped candidate inputs, hostile-artifact denial, membership/checkout rejection, concurrent immutable receipt replay and lost-acknowledgement recovery. [Draft PR51](https://github.com/NetRxn/Inertia/pull/51) proposes authenticated ingress/per-attempt authority. Source-only correction review passed; independent runtime security and full-host qualification remain open. It is unmerged and inactive. Native review/completion, live enrollment/provider execution and R-C05 follow-up remain engineering work.
 
-The owning-service member-domain adapter and [Inertia PR63 result readback](https://github.com/NetRxn/Inertia/pull/63) are merged, not activated. Owning-service full-checkout CI passed 1,401 tests with five skips, plus audit/lint/types/build/migration checks; the public package check passed with 131 files and seven migrations. Native event delivery, current-member authority and transport integration remain pending. This is source qualification, not an operational end-to-end or live completion claim.
+[PR66 native delivery](https://github.com/NetRxn/Inertia/pull/66) and the owning-service implementation are merged; activation remains disabled. Connected disposable native approval and frozen Task2 submission each produced one real PostgreSQL domain effect and exited successfully. Replay, lost-response recovery and retained readback after current source-transport revocation passed with synthetic current authority. Public source checks passed 598 aggregate tests, 15 offline-script tests, typecheck/build and the 131-file/seven-migration package check. Owning-service complete-checkout and post-merge CI passed 1,478 tests with five skips, plus audit/lint/types/build/migration checks. Actual original-human current DAO membership/application/action authority, production transport/lifecycle/writer qualification, member/team integration and the PR62 UI walkthrough remain pending. These controlled results do not establish a production workflow.
 
 ### Historical PR17 archive
 

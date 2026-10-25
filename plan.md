@@ -1,8 +1,8 @@
 # Inertia connected application delivery plan
 
-Revision: INERTIA-2026-10-24-r24
-Updated: 2026-10-24 (UTC)
-Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 core/native capture are merged; Packet UI is draft PR62 and end-to-end member actions remain unqualified. Legacy source/records remain intact; PR51 is draft/inactive.
+Revision: INERTIA-2026-10-25-r25
+Updated: 2026-10-25 (UTC)
+Status: PostgreSQL-native knowledge and the existing authorized Buzz agent are the Wednesday target. Helix and Y2 are deferred. V2 core/capture/delivery source is merged; Packet UI is draft PR62 and production member actions remain unqualified. Legacy source/records remain intact; PR51 is draft/inactive.
 
 ## Current baseline
 
@@ -31,7 +31,7 @@ Recommended Pareto order, led by the largest useful outcomes rather than another
 
 Helix, Y2 and extra UI polish are deferred. The first two task proposals have been brought back to John; hold a new external work split until that review is clear. Existing contributor-owned work remains isolated.
 
-John plans to deploy the shared runtime before Wednesday. Laptop Docker is sufficient for local development with his own credentials, not the shared deployment. Two-provider scenarios test existing requirements; they add no coordinator, dispatcher or framework. See the [scenario mapping](testing.md#two-provider-scenarios-for-existing-requirements).
+John plans to deploy the shared runtime before Wednesday. Docker preproduction Codex subscription smoke passed, not the funding packet. Single-provider workflow qualification, including sustained research/draft/reuse, is next. Claude connection/inference waits until Monday; the two-provider rehearsal follows. Preproduction is not the shared deployment. Two-provider scenarios test existing requirements; they add no coordinator, dispatcher or framework. See the [scenario mapping](testing.md#two-provider-scenarios-for-existing-requirements).
 
 Park Place is historical human-submitted proof. The approximately one-hour figure is user-reported elapsed time, not measured active time or deployed automation. No automatic extra submission is planned.
 
