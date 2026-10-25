@@ -1,5 +1,5 @@
-import { registerPublicDrafting } from "../../src/drafting/host.js";
-export function fixture() {
+import { registerPublicDrafting, type PublicDraftingBinding } from "../../src/drafting/host.js";
+export function fixture(overrides: Partial<PublicDraftingBinding> = {}) {
   const tools = new Map<string, any>(), docs = new Map<string, any>();
   const wakeups = new Map<string, any>(), events: string[] = [];
   let current = true;
@@ -31,6 +31,7 @@ export function fixture() {
   const bridge: any = { call: async (op: string, params: any, callbacks: any) => {seen.push({op,params,context:await callbacks.context()});return {workspace_hash:"a".repeat(64)};} };
   const binding: any = {enabled:true,companyId:"company",projectId:"project",applicantSlug:"dao",matchId:"match", producer:{issueId:"producer",agentId:"author",principalId:"producer-principal"},reviewer:{issueId:"reviewer",agentId:"critic",principalId:"reviewer-principal"},authorize:async()=>current,bridge};
   const owner: any = { own: async (_:any,work:any)=>work() };
+  Object.assign(binding,overrides);
   registerPublicDrafting(ctx,[binding],owner);
   const producer = {companyId:"company",projectId:"project",agentId:"author",runId:"run-author"};
   const reviewer = {...producer,agentId:"critic",runId:"run-critic"};

@@ -35,3 +35,21 @@ it("dependency handoff is separately default-off and requires private case progr
   await expect(registerConfiguredPublicDrafting(host({...config(),...extra}).ctx)).rejects.toThrow();
  expect((manifest.instanceConfigSchema as any).properties.publicDrafting.properties.nativeDependencyHandoff).toMatchObject({type:"boolean",default:false});
 });
+it("gap review is a default-off seventh tool requiring both native protocols",async()=>{
+ const schema=(manifest.instanceConfigSchema as any).properties.publicDrafting.properties;
+ expect(schema.nativeGapPlanReview).toMatchObject({type:"boolean",default:false});
+ for(const extra of [{nativeGapPlanReview:true},{nativeCaseProgression:true,nativeGapPlanReview:true},{nativeGapPlanReview:"true"}])
+  await expect(registerConfiguredPublicDrafting(host({...config(),...extra}).ctx)).rejects.toThrow();
+ const f=host({...config(),nativeCaseProgression:true,nativeDependencyHandoff:true,nativeGapPlanReview:true});
+ await registerConfiguredPublicDrafting(f.ctx);expect(f.tools.size).toBe(7);expect(f.tools.has("review_funding_gap_plan")).toBe(true);
+ const disabled=host({...config(),nativeGapPlanReview:false});await registerConfiguredPublicDrafting(disabled.ctx);expect(disabled.tools.size).toBe(6);
+});
+it("explicit false gap flag retains the legacy authorization fingerprint",async()=>{
+ for(const initial of [false,undefined]) {
+  const value:any={...config(),...(initial===false?{nativeGapPlanReview:false}:{})};
+  const f=host(value);await registerConfiguredPublicDrafting(f.ctx);
+  if(initial===false)delete value.nativeGapPlanReview;else value.nativeGapPlanReview=false;
+  f.ctx.issues.get=async()=>{throw Error("authorization accepted");};
+  await expect(f.tools.get("funding_review_context")({},{companyId:"company",projectId:"project",agentId:"b",runId:"run"})).rejects.toThrow("authorization accepted");
+ }
+});
