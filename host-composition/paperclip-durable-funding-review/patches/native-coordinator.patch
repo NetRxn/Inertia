@@ -1,0 +1,354 @@
+--- /dev/null
++++ b/dist/services/native-runtime/native-coordinator-policy.js
+@@ -0,0 +1,15 @@
++/** Restrictive server-owned native coordination profile; no routing or credentials. */
++export const NATIVE_COORDINATOR_TOOLS = Object.freeze(['get_task_context','get_task_history','search_tasks','list_projects','list_agents','get_agent','list_documents','read_document','list_document_revisions','create_task','reassign_task','set_dependencies','report_progress','write_document','request_human_input']);
++const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
++export function normalizeNativeCoordinatorPolicy(config={}) {
++ if(config.nativeCoordinator===undefined)return null;
++ const p=config.nativeCoordinator;
++ if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!['version','projectIds'].includes(k))||p.version!==1||!Array.isArray(p.projectIds)||!p.projectIds.length||p.projectIds.length>16||p.projectIds.some(id=>typeof id!=='string'||!uuid.test(id))||new Set(p.projectIds).size!==p.projectIds.length||config.disableCommandExecution!==true||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'||[config.extraArgs,config.args].some(a=>a!==undefined&&(!Array.isArray(a)||a.length)))throw Error('native_coordination_configuration_invalid');
++ return Object.freeze({version:1,projectIds:Object.freeze([...p.projectIds].sort())});
++}
++export function assertNativeCoordinatorContext(binding,context) {
++ const p=binding.nativeCoordinatorPolicy;if(!p)return;
++ const now=normalizeNativeCoordinatorPolicy(context.actor.adapterConfig);
++ if(p.companyId!==binding.companyId||p.agentId!==binding.agentId||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='ceo'||context.actor.adapterType!=='paperclip_runner'||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,projectIds:p.projectIds})||context.issue.companyId!==binding.companyId||!p.projectIds.includes(context.issue.projectId))throw Error('native_coordination_scope_revoked');
++}
++export function nativeCoordinatorProjectAllowed(binding,issue){return !binding.nativeCoordinatorPolicy||(issue.companyId===binding.companyId&&binding.nativeCoordinatorPolicy.projectIds.includes(issue.projectId));}
+--- a/dist/services/native-runtime/native-execution-input.js
++++ b/dist/services/native-runtime/native-execution-input.js
+@@ -184,6 +184,7 @@
+                             kind: "codex",
+                             model: input.model ?? null,
+                             approvalPolicy: input.codexApprovalPolicy ?? "never",
++                            ...(input.nativeCoordinatorPolicy ? {nativeCoordinatorPolicy:input.nativeCoordinatorPolicy} : {}),
+                             ...(input.codexReasoningEffort ? { reasoningEffort: input.codexReasoningEffort } : {}),
+                         },
+         completionContract: {
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -5382,6 +5382,7 @@
+     };
+ }
+ export async function executePaperclipNativeSession(input) {
++    if (input.execution.provider.nativeCoordinatorPolicy && (input.useRunnerd !== true || input.backend !== undefined || input.runnerExecutionTarget?.kind === "remote" || input.managedGitHub || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
+     const runId = input.execution.binding.runId;
+     if (nativeSessionStartups.has(runId)) {
+         throw new Error("native_session_supervisor_busy");
+@@ -8138,7 +8139,10 @@
+             workMode: input.execution.task.workMode,
+         })
+         : undefined;
++    const coordinator = input.execution.provider.nativeCoordinatorPolicy;
++    if (coordinator && (nativeReview || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
+     const authority = new PaperclipRunnerToolAuthority(input.db, {
++        ...(coordinator ? {nativeCoordinatorPolicy:{...coordinator,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
+         ...(nativeReview ? { nativeReview } : {}),
+         connectorAssignments: connectorAssignments.filter((assignment) => pinnedSkills.has(assignment.skillKey)),
+         assignedMcpTools,
+@@ -9381,6 +9385,8 @@
+     // Never let an agent, environment binding, or host variable disable the
+     // Codex sandbox for a local runner by supplying the same key.
+     delete effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_EXTERNAL_SANDBOX;
++    delete effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION;
++    if (coordinator) effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION = "1";
+     const effectiveRunnerEnvironment = remoteRuntimeRoot
+         ? {
+             ...effectiveRunnerEnvironmentBase,
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -33,7 +33,7 @@
+ import { searchRunnerApi } from "./runner-api-catalog.js";
+ import { executeRunnerApi, validateRunnerApiCall, RUNNER_API_MAX_BYTES } from "./runner-api-client.js";
+ import { acquireRunnerApiResponseSlot, runnerApiCompanyCaptureMaxBytes, RUNNER_API_RESPONSE_MAX_BYTES, RUNNER_API_RESPONSE_RUN_MAX_BYTES, RunnerApiResponseLimitError } from "./runner-api-response-limits.js";
+-import { and, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
++import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
+ import { activityLog, assets, runnerApiResponseReservations, agents, agentWakeupRequests, chatEndpoints, chatConversations, companies, documentRevisions, heartbeatRuns, issueApprovals, issueComments, issueDocuments, issues, projects, issueThreadInteractions, } from "@paperclipai/db";
+ import { CAPABILITY_SEMANTIC_TOOL_CATALOG, runnerCodexDynamicToolsFit, SemanticToolOutcomeUnknownError } from "../../vendor/paperclip-runner/index.js";
+ import { agentService } from "../agents.js";
+@@ -98,14 +98,19 @@
+     }
+     return JSON.stringify(value) ?? "null";
+ }
++import { NATIVE_COORDINATOR_TOOLS, assertNativeCoordinatorContext, nativeCoordinatorProjectAllowed } from "./native-coordinator-policy.js";
+ export class PaperclipRunnerToolAuthority {
+     db;
+     binding;
+     constructor(db, binding) {
+         this.db = db;
+-        this.binding = binding;
++        this.binding = binding.nativeCoordinatorPolicy ? { ...binding, nativeCoordinatorPolicy: Object.freeze({ ...binding.nativeCoordinatorPolicy, projectIds: Object.freeze([...binding.nativeCoordinatorPolicy.projectIds]) }) } : binding;
+     }
+     definitions() {
++        if (this.binding.nativeCoordinatorPolicy) {
++            if (this.binding.nativeReview) throw Error("native_coordination_review_conflict");
++            return CAPABILITY_SEMANTIC_TOOL_CATALOG.filter(t => NATIVE_COORDINATOR_TOOLS.includes(t.operationId)).map(t => ({name:t.operationId,description:t.description + (["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? " Coordinator may inspect targetTaskId only within server-configured projects; ownership and writes remain bound to the current task." : ""),inputSchema:["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? {...t.inputSchema,properties:{...t.inputSchema.properties,targetTaskId:{type:"string",format:"uuid",description:"Optional task in the server-authorized project scope; omission reads the current task."}}} : t.inputSchema}));
++        }
+         if (this.binding.nativeReview) {
+             // Scope Paperclip control-plane actions. Provider file and shell access
+             // still follow the configured agent/environment policy, including tests.
+@@ -174,6 +179,7 @@
+         return [...connectionTools, ...assignedTools, ...definitions];
+     }
+     async execute(call) {
++        if (this.binding.nativeCoordinatorPolicy && !NATIVE_COORDINATOR_TOOLS.includes(call.tool)) throw Error("native_coordination_tool_denied");
+         if (this.binding.nativeReview) {
+             if (call.tool === "resolve_review")
+                 return this.#resolveReview(call.arguments);
+@@ -248,6 +254,10 @@
+         }
+         const context = await this.#boundContext();
+         const input = record(call.arguments);
++        const readTools = ["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"];
++        if (input.targetTaskId !== undefined && (!this.binding.nativeCoordinatorPolicy || !readTools.includes(call.tool))) throw Error("native_coordination_target_denied");
++        const readIssue = this.binding.nativeCoordinatorPolicy && readTools.includes(call.tool) && input.targetTaskId !== undefined
++            ? await this.#coordinatorReadTask(requiredUuid(input.targetTaskId)) : context.issue;
+         if (call.tool === READ_CHAT_ATTACHMENT_TOOL_NAME) {
+             const scope = this.binding.chatAttachmentReadScope;
+             const identityKeys = ["companyId", "issueId", "runId", "agentId"];
+@@ -316,6 +326,10 @@
+             case "create_project":
+             case "list_project_repositories":
+             case "list_projects": {
++                if (this.binding.nativeCoordinatorPolicy) {
++                    const rows = await this.db.select().from(projects).where(and(eq(projects.companyId, this.binding.companyId), inArray(projects.id, this.binding.nativeCoordinatorPolicy.projectIds)));
++                    return { projects: rows.map(p => ({id:p.id,name:p.name,status:p.status,description:p.description})) };
++                }
+                 const apiUrl = this.binding.apiUrl ?? process.env.PAPERCLIP_API_URL;
+                 const token = createLocalAgentJwt(this.binding.agentId, this.binding.companyId, context.actor.adapterType, this.binding.runId, context.run.responsibleUserId);
+                 if (!apiUrl || !token)
+@@ -361,14 +375,14 @@
+             }
+             case "get_task_context": {
+                 const childTasks = await this.db.select().from(issues)
+-                    .where(and(eq(issues.companyId, this.binding.companyId), eq(issues.parentId, this.binding.issueId), isNull(issues.hiddenAt)))
++                    .where(and(eq(issues.companyId, this.binding.companyId), eq(issues.parentId, readIssue.id), isNull(issues.hiddenAt)))
+                     .orderBy(desc(issues.createdAt), desc(issues.id))
+                     .limit(101);
+                 return {
+                     company: { id: this.binding.companyId },
+                     actor: redactedActor(context.actor),
+-                    activeTask: redactedTask(context.issue),
+-                    childTasks: childTasks.slice(0, 100).map(redactedTask),
++                    activeTask: redactedTask(readIssue),
++                    childTasks: childTasks.filter(task => nativeCoordinatorProjectAllowed(this.binding, task)).slice(0, 100).map(redactedTask),
+                     childTasksTruncated: childTasks.length > 100,
+                     delegationGuidance: "Reuse existing child tasks for delegated work. Inspect a completed child's comments and documents before creating another task for the same deliverable. Use search_tasks if the child task list is truncated.",
+                     run: {
+@@ -377,9 +391,9 @@
+                         invocationSource: context.run.invocationSource,
+                     },
+                     connectionGuidance: CONNECTION_INTENT_AGENT_GUIDANCE,
+-                    acceptedPlan: await this.#acceptedPlan(context.run.contextSnapshot),
+-                    sourcePlanApproval: await handoffPlanContext(this.db, context.issue),
+-                    childReviewOutcomes: await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
++                    acceptedPlan: this.binding.nativeCoordinatorPolicy ? null : await this.#acceptedPlan(context.run.contextSnapshot),
++                    sourcePlanApproval: this.binding.nativeCoordinatorPolicy ? null : await handoffPlanContext(this.db, context.issue),
++                    childReviewOutcomes: this.binding.nativeCoordinatorPolicy ? [] : await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
+                     ...(this.binding.nativeReview ? {
+                         assignedReview: (await getNativeReviewAssignment(this.db, {
+                             ...this.binding, contextSnapshot: this.binding.nativeReview,
+@@ -397,7 +411,7 @@
+                     authorUserId: issueComments.authorUserId,
+                     createdAt: issueComments.createdAt,
+                 }).from(issueComments)
+-                    .where(and(eq(issueComments.companyId, this.binding.companyId), eq(issueComments.issueId, this.binding.issueId), isNull(issueComments.deletedAt)))
++                    .where(and(eq(issueComments.companyId, this.binding.companyId), eq(issueComments.issueId, readIssue.id), isNull(issueComments.deletedAt)))
+                     .orderBy(desc(issueComments.createdAt))
+                     .limit(limit);
+                 return { comments: comments.reverse() };
+@@ -406,19 +420,19 @@
+                 const tasks = await issueService(this.db).list(this.binding.companyId);
+                 const query = typeof input.query === "string" ? input.query.toLowerCase() : "";
+                 const statuses = Array.isArray(input.statuses) ? new Set(input.statuses.filter((value) => typeof value === "string")) : null;
+-                return { tasks: tasks.filter((task) => (!query || `${task.identifier} ${task.title} ${task.description ?? ""}`.toLowerCase().includes(query))
++                return { tasks: tasks.filter((task) => nativeCoordinatorProjectAllowed(this.binding, task) && (!query || `${task.identifier} ${task.title} ${task.description ?? ""}`.toLowerCase().includes(query))
+                         && (!statuses || statuses.size === 0 || statuses.has(task.status))).slice(0, boundedLimit(input.limit)).map(redactedTask) };
+             }
+             case "list_documents":
+-                return { documents: await documentService(this.db).listIssueDocuments(this.binding.issueId) };
++                return { documents: await documentService(this.db).listIssueDocuments(readIssue.id) };
+             case "read_document": {
+-                const document = await documentService(this.db).getIssueDocumentByKey(this.binding.issueId, requiredString(input.key));
++                const document = await documentService(this.db).getIssueDocumentByKey(readIssue.id, requiredString(input.key));
+                 if (!document)
+                     throw new Error("paperclip_runner_document_not_found");
+                 return { document };
+             }
+             case "list_document_revisions":
+-                return { revisions: await documentService(this.db).listIssueDocumentRevisions(this.binding.issueId, requiredString(input.key)) };
++                return { revisions: await documentService(this.db).listIssueDocumentRevisions(readIssue.id, requiredString(input.key)) };
+             case "write_document": return this.#writeDocument(input);
+             case "list_agents":
+                 return { actors: (await agentService(this.db).list(this.binding.companyId)).map(redactedActor) };
+@@ -712,6 +726,7 @@
+                 throw forbidden("The assigned review is no longer available to this run.");
+             }
+         }
++        assertNativeCoordinatorContext(this.binding, row);
+         return row;
+     }
+     async #resolveReview(value) {
+@@ -865,6 +880,8 @@
+         const authorizeCreate = async (tx, context) => {
+             const parentIssueId = context.issue.conversationAgentId ? null : context.issue.id;
+             const projectId = nullableProviderId(input.projectId) ?? (parentIssueId ? context.issue.projectId : null);
++            if (!nativeCoordinatorProjectAllowed(this.binding, {companyId:this.binding.companyId,projectId})) throw Error("native_coordination_project_denied");
++            await this.#assertCoordinatorTargets(tx, blockedByIssueIds);
+             const scope = { projectId, parentIssueId, assigneeAgentId, assigneeUserId: null };
+             const decision = await authorizationService(tx).decide({
+                 actor: { type: "agent", source: "agent_jwt", companyId: this.binding.companyId,
+@@ -893,6 +910,7 @@
+             const conversation = Boolean(context.issue.conversationAgentId);
+             const existingChild = await tx.select().from(issues).where(and(eq(issues.companyId, this.binding.companyId), eq(issues.originId, durableIdempotencyKey))).limit(1).then((rows) => rows[0] ?? null);
+             if (existingChild) {
++                if (!nativeCoordinatorProjectAllowed(this.binding,existingChild)) throw Error("native_coordination_project_denied");
+                 if (existingChild.originFingerprint !== inputFingerprint) {
+                     throw new Error("paperclip_runner_tool_idempotency_conflict");
+                 }
+@@ -992,7 +1010,13 @@
+                     assigneeActorId: child.assigneeAgentId,
+                 },
+             };
+-        }, { beforeReceiptReplay: async (tx, context) => { await authorizeCreate(tx, context); } });
++        }, { beforeReceiptReplay: async (tx, context) => {
++            await authorizeCreate(tx, context);
++            if (this.binding.nativeCoordinatorPolicy) {
++                const rows=await tx.select().from(issues).where(and(eq(issues.companyId,this.binding.companyId),eq(issues.originId,durableIdempotencyKey))).for("update");
++                if (rows.length!==1 || !nativeCoordinatorProjectAllowed(this.binding,rows[0])) throw Error("native_coordination_project_denied");
++            }
++        } });
+         if (publication)
+             publishActivity(publication);
+         const task = record(result.task);
+@@ -1052,6 +1076,7 @@
+             const [target] = await tx.select().from(issues).where(and(eq(issues.id, taskId), eq(issues.companyId, this.binding.companyId))).for("update");
+             if (!target)
+                 throw new Error("paperclip_runner_task_not_found");
++            if (!nativeCoordinatorProjectAllowed(this.binding, target)) throw Error("native_coordination_project_denied");
+             const actor = { type: "agent", source: "agent_jwt", companyId: this.binding.companyId,
+                 agentId: this.binding.agentId, runId: this.binding.runId, onBehalfOfUserId: run.responsibleUserId };
+             for (const action of ["issue:read", "tasks:assign"]) {
+@@ -1214,6 +1239,19 @@
+         await syncExternalObjects(this.binding.issueId);
+         return result;
+     }
++    async #coordinatorReadTask(id) {
++        const [task] = await this.db.select().from(issues).where(and(eq(issues.id,id),eq(issues.companyId,this.binding.companyId),isNull(issues.hiddenAt))).limit(1);
++        if (!task || !nativeCoordinatorProjectAllowed(this.binding,task)) throw Error("native_coordination_project_denied");
++        const context = await this.#boundContext();
++        const decision = await authorizationService(this.db).decide({actor:{type:"agent",source:"agent_jwt",companyId:this.binding.companyId,agentId:this.binding.agentId,runId:this.binding.runId,onBehalfOfUserId:context.run.responsibleUserId},action:"issue:read",resource:{type:"issue",companyId:this.binding.companyId,issueId:task.id,projectId:task.projectId,parentIssueId:task.parentId,assigneeAgentId:task.assigneeAgentId,assigneeUserId:task.assigneeUserId,status:task.status}});
++        if (!decision.allowed) throw forbidden(decision.explanation);
++        return task;
++    }
++    async #assertCoordinatorTargets(tx, ids) {
++        if (!this.binding.nativeCoordinatorPolicy || !ids.length) return;
++        const rows = await tx.select().from(issues).where(and(eq(issues.companyId,this.binding.companyId),inArray(issues.id,ids))).for("update");
++        if (new Set(rows.map(r=>r.id)).size !== new Set(ids).size || rows.some(r=>!nativeCoordinatorProjectAllowed(this.binding,r))) throw Error("native_coordination_project_denied");
++    }
+     async #setDependencies(input) {
+         const idempotencyKey = requiredString(input.idempotencyKey);
+         if (!Array.isArray(input.blockedByTaskIds)) {
+@@ -1221,6 +1259,7 @@
+         }
+         const blockedByIssueIds = input.blockedByTaskIds.map(requiredString);
+         return this.#withMutationReceipt("set_dependencies", idempotencyKey, input, async (tx) => {
++            await this.#assertCoordinatorTargets(tx, blockedByIssueIds);
+             const updated = await issueService(tx).update(this.binding.issueId, {
+                 blockedByIssueIds,
+                 actorAgentId: this.binding.agentId,
+@@ -1234,7 +1273,7 @@
+                 entityRefs: [updated.id, ...blockedByIssueIds],
+                 scheduledWakeIds: [],
+             };
+-        });
++        }, {beforeReceiptReplay: async tx => {await this.#assertCoordinatorTargets(tx,blockedByIssueIds);}});
+     }
+     async #registerDeliverable(input) {
+         const idempotencyKey = requiredString(input.idempotencyKey);
+@@ -1625,6 +1664,7 @@
+             || ["paused", "terminated", "pending_approval", "error"].includes(context.actor.status)) {
+             throw new Error("paperclip_runner_tool_binding_not_authorized");
+         }
++        assertNativeCoordinatorContext(this.binding, context);
+         return context;
+     }
+     async #requestHumanInput(input, identityContextId) {
+@@ -1646,6 +1686,7 @@
+             const suppliedPayload = record(input.payload);
+             const targetRevisionId = nullableProviderId(input.targetRevisionId);
+             const suppliedTarget = record(suppliedPayload.target);
++            if (this.binding.nativeCoordinatorPolicy && suppliedTarget.issueId !== undefined && suppliedTarget.issueId !== context.issue.id) throw Error("native_coordination_interaction_target_denied");
+             const inferredPlanningTarget = targetRevisionId !== null
+                 && suppliedPayload.target === undefined
+                 && kind === "request_confirmation"
+--- a/dist/services/native-runtime/provider-profile.js
++++ b/dist/services/native-runtime/provider-profile.js
+@@ -236,9 +236,12 @@
+  * configuration can select a stored profile, but it cannot replace that
+  * profile's immutable remote resource identity.
+  */
++import { normalizeNativeCoordinatorPolicy } from "./native-coordinator-policy.js";
+ export function resolvePaperclipRunnerNativeProviderInput(input) {
+     const config = asRecord(input.adapterConfig);
+     const profile = resolvePaperclipRunnerProviderProfile(config);
++    const coordinator = normalizeNativeCoordinatorPolicy(config);
++    if (coordinator && profile.provider !== "codex") throw Error("native_coordination_provider_denied");
+     if (profile.backend !== input.backend) {
+         throw new PaperclipRunnerProviderProfileError("paperclip_runner_provider_changed", "Paperclip Runner provider changed after this run selected its native backend.");
+     }
+@@ -359,6 +362,7 @@
+         provider: "codex",
+         model: profile.model,
+         codexApprovalPolicy: resolvePaperclipRunnerPermissionMode("codex", config.codexPermissionMode),
++        ...(coordinator ? {nativeCoordinatorPolicy:coordinator} : {}),
+         ...(typeof effort === "string" && effort ? { codexReasoningEffort: effort } : {}),
+     };
+ }
+--- a/dist/vendor/paperclip-runner/contracts/native-execution.js
++++ b/dist/vendor/paperclip-runner/contracts/native-execution.js
+@@ -165,7 +165,7 @@
+             : provider.kind === "acpx"
+                 ? ["kind", "agent", "model", isV4 ? "permissionMode" : "permissionPolicy", "profile"]
+                 : provider.kind === "codex" && isV4
+-                    ? ["kind", "model", "approvalPolicy", ...(isV5 ? ["reasoningEffort"] : [])]
++                    ? ["kind", "model", "approvalPolicy", ...(isV5 ? ["reasoningEffort", "nativeCoordinatorPolicy"] : [])]
+                     : provider.kind === "opencode" && isV4
+                         ? ["kind", "model", "permissionMode"]
+                         : ["kind", "model"], "input.provider");
+@@ -350,7 +350,16 @@
+         if (isV5 && provider.reasoningEffort !== undefined && !["minimal", "low", "medium", "high", "xhigh", "max", "ultra"].includes(String(provider.reasoningEffort))) {
+             throw new NativeExecutionInputError("input.provider.reasoningEffort is unsupported");
+         }
++        let nativeCoordinatorPolicy;
++        if (provider.nativeCoordinatorPolicy !== undefined) {
++            const policy = record(provider.nativeCoordinatorPolicy, "input.provider.nativeCoordinatorPolicy");
++            exactKeys(policy,["version","projectIds"],"input.provider.nativeCoordinatorPolicy");
++            const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
++            if (!isV5 || provider.approvalPolicy !== "never" || policy.version !== 1 || !Array.isArray(policy.projectIds) || !policy.projectIds.length || policy.projectIds.length > 16 || policy.projectIds.some(id=>typeof id!=="string"||!uuid.test(id)) || new Set(policy.projectIds).size!==policy.projectIds.length) throw new NativeExecutionInputError("input.provider.nativeCoordinatorPolicy is invalid");
++            nativeCoordinatorPolicy=Object.freeze({version:1,projectIds:Object.freeze([...policy.projectIds].sort())});
++        }
+         parsedProvider = {
++            ...(nativeCoordinatorPolicy ? {nativeCoordinatorPolicy} : {}),
+             kind: "codex",
+             model: providerModel,
+             ...(isV4
+--- a/dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js
++++ b/dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js
+@@ -172,6 +172,7 @@
+     readOnlyRoots = [...new Set([...readOnlyRoots, ...codexNetworkReadOnlyRoots(source)])];
+     const networkAccess = codexNetworkAccess(source);
+     const externalRunnerSandbox = usesExternalRunnerSandbox(source);
++    if (source.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION === "1" && externalRunnerSandbox) throw Error("native_coordination_external_sandbox_denied");
+     const inheritedGitHubKeys = githubCredentialEnvironmentKeys(source);
+     const hasProjectedEnvironment = inheritedGitHubKeys.length > 0;
+     // Codex filters the configured `set` values through include_only as well.
+@@ -219,6 +220,7 @@
+         ? CODEX_EXTERNAL_SANDBOX_PERMISSION_PROFILE
+         : CODEX_SKILLLESS_PERMISSION_PROFILE;
+     return [
++        ...(source.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION === "1" ? ["-c", "features.shell_tool=false", "-c", "features.shell_snapshot=false"] : []),
+         "-c",
+         `default_permissions=${tomlString(defaultPermissionProfile)}`,
+         "-c",

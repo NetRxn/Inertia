@@ -1,0 +1,49 @@
+{
+  "kind": "offline-disposable-native-coordinator-qualification",
+  "baseline_package": "2026.1012.0",
+  "baseline_commit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch_sha256": "1ba79065e3213f888ab9acbcf1ee2c59d5e0531c4ff62d2bde8e06ef45ae8958",
+  "node_tests": 23,
+  "native_database_and_builder_tests": 77,
+  "actual_cli_version": "0.156.1",
+  "actual_cli_features": {
+    "shell_tool": false,
+    "shell_snapshot": false
+  },
+  "models_invoked": 0,
+  "live_database_access": false,
+  "network": "none",
+  "mounts": [],
+  "broader_packaged_regressions": {
+    "candidate": {
+      "passed": 648,
+      "failed": 2,
+      "skipped": 2
+    },
+    "unchanged_baseline": {
+      "passed": 640,
+      "failed": 2,
+      "skipped": 2
+    },
+    "unchanged_failures": [
+      "remote preinstalled executable discovery stages a relative-path CLI shim without changing its installation or losing arguments \u2014 scratch executable EACCES",
+      "wires exact-session recovery and guarded selected identity into heartbeat persistence \u2014 packaged heartbeat.ts absent"
+    ]
+  },
+  "review": "Independent code/security review clear after parser, entry-path, replay and ordinary-session-digest corrections",
+  "limits": [
+    "No authenticated native Coordinator run yet",
+    "No assertion of actual model-visible schemas or autonomous progression",
+    "Full repository and complete host-composition suites not rerun in this portable ARM64 fixture"
+  ],
+  "receipts": {
+    "portable-qualification.log": "fb3c9aaf24d53c7a4e5126c329dac46994b9ceb8bb5f779a31dfecd99c9170cd",
+    "upstream-baseline.log": "48a292a9cc30fc7b34c257f9a246836a912e37fb5e826decf21ed9678e4207fa",
+    "upstream-digest-fixed.log": "953102dfe6b837acd2d15417ab0b4a69bc19e7c1b47c8ef77694a5667e53e22e",
+    "red-policy.log": "34edd3725d73adf5b03daf3420429ad84a029c8fc90c9824ab6658d2919479b7",
+    "red-read-scope.log": "5c260f1b3a0b2c7734381c347e8622350e5a4ba7cac3c05b74a2e1a627aae92e",
+    "red-parser.log": "bfadc4c8c8cfec7ac7051743486882e4b60d34da6f65290ce57ea8b1dfc3698f",
+    "red-entry.log": "b1c576e96f6245535ad5a33fd3cf4f4409fdd600933adaa04beb47b664d38c73",
+    "red-replay.log": "139d066ddc3d4a3e8c48c51c48bd9dece98a40cbbe0dd2aa139e67f674a0f676"
+  }
+}
