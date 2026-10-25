@@ -12,7 +12,7 @@ async function AuthGuard({ children }: { children: React.ReactNode }) {
 
 /**
  * The member shell: the floating section menu, a centered column for the page,
- * a sign-out control, and the chat bar pinned to the bottom.
+ * and the chat bar pinned to the bottom. Signing out lives on Profile.
  */
 export default function MemberLayout({
   children,
@@ -31,13 +31,6 @@ export default function MemberLayout({
           <AuthGuard>{children}</AuthGuard>
         </Suspense>
       </main>
-      <footer className={styles.footer}>
-        <form action="/auth/sign-out" method="POST">
-          <button type="submit" className="in-btn in-btn--quiet">
-            Sign out
-          </button>
-        </form>
-      </footer>
       <ChatBar />
     </div>
   );

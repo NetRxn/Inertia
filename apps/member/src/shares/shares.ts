@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { files, members, shares } from '../db/schema';
 import type { ShareSummary } from '../feed/build-feed';
@@ -117,8 +117,11 @@ export async function createShare(
   };
 }
 
-/** Lists shares newest first, leaving deleted ones out. */
-export async function listShares(db: Db, opts: { limit: number }): Promise<ShareSummary[]> {
+/**
+ * Lists shares newest first, leaving deleted ones out. `withFile` keeps only
+ * those carrying an upload (the Docs page's Shared files).
+ */
+export async function listShares(db: Db, opts: { limit: number; withFile?: boolean }): Promise<ShareSummary[]> {
   const rows = await db
     .select({
       id: shares.id,
@@ -137,7 +140,7 @@ export async function listShares(db: Db, opts: { limit: number }): Promise<Share
     .from(shares)
     .innerJoin(members, eq(shares.memberId, members.id))
     .leftJoin(files, eq(shares.fileId, files.id))
-    .where(isNull(shares.deletedAt))
+    .where(and(isNull(shares.deletedAt), opts.withFile ? isNotNull(shares.fileId) : undefined))
     .orderBy(desc(shares.createdAt))
     .limit(opts.limit);
 
