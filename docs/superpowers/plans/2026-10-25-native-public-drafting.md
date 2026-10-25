@@ -1,0 +1,11 @@
+# Native public drafting composition
+
+Intent: compose existing authenticated Paperclip plugin tools with the existing single-company DFW public drafting service. No Paperclip core changes, generic gateway, new credentials, runtime activation or publication.
+
+1. Public host: default-disabled company config, server-only producer/reviewer issue-agent-principal mappings and fixed applicant/match; strict operation args. Every context callback verifies unchanged config, exact running native run, current issue/project/assignee/status, active agent and checkout, in that order. A one-operation pinned bounded child process supplies synchronous fresh context callbacks.
+2. Private service adapter: fixed database configuration, narrow sequential JSON-lines context/review/result protocol. Preserve existing public projection, candidate/suggestion storage, stale hashes and unaccepted state. Pending native review returns promptly; reviewer-only completion records authoritative CandidateReviewRecord through existing admission service. Producer retry consumes the stored review.
+3. Native reviewer dispatch: immutable public review work document and requestWakeup(idempotencyKey=request_id); completion callback obtains its own authenticated context then wakes the configured producer with a deterministic completion key. No document-provided identities or parallel coordinator/ledger.
+4. Qualification: test-first host auth/role/freshness and process bounds/cleanup; real DFW operation via pinned native gateway dispatcher with fixture data (not a live model). Pending, retry, lost response, independent reviewer, public-only, exact workspace/candidate/evidence hashes.
+5. Run affected tests during development, one final aggregate per repo, independent review before handoff. Preserve omitted private binaries and their manifest rows; publication later overlays only changed files on exact remote trees.
+
+Review focus: stale active run before checkout adoption; configuration changes mid-process; forged identity fields; malformed/oversized child protocol; durable review identity versus untrusted work document; pending replay without duplicate candidate/suggestion/dispatch; stale hashes on review completion.
