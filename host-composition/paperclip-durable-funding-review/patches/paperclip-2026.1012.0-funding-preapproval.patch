@@ -1,0 +1,136 @@
+--- a/@paperclipai/server/dist/services/heartbeat.js
++++ b/@paperclipai/server/dist/services/heartbeat.js
+@@ -1,6 +1,7 @@
+ import { retryIdempotentDatabaseOperation } from "../database-retry.js";
+ import { prepareConnectionInstructionDelivery } from "./connection-instructions.js";
+ import { resolveAssignedConnectionInstructionsForRun, resolveAssignedPluginToolsForRun } from "./native-runtime/assigned-mcp-tools.js";
++import { resolveFundingToolPreapproval } from "./native-runtime/funding-tool-preapproval.js";
+ import { externalObjectService } from "./external-objects.js";
+ import { isAiAuthenticationBlocked } from "./ai-auth-failure.js";
+ import { CHAT_COMPLETION_WAKE_REASON, prepareChatCompletionTurn, chatCompletionInstruction, isCompletedOnboardingHandoffWake } from "./chat-completion-delivery.js";
+@@ -3131,9 +3132,13 @@
+         },
+         actor: { agentId: input.agent.id },
+     });
++    const fundingToolPreapproval = await resolveFundingToolPreapproval(input.db, {
++        companyId: input.agent.companyId, agentId: input.agent.id, runId: input.runId, assignedTools: pluginToolNames,
++    });
+     return [
+         {
+             name: ASSIGNED_MCP_SERVER_NAME,
++            ...(fundingToolPreapproval ? { fundingToolPreapproval } : {}),
+             url: `${paperclipApiBaseUrl()}/mcp/gateways/${gateway.gatewayPublicId}`,
+             token: token.token,
+             connectionId: `assignment:${assignmentDigest}`,
+--- a/@paperclipai/adapter-codex-local/dist/server/execute.js
++++ b/@paperclipai/adapter-codex-local/dist/server/execute.js
+@@ -518,12 +518,17 @@
+             name: server.name,
+             endpointPath: server.url,
+             bearerToken: server.token,
++            ...(server.fundingToolPreapproval ? { fundingToolPreapproval: server.fundingToolPreapproval, runtimeAssignmentId: server.connectionId } : {}),
+         }));
++        if (runtimeMcpGateways.some(g => g.fundingToolPreapproval) &&
++            (config.disableCommandExecution !== true || config.engine !== "cli" || config.dangerouslyBypassApprovalsAndSandbox !== false))
++            throw new Error("Funding tool preapproval requires restrictive CLI configuration");
+         const managedMcpGateways = mergeManagedCodexMcpGateways(runtimeMcpGateways, managedMcpGatewaysFromContext(context));
+         const managedMcp = await writeManagedCodexMcpConfig({
+             codexHome: effectiveCodexHome,
+             apiBaseUrl: paperclipBaseEnv.PAPERCLIP_API_URL,
+             gateways: managedMcpGateways,
++            expectedFundingRunBinding: {companyId:agent.companyId,agentId:agent.id,runId,issueId:context.issueId ?? context.taskId,projectId:context.projectId},
+         });
+         if (managedMcpGateways.length > 0) {
+             await onLog("stdout", `[paperclip] Wrote ${managedMcpGateways.length} managed MCP gateway(s) into Codex config "${managedMcp.configPath}".\n`);
+--- a/@paperclipai/adapter-codex-local/dist/server/codex-home.js
++++ b/@paperclipai/adapter-codex-local/dist/server/codex-home.js
+@@ -253,6 +253,21 @@
+     }
+     return names;
+ }
++const FUNDING_APPROVED_ROLE_NAMES = Object.freeze({
++ producer:["funding_drafting_workspace","save_funding_proposals","save_funding_gap_progress","funding_drafting_checkpoint"].map(n=>"netrxn.inertia:"+n),
++ reviewer:["funding_review_context","review_funding_candidate"].map(n=>"netrxn.inertia:"+n),
++});
++export function validatedFundingToolPreapprovals(gateway,binding,apiBaseUrl,managedName) {
++ const p=gateway.fundingToolPreapproval;if(p===undefined)return [];
++ const fail=()=>{throw new Error("Invalid trusted funding tool preapproval binding");};
++ if(!p||typeof p!=="object"||Array.isArray(p)||Object.keys(p).some(k=>!["version","role","companyId","agentId","runId","issueId","projectId","tools"].includes(k))||p.version!==1||typeof p.role!=="string"||!Object.hasOwn(FUNDING_APPROVED_ROLE_NAMES,p.role))return fail();
++ for(const key of["companyId","agentId","runId","issueId","projectId"])if(typeof p[key]!=="string"||!p[key]||p[key]!==binding?.[key])return fail();
++ if(gateway.name!=="paperclip-assigned"||managedName!=="paperclip-assigned"||!/^assignment:[a-f0-9]{64}$/.test(gateway.runtimeAssignmentId??""))return fail();
++ const url=new URL(gateway.endpointPath,apiBaseUrl),base=new URL(apiBaseUrl);
++ if(url.origin!==base.origin||url.username||url.password||url.search||url.hash||!/^\/mcp\/gateways\/[A-Za-z0-9_-]{8,128}$/.test(url.pathname))return fail();
++ if(!Array.isArray(p.tools)||!p.tools.length||new Set(p.tools).size!==p.tools.length||p.tools.some(n=>!FUNDING_APPROVED_ROLE_NAMES[p.role].includes(n)))return fail();
++ return [...p.tools].sort();
++}
+ function buildManagedMcpBlock(input) {
+     const warnings = [];
+     const usedNames = new Set();
+@@ -275,6 +290,8 @@
+         }
+         const url = new URL(gateway.endpointPath, input.apiBaseUrl).toString();
+         lines.push("", `[mcp_servers.${tomlString(managedName)}]`, `url = ${tomlString(url)}`, `http_headers = { Authorization = ${tomlString(`Bearer ${gateway.bearerToken}`)} }`);
++        for (const name of validatedFundingToolPreapprovals(gateway,input.expectedFundingRunBinding,input.apiBaseUrl,managedName))
++            lines.push("", `[mcp_servers.${tomlString(managedName)}.tools.${tomlString(name)}]`, 'approval_mode = "approve"');
+     });
+     lines.push(MANAGED_MCP_BLOCK_END);
+     return { block: lines.join("\n"), warnings };
+@@ -292,6 +309,7 @@
+         gateways: input.gateways,
+         apiBaseUrl: input.apiBaseUrl,
+         existingNames: readCodexMcpServerNames(unmanagedConfig),
++        expectedFundingRunBinding: input.expectedFundingRunBinding,
+     });
+     const next = input.gateways.length > 0
+         ? `${unmanagedConfig}${unmanagedConfig ? "\n\n" : ""}${block}\n`
+--- /dev/null
++++ b/@paperclipai/server/dist/services/native-runtime/funding-tool-preapproval.js
+@@ -0,0 +1,48 @@
++import { and, eq } from "drizzle-orm";
++import { agents, heartbeatRuns, issues, plugins, pluginConfig, pluginCompanySettings } from "@paperclipai/db";
++import { toolAccessPolicyService } from "../tool-access-policy.js";
++import { resolveAssignedPluginToolsForRun } from "./assigned-mcp-tools.js";
++export const FUNDING_ROLE_TOOLS = Object.freeze({
++ producer:Object.freeze(["funding_drafting_workspace","save_funding_proposals","save_funding_gap_progress","funding_drafting_checkpoint"].map(n=>"netrxn.inertia:"+n)),
++ reviewer:Object.freeze(["funding_review_context","review_funding_candidate"].map(n=>"netrxn.inertia:"+n)),
++});
++const object=v=>!!v&&typeof v==="object"&&!Array.isArray(v);
++const text=v=>typeof v==="string"&&v.length>0&&v===v.trim();
++/** Only the server-owned company config, stored run/issue and fresh native allow decisions can approve. */
++export async function resolveFundingToolPreapproval(db,input) {
++ if(!input||![input.companyId,input.agentId,input.runId].every(text)||!Array.isArray(input.assignedTools)||input.assignedTools.some(n=>!text(n)))return null;
++ async function state(){
++  const [plugin]=await db.select().from(plugins).where(eq(plugins.pluginKey,"netrxn.inertia")).limit(1);
++  if(!plugin||plugin.status!=="ready")return null;
++  const [disabled]=await db.select().from(pluginCompanySettings).where(and(eq(pluginCompanySettings.pluginId,plugin.id),eq(pluginCompanySettings.companyId,input.companyId))).limit(1);
++  if(disabled?.enabled===false)return null;
++  const [row]=await db.select().from(pluginConfig).where(and(eq(pluginConfig.pluginId,plugin.id),eq(pluginConfig.companyId,input.companyId))).limit(1);
++  const config=row?.configJson,b=config?.publicDrafting;
++  if(config?.nativeFundingToolPreapproval!==true||!object(b)||b.enabled!==true||![b.projectId,b.applicantSlug,b.matchId].every(text))return null;
++  const a=b.producer,z=b.reviewer;
++  if(!object(a)||!object(z)||![a.issueId,a.agentId,a.principalId,z.issueId,z.agentId,z.principalId].every(text)||a.issueId===z.issueId||a.agentId===z.agentId||a.principalId===z.principalId)return null;
++  const role=a.agentId===input.agentId?"producer":z.agentId===input.agentId?"reviewer":null;if(!role)return null;
++  const actor=b[role];
++  const [agent]=await db.select().from(agents).where(and(eq(agents.id,input.agentId),eq(agents.companyId,input.companyId))).limit(1);
++  const cfg=agent?.adapterConfig;
++  if(!agent||!["idle","running"].includes(agent.status)||agent.adapterType!=="codex_local"||cfg?.disableCommandExecution!==true||cfg.engine!=="cli"||cfg.dangerouslyBypassApprovalsAndSandbox!==false||cfg.dangerouslyBypassSandbox===true||[cfg.extraArgs,cfg.args].some(v=>v!==undefined&&(!Array.isArray(v)||v.length)))return null;
++  const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,input.runId),eq(heartbeatRuns.companyId,input.companyId),eq(heartbeatRuns.agentId,input.agentId))).limit(1);
++  if(!run||run.status!=="running"||run.finishedAt)return null;
++  const ids=[run.nativeIssueId,run.contextSnapshot?.issueId,run.contextSnapshot?.taskId].filter(v=>v!=null);
++  if(!ids.length||ids.some(v=>v!==actor.issueId)||run.contextSnapshot?.projectId!=null&&run.contextSnapshot.projectId!==b.projectId)return null;
++  const [issue]=await db.select().from(issues).where(and(eq(issues.id,actor.issueId),eq(issues.companyId,input.companyId))).limit(1);
++  if(!issue||issue.projectId!==b.projectId||issue.assigneeAgentId!==input.agentId||!["todo","in_progress","blocked","in_review"].includes(issue.status)||issue.executionRunId&&issue.executionRunId!==input.runId)return null;
++  return{version:1,role,companyId:input.companyId,agentId:input.agentId,runId:input.runId,issueId:actor.issueId,projectId:b.projectId,configSnapshot:JSON.stringify(b),issueStatus:issue.status};
++ }
++ const before=await state();if(!before)return null;
++ const live=new Set((await resolveAssignedPluginToolsForRun(db,{companyId:input.companyId,agentId:input.agentId,runId:input.runId})).map(t=>t.name));
++ const assigned=new Set(input.assignedTools),tools=[],policy=toolAccessPolicyService(db);
++ for(const name of FUNDING_ROLE_TOOLS[before.role]){
++  if(!assigned.has(name)||!live.has(name))continue;
++  if(before.issueStatus==="in_review"&&!["funding_drafting_workspace","funding_drafting_checkpoint","funding_review_context","review_funding_candidate"].some(n=>name==="netrxn.inertia:"+n))continue;
++  const decision=await policy.decide({companyId:input.companyId,actor:{actorType:"agent",actorId:input.agentId,agentId:input.agentId},runContext:{heartbeatRunId:input.runId,issueId:before.issueId,projectId:before.projectId},request:{toolName:name,upstreamToolName:name,providerType:"paperclip_plugin",riskLevel:"destructive",sideEffecting:true,arguments:{}},consumeRateLimit:false});
++  if(decision.allowed===true&&decision.decision==="allow")tools.push(name);
++ }
++ const after=await state();if(!after||JSON.stringify(before)!==JSON.stringify(after))return null;
++ const {configSnapshot:_,issueStatus:__,...binding}=after;return tools.length?{...binding,tools:tools.sort()}:null;
++}

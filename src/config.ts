@@ -26,6 +26,7 @@ export const configurationSchema: JsonSchema = {
     enabled: { type: "boolean", default: false },
     fundingDiscovery: fundingDiscoverySchema,
     publicDrafting: publicDraftingSchema,
+    nativeFundingToolPreapproval: { type: "boolean", default: false },
     trustedCentral: centralConfigSchema,
     relayUrl: relay,
     bridgePubkey: hex,

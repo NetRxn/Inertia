@@ -21,6 +21,8 @@
     "apply-codex-command-tools": "node scripts/apply-codex-command-tools.mjs",
     "test:codex-command-tools": "node --test tests/codex-command-tools.test.mjs tests/codex-command-installer.test.mjs tests/codex-command-capability.test.mjs",
     "apply-mcp-effect-metadata": "node scripts/apply-mcp-effect-metadata.mjs",
-    "test:mcp-effect-metadata": "node --test tests/mcp-effect-metadata.test.mjs tests/codex-effect-approval.test.mjs"
+    "test:mcp-effect-metadata": "node --test tests/mcp-effect-metadata.test.mjs tests/codex-effect-approval.test.mjs",
+    "apply-funding-preapproval": "node scripts/apply-funding-preapproval.mjs",
+    "test:funding-preapproval": "node --test tests/funding-preapproval*.test.mjs tests/codex-funding-preapproval.test.mjs"
   }
 }
