@@ -1,0 +1,205 @@
+{
+  "receiptFormat": "inertia-demo-evidence/v0",
+  "receiptId": "rcpt:synthetic-silence-as-rejection",
+  "evidenceClass": "synthetic-fixture",
+  "claimScope": "partial-contribution",
+  "qualificationClaimed": false,
+  "source": {
+    "repo": "NetRxn/Inertia",
+    "head": "b2895b52ee1aa6e0d046e9628a84e2c3ad6e6737",
+    "tree": "7555f76a35f4ac913c1371a36aa494363951b61b"
+  },
+  "runs": [
+    {
+      "runRef": "run:sha256:9b874a72082c7f2ff1713c59c2470cc89d9edc956fe80efcb8535f24f959add6",
+      "role": "system",
+      "agentRef": "agent:synthetic-system",
+      "runtimeRef": "ntf05:synthetic-runtime",
+      "sourceHead": "b2895b52ee1aa6e0d046e9628a84e2c3ad6e6737"
+    },
+    {
+      "runRef": "run:sha256:560e5fa1a1a2c592761b028d1b0ea8a5b113db75fb3a4b5a00f53d5da267a380",
+      "role": "collaborator",
+      "agentRef": "agent:synthetic-collaborator",
+      "runtimeRef": "ntf07:synthetic-relay",
+      "sourceHead": "b2895b52ee1aa6e0d046e9628a84e2c3ad6e6737"
+    }
+  ],
+  "contributions": [
+    {
+      "contributionRef": "contrib:system-prep",
+      "runRef": "run:sha256:9b874a72082c7f2ff1713c59c2470cc89d9edc956fe80efcb8535f24f959add6",
+      "bounded": false,
+      "invocationRefs": [
+        "inv:sql-01",
+        "inv:sql-02"
+      ],
+      "artifactRefs": [
+        {
+          "artifactRef": "art:nsf-prep",
+          "version": "v1"
+        }
+      ]
+    },
+    {
+      "contributionRef": "contrib:collab-budget",
+      "runRef": "run:sha256:560e5fa1a1a2c592761b028d1b0ea8a5b113db75fb3a4b5a00f53d5da267a380",
+      "bounded": true,
+      "invocationRefs": [
+        "inv:collab-01"
+      ],
+      "artifactRefs": [
+        {
+          "artifactRef": "art:budget-narrative",
+          "version": "v3"
+        }
+      ]
+    }
+  ],
+  "toolInvocations": [
+    {
+      "invocationRef": "inv:sql-01",
+      "runRef": "run:sha256:9b874a72082c7f2ff1713c59c2470cc89d9edc956fe80efcb8535f24f959add6",
+      "tool": "tool:sql-facade.partner-facts",
+      "argumentsSha256": "0d0c7e3cb7d0c1c810a2b75d947c369a4ad8082bf5808ab8946ed08dc1b0a30c",
+      "resultSha256": "2910a8158c9dcbc6bcf12ca6c697992bba31169ee4499a1ded026718be181d14",
+      "admittedSourceRefs": [
+        "src:ntf12-partners"
+      ]
+    },
+    {
+      "invocationRef": "inv:sql-02",
+      "runRef": "run:sha256:9b874a72082c7f2ff1713c59c2470cc89d9edc956fe80efcb8535f24f959add6",
+      "tool": "tool:sql-facade.objectives",
+      "argumentsSha256": "10e6876331cbaee9b9b0bcd44c120ed9e3355148b1f656a745257c60a6d5453e",
+      "resultSha256": "48f9285c25bbf1a85469db23700ccaf70a2178a3061e742e90d3fb9c4fc52ae8",
+      "admittedSourceRefs": [
+        "src:ntf14-objectives"
+      ]
+    },
+    {
+      "invocationRef": "inv:collab-01",
+      "runRef": "run:sha256:560e5fa1a1a2c592761b028d1b0ea8a5b113db75fb3a4b5a00f53d5da267a380",
+      "tool": "tool:buzz.contribute",
+      "argumentsSha256": "20363347083e7dd85edf3b9be0d376d61cc9791a7dfd5070430fea41b7fd21c7",
+      "resultSha256": "890fb5d4a62697ed9b144e23f89d9a28357de2cd94e53361476c716a6e781f05",
+      "admittedSourceRefs": [
+        "src:ntf14-objectives"
+      ]
+    }
+  ],
+  "admittedSources": [
+    {
+      "sourceRef": "src:ntf12-partners",
+      "admissionRef": "adm:synthetic-01",
+      "version": "rev-2026-10-24.1"
+    },
+    {
+      "sourceRef": "src:ntf14-objectives",
+      "admissionRef": "adm:synthetic-02",
+      "version": "rev-2026-10-24.1"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifactRef": "art:nsf-prep",
+      "version": "v1",
+      "contentSha256": "33ccd67e5d35826e7703419aa3919a4d05757229d09d8ba38ab8e80ac1b07811",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:9b874a72082c7f2ff1713c59c2470cc89d9edc956fe80efcb8535f24f959add6",
+        "invocationRefs": [
+          "inv:sql-01",
+          "inv:sql-02"
+        ]
+      }
+    },
+    {
+      "artifactRef": "art:budget-narrative",
+      "version": "v3",
+      "contentSha256": "cc1f7a57ad98581b51a65cd20abac5af59e24efc598e3370b72f1bad0f21d4f4",
+      "origin": "synthetic",
+      "producedBy": {
+        "runRef": "run:sha256:560e5fa1a1a2c592761b028d1b0ea8a5b113db75fb3a4b5a00f53d5da267a380",
+        "invocationRefs": [
+          "inv:collab-01"
+        ]
+      }
+    }
+  ],
+  "outcome": null,
+  "measurements": {
+    "wallClock": {
+      "status": "measured",
+      "startedAt": "2026-10-24T15:00:00Z",
+      "endedAt": "2026-10-24T16:30:00Z",
+      "seconds": 5400,
+      "boundary": "system run registered to art:budget-narrative v3 persisted"
+    },
+    "activeHumanTime": {
+      "status": "measured",
+      "seconds": 900,
+      "method": "timer",
+      "boundary": "member review of art:budget-narrative v3 only"
+    },
+    "usage": [
+      {
+        "status": "measured",
+        "metric": "input_tokens",
+        "value": 182000,
+        "unit": "tokens",
+        "coverage": "complete",
+        "source": "synthetic provider usage export"
+      },
+      {
+        "status": "measured",
+        "metric": "output_tokens",
+        "value": 24000,
+        "unit": "tokens",
+        "coverage": "complete",
+        "source": "synthetic provider usage export"
+      }
+    ],
+    "cost": [
+      {
+        "status": "measured",
+        "amount": 1.23,
+        "currency": "USD",
+        "coverage": "complete",
+        "basis": "synthetic rate card"
+      }
+    ],
+    "totals": {
+      "cost": {
+        "amount": 1.23,
+        "currency": "USD"
+      }
+    },
+    "corrections": {
+      "status": "measured",
+      "count": 2,
+      "boundary": "member corrections to art:budget-narrative before v3",
+      "source": "synthetic review history"
+    },
+    "asks": {
+      "status": "measured",
+      "offered": 4,
+      "accepted": 2,
+      "declined": 2,
+      "pending": 0,
+      "withdrawn": 0,
+      "completed": 2,
+      "boundary": "prepared member asks; silence counted as declined",
+      "responseTime": {
+        "status": "unknown",
+        "boundary": "responded asks only",
+        "reason": "not captured"
+      }
+    }
+  },
+  "nonClaims": [
+    "not security signoff",
+    "not grant acceptance",
+    "not application-quality approval"
+  ]
+}
