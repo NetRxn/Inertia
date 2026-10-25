@@ -1,6 +1,6 @@
 # Objective intake and opportunity briefs
 
-Local Task 8 implementation. This is a tested caller/domain seam, not a deployed website integration or permission grant. Existing Task 8 design remains authoritative. No worker job, enabled connection, external endpoint, or manifest capability is added by this slice.
+Original Task 8 caller/domain contract, retained below. The additive [native objective composition](objective-native-composition.md) now registers a default-disabled manual owner-file intake job and protected assigned-task source resolver around this unchanged mapping/issue service. It adds no live website export or permission grant. Existing Task 8 design remains authoritative.
 
 ## Source owner and inspected public schema
 
@@ -24,7 +24,7 @@ The first delivery may be the current revision after missed older events. Once a
 
 `createNativeObjectiveAdapter` uses actual pinned Paperclip SDK issue list/get/create/update methods, plugin origin and a revision marker. It creates one general backlog item assigned to the configured CEO intake agent. Later updates preserve native priority, parent, goal and assignee. Similar objectives can be attached to a shared existing native goal without merging attribution. DFW owns many-to-many opportunity links, not another task queue.
 
-Native issues intentionally contain only a generic title and opaque mapping/revision references. Company visibility is not equivalent to website member permissions, and `surfaceVisibility` is not an ACL. Original text and submitter attribution stay in the permission-checked source/private mapping. A production member workspace needs an authorized source-resolution tool; do not put protected source text into issue descriptions to work around that requirement. Source withdrawal cancels task work but grants no adoption, application submission or external authority.
+Native issues intentionally contain only a generic title and opaque mapping/revision references. Company visibility is not equivalent to website member permissions, and `surfaceVisibility` is not an ACL. Original text and submitter attribution stay in the permission-checked source/private mapping. The native objective composition supplies an explicitly admitted owner-file source-resolution tool for assigned active tasks and configured descendants. A live website member workspace still needs its authorized current source adapter; do not put protected source text into issue descriptions to work around that requirement. Source withdrawal cancels task work but grants no adoption, application submission or external authority.
 
 `projectObjectiveProgress` is a read-through view of native task status/priority/goal, not a queue or copied workflow. It validates source authorization, exact source snapshot, native identity and marker, then rechecks source currency. Narrowed/withdrawn/stale/unknown sources suppress output immediately. It never copies private native comments/results into broader website audiences. A native `done` status means native task completion only, not successful grant submission, human signoff or an adopted motion. Website/Buzz serving adapters must call this scoped view rather than cache public snapshots without revocation checks.
 

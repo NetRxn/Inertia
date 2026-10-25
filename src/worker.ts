@@ -1,3 +1,4 @@
+import { registerObjectiveIntake, type ObjectiveIntakeStatus } from "./intake/host.js";
 import { registerConfiguredPublicDrafting } from "./drafting/setup.js";
 import { registerConfiguredFundingDiscovery } from "./discovery/setup.js";
 import {
@@ -50,6 +51,7 @@ function trusted(
   };
 }
 export function createPlugin() {
+  let objectiveIntakeStatus:()=>ObjectiveIntakeStatus=()=>({state:"disabled",results:[]});
   let roundtableStatus: () => RoundtableStatus = () => ({
     state: "disabled",
     results: [],
@@ -64,6 +66,7 @@ export function createPlugin() {
       await registerConfiguredFundingDiscovery(ctx);
       await registerConfiguredPublicDrafting(ctx);
       roundtableStatus = registerRoundtableJobs(ctx);
+      objectiveIntakeStatus = registerObjectiveIntake(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
           const config = await ctx.config.get(company.id);
@@ -290,7 +293,7 @@ export function createPlugin() {
     async onHealth() {
       return {
         ...health,
-        details: { ...health.details, roundtable: roundtableStatus() },
+        details: { ...health.details, roundtable: roundtableStatus(), objectiveIntake: objectiveIntakeStatus() },
       };
     },
   });
