@@ -1,8 +1,8 @@
 # Inertia decisions
 
-Revision: INERTIA-2026-10-24-r24
-Updated: 2026-10-24 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core and native capture source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Revision: INERTIA-2026-10-25-r25
+Updated: 2026-10-25 (UTC)
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
 
 
 ## Current baseline
@@ -163,7 +163,7 @@ Use the [recommended remaining work](plan.md#recommended-remaining-work) as a co
 
 Two-provider funding and general member/bounty scenarios test existing R-F/R-K/R-I/R-C requirements and native coordination. Keep the provider/role roster configurable across research, partner discovery, assembly and review. Reuse Paperclip’s coordinator, issues, checkout and budgets; add no dispatcher/framework. Two John-owned agents are not two independent humans.
 
-For this run, laptop Docker with the user’s own credentials is a sufficient local development route. John plans the shared deployment before Wednesday. New sign-in still needs exact approval; the cloud read-only-home failure does not establish an API-key requirement.
+Local Docker is preproduction. Paperclip-to-Codex subscription smoke passed without an API key; single-provider workflow qualification is next. Claude CLI is installed, with connection/inference pending until Monday and two-provider rehearsal later. The smoke verifies short native-agent output, not the funding packet, SQL reuse or shared deployment. John plans shared deployment before Wednesday.
 
 ## Chosen demo week priorities
 
@@ -182,7 +182,7 @@ Keep legacy accepted receipts through terminal acknowledgement or qualified dura
 
 ## Change log
 
-r24 adds the recommended Pareto task order, existing-requirement scenario mapping and local-development/shared-deployment distinction without new requirements or contributor assignments. r23 records merged native capture, reviewed draft Packet UI and noncanonical discussion/contributor status without adopting a shared recovery workflow. r22 recorded packet-v2 and named SQL-tool source before native capture merged. r21 recorded the finalized Wednesday PostgreSQL/Buzz path, explicit Helix/Y2 deferral, current-member exact-version v2 policy, simple submission attestation, settled retention defaults and actual-system measurement. V2 packet core has since merged; native/Buzz and real authority integration remain pending. Stable IDs and legacy records are preserved; prior review/minimization and source-qualified PR53 status remain valid history.
+r25 records merged native-delivery source, controlled PostgreSQL action evidence and the successful local Codex subscription smoke, with live authority, funding research/reuse and meeting/member integration still pending. r24 adds the recommended Pareto task order, existing-requirement scenario mapping and local-development/shared-deployment distinction without new requirements or contributor assignments. r23 records merged native capture, reviewed draft Packet UI and noncanonical discussion/contributor status without adopting a shared recovery workflow. r22 recorded packet-v2 and named SQL-tool source before native capture merged. r21 recorded the finalized Wednesday PostgreSQL/Buzz path, explicit Helix/Y2 deferral, current-member exact-version v2 policy, simple submission attestation, settled retention defaults and actual-system measurement. V2 packet core has since merged; native/Buzz and real authority integration remain pending. Stable IDs and legacy records are preserved; prior review/minimization and source-qualified PR53 status remain valid history.
 
 ## Source baseline
 
