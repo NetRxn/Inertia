@@ -35,6 +35,8 @@ function action(r: MeetingJobResult): string {
     return "Meeting source withdrawn. Do not recreate or execute work from its contents.";
   if (r.code === "native_extraction_binding_required")
     return "Configure the admitted native extraction task before publishing meeting notes. The source is retained; no empty extraction is reported as complete.";
+  if (r.code === "native_extraction_assignment_required")
+    return "Restore the admitted native extraction task's availability and configured project/agent assignment before retrying. The integration does not reopen, reassign, or execute unavailable tasks.";
   if (r.code === "extraction_pending")
     return "Complete the assigned native source-grounded extraction, then triage candidate actions in the existing native backlog. Source content grants no execution authority.";
   if (r.code === "transcript_required")

@@ -102,7 +102,7 @@ export function registerMeetingExtraction(ctx: Pick<PluginContext,"tools"|"issue
         await current(b,state);
         const issue=await ctx.issues.get(b.issueId,b.companyId);
         if(!issue || issue.companyId!==b.companyId || issue.projectId!==b.projectId || issue.assigneeAgentId!==b.agentId || !["todo","in_progress","blocked"].includes(issue.status))
-          throw Error("Meeting extraction native assignment unavailable");
+          throw new MeetingExtractionPending("native_extraction_assignment_required");
         if(state.accepted && state.notes)return structuredClone(state.notes);
         await ports.store.save(key(b),state,b);
         await current(b,state);

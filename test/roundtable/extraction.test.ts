@@ -89,3 +89,11 @@ it("a submission rejected after its staged save can never be reused as accepted 
  f.row.assigneeAgentId="agent";
  await expect(f.api.transform(f.binding,source)).rejects.toMatchObject({code:"extraction_pending"});
 });
+
+it.each(["read denied","service unavailable"])("does not classify a thrown native %s error as an unavailable assignment",async message=>{
+ const f=fixture(),failure=Error(message);
+ f.ctx.issues.get=async()=>{throw failure;};
+ await expect(f.api.transform(f.binding,source)).rejects.toBe(failure);
+ expect(f.values.size).toBe(0);
+ expect(f.wakes).toHaveLength(0);
+});
