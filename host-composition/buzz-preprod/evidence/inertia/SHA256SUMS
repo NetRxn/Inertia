@@ -1,0 +1,5 @@
+093a89811280aad26dd9643503f6de87dedb8646fad751cda48c3f72db519e53  evidence/inertia/src/buzz/http.ts
+57c3af84102494e9dbb5b02422c86b15ea0c0ceb0ff34d4b33d91140cc7b22e3  evidence/inertia/src/buzz/events.ts
+2c91a09810061b4d4a769caf09edbebeab22f04fe7f57572dd8bda2e3fc646ad  evidence/inertia/src/bridge/service.ts
+d29c210ae7e8e98f83e7a5e89d92cf32a20b8af3cb7896ab648b87a078a97e54  evidence/inertia/src/bridge/reconcile.ts
+7804d237c4ddf4eea694a42398f202e0092d178d7e1dcba726187930d89c2614  evidence/inertia/src/worker.ts

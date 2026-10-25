@@ -1,0 +1,14 @@
+{
+  "retrieved_utc": "2026-10-25T10:55:00Z",
+  "buzz": {
+    "repository": "block/buzz",
+    "commit": "9e8c9fc04daf20259cd259dcaec89109587cc7f5",
+    "url": "https://github.com/block/buzz/tree/9e8c9fc04daf20259cd259dcaec89109587cc7f5"
+  },
+  "inertia": {
+    "repository": "NetRxn/Inertia",
+    "commit": "8d15eaaa514d5604244fd731982df13e9a54f810"
+  },
+  "note": "Source pin only. Buzz, Postgres, Redis OCI digests unverified and unset; not a runnable credential bundle."
+}
+
