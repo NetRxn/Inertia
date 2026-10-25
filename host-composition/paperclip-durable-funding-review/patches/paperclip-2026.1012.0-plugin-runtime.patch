@@ -1,0 +1,300 @@
+--- a/dist/services/heartbeat.js
++++ b/dist/services/heartbeat.js
+@@ -1,6 +1,6 @@
+ import { retryIdempotentDatabaseOperation } from "../database-retry.js";
+ import { prepareConnectionInstructionDelivery } from "./connection-instructions.js";
+-import { resolveAssignedConnectionInstructionsForRun } from "./native-runtime/assigned-mcp-tools.js";
++import { resolveAssignedConnectionInstructionsForRun, resolveAssignedPluginToolsForRun } from "./native-runtime/assigned-mcp-tools.js";
+ import { externalObjectService } from "./external-objects.js";
+ import { isAiAuthenticationBlocked } from "./ai-auth-failure.js";
+ import { CHAT_COMPLETION_WAKE_REASON, prepareChatCompletionTurn, chatCompletionInstruction, isCompletedOnboardingHandoffWake } from "./chat-completion-delivery.js";
+@@ -2951,8 +2951,12 @@
+             connection.transport === "local_stdio" || isBrowserUseConnection(connection) || githubBotConnectionIds.has(connection.id)));
+     const assignedConnectionIds = new Set(assignedConnections.map((connection) => connection.id));
+     const assignedTools = effective.allowedTools.filter((tool) => assignedConnectionIds.has(tool.connectionId));
++    const pluginTools = await resolveAssignedPluginToolsForRun(input.db, {
++        companyId: input.agent.companyId, agentId: input.agent.id, runId: input.runId,
++    });
++    const pluginToolNames = [...new Set(pluginTools.map((tool) => tool.name))].sort();
+     const service = createToolGatewayService(input.db);
+-    if (assignedConnections.length === 0) {
++    if (assignedConnections.length === 0 && pluginToolNames.length === 0) {
+         await service.recordRuntimeMcpDeliveryDiagnostic({
+             companyId: input.agent.companyId,
+             agentId: input.agent.id,
+@@ -2966,6 +2970,7 @@
+         agentId: input.agent.id,
+         connections: assignedConnections.map((connection) => connection.id).sort(),
+         tools: assignedTools.map((tool) => tool.id).sort(),
++        ...(pluginToolNames.length ? { pluginTools: pluginToolNames } : {}),
+     };
+     const assignmentDigest = createHash("sha256")
+         .update(JSON.stringify(assignment))
+@@ -2989,6 +2994,7 @@
+             entry.connectionId)
+             .map((entry) => entry.connectionId));
+         const entries = [
++            ...pluginToolNames.map((toolName) => ({ selectorType: "tool_name", effect: "include", toolName })),
+             ...assignedConnections
+                 .filter((connection) => fullConnectionIds.has(connection.id))
+                 .map((connection) => ({
+@@ -3022,6 +3028,7 @@
+                     source: "paperclip_runner",
+                     agentId: input.agent.id,
+                     assignmentDigest,
++                    ...(pluginToolNames.length ? { runtimePluginTools: pluginToolNames, runtimeAssignment: assignment } : {}),
+                 },
+                 entries,
+             });
+@@ -3084,6 +3091,7 @@
+                     metadata: {
+                         nativeRuntimeAssignmentDigest: assignmentDigest,
+                         agentId: input.agent.id,
++                        ...(pluginToolNames.length ? { runtimePluginTools: pluginToolNames, runtimeAssignment: assignment } : {}),
+                     },
+                 },
+                 actor: { agentId: input.agent.id },
+@@ -3116,7 +3124,7 @@
+             name: `Run ${input.runId.slice(0, 8)}`,
+             subjectType: "heartbeat_run",
+             subjectId: input.runId,
+-            clientLabel: `${input.agent.name} heartbeat run`,
++            clientLabel: pluginToolNames.length ? `native-plugin-assignment:${assignmentDigest}` : `${input.agent.name} heartbeat run`,
+             ownerNote: `Short-lived runtime MCP token for heartbeat run ${input.runId}.`,
+             allowedActions: ["tools/list", "tools/call"],
+             expiresAt: new Date(Date.now() + 60 * 60 * 1_000),
+--- a/dist/services/tool-gateway.js
++++ b/dist/services/tool-gateway.js
+@@ -627,7 +627,97 @@
+     });
+     const pluginToolDispatcher = options.pluginToolDispatcher;
+     const interactions = issueThreadInteractionService(db);
+-    const policyService = toolAccessPolicyService(db);
++    const underlyingPolicyService = toolAccessPolicyService(db);
++    // Plugin-aware runtime assignments are a ceiling, not another grant. Keep
++    // legacy connection-only gateway behavior unchanged, but never interpret an
++    // empty ordinary-connection set as unrestricted connection access.
++    async function runtimePluginAssignment(input, cache) {
++        const gatewayId = input.runContext?.gatewayId;
++        if (!gatewayId) return null;
++        const key = `runtime-plugin-assignment:${input.companyId}:${gatewayId}:${input.runContext?.runtimeGatewayTokenId ?? ""}`;
++        if (cache?.has(key)) return cache.get(key);
++        const read = (async () => {
++            const [row] = await db.select({ gateway: toolMcpGateways, profile: toolProfiles })
++                .from(toolMcpGateways).innerJoin(toolProfiles, and(
++                    eq(toolProfiles.id, toolMcpGateways.profileId),
++                    eq(toolProfiles.companyId, toolMcpGateways.companyId)))
++                .where(and(eq(toolMcpGateways.id, gatewayId), eq(toolMcpGateways.companyId, input.companyId))).limit(1);
++            if (!row) return null;
++            // A token's client label is fixed at minting (the public API only
++            // revokes tokens). It preserves the ceiling even if editable profile
++            // and gateway metadata are both cleared after this run was captured.
++            const [token] = input.runContext?.runtimeGatewayTokenId ? await db.select({ clientLabel: toolMcpGatewayTokens.clientLabel })
++                .from(toolMcpGatewayTokens).where(and(eq(toolMcpGatewayTokens.id, input.runContext.runtimeGatewayTokenId),
++                    eq(toolMcpGatewayTokens.gatewayId, gatewayId), eq(toolMcpGatewayTokens.companyId, input.companyId))).limit(1) : [];
++            const prefix = "native-plugin-assignment:";
++            const tokenDigest = token?.clientLabel?.startsWith(prefix) ? token.clientLabel.slice(prefix.length) : null;
++            const marked = tokenDigest !== null || Object.hasOwn(row.gateway.metadata ?? {}, "runtimePluginTools") ||
++                Object.hasOwn(row.profile.metadata ?? {}, "runtimePluginTools");
++            if (!marked) return null;
++            const names = row.gateway.metadata?.runtimePluginTools;
++            const profileNames = row.profile.metadata?.runtimePluginTools;
++            const payload = row.profile.metadata?.runtimeAssignment;
++            const sortedStrings = (value) => Array.isArray(value) && value.every((item) => typeof item === "string" && item.length > 0) &&
++                JSON.stringify(value) === JSON.stringify([...new Set(value)].sort());
++            // JSONB does not preserve object key order. Rebuild the exact version-1
++            // assignment layout used by snapshot and realization before hashing.
++            const pinned = payload && { version: payload.version, agentId: payload.agentId,
++                connections: payload.connections, tools: payload.tools, pluginTools: payload.pluginTools };
++            const validPayload = pinned?.version === 1 && pinned.agentId === input.actor.agentId &&
++                sortedStrings(pinned.connections) && sortedStrings(pinned.tools) && sortedStrings(pinned.pluginTools) &&
++                pinned.pluginTools.length > 0 && /^[a-f0-9]{64}$/.test(tokenDigest ?? "") &&
++                createHash("sha256").update(JSON.stringify(pinned)).digest("hex") === tokenDigest &&
++                tokenDigest === row.gateway.metadata?.nativeRuntimeAssignmentDigest;
++            const valid = validPayload && JSON.stringify(names) === JSON.stringify(pinned.pluginTools) && Array.isArray(names) && names.length > 0 &&
++                names.every((name) => typeof name === "string" && name.length > 0) &&
++                JSON.stringify(names) === JSON.stringify([...new Set(names)].sort()) &&
++                JSON.stringify(names) === JSON.stringify(profileNames) &&
++                row.gateway.metadata?.agentId === input.actor.agentId &&
++                row.profile.metadata?.agentId === input.actor.agentId &&
++                row.profile.metadata?.source === "paperclip_runner" &&
++                row.profile.metadata?.assignmentDigest === row.gateway.metadata?.nativeRuntimeAssignmentDigest &&
++                row.profile.defaultAction === "deny" && row.profile.status === "active";
++            if (!valid) return { valid: false };
++            const entries = await db.select().from(toolProfileEntries).where(and(
++                eq(toolProfileEntries.companyId, input.companyId), eq(toolProfileEntries.profileId, row.profile.id)));
++            return { valid: true, names, entries, pinned };
++        })();
++        cache?.set(key, read);
++        return read;
++    }
++    function withinRuntimePluginAssignment(assignment, request) {
++        if (!assignment.valid) return false;
++        const matches = assignment.entries.filter((entry) => {
++            if (request.providerType === "paperclip_plugin")
++                return assignment.names.includes(request.toolName) && entry.selectorType === "tool_name" && entry.toolName === request.toolName;
++            if (!request.connectionId || !assignment.pinned.connections.includes(request.connectionId) ||
++                !assignment.pinned.tools.includes(request.catalogEntryId)) return false;
++            return entry.connectionId === request.connectionId &&
++                (entry.selectorType === "connection" ||
++                    (entry.selectorType === "catalog_entry" && entry.catalogEntryId === request.catalogEntryId));
++        });
++        return !matches.some((entry) => entry.effect === "exclude") && matches.some((entry) => entry.effect === "include");
++    }
++    const policyService = {
++        ...underlyingPolicyService,
++        async decide(input, options = {}) {
++            const assignment = await runtimePluginAssignment(input, options.cache);
++            if (!assignment) return underlyingPolicyService.decide(input, options);
++            if (!withinRuntimePluginAssignment(assignment, input.request)) return {
++                decision: "deny", allowed: false, reasonCode: "deny_runtime_assignment",
++                explanation: "Tool is outside the immutable runtime assignment.", effectiveProfileIds: [], matchedPolicyIds: [],
++            };
++            // The immutable gateway profile must not keep a removed agent grant
++            // alive. Re-evaluate current agent/run authority without that profile.
++            const current = await underlyingPolicyService.decide({
++                ...input, runContext: { ...input.runContext, gatewayId: null }, consumeRateLimit: false,
++            }, options);
++            if (!current.allowed && current.decision !== "require_approval") return current;
++            const gatewayDecision = await underlyingPolicyService.decide(input, options);
++            if (!gatewayDecision.allowed) return gatewayDecision;
++            return current.decision === "require_approval" ? current : gatewayDecision;
++        },
++    };
+     const secrets = secretService(db);
+     // Authentication produces a new session object for every operation. Keep
+     // credential acquisition scoped to that object and out of persisted inputs.
+@@ -1738,6 +1828,7 @@
+             issueId: input.session.issueId,
+             projectId: input.session.projectId,
+             gatewayId: input.session.gatewayId ?? null,
++            runtimeGatewayTokenId: input.session.gatewayTokenId ?? null,
+         });
+     }
+     function policyInputForAgentTool(input) {
+@@ -1755,6 +1846,7 @@
+                 issueId: input.issueId ?? null,
+                 projectId: input.projectId ?? null,
+                 gatewayId: input.gatewayId ?? null,
++                runtimeGatewayTokenId: input.runtimeGatewayTokenId ?? null,
+             },
+             request: {
+                 toolName: input.tool.name,
+@@ -6347,9 +6439,13 @@
+         },
+         async listPluginToolsForAgent(input) {
+             await assertAgentInCompany(input.companyId, input.agentId);
++            const runContext = input.runId ? await resolveRunContext(input) : null;
+             const decisions = await decideToolsForListing(pluginTools(), (tool) => policyInputForAgentTool({
+                 companyId: input.companyId,
+                 agentId: input.agentId,
++                heartbeatRunId: input.runId,
++                issueId: runContext?.issueId,
++                projectId: runContext?.projectId,
+                 tool,
+             }));
+             return decisions
+@@ -7152,6 +7248,17 @@
+             });
+             let effectiveParameters = requestedParameters;
+             let effectiveArgumentsSummary = argumentValidation.summary;
++            // Reauthorize before replay or approved-retry branches, which otherwise
++            // bypass the ordinary new-invocation policy evaluation below.
++            const runtimeDecisionInput = policyInputForTool({ session, tool, parameters: requestedParameters });
++            if (await runtimePluginAssignment(runtimeDecisionInput)) {
++                const current = await policyService.decide(runtimeDecisionInput);
++                if (!current.allowed && current.decision !== "require_approval") {
++                    await policyService.recordInvocation(runtimeDecisionInput, current);
++                    await policyService.writeAudit(runtimeDecisionInput, current);
++                    throw new ToolGatewayHttpError(policyErrorStatus(current), current.explanation, current.reasonCode);
++                }
++            }
+             if (!input.approvedActionRequestId) {
+                 const replay = await replayMatchingAgentAction({
+                     session,
+@@ -7373,6 +7480,16 @@
+                         toolName: storedInvocation.toolName,
+                     });
+                 }
++                // Approved retries execute the verified signed payload, not the
++                // caller's placeholder parameters. Recheck that exact payload.
++                const approvedRuntimeInput = policyInputForTool({ session, tool, parameters: storedParameters });
++                if (await runtimePluginAssignment(approvedRuntimeInput)) {
++                    const current = await policyService.decide(approvedRuntimeInput);
++                    if (!current.allowed && current.decision !== "require_approval") {
++                        await policyService.writeAudit(approvedRuntimeInput, current);
++                        throw new ToolGatewayHttpError(policyErrorStatus(current), current.explanation, current.reasonCode);
++                    }
++                }
+                 const claimedAt = new Date();
+                 const [claimed] = await db
+                     .update(toolActionRequests)
+--- a/dist/services/tool-gateway.d.ts
++++ b/dist/services/tool-gateway.d.ts
+@@ -227,6 +227,7 @@
+     listPluginToolsForAgent(input: {
+         companyId: string;
+         agentId: string;
++        runId?: string;
+     }): Promise<AgentToolDescriptor[]>;
+     browserUseSessionAuthorized(binding: {
+         companyId: string;
+--- a/dist/services/native-runtime/runtime-context.js
++++ b/dist/services/native-runtime/runtime-context.js
+@@ -1,3 +1,4 @@
++import { resolveAssignedPluginToolsForRun } from "./assigned-mcp-tools.js";
+ import { githubBotConnectionIdsForRun } from "../chat-github-tools.js";
+ import { isBrowserUseConnection } from "../browser-use-client.js";
+ import { createHash, randomUUID } from "node:crypto";
+@@ -214,6 +215,10 @@
+             || connection.credentialPolicy === "per_user"
+             || !isToolConnectionAttentionHealth(connection.healthStatus))
+         && (["mcp_remote", "local_stdio"].includes(connection.transport) || isBrowserUseConnection(connection) || githubBotConnectionIds.has(connection.id))).map((connection) => connection.id));
++    const pluginTools = await resolveAssignedPluginToolsForRun(input.db, {
++        companyId: input.agent.companyId, agentId: input.agent.id, runId: input.runId,
++    });
++    const pluginToolNames = [...new Set(pluginTools.map((tool) => tool.name))].sort();
+     const assignment = {
+         version: 1,
+         agentId: input.agent.id,
+@@ -222,9 +227,10 @@
+             .filter((tool) => availableConnectionIds.has(tool.connectionId))
+             .map((tool) => tool.id)
+             .sort(),
++        ...(pluginToolNames.length ? { pluginTools: pluginToolNames } : {}),
+     };
+     const assignmentDigest = sha256(JSON.stringify(assignment));
+-    return { assignmentSetId: `sha256:${assignmentDigest}`, digest: assignmentDigest, bindingId: assignment.connections.length ? `native-mcp:${input.runId}` : null };
++    return { assignmentSetId: `sha256:${assignmentDigest}`, digest: assignmentDigest, bindingId: assignment.connections.length || pluginToolNames.length ? `native-mcp:${input.runId}` : null };
+ }
+ export async function buildNativeRuntimeContext(input) {
+     const [instructions, skills, mcp] = await Promise.all([
+--- a/dist/services/native-runtime/assigned-mcp-tools.js
++++ b/dist/services/native-runtime/assigned-mcp-tools.js
+@@ -58,6 +58,11 @@
+ export async function resolveAssignedConnectionInstructionsForRun(db, binding) {
+     const gateway = assignedMcpGateways.get(db);
+     return gateway ? gateway.resolveConnectionInstructionsForRun(binding) : null;
++}
++/** Read the live app dispatcher through the configured gateway; no fallback grants. */
++export async function resolveAssignedPluginToolsForRun(db, binding) {
++    const gateway = assignedMcpGateways.get(db);
++    return gateway ? gateway.listPluginToolsForAgent(binding) : [];
+ }
+ function assignedToolName(name) {
+     const sanitize = (value) => value.replace(/[^a-zA-Z0-9_]+/g, "_").replace(/^_+|_+$/g, "");
+--- a/dist/services/native-runtime/assigned-mcp-tools.d.ts
++++ b/dist/services/native-runtime/assigned-mcp-tools.d.ts
+@@ -10,6 +10,12 @@
+     agentId: string;
+     runId: string;
+ }): Promise<import("@paperclipai/shared").ConnectionInstructionsSnapshot | null>;
++/** Fresh run-authorized descriptors from the app's configured plugin dispatcher. */
++export declare function resolveAssignedPluginToolsForRun(db: Db, binding: {
++    companyId: string;
++    agentId: string;
++    runId: string;
++}): Promise<Awaited<ReturnType<ToolGatewayService["listPluginToolsForAgent"]>>>;
+ /** Server-owned MCP bindings projected into the runner's existing tool channel. */
+ export declare function createAssignedMcpTools(input: {
+     gateway: ToolGatewayService;
