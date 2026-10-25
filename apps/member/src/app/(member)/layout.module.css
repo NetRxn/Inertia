@@ -1,0 +1,56 @@
+.shell {
+  min-height: 100dvh;
+  padding-inline: var(--space-4);
+  /* Room below the footer so the fixed chat bar never covers the end of the page. */
+  padding-bottom: 112px;
+}
+
+.column {
+  max-width: 608px;
+  margin-inline: auto;
+}
+
+/* Soft coloured light under the glass, fixed to the viewport so it never widens the page. */
+.lights {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lights span {
+  position: absolute;
+  border-radius: var(--radius-pill);
+  filter: blur(80px);
+  opacity: 0.18;
+}
+
+.lightSignal {
+  width: 280px;
+  height: 240px;
+  top: 96px;
+  left: calc(50% - 300px);
+  background: var(--signal);
+}
+
+.lightTide {
+  width: 320px;
+  height: 260px;
+  top: 55%;
+  left: calc(50% + 20px);
+  background: var(--tide);
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  max-width: 608px;
+  margin: var(--space-8) auto 0;
+}
+
+@media (min-width: 768px) {
+  .shell {
+    padding-top: var(--space-4);
+  }
+}

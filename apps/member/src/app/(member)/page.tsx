@@ -1,30 +1,36 @@
-import { requireMember } from '../../identity/session';
-import styles from './home.module.css';
 import { Suspense } from 'react';
+import { getAdapters } from '../../adapters';
+import { requireMember } from '../../identity/session';
+import { buildFeed } from '../../feed/build-feed';
+import { FeedCards } from '../../components/cards/FeedCards';
+import { firstName } from '../../components/cards/format';
+import styles from './home.module.css';
 
-async function HomeContent() {
+async function HomeFeed() {
   const member = await requireMember();
+  const now = new Date();
+  // Shares arrive with Task 7; until then the feed has none.
+  const cards = await buildFeed(getAdapters(), member, [], now);
 
   return (
-    <div className={styles.content}>
-      <h1 className={styles.welcome}>Welcome, {member.displayName}</h1>
-      <p className={styles.message}>More features coming soon.</p>
-
-      <form action="/auth/sign-out" method="POST" className={styles.signOutForm}>
-        <button type="submit" className={styles.signOutButton}>
-          Sign out
-        </button>
-      </form>
-    </div>
+    <>
+      <header className={styles.hero}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static SVG logos swapped by theme */}
+        <img className={`logo-night ${styles.lockup}`} src="/logos/inertia-lockup-on-dark.svg" alt="Inertia" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className={`logo-day ${styles.lockup}`} src="/logos/inertia-lockup-on-light.svg" alt="Inertia" />
+        <h1 className={styles.greeting}>Welcome, {firstName(member.displayName)}</h1>
+        <p className={styles.subtitle}>Here&apos;s what&apos;s happening in the DAO.</p>
+      </header>
+      <FeedCards cards={cards} now={now} />
+    </>
   );
 }
 
 export default function HomePage() {
   return (
-    <div className={styles.container}>
-      <Suspense fallback={<div className={styles.content}>Loading...</div>}>
-        <HomeContent />
-      </Suspense>
-    </div>
+    <Suspense fallback={<p className="in-mono">Loading…</p>}>
+      <HomeFeed />
+    </Suspense>
   );
 }
