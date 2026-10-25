@@ -26,11 +26,12 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 
 
 ## Coordination
 
+- 2026-10-25 update: #60 and #61 are merged. On #40, NetRxn answered the interface questions. Don't wire `claim()` to agent checkout; keep the fixtures until #46 settles member→user/company/action mapping. Meetings and work still need a read-only member projection, which NetRxn hasn't built yet. Read the #40 thread before writing any real adapter.
 - On 2026-10-25, NetRxn asked three interface questions on #40: who owns `apps/member` and which paths to track; whether `WorkSource` and packet actions reuse native Paperclip tasks and the exact-version acceptance path, mapped under #46; and which SQL/source interfaces are needed first. NetRxn also asked whether #54/#60 and #48/#61 are still in Kyle's queue. Kyle hasn't replied yet. Before building real adapters, read that thread: the answers decide how `WorkSource` and `MeetingSource` map onto Paperclip.
 
 ## Resume here
 
-1. Continue with **Task 7** (sharing). It fills the Work tab's Ideas segment, which is still a placeholder, carrying two items: the Task 4 note that seed shares are dated from `FIXTURE_NOW`, and the Task 5 note that `RecentlySharedCard` must allow only `http`/`https` links. After Task 7 comes PR checkpoint 2, "Member app: home feed, work tab and sharing".
+1. **Task 7** (sharing) was started and then stopped before its implementer reported back. Its brief is extracted and its rulings are made: R22 (https-only, no-referrer preview images), R23 (seed shares dated from process start, active authors, no financial text), R24 ("Recently shared" must be last), R25 (`MEMBER_APP_LINK_PREVIEWS=off` in e2e), R26 (checkpoint 2 PR based on `feat/member-app` while #70 is open) and R27 (http/https-only links at render). Restart Task 7 fresh, then open checkpoint 2. It fills the Work tab's Ideas segment, which is still a placeholder, carrying two items: the Task 4 note that seed shares are dated from `FIXTURE_NOW`, and the Task 5 note that `RecentlySharedCard` must allow only `http`/`https` links. After Task 7 comes PR checkpoint 2, "Member app: home feed, work tab and sharing".
 
 ## Environment
 
