@@ -71,7 +71,18 @@ export async function requestLoginLink(
   const { token, hash } = generateToken();
   const expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes
 
+  // Track whether a token was inserted so we only send mail after commit
+  let tokenInserted = false;
+
   await db.transaction(async (tx) => {
+    // Lock the member's row to serialize concurrent rate-limit checks
+    // (prevents race where two requests both count 4 tokens and both insert)
+    await tx
+      .select()
+      .from(members)
+      .where(eq(members.id, member.id))
+      .for('update');
+
     // Check rate limit: 5 per rolling hour
     const recentTokens = await tx
       .select()
@@ -91,10 +102,14 @@ export async function requestLoginLink(
       createdAt: now,
     });
 
-    // Send the login link
+    tokenInserted = true;
+  });
+
+  // Send the login link only after transaction commits and only if a token was inserted
+  if (tokenInserted) {
     const url = `${opts.baseUrl}/auth/verify?token=${token}`;
     await mailer.sendLoginLink(lowercaseEmail, url);
-  });
+  }
 }
 
 /**

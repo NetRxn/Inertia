@@ -105,6 +105,33 @@ describe('requestLoginLink', () => {
     });
     expect(mailer.calls).toHaveLength(1);
   });
+
+  it('handles concurrent rate limiting correctly', async () => {
+    const baseUrl = 'http://localhost:3000';
+    const email = 'rob@example.org';
+
+    // Fire 10 concurrent requests for the same member
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        requestLoginLink(db, email, mailer, {
+          baseUrl,
+          now: new Date(FIXTURE_NOW.getTime() + i * 100),
+        })
+      )
+    );
+
+    // Should have exactly 5 tokens stored
+    const { loginTokens } = await import('../src/db/schema');
+    const [member] = await db.select().from(members).where(eq(members.email, email));
+    const tokens = await db
+      .select()
+      .from(loginTokens)
+      .where(eq(loginTokens.memberId, member.id));
+    expect(tokens).toHaveLength(5);
+
+    // Should have exactly 5 emails sent
+    expect(mailer.calls).toHaveLength(5);
+  });
 });
 
 describe('consumeLoginToken', () => {
