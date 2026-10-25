@@ -59,12 +59,15 @@ export function createBridge(d: BridgeDependencies) {
   async function makeReceipt(row: InboxReceipt, observed?: Outcome) {
     if (!observed && row.state !== "applied" && row.state !== "rejected")
       return;
+    const receiptKey = observed ? "observed:" + row.receiptKey : row.receiptKey;
+    if (await d.store.getOutbox(receiptKey)) return;
     const outcome = observed ?? (row.outcome as Outcome);
     const template = {
       kind: 9,
-      created_at: Math.floor(new Date(row.createdAt).getTime() / 1000),
+      created_at: d.clock(),
       content: JSON.stringify({
         sourceEventId: row.eventId,
+        sourceCreatedAt: new Date(row.createdAt).toISOString(),
         issueId: row.destination.issueId,
         nativeId: outcome.nativeId,
         status: observed ? "observed" : row.state,
@@ -121,7 +124,7 @@ export function createBridge(d: BridgeDependencies) {
         const fresh = await d.loadConfig();
         if (!fresh.bindings.some(b => sameBinding(b,binding) && outboundEnabled(b) && projectComment(b,row))) continue;
         const template = {
-          kind: 9, created_at: Math.floor(Date.parse(projection!.createdAt)/1000),
+          kind: 9, created_at: d.clock(),
           tags: [["h", binding.channelId], ["e", binding.rootId, "", "root"], ["e", binding.rootId, "", "reply"], ["inertia", receiptKey]],
           content: JSON.stringify(projection),
         };
@@ -192,24 +195,28 @@ export function createBridge(d: BridgeDependencies) {
         continue;
       // Linearization point: suppression and publication cannot both win pending.
       // No expiry: a timed-out host RPC does not cancel its worker handler.
-      const token = isComment ? randomUUID() : null;
-      if (token && !await d.store.claimCommentDelivery(row.receiptKey,token)) continue;
+      const token = randomUUID();
+      if (!await d.store.claimCommentDelivery(row.receiptKey,token)) continue;
       try {
-        const result = await d.buzz.publish(verifySignedEvent(row.event));
+        const claimed = await d.store.getOutbox(row.receiptKey);
+        if (!claimed || claimed.publishToken !== token ||
+            !await d.store.markDeliveryAttempt(row.receiptKey, token)) {
+          await d.store.finishCommentDelivery(row.receiptKey, token, "pending");
+          pending++;
+          continue;
+        }
+        const result = await d.buzz.publish(verifySignedEvent(row.event), {
+          priorUncertain: claimed.deliveryAttempted,
+          ...(claimed.eventBytes === null ? {} : { serializedEvent: claimed.eventBytes }),
+        });
         if (result.eventId !== row.eventId)
           throw Error("Unexpected delivery ID.");
-        if (token) await d.store.finishCommentDelivery(row.receiptKey,token,"delivered");
-        else await d.store.markDelivered(row.receiptKey);
+        await d.store.finishCommentDelivery(row.receiptKey,token,"delivered");
       } catch (error) {
         const blocked = error instanceof BuzzConfigurationError || error instanceof BuzzRequestRejected;
         const cause = error instanceof BuzzDeliveryUnknown ? error.cause : error;
         const retryAfterMs = cause instanceof BuzzRetryDeferred ? cause.retryAfterMs : 0;
-        if (token) {
-          await d.store.finishCommentDelivery(row.receiptKey,token,blocked ? "blocked" : "pending",retryAfterMs);
-        } else {
-          if (blocked) await d.store.markBlocked(row.receiptKey);
-          if (retryAfterMs) await d.store.markDeferred(row.receiptKey,retryAfterMs);
-        }
+        await d.store.finishCommentDelivery(row.receiptKey,token,blocked ? "blocked" : "pending",retryAfterMs);
         if (blocked) await d.runtime.set("delivery-blocked",true);
         pending++;
       }

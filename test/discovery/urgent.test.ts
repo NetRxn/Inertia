@@ -93,6 +93,7 @@ beforeEach(async () => {
   deps = {
     scope,
     destination,
+    clock: () => 1792886400,
     store: createBridgeStore(db),
     runtime: runtimeState(db, scope.companyId, destination.relay),
     loadConfig: async () => structuredClone(config),
@@ -403,7 +404,7 @@ it("uses the actual signed Buzz HTTP transport without a native wakeup or user-r
   deps.buzz = makeBuzzHttpClient({
     relayUrl: destination.relay,
     signer: deps.signer,
-    clock: () => 1792800000,
+    clock: deps.clock!,
     fetch: (async (url: string | URL | Request, init?: RequestInit) => {
       expect(url).toBe(destination.relay + "/events");
       const auth = JSON.parse(
@@ -462,4 +463,107 @@ it("deduplicates new capture proofs for the same material event and retries the 
     ).state,
   ).toBe("accepted");
   expect(sent).toHaveLength(2);
+});
+
+it("uses first-signing transport time while retaining the observation time in content", async () => {
+  expect((await adapter().deliver(input)).state).toBe("accepted");
+  expect(sent[0]!.created_at).toBe(1792886400);
+  expect(JSON.parse(sent[0]!.content).observedAt).toBe(input.observedAt);
+});
+
+it("persists the attempt before I/O and carries durable uncertainty and bytes across reconstruction", async () => {
+  const options: unknown[] = [];
+  const persistedAttempts: boolean[] = [];
+  deps.buzz.publish = async (event, option) => {
+    options.push(option);
+    persistedAttempts.push((await deps.store.getOutbox(receiptKey()))!.deliveryAttempted);
+    sent.push(event);
+    if (sent.length === 1) throw new BuzzDeliveryUnknown(event.id);
+    return { eventId: event.id };
+  };
+  expect((await adapter().deliver(input)).state).toBe("pending");
+  const saved = await deps.store.getOutbox(receiptKey());
+  deps.clock = () => 1792972800;
+  expect((await adapter().deliver(input)).state).toBe("accepted");
+  expect(persistedAttempts).toEqual([true, true]);
+  expect(options).toEqual([
+    { priorUncertain: false, serializedEvent: saved!.eventBytes },
+    { priorUncertain: true, serializedEvent: saved!.eventBytes },
+  ]);
+  expect(saved!.eventBytes).toBe(JSON.stringify(sent[0]));
+  expect(sent[1]).toEqual(sent[0]);
+  expect(signs).toBe(1);
+});
+
+it.each(["denied", "outage"] as const)("does not publish when attempt persistence is %s", async (mode) => {
+  deps.store = {
+    ...deps.store,
+    markDeliveryAttempt: async () => {
+      if (mode === "outage") throw Error("database unavailable");
+      return false;
+    },
+  };
+  expect((await adapter().deliver(input)).state).toBe("pending");
+  expect(sent).toHaveLength(0);
+});
+
+it("reads uncertainty from the claimed snapshot when another attempt finishes before this claim", async () => {
+  const claim = deps.store.claimCommentDelivery;
+  deps.store = {
+    ...deps.store,
+    claimCommentDelivery: async (key, token) => {
+      await claim(key, "prior-owner");
+      await deps.store.markDeliveryAttempt(key, "prior-owner");
+      await deps.store.finishCommentDelivery(key, "prior-owner", "pending");
+      return claim(key, token);
+    },
+  };
+  let priorUncertain: boolean | undefined;
+  deps.buzz.publish = async (event, options) => {
+    priorUncertain = options?.priorUncertain;
+    return { eventId: event.id };
+  };
+  expect((await adapter().deliver(input)).state).toBe("accepted");
+  expect(priorUncertain).toBe(true);
+});
+
+it("replays legacy observation-timestamp events without replacing their signature", async () => {
+  deps.clock = () => 1792800000;
+  publishError = new BuzzDeliveryUnknown("unknown");
+  expect((await adapter().deliver(input)).state).toBe("pending");
+  await pg.query(
+    `UPDATE ${BRIDGE_NAMESPACE}.bridge_outbox SET event_bytes=NULL WHERE receipt_key=$1`,
+    [receiptKey()],
+  );
+  deps.clock = () => 1792972800;
+  let replayOptions: unknown;
+  deps.buzz.publish = async (event, options) => {
+    replayOptions = options;
+    sent.push(event);
+    return { eventId: event.id };
+  };
+  expect((await adapter().deliver(input)).state).toBe("accepted");
+  expect(replayOptions).toEqual({ priorUncertain: true });
+  expect(sent[1]).toEqual(sent[0]);
+  expect(sent[1]!.created_at).toBe(1792800000);
+  expect(signs).toBe(1);
+});
+
+it("releases its unsent claim when suppression wins immediately before the attempt marker", async () => {
+  const mark = deps.store.markDeliveryAttempt;
+  deps.store = {
+    ...deps.store,
+    markDeliveryAttempt: async (key, token) => {
+      await deps.store.suppressOutbox(key);
+      return mark(key, token);
+    },
+  };
+  expect((await adapter().deliver(input)).state).toBe("suppressed");
+  expect(sent).toHaveLength(0);
+  expect(await deps.store.getOutbox(receiptKey())).toMatchObject({
+    state: "suppressed",
+    publishToken: null,
+    suppressionRequested: true,
+    deliveryAttempted: false,
+  });
 });

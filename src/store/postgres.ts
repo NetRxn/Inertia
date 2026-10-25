@@ -29,13 +29,17 @@ export interface OutboxRecord {
 }
 export interface OutboxReceipt extends OutboxRecord {
     state: 'pending' | 'delivered' | 'blocked' | 'suppressed' | 'publishing';
+    /** Original serialized signed event; null only for pre-migration rows. */
+    eventBytes: string | null;
+    /** Write-ahead marker: a previous send may have reached the relay. */
+    deliveryAttempted: boolean;
     publishToken: string | null;
     suppressionRequested: boolean;
     createdAt: string | Date;
     updatedAt: string | Date;
 }
 const inboxFields = `relay, event_id AS "eventId", state, destination, command, receipt_key AS "receiptKey", outcome, created_at::text AS "createdAt", updated_at::text AS "updatedAt"`;
-const outboxFields = `receipt_key AS "receiptKey", relay, event_id AS "eventId", event, state, publish_token AS "publishToken", suppression_requested AS "suppressionRequested", created_at::text AS "createdAt", updated_at::text AS "updatedAt"`;
+const outboxFields = `receipt_key AS "receiptKey", relay, event_id AS "eventId", event, event_bytes AS "eventBytes", delivery_attempted AS "deliveryAttempted", state, publish_token AS "publishToken", suppression_requested AS "suppressionRequested", created_at::text AS "createdAt", updated_at::text AS "updatedAt"`;
 /** Only native ctx.db is injected. SQL is compatible with its restricted execute/query APIs. */
 export function createBridgeStore(hostDb: PluginDatabaseClient) {
     const db: PluginDatabaseClient = { namespace: hostDb.namespace,
@@ -66,12 +70,16 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
         async getOutbox(receiptKey: string) {
             return (await db.query<OutboxReceipt>(`SELECT ${outboxFields} FROM ${outbox} WHERE receipt_key=$1`, [receiptKey]))[0] ?? null;
         },
+        /** Persist BEFORE I/O; never clear on timeout, restart, resumption or recovery. */
+        async markDeliveryAttempt(receiptKey: string, token?: string) {
+            return (await db.execute(`UPDATE ${outbox} SET delivery_attempted=true,updated_at=now() WHERE receipt_key=$1 AND suppression_requested=false AND ${token ? "state='publishing' AND publish_token=$2" : "state='pending' AND publish_token IS NULL"}`, token ? [receiptKey,token] : [receiptKey])).rowCount === 1;
+        },
         async suppressOutbox(receiptKey: string) {
             return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN state='publishing' THEN 'publishing' ELSE 'suppressed' END,suppression_requested=true,updated_at=now() WHERE receipt_key=$1 AND state IN ('pending','blocked','publishing')`, [receiptKey])).rowCount === 1;
         },
-        /** Guarded comment/urgent-alert publication. The legacy method name is kept for callers. */
+        /** Guarded outbox publication. The legacy method name is kept for callers. */
         async claimCommentDelivery(receiptKey: string, token: string) {
-            return (await db.execute(`UPDATE ${outbox} SET state='publishing',publish_token=$2,updated_at=now() WHERE receipt_key=$1 AND (receipt_key LIKE 'comment:%' OR receipt_key LIKE 'alert:%') AND state='pending' AND publish_token IS NULL AND suppression_requested=false AND (next_attempt_at IS NULL OR next_attempt_at<=now())`, [receiptKey,token])).rowCount === 1;
+            return (await db.execute(`UPDATE ${outbox} SET state='publishing',publish_token=$2,updated_at=now() WHERE receipt_key=$1 AND state='pending' AND publish_token IS NULL AND suppression_requested=false AND (next_attempt_at IS NULL OR next_attempt_at<=now())`, [receiptKey,token])).rowCount === 1;
         },
         async finishCommentDelivery(receiptKey: string, token: string, state: 'pending' | 'blocked' | 'delivered', retryAfterMs = 0) {
             if (!Number.isSafeInteger(retryAfterMs) || retryAfterMs < 0) throw Error('Invalid delivery retry delay.');
@@ -79,7 +87,7 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
         },
         /** Administrator recovery only AFTER verifying the prior worker is stopped. Never called by jobs. */
         async recoverCommentDelivery(receiptKey: string, token: string) {
-            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN suppression_requested THEN 'suppressed' ELSE 'pending' END,publish_token=NULL,next_attempt_at=NULL,updated_at=now() WHERE receipt_key=$1 AND (receipt_key LIKE 'comment:%' OR receipt_key LIKE 'alert:%') AND state='publishing' AND publish_token=$2`, [receiptKey,token])).rowCount === 1;
+            return (await db.execute(`UPDATE ${outbox} SET state=CASE WHEN suppression_requested THEN 'suppressed' ELSE 'pending' END,publish_token=NULL,next_attempt_at=NULL,updated_at=now() WHERE receipt_key=$1 AND state='publishing' AND publish_token=$2`, [receiptKey,token])).rowCount === 1;
         },
         async listCommentValidation(companyId: string, limit = 100) {
             if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1000) throw Error('Invalid validation batch limit.');
@@ -120,7 +128,7 @@ export function createBridgeStore(hostDb: PluginDatabaseClient) {
             return rows;
         },
         async putOutbox(record: OutboxRecord) {
-            const inserted = (await db.execute(`INSERT INTO ${outbox} (receipt_key,relay,event_id,event) VALUES ($1,$2,$3,$4::jsonb) ON CONFLICT DO NOTHING`, [record.receiptKey, record.relay, record.eventId, JSON.stringify(record.event)])).rowCount === 1;
+            const inserted = (await db.execute(`INSERT INTO ${outbox} (receipt_key,relay,event_id,event,event_bytes,delivery_attempted) VALUES ($1,$2,$3,$4::jsonb,$5::text,false) ON CONFLICT DO NOTHING`, [record.receiptKey, record.relay, record.eventId, JSON.stringify(record.event), JSON.stringify(record.event)])).rowCount === 1;
             if (inserted) return true;
             // Resolve concurrent conflicts on both unique indexes, but never treat
             // another receipt's signed event as this receipt's successful write.

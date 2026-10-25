@@ -60,7 +60,7 @@ export function runtimeState(
           count: string;
           oldest: string | null;
         }>(
-          `SELECT o.state,count(*)::text AS count,min(o.created_at)::text AS oldest FROM "${BRIDGE_NAMESPACE}".bridge_outbox o JOIN "${BRIDGE_NAMESPACE}".bridge_outbox_scopes s ON s.receipt_key=o.receipt_key WHERE o.state IN ('pending','blocked','publishing') AND s.company_id=$2 AND ((o.relay=$1 AND s.issue_id IN (SELECT jsonb_array_elements_text($3::jsonb))) OR (o.state='publishing' AND o.receipt_key LIKE 'comment:%')) GROUP BY o.state`,
+          `SELECT o.state,count(*)::text AS count,min(o.created_at)::text AS oldest FROM "${BRIDGE_NAMESPACE}".bridge_outbox o JOIN "${BRIDGE_NAMESPACE}".bridge_outbox_scopes s ON s.receipt_key=o.receipt_key WHERE o.state IN ('pending','blocked','publishing') AND s.company_id=$2 AND ((o.relay=$1 AND s.issue_id IN (SELECT jsonb_array_elements_text($3::jsonb))) OR o.state='publishing') GROUP BY o.state`,
           [relay, companyId, JSON.stringify(issueIds)],
         );
         return {

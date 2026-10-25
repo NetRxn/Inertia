@@ -514,3 +514,155 @@ it("keeps delivery uncertain if the signer fails after a network interruption", 
     }).publish(event),
   ).rejects.toMatchObject({ name: "BuzzDeliveryUnknown", eventId: event.id });
 });
+
+describe("durable publication uncertainty and aged reconciliation", () => {
+  it.each([403, 409])("preserves caller uncertainty across a fresh HTTP %s rejection", async (status) => {
+    const event = message();
+    const client = makeBuzzHttpClient(config(async () => new Response("", { status })));
+    await expect(client.publish(event, { priorUncertain: true })).rejects.toMatchObject({
+      name: "BuzzDeliveryUnknown", eventId: event.id,
+    });
+  });
+  it("preserves caller uncertainty for a matching refused receipt", async () => {
+    const event = message();
+    const client = makeBuzzHttpClient(config(async () => Response.json({ event_id: event.id, accepted: false })));
+    await expect(client.publish(event, { priorUncertain: true })).rejects.toMatchObject({
+      name: "BuzzDeliveryUnknown", eventId: event.id,
+    });
+  });
+  it.each([-901, 901])("reconciles absolute clock skew %s by exact ID without publishing", async (skew) => {
+    const event = message();
+    const requests: { url: string; body: unknown }[] = [];
+    const client = makeBuzzHttpClient({
+      ...config(async (url, init) => {
+        requests.push({ url: String(url), body: JSON.parse(init?.body as string) });
+        return String(url).endsWith("/query") ? Response.json([event]) : Response.json({ event_id: event.id, accepted: true });
+      }),
+      clock: () => 1_700_000_000 + skew,
+    });
+    await expect(client.publish(event)).resolves.toEqual({ eventId: event.id });
+    expect(requests).toEqual([{ url: "https://relay.example/query", body: [{ ids: [event.id] }] }]);
+  });
+  it.each(["absent", "forged", "other-event", "denied", "failed"])("leaves aged %s readback unknown and never sends a stale event", async (outcome) => {
+    const event = message();
+    const urls: string[] = [];
+    const client = makeBuzzHttpClient({
+      ...config(async (url) => {
+        urls.push(String(url));
+        if (String(url).endsWith("/events")) return new Response("", { status: 403 });
+        if (outcome === "failed") throw new Error("connection interrupted");
+        if (outcome === "denied") return new Response("", { status: 403 });
+        return Response.json(outcome === "absent" ? [] : outcome === "forged"
+          ? [{ ...event, content: "forged same ID" }]
+          : [sign({ kind: 9, created_at: event.created_at, tags: event.tags, content: "different event" })]);
+      }),
+      clock: () => 1_700_000_901,
+      sleep: async () => {},
+    });
+    await expect(client.publish(event, { priorUncertain: true })).rejects.toMatchObject({ name: "BuzzDeliveryUnknown", eventId: event.id });
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.every((url) => url === "https://relay.example/query")).toBe(true);
+  });
+  it("rechecks age after retry backoff rather than sending a stale retry", async () => {
+    const event = message();
+    let now = event.created_at;
+    const urls: string[] = [];
+    const client = makeBuzzHttpClient({
+      ...config(async (url) => {
+        urls.push(String(url));
+        if (String(url).endsWith("/query")) return Response.json([event]);
+        throw new Error("accepted but response lost");
+      }),
+      clock: () => now,
+      sleep: async () => { now += 901; },
+    });
+    await expect(client.publish(event)).resolves.toEqual({ eventId: event.id });
+    expect(urls).toEqual(["https://relay.example/events", "https://relay.example/query"]);
+  });
+  it.each([-900, 900])("still publishes at the inclusive freshness boundary %s", async (skew) => {
+    const event = message();
+    const urls: string[] = [];
+    const client = makeBuzzHttpClient({
+      ...config(async (url) => {
+        urls.push(String(url));
+        return Response.json({ event_id: event.id, accepted: true });
+      }),
+      clock: () => event.created_at + skew,
+    });
+    await expect(client.publish(event)).resolves.toEqual({ eventId: event.id });
+    expect(urls).toEqual(["https://relay.example/events"]);
+  });
+});
+it("does not treat another valid signature over the same ID as the exact signed event", async () => {
+  const event = { ...message(), sig: "3cc7ac356e5c14282d456cf76dc95461adfe0f7d366298008df17118277ee1d605c307a6c2602842e143a7709cc8cfabb79689b46277da49d35edfdd68f469e9" };
+  // Same fixture key and event hash, independently signed with fixed auxiliary randomness.
+  const alternative = { ...event, sig: "3a242c5fd2c0c741f0d98ea19bc33fb6139860d0fde7ebe4e53b595f3cf9ee937f926cf4f3f79ee9756d5745ffb3938aa41eb3498c2b808b3cc8f2504c7452a4" };
+  expect(verifyEvent(alternative)).toBe(true);
+  expect(alternative.id).toBe(event.id);
+  expect(alternative.sig).not.toBe(event.sig);
+  const client = makeBuzzHttpClient({
+    ...config(async () => Response.json([alternative])),
+    clock: () => event.created_at + 901,
+  });
+  await expect(client.publish(event)).rejects.toMatchObject({ name: "BuzzDeliveryUnknown", eventId: event.id });
+});
+it("rechecks freshness after asynchronous authentication signing", async () => {
+  const event = message();
+  let now = event.created_at;
+  const urls: string[] = [];
+  const client = makeBuzzHttpClient({
+    ...config(async (url) => {
+      urls.push(String(url));
+      return String(url).endsWith("/query") ? Response.json([event]) : Response.json({ event_id: event.id, accepted: true });
+    }),
+    clock: () => now,
+    signer: async (template) => { now = event.created_at + 901; return sign(template); },
+  });
+  await expect(client.publish(event)).resolves.toEqual({ eventId: event.id });
+  expect(urls).toEqual(["https://relay.example/query"]);
+});
+it("publishes the verified persisted bytes verbatim on every fresh retry", async () => {
+  const event = message();
+  const serializedEvent = JSON.stringify(event, null, 2);
+  const bodies: string[] = [];
+  const client = makeBuzzHttpClient({
+    ...config(async (_, init) => {
+      bodies.push(init?.body as string);
+      return bodies.length === 1 ? new Response("", { status: 503 }) : Response.json({ event_id: event.id, accepted: true });
+    }),
+    sleep: async () => {},
+  });
+  await expect(client.publish(event, { serializedEvent })).resolves.toEqual({ eventId: event.id });
+  expect(bodies).toEqual([serializedEvent, serializedEvent]);
+});
+it.each(["invalid JSON", "mismatched event", "oversized bytes"])("refuses %s persisted bytes before delivery", async (variant) => {
+  const event = message();
+  const serializedEvent = variant === "invalid JSON" ? "{" : variant === "oversized bytes" ? " ".repeat(100_000) + JSON.stringify(event) : JSON.stringify({ ...event, content: "changed" });
+  let calls = 0;
+  const client = makeBuzzHttpClient(config(async () => { calls++; return Response.json({ event_id: event.id, accepted: true }); }));
+  await expect(client.publish(event, { serializedEvent })).rejects.toMatchObject({ name: "BuzzConfigurationError" });
+  expect(calls).toBe(0);
+});
+it("preserves the direct deferred-retry cause from aged readback", async () => {
+  const event = message();
+  const urls: string[] = [];
+  const delays: number[] = [];
+  const client = makeBuzzHttpClient({
+    ...config(async (url) => {
+      urls.push(String(url));
+      return new Response("", {
+        status: 429,
+        headers: { "Retry-After": "120" },
+      });
+    }),
+    clock: () => event.created_at + 901,
+    sleep: async (ms) => { delays.push(ms); },
+  });
+  await expect(client.publish(event, { priorUncertain: true })).rejects.toMatchObject({
+    name: "BuzzDeliveryUnknown",
+    eventId: event.id,
+    cause: { name: "BuzzRetryDeferred", retryAfterMs: 120_000 },
+  });
+  expect(urls).toEqual(["https://relay.example/query"]);
+  expect(delays).toEqual([]);
+});
