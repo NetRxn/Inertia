@@ -77,11 +77,14 @@ export async function requestLoginLink(
   await db.transaction(async (tx) => {
     // Lock the member's row to serialize concurrent rate-limit checks
     // (prevents race where two requests both count 4 tokens and both insert)
-    await tx
+    const [currentMember] = await tx
       .select()
       .from(members)
       .where(eq(members.id, member.id))
       .for('update');
+
+    // The directory may have changed while this request waited for the lock.
+    if (!currentMember || currentMember.status !== 'active' || currentMember.email !== lowercaseEmail) return;
 
     // Check rate limit: 5 per rolling hour
     const recentTokens = await tx
@@ -141,41 +144,45 @@ export async function consumeLoginToken(
     return { ok: false, reason: 'expired' };
   }
 
-  // Check if member is still active
-  const [member] = await db
-    .select()
-    .from(members)
-    .where(eq(members.id, loginToken.memberId))
-    .limit(1);
+  return db.transaction(async (tx): Promise<ConsumeLoginTokenResult> => {
+    // Serialize with issuance and directory sync. A consumption that commits
+    // before an email change is an existing session; after it, the link is used.
+    const [member] = await tx
+      .select()
+      .from(members)
+      .where(eq(members.id, loginToken.memberId))
+      .limit(1)
+      .for('update');
 
-  if (!member || member.status !== 'active') {
-    return { ok: false, reason: 'inactive' };
-  }
+    if (!member || member.status !== 'active') {
+      return { ok: false, reason: 'inactive' };
+    }
 
-  // Atomically mark token as used (race-safe)
-  const updatedRows = await db
-    .update(loginTokens)
-    .set({ usedAt: currentTime })
-    .where(and(eq(loginTokens.id, loginToken.id), isNull(loginTokens.usedAt)))
-    .returning();
+    // Atomically mark token as used (race-safe)
+    const updatedRows = await tx
+      .update(loginTokens)
+      .set({ usedAt: currentTime })
+      .where(and(eq(loginTokens.id, loginToken.id), isNull(loginTokens.usedAt)))
+      .returning();
 
-  if (updatedRows.length === 0) {
-    // Token was already used by another concurrent request
-    return { ok: false, reason: 'used' };
-  }
+    if (updatedRows.length === 0) {
+      // Token was already used by another concurrent request
+      return { ok: false, reason: 'used' };
+    }
 
-  // Create session
-  const { token: sessionToken, hash: sessionHash } = generateToken();
-  const sessionExpiresAt = new Date(currentTime.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    // Create session
+    const { token: sessionToken, hash: sessionHash } = generateToken();
+    const sessionExpiresAt = new Date(currentTime.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-  await db.insert(sessions).values({
-    memberId: member.id,
-    tokenHash: sessionHash,
-    expiresAt: sessionExpiresAt,
-    createdAt: currentTime,
+    await tx.insert(sessions).values({
+      memberId: member.id,
+      tokenHash: sessionHash,
+      expiresAt: sessionExpiresAt,
+      createdAt: currentTime,
+    });
+
+    return { ok: true, sessionToken, memberId: member.id };
   });
-
-  return { ok: true, sessionToken, memberId: member.id };
 }
 
 /**

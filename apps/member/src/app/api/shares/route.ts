@@ -4,7 +4,8 @@ import { getDb } from '../../../db/client';
 import { getMemberFromCookies } from '../../../identity/session';
 import { createShare, deleteShare, ShareValidationError, type LinkPreview, type ShareKind } from '../../../shares/shares';
 import { fetchLinkPreview } from '../../../shares/preview';
-import { deleteUpload, saveUpload } from '../../../shares/files';
+import { deleteUpload, saveUpload, MAX_UPLOAD_BYTES } from '../../../shares/files';
+import { readShareForm, ShareBodyTooLargeError } from '../../../shares/form';
 
 const KINDS: ShareKind[] = ['idea', 'resource', 'event', 'update'];
 
@@ -37,8 +38,11 @@ export async function POST(request: NextRequest) {
 
   let form: FormData;
   try {
-    form = await request.formData();
-  } catch {
+    form = await readShareForm(request);
+  } catch (error) {
+    if (error instanceof ShareBodyTooLargeError) {
+      return NextResponse.json({ error: 'That post is too large. Try a smaller file or less text?' }, { status: 413 });
+    }
     return badRequest('We could not read that post. Try again?');
   }
 
@@ -63,6 +67,9 @@ export async function POST(request: NextRequest) {
   // fails validation, the orphan upload is removed again.
   let fileId: string | undefined;
   if (file instanceof File && file.size > 0) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return badRequest('That file is over the 10 MB limit. Try a smaller one?');
+    }
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       fileId = (await saveUpload(db, member.id, { name: file.name, type: file.type, bytes })).id;
