@@ -41,9 +41,11 @@ export interface Initiative {
   id: string;
   title: string;
   status: 'active' | 'paused' | 'done';
-  progress: number; // 0..1
-  statusLabel: string;
-  priority: number;
+  // The next three are optional: a source may not track them. The UI drops the
+  // progress arc and status line, and unranked initiatives sort last in source order.
+  progress?: number; // 0..1
+  statusLabel?: string;
+  priority?: number; // lower is more important
 }
 
 export type TaskKind = 'creative' | 'outreach' | 'review' | 'real-world';
@@ -52,7 +54,7 @@ export interface HumanTask {
   id: string;
   initiativeId: string;
   title: string;
-  kind: TaskKind;
+  kind?: TaskKind; // read through taskKind(), which defaults to 'review'
   estimateMinutes: number | null;
   due: string | null;
   prepared: string;
