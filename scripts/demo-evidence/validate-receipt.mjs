@@ -115,6 +115,10 @@ export function validateReceipt(receipt) {
   walk(receipt, '', undefined);
 
   // Claim and evidence class.
+  if (receipt.evidenceClass !== undefined && typeof receipt.evidenceClass !== 'string') {
+    err('SHAPE', 'evidenceClass', 'must be a string');
+    receipt = {...receipt, evidenceClass: null};
+  }
   const cls = receipt.evidenceClass, expectedOrigin = CLASSES[cls], historical = cls === 'historical-human-submitted';
   if (!expectedOrigin) err('SHAPE', 'evidenceClass', `expected one of ${Object.keys(CLASSES).join(', ')}`);
   if (!SCOPES.has(receipt.claimScope)) err('SHAPE', 'claimScope', `expected one of ${[...SCOPES].join(', ')}`);
@@ -238,6 +242,13 @@ export function validateReceipt(receipt) {
       if (a && (systemRuns.length !== 1 || a.producedBy?.runRef !== systemRuns[0].runRef))
         err('SCOPE_OVERCLAIM', 'outcome', 'the complete outcome must be produced by the registered system run, not a collaborator contribution');
     }
+  }
+
+  // nonClaims entries must be strings.
+  if (Array.isArray(receipt.nonClaims)) {
+    receipt.nonClaims.forEach((entry, i) => {
+      if (typeof entry !== 'string') err('SHAPE', `nonClaims[${i}]`, 'entries must be strings');
+    });
   }
 
   checkMeasurements(receipt.measurements, err, warn);

@@ -416,3 +416,31 @@ test('malformed reference objects never leak into diagnostics', () => {
   assert.equal(report.valid, false);
   assertNoSentinel(report);
 });
+
+test('malformed evidenceClass objects are rejected without throwing', () => {
+  for (const bad of [{toString: null}, {valueOf: null, toString: null}, Object.create(null)]) {
+    const r = load('valid-synthetic');
+    r.evidenceClass = bad;
+    let report;
+    assert.doesNotThrow(() => { report = validateReceipt(r); }, `evidenceClass=${JSON.stringify(bad)} should not throw`);
+    assert.equal(report.valid, false);
+    assert.ok(report.errors.some(e => e.code === 'SHAPE' && e.path === 'evidenceClass'));
+  }
+});
+
+test('nonClaims array entries must be strings', () => {
+  const r = load('valid-synthetic');
+  r.nonClaims = ['valid string', {toString: null}, ['array']];
+  let report;
+  assert.doesNotThrow(() => { report = validateReceipt(r); });
+  assert.equal(report.valid, false);
+  assert.ok(report.errors.some(e => e.code === 'SHAPE' && e.path.startsWith('nonClaims[')));
+});
+
+test('malformed nonClaims entries never leak into diagnostics', () => {
+  const r = load('valid-synthetic');
+  r.nonClaims = [{toString: () => SENTINEL}];
+  const report = validateReceipt(r);
+  assert.equal(report.valid, false);
+  assertNoSentinel(report);
+});
