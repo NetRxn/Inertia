@@ -1,4 +1,8 @@
 import { lookup as dnsLookup } from 'node:dns/promises';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
+import { isIP } from 'node:net';
+import { Readable } from 'node:stream';
 
 /** What a fetched page says about itself; every field may be missing. */
 export type LinkPreview = {
@@ -30,18 +34,24 @@ function isPrivateIPv4(ip: string): boolean {
   if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
     return true; // Unparseable addresses are never fetched.
   }
-  const [a, b] = parts;
+  const [a, b, c] = parts;
   if (a === 0 || a === 10 || a === 127) return true; // unspecified, private, loopback
   if (a === 169 && b === 254) return true; // link-local
   if (a === 172 && b >= 16 && b <= 31) return true; // private
   if (a === 192 && b === 168) return true; // private
   if (a === 100 && b >= 64 && b <= 127) return true; // carrier-grade NAT
+  if (a >= 224) return true; // multicast, reserved and broadcast
+  if (a === 192 && b === 0 && (c === 0 || c === 2)) return true; // special-use/documentation
+  if (a === 198 && (b === 18 || b === 19)) return true; // benchmarking
   return false;
 }
 
 /** True for loopback, private, link-local and unique-local addresses, in either IP family. */
 export function isPrivateAddress(address: string): boolean {
-  const value = address.trim().toLowerCase();
+  let value = address.trim().toLowerCase();
+  if (!isIP(value)) return true;
+  // Canonicalize expanded IPv6 before matching mapped IPv4 and loopback.
+  if (isIP(value) === 6) value = new URL(`http://[${value}]/`).hostname.slice(1, -1);
   if (value.includes(':')) {
     if (value === '::' || value === '::1') return true;
     // IPv4-mapped IPv6, dotted form (::ffff:127.0.0.1) and hex form (::ffff:7f00:1).
@@ -59,14 +69,53 @@ export function isPrivateAddress(address: string): boolean {
     const head = parseInt(first, 16);
     if (head >= 0xfc00 && head <= 0xfdff) return true; // fc00::/7 unique-local
     if ((head & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
-    return false;
+    // Refuse non-global and translation/tunnel ranges rather than allowing an
+    // embedded private IPv4 target through NAT64, 6to4 or deprecated site-local.
+    return (head & 0xe000) !== 0x2000 || head === 0x2002;
   }
   return isPrivateIPv4(value);
 }
 
-async function hostIsFetchable(host: string, lookup: (host: string) => Promise<string[]>): Promise<boolean> {
-  const addresses = await lookup(host);
-  return addresses.length > 0 && addresses.every((address) => !isPrivateAddress(address));
+async function fetchAddress(host: string, lookup: (host: string) => Promise<string[]>): Promise<string | null> {
+  const bareHost = host.replace(/^\[|\]$/g, '');
+  const addresses = isIP(bareHost) ? [bareHost] : await lookup(bareHost);
+  return addresses.length > 0 && addresses.every((address) => !isPrivateAddress(address)) ? addresses[0] : null;
+}
+
+/** Keep the URL hostname for Host and TLS verification; only DNS is replaced. */
+function fetchPinned(url: URL, address: string, signal: AbortSignal): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const request = (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, {
+      agent: false,
+      signal,
+      family: isIP(address),
+      lookup: (_host, _options, callback) => callback(null, address, isIP(address)),
+      headers: { accept: 'text/html', 'accept-encoding': 'identity' },
+    }, (response) => {
+      // The callback runs after the Promise executor returns: conversion
+      // errors must reject explicitly, not escape as process exceptions.
+      try {
+        const status = response.statusCode;
+        if (!status || !Number.isInteger(status) || status < 200 || status > 599) {
+          throw new Error('Unsupported preview response status');
+        }
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(response.headers)) {
+          if (Array.isArray(value)) value.forEach(item => headers.append(key, item));
+          else if (value !== undefined) headers.set(key, value);
+        }
+        // Response forbids a body on these statuses; release the native stream.
+        const noBody = status === 204 || status === 205 || status === 304;
+        if (noBody) response.destroy();
+        resolve(new Response(noBody ? null : Readable.toWeb(response) as ReadableStream<Uint8Array>, { status, headers }));
+      } catch (error) {
+        response.destroy();
+        reject(error);
+      }
+    });
+    request.on('error', reject);
+    request.end();
+  });
 }
 
 async function readCapped(body: ReadableStream<Uint8Array> | null, maxBytes: number): Promise<string> {
@@ -77,7 +126,7 @@ async function readCapped(body: ReadableStream<Uint8Array> | null, maxBytes: num
   while (total < maxBytes) {
     const { done, value } = await reader.read();
     if (done) break;
-    chunks.push(value);
+    chunks.push(value.subarray(0, maxBytes - total));
     total += value.length;
     if (total >= maxBytes) {
       try {
@@ -174,7 +223,7 @@ function extractPreview(html: string, pageUrl: URL): LinkPreview | null {
 
 async function fetchPreview(
   rawUrl: string,
-  deps: { fetchImpl: typeof fetch; lookup: (host: string) => Promise<string[]>; maxBytes: number; signal: AbortSignal },
+  deps: { fetchImpl?: typeof fetch; lookup: (host: string) => Promise<string[]>; maxBytes: number; signal: AbortSignal },
 ): Promise<LinkPreview | null> {
   let current: URL;
   try {
@@ -186,22 +235,25 @@ async function fetchPreview(
   // The initial fetch plus at most MAX_REDIRECTS hops. Each hop re-checks scheme and host.
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     if (current.protocol !== 'http:' && current.protocol !== 'https:') return null;
-    if (!(await hostIsFetchable(current.hostname, deps.lookup))) return null;
+    if (current.username || current.password || deps.signal.aborted) return null;
+    const address = await fetchAddress(current.hostname, deps.lookup);
+    if (!address || deps.signal.aborted) return null;
 
     let response: Response;
     try {
-      response = await deps.fetchImpl(current.toString(), {
+      response = deps.fetchImpl ? await deps.fetchImpl(current.toString(), {
         redirect: 'manual',
         signal: deps.signal,
         credentials: 'omit',
         headers: { accept: 'text/html' },
-      });
+      }) : await fetchPinned(current, address, deps.signal);
     } catch {
       return null; // Includes aborts: the deadline race below returns null anyway.
     }
 
     const location = response.headers.get('location');
     if (response.status >= 300 && response.status < 400 && location) {
+      await response.body?.cancel();
       if (hop === MAX_REDIRECTS) return null;
       try {
         current = new URL(location, current);
@@ -244,7 +296,7 @@ export async function fetchLinkPreview(
   url: string,
   opts: FetchLinkPreviewOptions = {},
 ): Promise<LinkPreview | null> {
-  const fetchImpl = opts.fetchImpl ?? fetch;
+  const fetchImpl = opts.fetchImpl;
   const lookup = opts.lookup ?? defaultLookup;
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES;
@@ -267,5 +319,6 @@ export async function fetchLinkPreview(
     return await Promise.race([work, deadline]);
   } finally {
     clearTimeout(timer);
+    controller.abort();
   }
 }

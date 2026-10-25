@@ -25,6 +25,20 @@ The database lives in `data/pglite` (git-ignored). No Docker is needed. Set `DAT
 2. In development no mail is sent. The login link is printed in the dev server's console and written to `data/dev-mail/<email>.txt`.
 3. Open that link. It works once and expires after 15 minutes. Unknown emails get the same "check your email" response, and no link.
 
+Directory sync revokes every outstanding login link when a member's normalized
+email or active status changes (including disappearance from the directory).
+Changing the email back or reactivating the member does not revive old links.
+Issuance, consumption and sync serialize on the member row. Existing sessions
+remain valid after an email change for the same active external member identity;
+inactive members are still denied on every session lookup. Sync does not transfer
+a session to another external identity.
+
+Share uploads keep the 10 MiB file limit. The route reads at most 10 MiB plus
+64 KiB for multipart framing and text before parsing, even without Content-Length,
+and refuses a larger file before allocating its arrayBuffer. Link previews use
+only a validated public address per hop while retaining the URL's Host/TLS
+identity; redirects, response bytes and total time remain bounded.
+
 ## The chat assistant
 
 The chat runs on the Vercel AI SDK, so the provider is a setting. Put these in `.env.local`:
