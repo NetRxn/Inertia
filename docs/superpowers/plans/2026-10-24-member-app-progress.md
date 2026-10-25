@@ -12,13 +12,15 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 | 2 Adapters + synthetic DAO | Complete, review clean | `aac8b69..cf023dd` |
 | 3 Member sync | Complete, review clean | `cf023dd..66ab12d` |
 | 4 Email-link login | Complete, review clean (2 fix rounds) | `66ab12d..f697715` |
-| 5–11 | Not started | |
+| 5 Visual system, shell, home feed | Complete, review clean | `97048b5..d00a094` |
+| 6–11 | Not started | |
 
-PR checkpoint 1 (Tasks 1–4) is open into `develop`.
+PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 5 onward is committed on the local worktree branch and not pushed to `feat/member-app`, so it doesn't land in #70 (ruling R11). Checkpoint 2 (after Task 7) goes up as a separate branch.
 
 ## Resume here
 
-1. Continue with **Task 5** (visual system, shell, home feed). Its Step 5 now uses Kyle's Inertia design system, copied into `apps/member/design/` (see `SOURCE.md` there), in place of a new frontend-design pass. The plan is otherwise unchanged.
+1. Continue with **Task 6** (Work tab and claiming). Carry this Task 5 minor: add an e2e that renders the full "Waiting for you" card for a member with a claimed task.
+2. Then Task 7 (sharing), carrying two items: the Task 4 note that seed shares are dated from `FIXTURE_NOW`, and the Task 5 note that `RecentlySharedCard` must allow only `http`/`https` links. After Task 7 comes PR checkpoint 2, "Member app: home feed, work tab and sharing".
 
 ## Environment
 
@@ -38,9 +40,16 @@ PR checkpoint 1 (Tasks 1–4) is open into `develop`.
 - **R7:** The email test pins both rules: mixed-case inserts are rejected by the check constraint, and duplicate lowercase emails are rejected by the unique constraint.
 - **R8:** The `getAdapters()` singleton lives on `globalThis`, with a test-only reset, so all Next module graphs share one fixture state.
 - **R9:** Task 4 fix round 1 had no implementer fix report, so the controller's own run of the covering suites served as its test evidence.
+- **R11:** Task 5 onward isn't pushed to `feat/member-app` while #70 is open. Checkpoint 2 goes up as its own branch.
+- **R12:** Theming: `:root` carries Night, `prefers-color-scheme: light` switches to Day, and `[data-theme]` on `<html>` overrides both.
+- **R13:** `npm run tokens` generates `src/styles/tokens.css` from `design/tokens.json`. `design/components/bundle.css` is imported as-is, and a test checks that every `var()` it uses is defined.
+- **R14:** Fonts load through `next/font/google` and are exposed as `--font-display`, `--font-sans`, `--font-voice` and `--font-mono`.
+- **R15:** Cards map to the design system's components: "Waiting for you" uses AgentAsk, "Top priorities" uses Initiative, and chat and shares use IdeaCard.
 - **R10:** Fix round 2 went to a fresh implementer because the round-1 implementer's context was gone.
 
 ## Deferred minor findings (for the final whole-branch review to triage)
+
+- T5: `FromChatCard` quotes a member's words without their name (carry into Task 9). Adapter contracts are undocumented: `listMeetings` returns newest first, and a lower `priority` number means more important. `ThisWeekCard` keys rows on display name. `list-style: none` drops list semantics in Safari. The "This week" empty copy isn't a question. The latest-message logic is duplicated. The Priorities ring draws a dot at 0%.
 
 - T1: `migrate.ts` keeps two `as any` casts to pass the union `Db` into driver-specific migrators.
 - T3: the instrumentation guard flag is set before the interval starts, so a throw in between leaves sync disabled until restart.
