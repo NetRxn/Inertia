@@ -9,7 +9,7 @@ import { createFixtureAdapters, defaultFixture, FIXTURE_NOW } from '../src/adapt
 import type { Meeting } from '../src/adapters';
 import { createChatHandler } from '../src/assistant/chat-handler';
 import { ModelNotConfiguredError } from '../src/assistant/model';
-import { getOrCreateConversation, listMessages } from '../src/assistant/conversations';
+import { appendMessage, getOrCreateConversation, listMessages } from '../src/assistant/conversations';
 import type { Member } from '../src/identity/session';
 
 const usage = {
@@ -109,6 +109,44 @@ describe('POST /api/chat', () => {
     expect(assistant.role).toBe('assistant');
     expect(assistant.content).toBe('We picked the north lot (Garden planning).');
     expect(assistant.sources).toEqual([{ kind: 'meeting', id: 'meet-1', title: 'Garden planning' }]);
+  });
+
+  it('stores no empty assistant reply and never replays one to the model', async () => {
+    const { id } = await getOrCreateConversation(db, ana.id);
+    // A reply stored before this fix: empty assistant text would reach the provider as empty content.
+    await appendMessage(db, id, { role: 'user', content: 'First question', sources: [] });
+    await appendMessage(db, id, { role: 'assistant', content: '', sources: [] });
+
+    const prompts: unknown[] = [];
+    const silent = () =>
+      new MockLanguageModelV4({
+        doStream: async (options) => {
+          prompts.push(options.prompt);
+          return {
+            stream: simulateReadableStream({
+              chunks: [{ type: 'finish', finishReason: { unified: 'stop', raw: undefined }, usage }] as LanguageModelV4StreamPart[],
+            }),
+          };
+        },
+      });
+
+    const response = await handler({ model: silent })(post({ conversationId: id, message: 'Second question' }));
+    await response.text();
+
+    // Only the question is stored; the empty reply is not.
+    await vi.waitFor(async () => expect(await listMessages(db, id)).toHaveLength(3));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const stored = await listMessages(db, id);
+    expect(stored.map((m) => [m.role, m.content])).toEqual([
+      ['user', 'First question'],
+      ['assistant', ''],
+      ['user', 'Second question'],
+    ]);
+
+    // The model never saw an assistant message without content.
+    const prompt = prompts[0] as { role: string; content: unknown }[];
+    const assistants = prompt.filter((m) => m.role === 'assistant');
+    expect(assistants).toEqual([]);
   });
 
   it('continues an existing conversation', async () => {
