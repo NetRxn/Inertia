@@ -65,15 +65,18 @@ jobs:
 
       - name: Test public root package (private fixtures skipped)
         id: tests
+        if: github.event_name == 'workflow_dispatch'
         run: npm test -- --maxWorkers=1
 
       - name: Verify clean production package
         id: package
+        if: github.event_name == 'workflow_dispatch'
         run: npm run test:package
 
       - name: Report outcomes and qualification boundary
         if: always()
         env:
+          EVENT_NAME: ${{ github.event_name }}
           CHECKOUT: ${{ steps.checkout.outcome }}
           NODE: ${{ steps.node.outcome }}
           IDENTITY: ${{ steps.identity.outcome }}
@@ -85,6 +88,11 @@ jobs:
         run: |
           {
             printf '## Public root-package qualification\n\nRequested source: `%s`\n\n' "$EXPECTED_SHA"
+            if [ "$EVENT_NAME" = workflow_dispatch ]; then
+              printf '%s\n\n' 'Mode: explicit integration checkpoint; see actual outcomes below.'
+            else
+              printf '%s\n\n' 'Mode: automatic fast checks. Full root tests and package are skipped and NOT qualified.'
+            fi
             printf '| Step | Actual outcome |\n| --- | --- |\n'
             printf '| Checkout | %s |\n| Node setup | %s |\n| Exact SHA verification | %s |\n' "$CHECKOUT" "$NODE" "$IDENTITY"
             printf '| Lockfile install | %s |\n| Typecheck | %s |\n| Build | %s |\n' "$INSTALL" "$TYPECHECK" "$BUILD"
