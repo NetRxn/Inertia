@@ -39,11 +39,22 @@ or record submission. No automatic next-run wake is added: a fresh authenticated
 run and domain selection are distinct from replaying the current run. Deployment
 and unattended continuation require their own qualification.
 
-**Trigger/readback gate:** this adapter adds no scheduler, event subscription or
-capability grant. Native orchestration summaries are not lifecycle-only: they
-include raw run errors and company-wide budget metadata. A future continuation
-needs an independently reviewed, narrowly scoped terminal-run/correlation readback
-and ambiguous-wake recovery contract; the existing six-tool schemas stay unchanged.
+**Native continuation qualification gate:** prefer the existing native issue
+dependencies and executionPolicy review/return-to-executor lifecycle, not a new
+scheduler or parallel router. Pinned Paperclip source supports blocker-resolution
+follow-up runs and cycle-aware dedup, but this adapter has no live native proof yet.
+Qualify a genuinely fresh authenticated run, duplicate/recovered dependency events,
+ownership, pauses and budgets before enabling unattended continuation. Native
+issue approval must not replace exact domain candidate/evidence review.
+
+This adapter adds no scheduler, event subscription or capability grant. The
+previous explicit-wake alternative would need a narrowly scoped terminal-run/
+correlation readback and ambiguous-wake recovery contract. That is not a universal
+prerequisite or a reason to request broader lifecycle access when native dependencies
+supply the run boundary. Native orchestration summaries include raw run errors and
+company-wide budget metadata. Administrative recovery of a stuck domain claim still
+requires trusted terminal verification for every bound executor. The existing
+six-tool schemas and default-off behavior remain unchanged.
 
 Run `npx vitest run test/drafting/serial-checkpoint.test.ts` for synthetic adapter
 replay, identity, history and lifecycle tests. This fixture is not provider
