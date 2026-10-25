@@ -1,0 +1,69 @@
+{
+  "kind": "source-only-coordinator-human-input-policy",
+  "sourceBase": "5cc9b8463759b108ad7ec265edc4d19eb4628f3e",
+  "paperclipBuildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patchSha256": "f5c5747f25b8aa5a82a4a161da79e3f76f75bd25962526fd0406cdb1fea4cc27",
+  "authoritySha256": "79e76d9dc04c499be63ff0c6e524f984b0aadccaa68749852d7c8ef0a36bfc8e",
+  "change": "Only binding.nativeCoordinatorPolicy explicitly requests human_only on the existing native interaction create call; ordinary mode unchanged.",
+  "sourceBoundaryContract": {
+    "command": "node --test tests/native-coordinator-human-input.test.mjs",
+    "red": {
+      "passed": 5,
+      "failed": 5,
+      "reason": "restricted create argument lacked explicit resolverPolicy"
+    },
+    "green": {
+      "passed": 10,
+      "failed": 0
+    },
+    "coverage": [
+      "all five native human-input interaction kinds",
+      "requested/effective human_only and explicit provenance",
+      "real resolver-audience agent denial with interaction_human_only",
+      "human resolver allowed by pure audience rules",
+      "ordinary inherited anyone unchanged",
+      "company anyone default/cap does not weaken explicit human_only"
+    ],
+    "method": "Exact installed request method source with injected persistence/activity boundaries; real policy and audience functions, no mocked policy result.",
+    "doesNotExercise": [
+      "native dispatch authorization",
+      "database transactions",
+      "mutation receipt durability",
+      "duplicate/lost-ack execution",
+      "live delivery or response"
+    ]
+  },
+  "focusedRegression": {
+    "command": "npm run test:native-runner",
+    "passed": 58,
+    "failed": 0,
+    "skipped": 1,
+    "skip": "optional unauthenticated pinned Codex CLI check not repeated"
+  },
+  "databaseRegression": {
+    "file": "tests/fixtures/native-coordinator/authority.fixture.js",
+    "state": "authored; attempted before fix but setup failed; no assertions executed",
+    "error": "Existing embedded PostgreSQL helper exhausted its built-in five attempts: Unix-domain socket creation in /tmp returned Operation not permitted. No retries or socket workaround after helper failure.",
+    "unqualified": [
+      "persisted requested/effective policy",
+      "real service agent answer refusal",
+      "receipt duplicate/lost-ack preservation",
+      "ordinary service agent response"
+    ]
+  },
+  "priorEvidence": "native-coordinator-qualification.json remains historical evidence for its prior patch hash; its database passes do not qualify this patch.",
+  "limits": [
+    "No native runtime activation or authenticated provider acceptance",
+    "No actual member delivery, response, autonomous continuation or DFW closure",
+    "No new tools, permissions, notifications, stores, grants or infrastructure",
+    "No broad suites or CI maintenance",
+    "New interactions only: existing pending interactions and replayed pre-fix receipts retain their stored policy; no migration or retroactive tightening."
+  ],
+  "review": "pending independent source review",
+  "receipts": {
+    "policy-contract-red.log": "ac15777faac142b4ef0c141bb728bf90cab863821fdd4bb1e049db2f32cb1f61",
+    "policy-contract-green.log": "3ba2dfe22bffeda7a4f106f539baa3e1b322634ca98e8330ee1cf6eadd267b9d",
+    "human-policy-red.log": "87f8f9708b6fdcbd4da1774ada19a2fc24758e94b605a9dcca8de53c570381e3",
+    "final-focused.log": "ae75d75705c4e05cf29d5f529683d1f7ee91014427613e92ff15c89a0d64d285"
+  }
+}

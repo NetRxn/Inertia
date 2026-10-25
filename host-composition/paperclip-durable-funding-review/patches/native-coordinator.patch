@@ -283,6 +283,14 @@
              const inferredPlanningTarget = targetRevisionId !== null
                  && suppliedPayload.target === undefined
                  && kind === "request_confirmation"
+@@ -1674,6 +1715,7 @@
+                     : suppliedPayload;
+             const interaction = await issueThreadInteractionService(tx).create(context.issue, {
+                 kind,
++                ...(this.binding.nativeCoordinatorPolicy ? { resolverPolicy: "human_only" } : {}),
+                 idempotencyKey,
+                 sourceRunId: this.binding.runId,
+                 title: requiredString(input.title),
 --- a/dist/services/native-runtime/provider-profile.js
 +++ b/dist/services/native-runtime/provider-profile.js
 @@ -236,9 +236,12 @@

@@ -50,3 +50,25 @@ producer and reviewer issues. Do not put a same-issue reassignment policy on the
 DFW producer issue or treat native completion as domain/human acceptance. New
 funding cases still require trusted admitted case configuration. Shared-project
 reads do not grant external submission, credentials or private-data access.
+
+## Human-input resolver boundary
+
+In restricted Coordinator mode only, `request_human_input` explicitly sets the
+native interaction's `resolverPolicy` to `human_only`. This governs the actual
+interaction, not merely the issue's separate `reviewPolicy`; default mode still
+inherits the stock resolver policy. The existing resolver rejects agent answers.
+No new tool, permission, delivery route or runtime activation is introduced.
+This applies to newly created interactions only. Existing pending interactions
+and replayed pre-fix receipts retain their stored resolver policy; no migration
+or retroactive tightening is performed. Inspect those separately before rollout.
+
+The source-boundary test invokes the installed native request method with injected
+persistence/activity boundaries and the real policy/audience evaluators. It does
+not qualify SQL receipts, duplicate/lost-ack durability or actual member delivery.
+An authored PostgreSQL regression covers those receipt expectations, effective
+stored policy and real agent-answer refusal, but could not execute here because
+the existing embedded PostgreSQL helper cannot create its Unix socket. No socket
+workaround was attempted. See `evidence/native-coordinator-human-input.json`.
+The older `native-coordinator-qualification.json` records the prior patch hash;
+its database results do not qualify this corrected patch. Authorized target DB
+and native/provider acceptance remain open before rollout.
