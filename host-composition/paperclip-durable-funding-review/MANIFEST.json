@@ -132,7 +132,9 @@
     "evidence/native-runner-qualification.json": "259746518a715568532d9fdb4e22d0afd8a5212ff3c6b5879aba12b9be3c8e52",
     "evidence/native-runner-image.json": "c2cf6c28df24a005438c2b96385049c6c02831ed7e44734f012e93e401bd1b93",
     "tests/native-coordinator-human-input.test.mjs": "5397e873f0a19478a9e9ab5cc2ac980f841b67651c0ffe07566324ee1f081136",
-    "evidence/native-coordinator-human-input.json": "d123c6356b61de453d8d37f000f5bb67ac9c07080d713a395c398074c3fcac78"
+    "evidence/native-coordinator-human-input.json": "d123c6356b61de453d8d37f000f5bb67ac9c07080d713a395c398074c3fcac78",
+    "transport/native/member-funding-read.mjs": "09175cd09c6eaadbb4d08c6a825e0ca7e8f93124c228decc459d12647fe4337c",
+    "transport/tests/member-funding-read.test.mjs": "fc3a51e623b994ac4bc58175b3eb085c5817dcb7aa41898e8fdfac322eaf73a0"
   },
   "memberPacketCapture": {
     "state": "merged source Task 1; synthetic admission only",
