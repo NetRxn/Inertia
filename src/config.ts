@@ -1,4 +1,5 @@
 import { objectiveIntakeSchema } from "./intake/schema.js";
+import { centralConfigSchema } from "./central/setup.js";
 import { publicDraftingSchema } from "./drafting/schema.js";
 import { fundingDiscoverySchema } from "./discovery/schema.js";
 import { roundtableSchema } from "./roundtable/host.js";
@@ -25,6 +26,7 @@ export const configurationSchema: JsonSchema = {
     enabled: { type: "boolean", default: false },
     fundingDiscovery: fundingDiscoverySchema,
     publicDrafting: publicDraftingSchema,
+    trustedCentral: centralConfigSchema,
     relayUrl: relay,
     bridgePubkey: hex,
     signingKeyRef: object(
