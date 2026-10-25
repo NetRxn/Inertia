@@ -1,0 +1,98 @@
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -125,6 +125,7 @@
+ - fastMode (boolean, optional): enable Codex Fast mode; supported on GPT-6 (astra/sol/luna), GPT-6.1 Sol, GPT-5.6 (sol/terra/luna), GPT-5.5, GPT-5.4 and passed through for manual model IDs
+ - dangerouslyBypassApprovalsAndSandbox (boolean, optional): run with bypass flag
+ - command (string, optional): defaults to "codex"
++- disableCommandExecution (boolean, optional): true removes command tools and shell snapshots; requires explicit engine="cli", dangerouslyBypassApprovalsAndSandbox=false and empty/absent extraArgs and args. Unsupported or conflicting configuration fails closed before execution.
+ - extraArgs (string[], optional): additional CLI args
+ - env (object, optional): KEY=VALUE environment variables
+ - workspaceStrategy (object, optional): execution workspace strategy; currently supports { type: "git_worktree", baseRef?, branchTemplate?, worktreeParentDir? }
+--- a/dist/server/acp.js
++++ b/dist/server/acp.js
+@@ -1,3 +1,4 @@
++import { assertCodexCommandToolPolicy } from "./codex-args.js";
+ import fs from "node:fs/promises";
+ import path from "node:path";
+ import { fileURLToPath } from "node:url";
+@@ -25,9 +26,11 @@
+     return { engine: "acp", explicit: false };
+ }
+ export function resolveCodexExecutionEngine(config) {
++    assertCodexCommandToolPolicy(config);
+     return normalizeEngine(config.engine);
+ }
+ export async function resolveCodexExecutionEngineForRun(input) {
++    assertCodexCommandToolPolicy(input.config);
+     const selection = normalizeEngine(input.config.engine);
+     // Engine availability must never change the agent's execution or permission contract.
+     if (selection.engine === "cli")
+--- a/dist/server/codex-args.js
++++ b/dist/server/codex-args.js
+@@ -12,10 +12,30 @@
+         ? value
+         : {};
+ }
++/** Restrictive native option; user-supplied configuration/auth overrides stay forbidden. */
++export function assertCodexCommandToolPolicy(config) {
++    const record = asRecord(config);
++    if (record.disableCommandExecution === undefined)
++        return;
++    if (typeof record.disableCommandExecution !== "boolean")
++        throw new Error("disableCommandExecution must be a boolean");
++    if (!record.disableCommandExecution)
++        return;
++    if (record.engine !== "cli")
++        throw new Error('disableCommandExecution requires explicit engine="cli"');
++    if (record.dangerouslyBypassApprovalsAndSandbox !== false ||
++        (record.dangerouslyBypassSandbox !== undefined && record.dangerouslyBypassSandbox !== false))
++        throw new Error("disableCommandExecution requires explicit bypass=false and no bypass alias conflict");
++    for (const key of ["extraArgs", "args"]) {
++        if (record[key] !== undefined && (!Array.isArray(record[key]) || record[key].length !== 0))
++            throw new Error("disableCommandExecution does not allow custom CLI arguments");
++    }
++}
+ function formatFastModeSupportedModels() {
+     return `${CODEX_LOCAL_FAST_MODE_SUPPORTED_MODELS.join(", ")} or manually configured model IDs`;
+ }
+ export function buildCodexExecArgs(config, options = {}) {
++    assertCodexCommandToolPolicy(config);
+     const record = asRecord(config);
+     const model = normalizeCodexModel(asString(record.model, ""));
+     const modelReasoningEffort = asString(record.modelReasoningEffort, asString(record.reasoningEffort, "")).trim();
+@@ -59,6 +79,8 @@
+     if (!bypass && options.networkAccess === false) {
+         args.push("-c", "sandbox_workspace_write.network_access=false");
+     }
++    if (record.disableCommandExecution === true)
++        args.push("-c", "features.shell_tool=false", "-c", "features.shell_snapshot=false");
+     if (options.resumeSessionId)
+         args.push("resume", options.resumeSessionId, "-");
+     else
+--- a/dist/server/codex-args.d.ts
++++ b/dist/server/codex-args.d.ts
+@@ -1,3 +1,5 @@
++/** Validate the optional strict boolean command restriction before engine/spawn work. */
++export declare function assertCodexCommandToolPolicy(config: unknown): void;
+ export type BuildCodexExecArgsResult = {
+     args: string[];
+     model: string;
+--- a/dist/server/test.js
++++ b/dist/server/test.js
+@@ -6,7 +6,7 @@
+ import { parseCodexJsonl } from "./parse.js";
+ import { SANDBOX_INSTALL_COMMAND } from "../index.js";
+ import { codexHomeDir, readCodexAuthInfo } from "./quota.js";
+-import { buildCodexExecArgs } from "./codex-args.js";
++import { assertCodexCommandToolPolicy, buildCodexExecArgs } from "./codex-args.js";
+ import { isManagedCodexHomePath, prepareManagedCodexHome, resolveSharedCodexHomeDir, seedManagedCodexHome, } from "./codex-home.js";
+ import { isCodexAuthCacheEnabled, resolveCodexAuthCacheEntryPath, selectVendCredential, } from "./codex-auth-cache.js";
+ import { resolveCodexExecutionEngineForRun, testCodexAcpEnvironment } from "./acp.js";
+@@ -179,6 +179,7 @@
+     };
+ }
+ export async function testEnvironment(ctx) {
++    assertCodexCommandToolPolicy(ctx.config);
+     const engineSelection = await resolveCodexExecutionEngineForRun({
+         config: parseObject(ctx.config),
+         executionTarget: ctx.executionTarget,
