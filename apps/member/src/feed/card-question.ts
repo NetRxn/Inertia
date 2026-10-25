@@ -16,6 +16,8 @@ export function cardQuestion(card: FeedCard): string {
       return `What happened at the ${shortDate(card.meeting.date)} meeting?`;
     case 'proposals':
       return "What are the open Robert's Rules proposals about?";
+    case 'funding':
+      return 'Which grants should we go after, and what do members need to decide?';
     case 'priorities':
       return "What's the status of our top priorities?";
     case 'coming-up':

@@ -27,6 +27,10 @@ function sourceHref(ref: SourceRef): string | null {
       return `/docs#doc-${ref.id}`;
     case 'event':
       return '/calendar';
+    case 'opportunity':
+      return `/funding#opportunity-${ref.id}`;
+    case 'application':
+      return `/funding#application-${ref.id}`;
     case 'chat':
       return null;
   }
