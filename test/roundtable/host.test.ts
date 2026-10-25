@@ -63,6 +63,22 @@ function harness(config: Record<string, unknown>) {
   });
   return h;
 }
+function withExtraction(value:typeof settings) {
+  return {...value,meetings:value.meetings.map(m=>({...m,nativeExtraction:{projectId:"project",issueId:"extractor",agentId:"extractor-agent"}}))};
+}
+function nativeActor(h:ReturnType<typeof harness>) {
+  const row:any={id:"extractor",companyId:"co",projectId:"project",assigneeAgentId:"extractor-agent",status:"in_progress"};
+  h.ctx.issues.get=async()=>row;
+  h.ctx.issues.getSubtree=async()=>({rootIssueId:"extractor",companyId:"co",issueIds:["extractor"],issues:[row],activeRuns:{extractor:[{id:"extractor-run",issueId:"extractor",agentId:"extractor-agent",status:"running",finishedAt:null}]},assignees:{"extractor-agent":{id:"extractor-agent",status:"running"}}}) as any;
+  h.ctx.issues.assertCheckoutOwner=async()=>({}) as any;
+  h.ctx.issues.requestWakeup=async()=>({queued:true}) as any;
+}
+async function extract(h:ReturnType<typeof harness>,meetingId:string) {
+  await h.runJob("reconcile-roundtable-sources");
+  const run={companyId:"co",projectId:"project",agentId:"extractor-agent",runId:"extractor-run"};
+  const context:any=(await h.executeTool("meeting_source_context",{meetingId},run)).data;
+  return h.executeTool("submit_meeting_candidates",{meetingId,requestHash:context.requestHash,notes:{notes:[{text:context.source.text.split("\n")[0],line:1}],decisions:[],actions:[]}},run);
+}
 it("registers actual SDK manual job with no recurring schedule and keeps disabled setup network-free", async () => {
   const h = harness({ roundtable: { enabled: false } });
   let secrets = 0;
@@ -83,7 +99,8 @@ it("registers actual SDK manual job with no recurring schedule and keeps disable
   expect(status()).toMatchObject({ state: "disabled" });
 });
 it("composes real source, private SQL state, exact-byte website publication and restart dedupe", async () => {
-  const h = harness({ roundtable: settings });
+  const h = harness({ roundtable: withExtraction(settings) });
+  nativeActor(h);
   const urls: string[] = [];
   let storedBody = "";
   let receipt: any = null;
@@ -150,7 +167,7 @@ it("composes real source, private SQL state, exact-byte website publication and 
     return receipt ? json(receipt) : json({ code: "operation_absent" }, 404);
   };
   const status = registerRoundtableJobs(h.ctx);
-  await h.runJob("reconcile-roundtable-sources");
+  await extract(h,"meeting");
   expect(status()).toMatchObject({
     state: "complete",
     results: [{ state: "published" }],
@@ -222,7 +239,9 @@ it.each(["removed", "withdrawn", "rebound"])(
       ...settings,
       meetings: [{ ...settings.meetings[0]!, meetingId: "race-" + change }],
     };
+    unique.meetings = withExtraction(unique).meetings;
     const h = harness({ roundtable: unique });
+    nativeActor(h);
     let current: any = { roundtable: unique };
     h.ctx.config.get = async () => current;
     let writes = 0;
@@ -277,7 +296,7 @@ it.each(["removed", "withdrawn", "rebound"])(
       );
     };
     registerRoundtableJobs(h.ctx);
-    await h.runJob("reconcile-roundtable-sources");
+    await extract(h,unique.meetings[0]!.meetingId);
     expect(writes).toBe(0);
   },
 );
@@ -326,7 +345,9 @@ it("rechecks admission after website absence lookup before POST", async () => {
     ...settings,
     meetings: [{ ...settings.meetings[0]!, meetingId: "lookup-race" }],
   };
+  unique.meetings = withExtraction(unique).meetings;
   const h = harness({ roundtable: unique });
+  nativeActor(h);
   let current: any = { roundtable: unique };
   h.ctx.config.get = async () => current;
   h.ctx.secrets.resolve = async () => "token";
@@ -369,6 +390,6 @@ it("rechecks admission after website absence lookup before POST", async () => {
     });
   };
   registerRoundtableJobs(h.ctx);
-  await h.runJob("reconcile-roundtable-sources");
+  await extract(h,unique.meetings[0]!.meetingId);
   expect(posts).toBe(0);
 });

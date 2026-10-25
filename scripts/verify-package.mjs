@@ -66,7 +66,7 @@ try {
     assert(files.includes(required), `Missing runtime artifact: ${required}`);
   for (const file of files)
     assert(
-      /^(package\.json|README\.md|LICENSE|dist\/src\/.+\.(js|d\.ts)|migrations\/[^/]+\.sql|docs\/(operations|bridge-state-contract|native-comment-mirroring)\.md)$/.test(
+      /^(package\.json|README\.md|LICENSE|dist\/src\/.+\.(js|d\.ts)|migrations\/[^/]+\.sql|docs\/(operations|bridge-state-contract|native-comment-mirroring|native-public-drafting)\.md)$/.test(
         file,
       ),
       `Unexpected packaged file: ${file}`,

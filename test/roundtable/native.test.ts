@@ -348,3 +348,10 @@ it("allows an explicitly re-admitted summary-only mapping to gain a transcript b
   });
   expect(f.published).toHaveLength(1);
 });
+it("does not publish an extraction whose source changed while classification was in flight",async()=>{
+ const f=setup(),transform=f.deps.transform;
+ f.deps.transform=async()=>{const notes=await transform();f.revise("2","Corrected source.");return notes;};
+ expect(await runMeetingJob(config,f.deps)).toMatchObject({state:"pending",code:"source_changed_during_extraction"});
+ expect(f.published).toHaveLength(0);
+ expect(f.saved?.operation??null).toBeNull();
+});

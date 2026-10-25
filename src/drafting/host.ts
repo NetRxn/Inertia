@@ -1,3 +1,4 @@
+import { assertNativeTaskRun } from "../paperclip/context.js";
 import type { PluginContext, PluginCapability, ToolRunContext } from "@paperclipai/plugin-sdk";
 import type { createRuntimeOwner } from "../bridge/ownership.js";
 import { readNativeDocument, writeNativeDocument } from "../discovery/documents.js";
@@ -53,22 +54,10 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   }
   async function context(b: PublicDraftingBinding, run: ToolRunContext, role: "producer"|"reviewer", signal?: AbortSignal): Promise<DraftingContext> {
     const actor=b[role];
-    if (run.companyId!==b.companyId || run.projectId!==b.projectId || run.agentId!==actor.agentId || !text(run.runId))
-      throw Error("Public drafting actor denied");
-    await target(b,actor,signal);
-    const tree=await ctx.issues.getSubtree(actor.issueId,b.companyId,{includeActiveRuns:true,includeAssignees:true});
-    notAborted(signal);
-    const row=tree.issues.find(i=>i.id===actor.issueId), active=tree.activeRuns?.[actor.issueId]?.find(r=>r.id===run.runId);
-    const assignee=tree.assignees?.[actor.agentId];
-    if (tree.companyId!==b.companyId || tree.rootIssueId!==actor.issueId || !row || row.companyId!==b.companyId || row.projectId!==b.projectId ||
-        row.assigneeAgentId!==actor.agentId || !["todo","in_progress","blocked"].includes(row.status) ||
-        !active || active.issueId!==actor.issueId || active.agentId!==actor.agentId || active.status!=="running" || active.finishedAt!==null ||
-        !assignee || assignee.id!==actor.agentId || !["idle","running"].includes(assignee.status))
-      throw Error("Public drafting active native run binding unavailable");
-    await configured(b,signal);
-    // assertCheckoutOwner may adopt stale/unowned checkouts. It is never authentication by itself.
-    await ctx.issues.assertCheckoutOwner({issueId:actor.issueId,companyId:b.companyId,actorAgentId:run.agentId,actorRunId:run.runId});
-    await configured(b,signal);
+    await assertNativeTaskRun(ctx,{
+      companyId:b.companyId,projectId:b.projectId,issueId:actor.issueId,agentId:actor.agentId,
+      authorize:async()=>{await configured(b,signal);return true;},
+    },run,signal);
     return {company_id:b.companyId,applicant_slug:b.applicantSlug,match_id:b.matchId,principal_id:actor.principalId,run_id:run.runId,role};
   }
   for (const declaration of publicDraftingTools) {
