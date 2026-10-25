@@ -1,6 +1,6 @@
 # Needed from team
 
-Updated 2026-10-25 · INERTIA-2026-10-25-r25
+Updated 2026-10-25 · INERTIA-2026-10-25-r26
 
 Use this only for missing operational inputs, not another ownership or handoff exercise. Reuse existing data/connections and provide a protected reference or say what is missing. Credentials, member records and private documents do not belong here. The [remaining task order](plan.md#recommended-remaining-work) puts generated funding work and SQL knowledge reuse first.
 
@@ -26,7 +26,7 @@ Existing deployment/runtime and authorized PostgreSQL domain-tool connection ref
 
 ### NTF05 P0 Existing authorized runtime
 
-Existing model/research/browser/domain-tool access and bounded pilot budget through protected connection references. Reuse the authorized Buzz path. For the two-provider test, use a configurable role roster and the existing native coordinator; this tests existing funding and general member-objective requirements. Docker preproduction Codex subscription smoke passed without an API key. Single-provider workflow qualification, including substantial research/draft/reuse, is next. Claude CLI is installed; connection/inference waits until Monday and the two-provider rehearsal follows. Broader untrusted runtime qualification remains separate.
+Existing model/research/browser/domain-tool access and bounded pilot budget through protected connection references. Reuse the authorized Buzz path. For the two-provider test, use a configurable role roster and the existing native coordinator; this tests existing funding and general member-objective requirements. Docker preproduction Codex subscription smoke passed without an API key. Durable preproduction and command-free drafting installation are verified. Actual funding execution has zero candidates and zero reviews; command-disable runtime integration is pending. Claude CLI is installed; connection/inference waits until Monday and the two-provider rehearsal follows. Broader untrusted runtime qualification remains separate.
 
 ### NTF06 P0 Retained records and operational binding
 
@@ -50,7 +50,7 @@ Y2 is explicitly deferred from Wednesday. Preserve this ID and future interest/u
 
 ### NTF11 P0 Contribution participant; broader enrollment deferred
 
-Coordinate the shared recovery/rehearsal flow with the contributor under #48 by mutual agreement; draft PR62 re-entry and PR61 R-02 are not an adopted common workflow. Use the existing authorized Buzz agent for the achievable Wednesday contribution within the application packet. Identify any participating verified member and current application access through NTF02/07. A member can contribute/approve without owning the application. Full untrusted member runtime enrollment/isolation, draft PR51 and native authoritative completion remain separate unqualified work, not a prerequisite or an implied demo success.
+Shared recovery/rehearsal alignment under #48 is resolved and PR60/61 are merged. R02 retains system-run recovery and R03 the member same-request-ID path. PR62 remains draft with conflict reconciliation and real-browser QA in progress; no further recovery agreement is currently requested. Use the existing authorized Buzz agent for the achievable Wednesday contribution within the application packet. Identify any participating verified member and current application access through NTF02/07. A member can contribute/approve without owning the application. Full untrusted member runtime enrollment/isolation, draft PR51 and native authoritative completion remain separate unqualified work, not a prerequisite or an implied demo success.
 
 ### NTF12 P0 Organizational and partner evidence
 

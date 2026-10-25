@@ -1,8 +1,17 @@
 # Inertia testing requirements and plan
 
-Revision: INERTIA-2026-10-25-r25
+Revision: INERTIA-2026-10-25-r26
 Updated: 2026-10-25 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings remain pending; shared recovery alignment is resolved. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+
+
+## Status checkpoint 2026-10-25
+
+[PR73](https://github.com/NetRxn/Inertia/pull/73) command-free drafting source is merged and installed in durable preproduction. Restart verification passed. The initial Codex subscription smoke remains the only live inference proof: actual funding execution has produced zero candidates and zero reviews. Agents remain paused. The independently reviewed command-disable adapter repair is local-only; not yet installed. Trusted-central knowledge/review/admission changes are local-only; not yet published or activated.
+
+Verification: merged command-free source passed 704 public tests, 1,586 Python tests with five skips and 19 controlled gateway groups. The local adapter repair passed 113 adapter tests, 704 application tests and 53 validator tests; actual restricted Codex schemas expose neither command tool while MCP discovery remains available. Local trusted-central source passed 720 public tests and 1,627 Python tests with five skips. Contributor merge verification passed 53 validator and 704 integrated tests. 
+
+Contributor PR60/61 are merged and recovery alignment is resolved. PR62 Packet UI remains draft, with conflict reconciliation and real-browser QA in progress. Member PR70/74/75 remain fixture-only drafts; preview DNS, upload buffering and old-email-token source issues remain unresolved, while PR75 fixes Unicode handling.
 
 
 ## Qualification record
@@ -22,7 +31,7 @@ The merged core retains independently reviewed PostgreSQL/native-service and his
 
 [PR58](https://github.com/NetRxn/Inertia/pull/58) adds merged trusted native exact-action capture to the [packet-v2 core](https://github.com/NetRxn/Inertia/pull/56). Source/synthetic checks passed; missing trusted authority/retention callbacks keep the path disabled. Owning-domain packet-v2 and named SQL tools retain their recorded local PostgreSQL qualification.
 
-[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. Browser walkthrough, mutually agreed #48 recovery/workflow, production authority/runtime/domain/Buzz and the actual system run remain pending. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
+[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. PR62 conflict reconciliation and real-browser QA are in progress. Production authority/runtime/domain/Buzz and the actual system run remain pending. Shared recovery alignment is resolved. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
 
 Public packet-v2 source/synthetic tests and owning-domain CI/local PostgreSQL facade checks passed within their recorded scope. Recorded skipped lanes are not qualification evidence. These checks do not establish real membership/application authorization, native/Buzz wiring or actual provider output. Runtime tests were not rerun for this status-only artifact revision.
 
@@ -32,7 +41,7 @@ Public packet-v2 source/synthetic tests and owning-domain CI/local PostgreSQL fa
 
 The [#42 read-only assessment](https://github.com/NetRxn/Inertia/issues/42#issuecomment-6389560049) found receipt readers can load full activity rows before admission/byte bounds. Generic records are rejected by provenance checks; no generic acceptance-forgery path was established. The remaining proposed slice is early SQL filtering plus bounded receipt projection with pending identity retained for reconciliation. This is not an implementation claim or an approved new page interface.
 
-Browser walkthrough, mutually agreed #48 recovery/workflow, real authority/runtime/domain/Buzz and actual run evidence remain pending. PR59 is discussion-only; contributor PR60 readiness/cleanup and PR61 clarification/R-02 alignment remain their decisions. No contributor proposal, validator or rehearsal file is changed here.
+PR62 conflict reconciliation and real-browser QA are in progress. Real authority/runtime/domain/Buzz and actual run evidence remain pending. Contributor PR60/61 are merged after recovery alignment; the rehearsal is valid but NOT qualified. PR59 remains discussion-only. No contributor proposal, validator or rehearsal file is changed here.
 
 ### Meeting source and native composition
 
@@ -59,11 +68,11 @@ These are test cases for the existing native coordination and portable-runtime r
 - Funding case: query admitted knowledge, research missing facts and partners, assemble the packet, independently review it, save useful findings and reuse them next run. Maps to R-F01–04/R-F06–08, R-K01–08, R-C01–05 and R-O01; T-K05/T-K10/T-K12 and T-C01–04.
 - General member case: complete a meeting-derived task or innovation/problem/bug bounty without forcing it through grant preparation. Maps to R-I01–04, R-C01–05 and R-O01; existing objective/funding acceptance and T-C01–04.
 
-Record native task/checkout ownership, scoped tools, actual outputs, critique/corrections and one durable result per revision. Keep agent attribution separate from human confirmation. Two John-owned agents are not two independent human members. Docker preproduction Codex smoke passed; single-provider research/draft/reuse qualification is next. Claude connection/inference waits until Monday, followed by the two-provider rehearsal.
+Record native task/checkout ownership, scoped tools, actual outputs, critique/corrections and one durable result per revision. Keep agent attribution separate from human confirmation. Two John-owned agents are not two independent human members. Docker preproduction Codex smoke passed; single-provider research/draft/reuse is pending command-disable runtime integration. Claude connection/inference waits until Monday, followed by the two-provider rehearsal.
 
 ### Runtime checkpoint
 
-Docker preproduction Paperclip-to-Codex subscription smoke passed: the native agent returned the expected short output without an API key. Single-provider workflow qualification is next, including substantial funding research, a draft packet and durable SQL reuse. The official Claude CLI is installed; connection/inference remains pending until Monday, with the two-provider rehearsal later. Earlier cloud read-only-home and laptop daemon-access failures remain historical attempts, not authentication failures. Shared deployment and member/team integration remain pending.
+Docker preproduction Paperclip-to-Codex subscription smoke passed: the native agent returned the expected short output without an API key. Durable preproduction and command-free drafting installation are verified. Substantial funding research, a draft packet and durable SQL reuse remain unproven, with zero actual candidates and reviews. The command-disable adapter repair is local-only; not yet installed. The official Claude CLI is installed; connection/inference remains pending until Monday, with the two-provider rehearsal later. Earlier cloud read-only-home and laptop daemon-access failures remain historical attempts, not authentication failures. Shared deployment and member/team integration remain pending.
 
 ### Member candidate boundary
 

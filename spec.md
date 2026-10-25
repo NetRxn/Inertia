@@ -1,15 +1,22 @@
 # Inertia specification
 
-Revision: INERTIA-2026-10-25-r25
+Revision: INERTIA-2026-10-25-r26
 Updated: 2026-10-25 (UTC)
-Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings and shared recovery agreement remain pending. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+Status: Wednesday target is PostgreSQL-native knowledge and the existing authorized Buzz agent path. Helix and Y2 are deferred. V2 core, native capture and native delivery source are merged; Packet UI is reviewed draft PR62, not merged/live. Production bindings remain pending; shared recovery alignment is resolved. Legacy v1 records and source behavior remain intact; PR51 stays draft/inactive.
+
+
+## Status checkpoint 2026-10-25
+
+[PR73](https://github.com/NetRxn/Inertia/pull/73) command-free drafting source is merged and installed in durable preproduction. Restart verification passed. The initial Codex subscription smoke remains the only live inference proof: actual funding execution has produced zero candidates and zero reviews. Agents remain paused. The independently reviewed command-disable adapter repair is local-only; not yet installed. Trusted-central knowledge/review/admission changes are local-only; not yet published or activated.
+
+Contributor PR60/61 are merged and recovery alignment is resolved. PR62 Packet UI remains draft, with conflict reconciliation and real-browser QA in progress. Member PR70/74/75 remain fixture-only drafts; preview DNS, upload buffering and old-email-token source issues remain unresolved, while PR75 fixes Unicode handling.
 
 
 ## Implementation status
 
 [PR58](https://github.com/NetRxn/Inertia/pull/58) adds merged trusted native exact-action capture to the [packet-v2 core](https://github.com/NetRxn/Inertia/pull/56). Source/synthetic checks passed; missing trusted authority/retention callbacks keep the path disabled. Owning-domain packet-v2 and named SQL tools retain their recorded local PostgreSQL qualification.
 
-[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. Browser walkthrough, mutually agreed #48 recovery/workflow, production authority/runtime/domain/Buzz and the actual system run remain pending. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
+[Draft PR62](https://github.com/NetRxn/Inertia/pull/62) contains reviewed Packet UI/attestation source, not merged or live. PR62 conflict reconciliation and real-browser QA are in progress. Production authority/runtime/domain/Buzz and the actual system run remain pending. Shared recovery alignment is resolved. [PR59](https://github.com/NetRxn/Inertia/pull/59) is a noncanonical discussion reference, not an adopted workflow or scope change. [#40](https://github.com/NetRxn/Inertia/issues/40) remains the coordination source.
 
 Chosen target: operational at the Wednesday October 28 Roundtable, using authorized PostgreSQL domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred from the demo critical path. These are architecture and delivery decisions, not a claim that the SQL/application integration is deployed.
 
@@ -34,7 +41,7 @@ Legacy v1 approvals, receipts, cancellation state and meaningful historical reco
 
 From a development checkout with Node 24.11+ and dependencies installed, `npm run demo:workflow` prints the connected journey and writes `runs/workflow-receipt.json`. The receipt links the meeting revision/output hash, fixture-seeded native work, exact packet version/hash, paired acknowledgment and signed receipt. Reconstructing the bridge and replaying the same reply creates no second native mutation. External I/O is synthetic; ordinary acknowledgment remains separate from the grant governance evaluation. Website publication and unfinished live adapters remain explicitly pending.
 
-Cloud remains the default development and verification environment. Laptop Docker is sufficient for authorized local development with the user’s own credentials; the shared runtime is planned for deployment before Wednesday. Local Docker preproduction Paperclip-to-Codex subscription smoke passed with a short output, not a funding packet. Single-provider workflow qualification is next. Claude connection/inference remains pending until Monday; the two-provider rehearsal comes later. Preproduction is not shared-runtime qualification. Exact live-adapter inputs, outputs and acceptance checks are in [live handoff checklist](docs/implementation/live-handoff-checklist.md).
+Cloud remains the default development and verification environment. Laptop Docker is sufficient for authorized local development with the user’s own credentials; the shared runtime is planned for deployment before Wednesday. Local Docker preproduction Paperclip-to-Codex subscription smoke passed with a short output, not a funding packet. Single-provider workflow qualification is pending command-disable runtime integration; no actual funding candidates or reviews exist. Claude connection/inference remains pending until Monday; the two-provider rehearsal comes later. Preproduction is not shared-runtime qualification. Exact live-adapter inputs, outputs and acceptance checks are in [live handoff checklist](docs/implementation/live-handoff-checklist.md).
 
 ## 1. Product outcome
 
