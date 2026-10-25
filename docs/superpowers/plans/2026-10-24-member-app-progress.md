@@ -1,6 +1,6 @@
 # Member app: build progress and handoff
 
-Plan: [`2026-10-24-member-app.md`](2026-10-24-member-app.md) · Spec: [`../specs/2026-10-24-member-app-design.md`](../specs/2026-10-24-member-app-design.md) · Branch: `feat/member-app` (from `develop` at `00b9ebc`) · Updated 2026-10-24.
+Plan: [`2026-10-24-member-app.md`](2026-10-24-member-app.md) · Spec: [`../specs/2026-10-24-member-app-design.md`](../specs/2026-10-24-member-app-design.md) · Branch: `feat/member-app` (from `develop` at `00b9ebc`) · Updated 2026-10-25.
 
 Execution method: subagent-driven development (`superpowers:subagent-driven-development`). Each task is built by a fresh implementer and then reviewed (spec + quality) before the next task starts. This file is the committed copy of the controller's progress ledger, so a new session can resume. A resuming controller should recreate its local ledger from this file.
 
@@ -16,6 +16,16 @@ Execution method: subagent-driven development (`superpowers:subagent-driven-deve
 | 6–11 | Not started | |
 
 PR checkpoint 1 (Tasks 1–4) is open into `develop` as NetRxn/Inertia#70. Task 5 onward is committed on the local worktree branch and not pushed to `feat/member-app`, so it doesn't land in #70 (ruling R11). Checkpoint 2 (after Task 7) goes up as a separate branch.
+
+## Where things are on GitHub
+
+- `feat/member-app`: Tasks 1–4. PR checkpoint 1 is NetRxn/Inertia#70 into `develop`. It's mergeable, with no reviews yet and no CI checks configured.
+- `feat/member-app-feed`: Task 5 plus this file, stacked on `feat/member-app`. It has no PR yet; checkpoint 2 opens after Task 7.
+- `member-layer`: Kyle's member-layer notes (`member-layer/VISION.md`, `DASHBOARD.md`, `CLAUDE.md`). It's exploratory, with no PR until the scope in #40 is agreed.
+
+## Coordination
+
+- On 2026-10-25, NetRxn asked three interface questions on #40: who owns `apps/member` and which paths to track; whether `WorkSource` and packet actions reuse native Paperclip tasks and the exact-version acceptance path, mapped under #46; and which SQL/source interfaces are needed first. NetRxn also asked whether #54/#60 and #48/#61 are still in Kyle's queue. Kyle hasn't replied yet. Before building real adapters, read that thread: the answers decide how `WorkSource` and `MeetingSource` map onto Paperclip.
 
 ## Resume here
 
