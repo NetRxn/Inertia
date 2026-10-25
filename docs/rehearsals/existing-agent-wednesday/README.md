@@ -49,7 +49,7 @@ Wall-clock time covers phases A–C as one span, from run registration to the ve
 | 10 | C | **Attribution (M6-lite).** The member's and agents' contributions are attributed with evidence inside the existing task | Native task | Native attribution records and the receipt |
 | 11 | D | **Exact-version review, if ready.** One verified member reviews and confirms the exact v2 under the v2 policy. **The new case stops at prepared/reviewed.** It is not marked submitted unless it was actually submitted externally | Qualified action surface only, keeping its native receipt. Until the Packet UI/action wiring is qualified, defer this optional step; comments are for review discussion only | Native v2 records (not in the receipt) |
 | 12 | D | **Mark submitted demonstration.** Shown only on the already-submitted Park Place record or on an isolated synthetic test record, as a version-bound attestation of that record. The receipt is optional and can come later | Qualified action surface only, keeping its native receipt. Until the Packet UI/action wiring is qualified, defer this optional step; comments are for review discussion only | Native attestation record (not in the receipt) |
-| 13 | — | **Receipt.** Assemble the #54 receipt and validate it | Local | `node scripts/demo-evidence/validate-receipt.mjs <receipt>` ([PR60](https://github.com/NetRxn/Inertia/pull/60) at `79a29a3`) |
+| 13 | — | **Receipt.** Assemble the #54 receipt and validate it | Local | `node scripts/demo-evidence/validate-receipt.mjs <receipt>` ([PR60](https://github.com/NetRxn/Inertia/pull/60) at `18a4d4a`) |
 
 Votes, sponsor signatures and certifications apply only if the selected case or funder actually requires them (NTF08). Park Place stays a historical human-submitted reference. It is never presented as this run's output, and step 12 attests only its existing submission.
 
@@ -107,11 +107,11 @@ Agent runs and human events are recorded separately. Agent work appears in the r
 
 R-02, R-03, R-04 and R-07 reuse behavior that source tests already cover. The rehearsal checks that this behavior holds on the actual bindings.
 
-R-08 and R-09 can be checked now against derivations of the synthetic receipt. Against PR60 at `79a29a3`, setting `artifacts[0].origin` to `manual-reference` gives `CLASS_MISMATCH`, and pointing `outcome` at `art:collaborator-section` v1 gives `SCOPE_OVERCLAIM`. Their provenance checks need actual native readbacks. R-10 can also be checked now.
+R-08 and R-09 can be checked now against derivations of the synthetic receipt. Against PR60 at `18a4d4a`, setting `artifacts[0].origin` to `manual-reference` gives `CLASS_MISMATCH`, and pointing `outcome` at `art:collaborator-section` v1 gives `SCOPE_OVERCLAIM`. Their provenance checks need actual native readbacks. R-10 can also be checked now.
 
 ## Receipt mapping
 
-[`expected-receipt.json`](expected-receipt.json) is a synthetic target showing the shape a successful R-01 receipt should have. It is labelled `synthetic-fixture` and validates against PR60 at `79a29a3`: valid, not eligible, with warnings only for synthetic evidence and unknown usage and cost. PR60 is still provisional while its re-review is pending. Revalidate against the final reviewed head before relying on this result. Every reference is a placeholder for a protected binding, and all times and values are illustrative.
+[`expected-receipt.json`](expected-receipt.json) is a synthetic target showing the shape a successful R-01 receipt should have. It is labelled `synthetic-fixture` and validates against PR60 at `18a4d4a`, the head proposed for merge: valid, not eligible, with warnings only for synthetic evidence and unknown usage and cost. If PR60 merges at a different head, revalidate against it before relying on this result. Every reference is a placeholder for a protected binding, and all times and values are illustrative.
 
 | Plan step | Receipt field |
 |---|---|
@@ -156,5 +156,5 @@ One engineering seam is also open: the owning host or runtime must compute the a
 From the [coordinator review](https://github.com/NetRxn/Inertia/pull/61#issuecomment-6388867070):
 
 1. **Delivery.** One canonical ask on the existing native case task, with a subtask only where normal assignment needs one. Buzz carries the notification and the authenticated reply against the same ask ID and exact version. Use the existing task and comment path until the Packet UI and action wiring is qualified (steps 7–8).
-2. **Revocation.** Record a native terminal withdrawal with a reason, and reject unauthorized late replies. The receipt's `withdrawn` state is in PR60 at `79a29a3`, separate from decline and no response (R-05).
+2. **Revocation.** Record a native terminal withdrawal with a reason, and reject unauthorized late replies. The receipt's `withdrawn` state is in PR60 at `18a4d4a`, separate from decline and no response (R-05).
 3. **Window.** Split the rehearsal into resumable phases. Two hours is a provisional timebox, total elapsed time includes waiting, and the actual Wednesday window is confirmed with participants ([Phases](#phases)).
