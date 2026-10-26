@@ -1,0 +1,211 @@
+--- a/@paperclipai/adapter-codex-local/dist/server/codex-home.js
++++ b/@paperclipai/adapter-codex-local/dist/server/codex-home.js
+@@ -260,12 +260,13 @@
+ export function validatedFundingToolPreapprovals(gateway,binding,apiBaseUrl,managedName) {
+  const p=gateway.fundingToolPreapproval;if(p===undefined)return [];
+  const fail=()=>{throw new Error("Invalid trusted funding tool preapproval binding");};
+- if(!p||typeof p!=="object"||Array.isArray(p)||Object.keys(p).some(k=>!["version","role","companyId","agentId","runId","issueId","projectId","tools"].includes(k))||p.version!==1||typeof p.role!=="string"||!Object.hasOwn(FUNDING_APPROVED_ROLE_NAMES,p.role))return fail();
++ if(!p||typeof p!=="object"||Array.isArray(p)||Object.keys(p).some(k=>!["version","role","companyId","agentId","runId","issueId","projectId","tools","executionBudgetVersion"].includes(k))||p.version!==1||typeof p.role!=="string"||!Object.hasOwn(FUNDING_APPROVED_ROLE_NAMES,p.role))return fail();
+  for(const key of["companyId","agentId","runId","issueId","projectId"])if(typeof p[key]!=="string"||!p[key]||p[key]!==binding?.[key])return fail();
+  if(gateway.name!=="paperclip-assigned"||managedName!=="paperclip-assigned"||!/^assignment:[a-f0-9]{64}$/.test(gateway.runtimeAssignmentId??""))return fail();
+  const url=new URL(gateway.endpointPath,apiBaseUrl),base=new URL(apiBaseUrl);
+  if(url.origin!==base.origin||url.username||url.password||url.search||url.hash||!/^\/mcp\/gateways\/[A-Za-z0-9_-]{8,128}$/.test(url.pathname))return fail();
+  if(!Array.isArray(p.tools)||!p.tools.length||new Set(p.tools).size!==p.tools.length||p.tools.some(n=>!FUNDING_APPROVED_ROLE_NAMES[p.role].includes(n)))return fail();
++ if(p.executionBudgetVersion!==undefined && (p.executionBudgetVersion!==1 || p.tools.length!==FUNDING_APPROVED_ROLE_NAMES[p.role].length))return fail();
+  return [...p.tools].sort();
+ }
+ function buildManagedMcpBlock(input) {
+@@ -290,7 +291,9 @@
+         }
+         const url = new URL(gateway.endpointPath, input.apiBaseUrl).toString();
+         lines.push("", `[mcp_servers.${tomlString(managedName)}]`, `url = ${tomlString(url)}`, `http_headers = { Authorization = ${tomlString(`Bearer ${gateway.bearerToken}`)} }`);
+-        for (const name of validatedFundingToolPreapprovals(gateway,input.expectedFundingRunBinding,input.apiBaseUrl,managedName))
++        const approvedFundingTools = validatedFundingToolPreapprovals(gateway,input.expectedFundingRunBinding,input.apiBaseUrl,managedName);
++        if(gateway.fundingToolPreapproval?.executionBudgetVersion===1)lines.push("tool_timeout_sec = 180");
++        for (const name of approvedFundingTools)
+             lines.push("", `[mcp_servers.${tomlString(managedName)}.tools.${tomlString(name)}]`, 'approval_mode = "approve"');
+     });
+     lines.push(MANAGED_MCP_BLOCK_END);
+--- a/@paperclipai/server/dist/routes/tool-gateway.js
++++ b/@paperclipai/server/dist/routes/tool-gateway.js
+@@ -172,6 +172,7 @@
+                 tool: name,
+                 parameters: params.arguments ?? {},
+                 callerHeaders: req.headers,
++                nativeMcpExecution: true,
+             });
+             const resultRecord = result.result && typeof result.result === "object" && !Array.isArray(result.result)
+                 ? result.result
+--- a/@paperclipai/server/dist/services/heartbeat.js
++++ b/@paperclipai/server/dist/services/heartbeat.js
+@@ -2,6 +2,7 @@
+ import { prepareConnectionInstructionDelivery } from "./connection-instructions.js";
+ import { resolveAssignedConnectionInstructionsForRun, resolveAssignedPluginToolsForRun } from "./native-runtime/assigned-mcp-tools.js";
+ import { resolveFundingToolPreapproval } from "./native-runtime/funding-tool-preapproval.js";
++import { hasExactFundingExecutionCatalog } from "./native-runtime/funding-execution-policy.js";
+ import { externalObjectService } from "./external-objects.js";
+ import { isAiAuthenticationBlocked } from "./ai-auth-failure.js";
+ import { CHAT_COMPLETION_WAKE_REASON, prepareChatCompletionTurn, chatCompletionInstruction, isCompletedOnboardingHandoffWake } from "./chat-completion-delivery.js";
+@@ -3132,9 +3133,11 @@
+         },
+         actor: { agentId: input.agent.id },
+     });
+-    const fundingToolPreapproval = await resolveFundingToolPreapproval(input.db, {
++    const resolvedFundingToolPreapproval = await resolveFundingToolPreapproval(input.db, {
+         companyId: input.agent.companyId, agentId: input.agent.id, runId: input.runId, assignedTools: pluginToolNames,
+     });
++    const fundingToolPreapproval = hasExactFundingExecutionCatalog(resolvedFundingToolPreapproval, assignment)
++        ? { ...resolvedFundingToolPreapproval, executionBudgetVersion: 1 } : resolvedFundingToolPreapproval;
+     return [
+         {
+             name: ASSIGNED_MCP_SERVER_NAME,
+--- /dev/null
++++ b/@paperclipai/server/dist/services/native-runtime/funding-execution-policy.js
+@@ -0,0 +1,65 @@
++import { FUNDING_ROLE_TOOLS, resolveFundingToolPreapproval } from './funding-tool-preapproval.js';
++
++// Host-owned resource limits, not permissions or caller-provided configuration.
++export const FUNDING_EXECUTION_BUDGET = Object.freeze({
++    operationTimeoutMs: 120_000,
++    rpcTimeoutMs: 160_000,
++    gatewayTimeoutMs: 170_000,
++    clientToolTimeoutSec: 180,
++});
++const exactSet = (actual, expected) => Array.isArray(actual) &&
++    actual.length === expected.length && new Set(actual).size === actual.length &&
++    actual.every(name => expected.includes(name));
++
++/** Longer budgets apply only to a complete role-only native assignment. */
++export function hasExactFundingExecutionCatalog(approval, assignment) {
++    if (!approval || approval.version !== 1 || !Object.hasOwn(FUNDING_ROLE_TOOLS, approval.role)) return false;
++    const names = FUNDING_ROLE_TOOLS[approval.role];
++    return assignment?.version === 1 && assignment.agentId === approval.agentId &&
++        Array.isArray(assignment.connections) && assignment.connections.length === 0 &&
++        Array.isArray(assignment.tools) && assignment.tools.length === 0 &&
++        exactSet(assignment.pluginTools, names) && exactSet(approval.tools, names);
++}
++
++export async function resolveFundingExecutionPolicy(db, input) {
++    if (!input.assignment?.valid || typeof input.toolName !== 'string' ||
++        !Number.isSafeInteger(input.startedAt) || input.startedAt > Date.now()) return null;
++    const approval = await resolveFundingToolPreapproval(db, {
++        companyId: input.companyId, agentId: input.agentId, runId: input.runId,
++        assignedTools: input.assignment.names,
++    });
++    if (!hasExactFundingExecutionCatalog(approval, input.assignment.pinned) ||
++        !approval.tools.includes(input.toolName)) return null;
++    return Object.freeze({
++        version: 1, role: approval.role,
++        companyId: approval.companyId, agentId: approval.agentId, runId: approval.runId,
++        issueId: approval.issueId, projectId: approval.projectId,
++        toolName: input.toolName, invocationId: input.invocationId,
++        startedAt: input.startedAt,
++        operationDeadlineAt: input.startedAt + FUNDING_EXECUTION_BUDGET.operationTimeoutMs,
++        rpcDeadlineAt: input.startedAt + FUNDING_EXECUTION_BUDGET.rpcTimeoutMs,
++        gatewayDeadlineAt: input.startedAt + FUNDING_EXECUTION_BUDGET.gatewayTimeoutMs,
++    });
++}
++
++const fields = ['version','role','companyId','agentId','runId','issueId','projectId',
++    'toolName','invocationId','startedAt','operationDeadlineAt','rpcDeadlineAt','gatewayDeadlineAt'];
++const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value);
++/** Internal dispatch metadata is accepted only from the verified gateway path. */
++export function validateFundingExecutionPolicy(policy, toolName, runContext) {
++    if (Object.hasOwn(runContext, 'fundingExecution')) throw Error('Caller-supplied funding execution metadata refused');
++    if (policy === undefined || policy === null) return null;
++    if (!policy || typeof policy !== 'object' || Array.isArray(policy) ||
++        Object.keys(policy).length !== fields.length || fields.some(key => !Object.hasOwn(policy,key)) ||
++        policy.version !== 1 || !Object.hasOwn(FUNDING_ROLE_TOOLS, policy.role) ||
++        !FUNDING_ROLE_TOOLS[policy.role].includes(toolName) || policy.toolName !== toolName ||
++        !['companyId','agentId','runId','issueId','projectId','invocationId'].every(key => uuid(policy[key])) ||
++        !['companyId','agentId','runId','projectId'].every(key => policy[key] === runContext[key]) ||
++        !Number.isSafeInteger(policy.startedAt) || policy.startedAt > Date.now() ||
++        policy.operationDeadlineAt !== policy.startedAt + FUNDING_EXECUTION_BUDGET.operationTimeoutMs ||
++        policy.rpcDeadlineAt !== policy.startedAt + FUNDING_EXECUTION_BUDGET.rpcTimeoutMs ||
++        policy.gatewayDeadlineAt !== policy.startedAt + FUNDING_EXECUTION_BUDGET.gatewayTimeoutMs)
++        throw Error('Invalid trusted funding execution policy');
++    if (policy.operationDeadlineAt <= Date.now()) throw Error('Funding operation deadline exhausted before dispatch; no child started');
++    return policy;
++}
+--- a/@paperclipai/server/dist/services/plugin-tool-dispatcher.js
++++ b/@paperclipai/server/dist/services/plugin-tool-dispatcher.js
+@@ -193,13 +193,13 @@
+         getTool(namespacedName) {
+             return registry.getTool(namespacedName);
+         },
+-        async executeTool(namespacedName, parameters, runContext) {
++        async executeTool(namespacedName, parameters, runContext, executionPolicy) {
+             log.debug({
+                 tool: namespacedName,
+                 agentId: runContext.agentId,
+                 runId: runContext.runId,
+             }, "dispatching tool execution");
+-            const result = await registry.executeTool(namespacedName, parameters, runContext);
++            const result = await registry.executeTool(namespacedName, parameters, runContext, executionPolicy);
+             log.debug({
+                 tool: namespacedName,
+                 pluginId: result.pluginId,
+--- a/@paperclipai/server/dist/services/plugin-tool-registry.js
++++ b/@paperclipai/server/dist/services/plugin-tool-registry.js
+@@ -1,3 +1,4 @@
++import { validateFundingExecutionPolicy } from "./native-runtime/funding-execution-policy.js";
+ /**
+  * PluginToolRegistry — host-side registry for plugin-contributed agent tools.
+  *
+@@ -187,7 +188,8 @@
+         buildNamespacedName(pluginId, toolName) {
+             return buildName(pluginId, toolName);
+         },
+-        async executeTool(namespacedName, parameters, runContext) {
++        async executeTool(namespacedName, parameters, runContext, executionPolicy) {
++            const fundingExecution = validateFundingExecutionPolicy(executionPolicy,namespacedName,runContext);
+             // 1. Resolve the namespaced name
+             const parsed = parseName(namespacedName);
+             if (!parsed) {
+@@ -216,9 +218,9 @@
+             const rpcParams = {
+                 toolName,
+                 parameters,
+-                runContext,
++                runContext: fundingExecution ? {...runContext,fundingExecution} : runContext,
+             };
+-            const result = await workerManager.call(dbId, "executeTool", rpcParams);
++            const result = await workerManager.call(dbId, "executeTool", rpcParams, fundingExecution ? Math.max(1,fundingExecution.rpcDeadlineAt-Date.now()) : undefined);
+             log.debug({
+                 pluginId,
+                 toolName,
+--- a/@paperclipai/server/dist/services/tool-gateway.js
++++ b/@paperclipai/server/dist/services/tool-gateway.js
+@@ -1,3 +1,4 @@
++import { resolveFundingExecutionPolicy } from "./native-runtime/funding-execution-policy.js";
+ import { composeConnectionInstructions } from "./connection-instructions.js";
+ import { isInsufficientConnectionScope, INSUFFICIENT_CONNECTION_SCOPE_MESSAGE } from "./connection-permission-errors.js";
+ import { boundedMcpToolName } from "./mcp-tool-names.js";
+@@ -7077,6 +7078,7 @@
+             return updated;
+         },
+         async executeTool(input) {
++            const fundingExecutionStartedAt = Date.now();
+             const session = await getActiveSession(input.sessionToken, {
+                 gatewayId: input.gatewayId ?? null,
+                 gatewayPublicId: input.gatewayPublicId ?? null,
+@@ -7635,7 +7637,9 @@
+                 },
+             });
+             try {
+-                const executionTimeoutMs = timeoutMs(input.timeoutMs);
++                const fundingExecutionPolicy = input.nativeMcpExecution === true && input.timeoutMs === undefined && tool.providerType === "paperclip_plugin"
++                    ? await resolveFundingExecutionPolicy(db, {companyId:session.companyId,agentId:session.agentId,runId:session.runId,toolName:tool.name,invocationId,startedAt:fundingExecutionStartedAt,assignment:await runtimePluginAssignment(policyInputForTool({session,tool,parameters:effectiveParameters}))}) : null;
++                const executionTimeoutMs = fundingExecutionPolicy ? Math.max(1,fundingExecutionPolicy.gatewayDeadlineAt-Date.now()) : timeoutMs(input.timeoutMs);
+                 if (tool.providerType === "paperclip_plugin" &&
+                     (!session.agentId || !session.runId)) {
+                     throw new ToolGatewayHttpError(403, "Plugin tools require an agent run context", "agent_context_required");
+@@ -7653,7 +7657,7 @@
+                             runId: session.runId,
+                             companyId: session.companyId,
+                             projectId: session.projectId ?? "",
+-                        }), executionTimeoutMs)
++                        }, fundingExecutionPolicy), executionTimeoutMs)
+                         : await runWithTimeout(executeBuiltinTool(session, tool, effectiveParameters, invocationId), executionTimeoutMs);
+                 const resultValidation = validateToolContent({
+                     value: result,

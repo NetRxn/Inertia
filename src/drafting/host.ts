@@ -90,10 +90,28 @@ function exact(value: unknown, allowed: string[], required = allowed): Record<st
 function notAborted(signal?: AbortSignal) {
   if (signal?.aborted) throw Error("Public drafting request expired; outcome unconfirmed");
 }
+/** Validate only server-injected execution metadata, never tool parameters. */
+function fundingDeadline(value:unknown,b:PublicDraftingBinding,run:ToolRunContext,tool:string):number|undefined {
+  if(value===undefined)return undefined;
+  const roles={funding_drafting_workspace:"producer",save_funding_proposals:"producer",save_funding_gap_progress:"producer",funding_drafting_checkpoint:"producer",funding_review_context:"reviewer",review_funding_candidate:"reviewer"} as const;
+  const fields=["version","role","companyId","projectId","agentId","runId","issueId","toolName","invocationId","startedAt","operationDeadlineAt","rpcDeadlineAt","gatewayDeadlineAt"];
+  const invalid=()=>{throw Error("Invalid trusted funding execution metadata");};
+  if(!object(value)||Object.keys(value).length!==fields.length||fields.some(k=>!Object.hasOwn(value,k))||!Object.hasOwn(roles,tool))return invalid();
+  const role=roles[tool as keyof typeof roles],actor=b[role];
+  if(value.version!==1||value.role!==role||value.companyId!==b.companyId||value.companyId!==run.companyId||
+    value.projectId!==b.projectId||value.projectId!==run.projectId||value.agentId!==actor.agentId||value.agentId!==run.agentId||
+    value.runId!==run.runId||value.issueId!==actor.issueId||value.toolName!=="netrxn.inertia:"+tool||
+    typeof value.invocationId!=="string"||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(value.invocationId)||
+    [value.startedAt,value.operationDeadlineAt,value.rpcDeadlineAt,value.gatewayDeadlineAt].some(t=>!Number.isSafeInteger(t)||Number(t)<=0))return invalid();
+  const start=value.startedAt as number,deadline=value.operationDeadlineAt as number;
+  if(start>Date.now()||deadline-start!==120000||(value.rpcDeadlineAt as number)-start!==160000||(value.gatewayDeadlineAt as number)-start!==170000)return invalid();
+  if(deadline<=Date.now())throw Error("Public funding operation deadline expired; outcome unconfirmed");
+  return deadline;
+}
 /** This is an application adapter, not an identity gateway. All scope comes from server configuration. */
 export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBinding[], owner: Owner): void {
   if (bindings.length > 1) throw Error("Only one DFW company database binding is supported");
-  const gapEnabled = new Map(bindings.map(b=>[b,b.nativeGapPlanReview===true]));
+  const gapEnabled = new WeakMap(bindings.map(b=>[b,b.nativeGapPlanReview===true]));
   for (const b of bindings) {
     if ([b.companyId,b.projectId,b.applicantSlug,b.matchId,...Object.values(b.producer),...Object.values(b.reviewer)].some(v=>!text(v)) ||
         b.producer.issueId===b.reviewer.issueId || b.producer.agentId===b.reviewer.agentId || b.producer.principalId===b.reviewer.principalId || typeof b.authorize!=="function" ||
@@ -168,8 +186,17 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   const declarations = [...publicDraftingTools, ...(bindings.some(b=>gapEnabled.get(b))?[publicGapPlanReviewTool]:[])];
   for (const declaration of declarations) {
     ctx.tools.register(declaration.name,declaration,async (parameters, trustedRun) => {
-      const run=structuredClone(trustedRun), b=bindings.find(v=>v.companyId===run.companyId);
-      if (!b) throw Error("Public drafting disabled or actor denied");
+      const run=structuredClone(trustedRun), original=bindings.find(v=>v.companyId===run.companyId);
+      if (!original) throw Error("Public drafting disabled or actor denied");
+      const operationDeadlineAt=fundingDeadline((run as ToolRunContext & {fundingExecution?:unknown}).fundingExecution,original,run,declaration.name);
+      const operation=new AbortController();
+      const checkDeadline=()=>{if(operation.signal.aborted||(operationDeadlineAt!==undefined&&Date.now()>=operationDeadlineAt))throw Error("Public funding operation deadline expired; outcome unconfirmed");};
+      const timer=operationDeadlineAt===undefined?undefined:setTimeout(()=>operation.abort(),operationDeadlineAt-Date.now());timer?.unref();
+      // Per-call wrapper checks the original live binding/fingerprint too. Weak
+      // keys prevent transient deadline wrappers from accumulating in the registry.
+      const b=operationDeadlineAt===undefined?original:{...original,authorize:async()=>{checkDeadline();await configured(original,operation.signal);checkDeadline();return true;}};
+      if(b!==original)gapEnabled.set(b,gapEnabled.get(original)??false);
+      try {
       let gapParams: Record<string,unknown>|undefined;
       let gapOperation: "gap_review_context"|"review_gap"|undefined;
       if(declaration.operation==="gap_plan_review") {
@@ -262,6 +289,7 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
         await authorize();
         const rawResult=await b.bridge.call(op==="checkpoint" && !b.nativeCaseProgression?"workspace":op,
           (op==="review" || op==="review_gap")?{...params,replay_only:reviewReplayOnly}:op==="checkpoint" && b.nativeDependencyHandoff?{replay_only:checkpointReplayOnly}:params,{
+          ...(operationDeadlineAt===undefined?{}:{operationDeadlineAt}),
           context: authorize,
           review: async (request,signal)=>{
             const gap=request.kind==="gap_plan";
@@ -360,6 +388,7 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
           }
         }
         if(op==="workspace" || op==="review_context" || op==="gap_review_context")await restore();
+        checkDeadline();
         return result;
         } catch(error) {
           // Failed read/replay must not silently discard an existing handoff.
@@ -368,8 +397,10 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
           throw error;
         }
       });
+      checkDeadline();
       if(result===null) throw Error("Public drafting objective already owned; retry later");
       return {data:result};
+      } catch(error) {checkDeadline();throw error;} finally {if(timer!==undefined)clearTimeout(timer);}
     });
   }
 }
