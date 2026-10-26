@@ -10,10 +10,11 @@ import { BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
 import { registerObjectiveIntake, objectiveIntakeJobDeclaration, objectiveSourceContextToolDeclaration, objectiveIntakeCapabilities } from '../../src/intake/host.js';
 import { objectiveHash, objectiveKey } from '../../src/intake/service.js';
 import { createIntakeStore } from '../../src/intake/store.js';
+import { createOrgStore } from '../../src/org/store.js';
 import { fixture } from './support.js';
 let pg: PGlite;
 const directories: string[] = [];
-beforeAll(async () => { pg = new PGlite(); await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`); await pg.exec(await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf8')); }, 60000);
+beforeAll(async () => { pg = new PGlite(); await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`); await pg.exec(await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf8')); await pg.exec(await readFile(new URL('../../migrations/009_org_profile.sql', import.meta.url), 'utf8')); }, 60000);
 afterAll(async () => pg.close());
 afterEach(async () => { await Promise.all(directories.splice(0).map(p => rm(p, { recursive: true, force: true }))); });
 let serial = 0;
@@ -155,4 +156,13 @@ it('rejects a root moved into a foreign native project before checkout or source
   await expect(f.call(run)).rejects.toThrow(); expect(f.events).not.toContain('checkout');
   f.f.revise({ revision: 'corrected' }); await f.save(); await f.job();
   expect(f.status().state).toBe('attention'); expect(await f.rows()).toHaveLength(1);
+});
+it('objective_source_context denies a source hidden as spam and allows it again after restore', async () => {
+  const f = await setup(); await f.job(); const issue = (await f.rows())[0]!, run = await f.activate(issue.id);
+  const store = createOrgStore(f.h.ctx.db);
+  const sourceKey = 'objective:' + objectiveKey('dao', f.f.ref);
+  await store.setHidden('co', sourceKey, { by: 'mod', at: new Date().toISOString(), reason: 'spam' });
+  await expect(f.call(run)).rejects.toThrow(/^Objective source unavailable or task access denied\.$/);
+  await store.setHidden('co', sourceKey, null);
+  expect((await f.call(run)).data.source).toEqual(f.f.source);
 });
