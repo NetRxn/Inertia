@@ -8,7 +8,7 @@
     ".gitignore": "287d651d96bb11ef15b965252311b5f3f486b52e21936020e0fd11fc977e4981",
     "ACTIVATION-CONTRACT.md": "b755fdc8f800304037d170684578c9fb8713530a754674074921fa4b7a8b22c6",
     "LICENSE.paperclip": "7f8a27f0979bded50e240caa8c8c29f3088ddf87032cb83e5a9732bff91d18b4",
-    "README.md": "20efe2dbb477a8e8c885bf09a35a73902f4154e6a5c24bdd0dd73ce8769c95e5",
+    "README.md": "b568e5ae78fb53ccea07eb508c0eb0e25a9383a015bf57a4ba683425550b0a82",
     "UPGRADE.md": "c23ad4a96277f1cc7b110ddd6ed887a7f603928cb20247f453f8b72ab64c4401",
     "UPSTREAM-NOTICE.md": "16d7f6a005a62567b12f546df324e8299b4a3e0d2142ccc0693815c0d825b120",
     "cross-domain/dfw-host.py": "ec989ff4fb44e8ac1b4c7e021a37fbb2d8a90c19a66a58bfbde7493e8fedca50",
@@ -134,7 +134,10 @@
     "tests/native-coordinator-human-input.test.mjs": "5397e873f0a19478a9e9ab5cc2ac980f841b67651c0ffe07566324ee1f081136",
     "evidence/native-coordinator-human-input.json": "d123c6356b61de453d8d37f000f5bb67ac9c07080d713a395c398074c3fcac78",
     "transport/native/member-funding-read.mjs": "09175cd09c6eaadbb4d08c6a825e0ca7e8f93124c228decc459d12647fe4337c",
-    "transport/tests/member-funding-read.test.mjs": "fc3a51e623b994ac4bc58175b3eb085c5817dcb7aa41898e8fdfac322eaf73a0"
+    "transport/tests/member-funding-read.test.mjs": "fc3a51e623b994ac4bc58175b3eb085c5817dcb7aa41898e8fdfac322eaf73a0",
+    "SHARED-HOME-PERSISTENCE.md": "4afc30da87de05cffad11d7dd1b1d83b533369d26d466b2e0fcacad842956015",
+    "scripts/preflight-shared-home.mjs": "0bdcf3ca5edaed0379fa75f83e4ad1b81d06647efabbe4eef0cb6512072b5412",
+    "tests/shared-home.test.mjs": "129d0787cb88ecbcff2a419a028ed2d86fae84f4daf234b306d0f37347a83f6f"
   },
   "memberPacketCapture": {
     "state": "merged source Task 1; synthetic admission only",
