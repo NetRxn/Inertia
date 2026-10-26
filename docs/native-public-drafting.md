@@ -4,7 +4,7 @@ This default-disabled application adapter binds the existing three public DFW dr
 
 ## Trusted composition
 
-Enable `publicDrafting` only after separately admitting the connection, native tool policy, and database access. This release supports one enabled company binding in the plugin instance. Server configuration fixes the company (native config owner), project, applicant, match, producer issue/agent/principal, reviewer issue/agent/principal, and administrator-pinned process. The two issue IDs, native agents and mapped principals must each differ. Both agents may use the same available model provider; independent principals and native runs are still mandatory.
+Enable `publicDrafting` only after separately admitting the connection, native tool policy, and database access. This release supports one enabled company binding in the plugin instance. Server configuration fixes the company (native config owner), project, applicant, match, producer issue/agent/principal, reviewer issue/agent/principal, and administrator-pinned process. In legacy mode the two issue IDs, native agents and mapped principals must each differ. The explicit native-attention mode below permits a shared issue while retaining independent agents and mapped principals. Both agents may use the same available model provider; independent principals and native runs are still mandatory.
 
 The gateway provides `{agentId, runId, companyId, projectId}` separately from model arguments. It does not provide `issueId`. Every synchronous private context request therefore rechecks current configuration, configured issue company/project/assignee/status, the exact running run returned by `getSubtree(..., {includeActiveRuns:true, includeAssignees:true})`, and active assignee status before calling `assertCheckoutOwner`. That checkout operation can adopt stale ownership, so it is not used as authentication. Missing/truncated run membership fails closed.
 
@@ -24,6 +24,38 @@ No tool accepts company, database, applicant, match, native issue, principal, ru
 The process has `executable`, `args`, `cwd`, `entrypoint`, `configurationPath`, `pins`, `timeoutMs`, and `maxOutputBytes`. Paths are absolute. Both `entrypoint` and `configurationPath` must occur in `args` and have exact SHA-256 pins. Use the fixed Python environment and absolute private `public_drafting_stdio.py` entrypoint with `--config` and the pinned administrator JSON. The private config contains exactly `database_url`, `company_id`, `applicant_slug`, and `match_id`; its scope must agree with every fresh native callback. Do not mount the same DFW database under another company. Database schema/setup is an operator prerequisite, not performed by this adapter.
 
 Pin the deployed Python package/dependencies and every relevant bootstrap/config file, not only the example entrypoint. A source checkout, mutable virtual environment, or caller-controlled PYTHONPATH is not a production trust boundary. The process inherits the trusted plugin worker's environment, never an agent-selected environment. Keep database credentials only in the authorized private configuration, outside repository/model-visible files.
+
+## Native attention producer mode
+
+`nativeAttention: true` is an administrator-only, optional literal opt-in; absence
+retains legacy behavior. It is mutually exclusive with enabled
+`nativeCaseProgression`, `nativeDependencyHandoff` and `nativeGapPlanReview`.
+The configured producer and reviewer may share a native issue only in this mode;
+agent IDs and mapped domain principals must still differ. Mode/configuration
+changes revoke current calls rather than switching controllers mid-operation.
+
+The four producer tools authenticate the current native assignee, active run,
+company, project and exact execution ownership through read-only SDK reads. They
+do not adopt checkout, change status/dependencies, freeze a producer run, reopen
+review work or request any native wake. Trusted `fundingExecution` metadata is
+mandatory, with the existing per-tool 120/160/170-second deadlines unchanged.
+The paired native-role metadata resolver must therefore be installed before this
+mode can operate; no absence fallback or model-supplied metadata is accepted.
+
+A private candidate callback returns only its exact `PendingReview` acknowledgement
+after fresh producer validation. The native producer must request attention using
+`paperclip_finish`; native Paperclip then admits the independent reviewer and owns
+correction/continuation. The two direct reviewer plugin handlers fail closed with
+native-review guidance in this mode. The separate trusted review bridge must bind
+the actual native participant/card/decision and admitted structured domain review;
+this producer mode does not fabricate a verdict or human acceptance.
+
+`funding_drafting_checkpoint` reads the existing public workspace/packet and saves
+a bounded **business checkpoint** through the supported native document API. It
+does not call the private case/freeze protocol or change native lifecycle. Existing
+lease/write fencing and immutable domain/native history remain. Qualify the paired
+composition and disable/reconcile legacy dispatch before admitting a replacement;
+this source opt-in is not evidence of live activation or autonomous execution.
 
 ## Bounded protocol and continuation
 

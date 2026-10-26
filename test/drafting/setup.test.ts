@@ -53,3 +53,17 @@ it("explicit false gap flag retains the legacy authorization fingerprint",async(
   await expect(f.tools.get("funding_review_context")({},{companyId:"company",projectId:"project",agentId:"b",runId:"run"})).rejects.toThrow("authorization accepted");
  }
 });
+it("native attention configuration is an explicit true opt-in, permits independent same-task roles, and excludes legacy controllers",async()=>{
+ const value:any={...config(),nativeAttention:true};value.reviewer.issueId=value.producer.issueId;
+ const f=host(value);await registerConfiguredPublicDrafting(f.ctx);expect(f.tools.size).toBe(6);
+ expect((manifest.instanceConfigSchema as any).properties.publicDrafting.properties.nativeAttention).toMatchObject({type:"boolean",const:true});
+ for(const nativeAttention of[false,"true",1,null])await expect(registerConfiguredPublicDrafting(host({...value,nativeAttention}).ctx)).rejects.toThrow(/attention/);
+ for(const name of["nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"])await expect(registerConfiguredPublicDrafting(host({...value,[name]:true}).ctx)).rejects.toThrow(/attention/);
+ await expect(registerConfiguredPublicDrafting(host({...value,nativeAttention:undefined}).ctx)).rejects.toThrow(/independent/);
+});
+it("native attention source fingerprint revocation prevents native reads without changing prior mode state",async()=>{
+ const value:any={...config(),nativeAttention:true};value.reviewer.issueId=value.producer.issueId;
+ const f=host(value);await registerConfiguredPublicDrafting(f.ctx);delete value.nativeAttention;let reads=0;f.ctx.issues.get=async()=>{reads++;throw Error("must not read");};
+ const startedAt=Date.now();const fundingExecution={version:1,role:"producer",companyId:"company",projectId:"project",agentId:"a",runId:"run",issueId:"p",toolName:"netrxn.inertia:funding_drafting_workspace",invocationId:"11111111-1111-4111-8111-111111111111",startedAt,operationDeadlineAt:startedAt+120000,rpcDeadlineAt:startedAt+160000,gatewayDeadlineAt:startedAt+170000};
+ await expect(f.tools.get("funding_drafting_workspace")({},{companyId:"company",projectId:"project",agentId:"a",runId:"run",fundingExecution})).rejects.toThrow(/disabled|changed/);expect(reads).toBe(0);
+});

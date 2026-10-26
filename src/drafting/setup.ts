@@ -25,7 +25,8 @@ export async function registerConfiguredPublicDrafting(ctx:PluginContext):Promis
     catch(error) {if(error instanceof Error && error.message.includes("company context is required"))continue;throw error;}
     if(!object(raw) || raw.enabled!==true)continue;
     const required=["enabled","projectId","applicantSlug","matchId","producer","reviewer","process"];
-    const c=fields(raw,[...required,"nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"],required);
+    const c=fields(raw,[...required,"nativeAttention","nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"],required);
+    if((c.nativeAttention!==undefined && c.nativeAttention!==true) || (c.nativeAttention===true && (c.nativeCaseProgression===true || c.nativeDependencyHandoff===true || c.nativeGapPlanReview===true)))throw Error("Invalid native attention configuration");
     if(c.nativeCaseProgression!==undefined && typeof c.nativeCaseProgression!=="boolean")throw Error("Invalid native case progression configuration");
     if((c.nativeDependencyHandoff!==undefined && typeof c.nativeDependencyHandoff!=="boolean") ||
       (c.nativeDependencyHandoff===true && c.nativeCaseProgression!==true))throw Error("Invalid native dependency handoff configuration");
@@ -37,6 +38,7 @@ export async function registerConfiguredPublicDrafting(ctx:PluginContext):Promis
     for(const pin of process.pins)fields(pin,["path","sha256"]);
     const fingerprint=configurationFingerprint(c);
     bindings.push({enabled:true,companyId:company.id,projectId:c.projectId as string,applicantSlug:c.applicantSlug as string,matchId:c.matchId as string,
+      ...(c.nativeAttention===true?{nativeAttention:true as const}:{}),
       nativeCaseProgression:c.nativeCaseProgression===true,
       nativeDependencyHandoff:c.nativeDependencyHandoff===true,
       nativeGapPlanReview:c.nativeGapPlanReview===true,
