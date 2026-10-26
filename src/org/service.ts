@@ -140,6 +140,11 @@ export function createOrgService(
       const displayName = validateText(input.displayName, 'displayName');
       const reason = validateText(input.reason, 'reason');
 
+      const existing = await store.readMember(companyId, targetUserId);
+      if (existing && existing.status === 'active') {
+        throw new OrgError('conflict', 'Already a member.');
+      }
+
       const now = clock().toISOString();
       const newMember: OrgMember = {
         companyId,

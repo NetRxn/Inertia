@@ -181,3 +181,47 @@ it('reason is required (empty → invalid) for remove and moderator changes', as
   await expect(service.setModerator('co7', 'alice', { userId: 'bob', moderator: true, reason: '  ' }))
     .rejects.toHaveProperty('kind', 'invalid');
 });
+
+it('addMember on an active member → conflict and leaves founder/moderator roles intact', async () => {
+  const store = createOrgStore(db);
+  const service = createOrgService(store, () => new Date('2025-01-15T10:00:00Z'), () => 'id8');
+
+  await service.setup('co8', 'alice', { name: 'Hotel Inc', displayName: 'Alice' });
+  await service.addMember('co8', 'alice', { userId: 'bob', displayName: 'Bob', reason: 'invited' });
+  await service.setModerator('co8', 'alice', { userId: 'bob', moderator: true, reason: 'promoted' });
+
+  await expect(service.addMember('co8', 'bob', { userId: 'alice', displayName: 'Alice', reason: 'downgrade' }))
+    .rejects.toMatchObject({ kind: 'conflict', message: 'Already a member.' });
+  await expect(service.addMember('co8', 'alice', { userId: 'bob', displayName: 'Bob', reason: 'again' }))
+    .rejects.toMatchObject({ kind: 'conflict' });
+
+  expect(await service.actorRole('co8', 'alice')).toBe('founder');
+  expect(await service.actorRole('co8', 'bob')).toBe('moderator');
+});
+
+it('re-adding a removed moderator restores them as an active member', async () => {
+  const store = createOrgStore(db);
+  const service = createOrgService(store, () => new Date('2025-01-15T10:00:00Z'), () => 'id9');
+
+  await service.setup('co9', 'alice', { name: 'India Inc', displayName: 'Alice' });
+  await service.addMember('co9', 'alice', { userId: 'bob', displayName: 'Bob', reason: 'invited' });
+  await service.setModerator('co9', 'alice', { userId: 'bob', moderator: true, reason: 'promoted' });
+  await service.removeMember('co9', 'alice', { userId: 'bob', reason: 'left' });
+
+  await service.addMember('co9', 'alice', { userId: 'bob', displayName: 'Bob Again', reason: 'returned' });
+  expect(await store.readMember('co9', 'bob')).toMatchObject({ role: 'member', status: 'active', displayName: 'Bob Again' });
+});
+
+it('after the founder is removed, demoting the last remaining moderator → conflict', async () => {
+  const store = createOrgStore(db);
+  const service = createOrgService(store, () => new Date('2025-01-15T10:00:00Z'), () => 'id10');
+
+  await service.setup('co10', 'alice', { name: 'Juliet Inc', displayName: 'Alice' });
+  await service.addMember('co10', 'alice', { userId: 'bob', displayName: 'Bob', reason: 'invited' });
+  await service.setModerator('co10', 'alice', { userId: 'bob', moderator: true, reason: 'promoted' });
+  await service.removeMember('co10', 'bob', { userId: 'alice', reason: 'founder left' });
+
+  await expect(service.setModerator('co10', 'bob', { userId: 'bob', moderator: false, reason: 'stepping down' }))
+    .rejects.toMatchObject({ kind: 'conflict' });
+  expect(await service.actorRole('co10', 'bob')).toBe('moderator');
+});
