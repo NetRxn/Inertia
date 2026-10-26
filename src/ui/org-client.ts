@@ -189,3 +189,54 @@ export function parseOrgSources(raw: unknown): OrgSourceWithFeeds[] {
     };
   }, 1000);
 }
+
+export interface TrailStep {
+  label: string;
+  detail: string;
+  available: boolean;
+}
+
+export interface TaskTrail {
+  summary: string;
+  steps: TrailStep[];
+  alsoUsed: string[];
+}
+
+export interface TaskTrailResponse {
+  title: string;
+  status: string;
+  assignee: string | null;
+  doneWhen: string | null;
+  nextStep: string | null;
+  trail: TaskTrail;
+}
+
+export function parseTaskTrailResponse(raw: unknown): TaskTrailResponse {
+  const r = row(raw, ['title', 'status', 'assignee', 'doneWhen', 'nextStep', 'trail']);
+
+  const trail = row(r.trail, ['summary', 'steps', 'alsoUsed']);
+  const steps = list(trail.steps, x => {
+    const s = row(x, ['label', 'detail', 'available']);
+    check(typeof s.available === 'boolean');
+    return {
+      label: text(s.label, 200),
+      detail: text(s.detail, 2000),
+      available: s.available,
+    };
+  });
+
+  const alsoUsed = list(trail.alsoUsed, x => text(x, 2000));
+
+  return {
+    title: text(r.title),
+    status: text(r.status, 200),
+    assignee: r.assignee === null ? null : id(r.assignee),
+    doneWhen: r.doneWhen === null ? null : text(r.doneWhen, 2000),
+    nextStep: r.nextStep === null ? null : text(r.nextStep, 2000),
+    trail: {
+      summary: text(trail.summary, 2000),
+      steps,
+      alsoUsed,
+    },
+  };
+}

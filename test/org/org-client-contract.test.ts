@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
 import { readFile } from 'node:fs/promises';
-import { parseOrgOverview, parseOrgMembers, parseOrgSources } from '../../src/ui/org-client.js';
+import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseTaskTrailResponse } from '../../src/ui/org-client.js';
 import { manifest } from '../../src/manifest.js';
 import { BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
 import { registerOrgProfile } from '../../src/org/host.js';
@@ -156,5 +156,68 @@ describe('org-client contract', () => {
     expect(sources[0]!.kind).toBeTruthy();
     expect(sources[0]!.feeds).toHaveProperty('tasks');
     expect(typeof sources[0]!.feeds.tasks).toBe('number');
+  });
+
+  it('org.task.trail returns shape that parseTaskTrailResponse accepts', async () => {
+    const h = createHarness();
+
+    await h.performAction('org.setup', {
+      name: 'Test DAO',
+      displayName: 'Founder Name',
+    }, actorContext);
+
+    const issue = await h.ctx.issues.create({
+      companyId: 'company-1',
+      title: 'Test Task',
+      description: 'Done when: All tests pass\nNext step: Write more tests',
+      status: 'in_progress',
+      originKind: 'plugin:netrxn.inertia:objective',
+      originId: 'objective-1',
+    });
+
+    await pg.query(
+      `INSERT INTO ${BRIDGE_NAMESPACE}.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)`,
+      [
+        'objective-1',
+        JSON.stringify({
+          key: 'objective-1',
+          companyId: 'company-1',
+          version: 1,
+          snapshot: {
+            sourceSystem: 'test',
+            sourceId: 'source-1',
+            audience: 'members',
+            title: 'Test Objective',
+            text: 'Test text',
+            withdrawn: false,
+            authorRef: 'author-1',
+          },
+          nativeIssueId: null,
+          pending: false,
+          marker: 'test-marker',
+        }),
+      ]
+    );
+
+    const result = await h.performAction('org.task.trail', { issueId: issue.id }, actorContext) as { ok: boolean; data?: any; error?: any };
+
+    if (!result.ok) {
+      throw new Error(`org.task.trail failed: ${JSON.stringify(result.error)}`);
+    }
+
+    expect(result.ok).toBe(true);
+
+    // Should parse without throwing
+    const trail = parseTaskTrailResponse(result.data);
+
+    expect(trail.title).toBe('Test Task');
+    expect(trail.status).toBe('in_progress');
+    expect(trail.doneWhen).toBe('All tests pass');
+    expect(trail.nextStep).toBe('Write more tests');
+    expect(trail.trail).toHaveProperty('summary');
+    expect(trail.trail).toHaveProperty('steps');
+    expect(trail.trail).toHaveProperty('alsoUsed');
+    expect(Array.isArray(trail.trail.steps)).toBe(true);
+    expect(Array.isArray(trail.trail.alsoUsed)).toBe(true);
   });
 });
