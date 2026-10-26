@@ -69,7 +69,7 @@ function configuration(value){
 export function createNativeReviewStdio(config){
  const c=configuration(config);
  return Object.freeze({async call(op,params,callbacks){
-  if(!['context','admit','fence'].includes(op)||!(op==='admit'?validArtifact(params):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?validArtifact(params):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
   if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
   const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
@@ -205,6 +205,7 @@ class NativeReviewSession {
  }
  validSuccess(v){
   if(this.op==='admit')return this.validReceipt(v,this.params);
+  if(this.op==='receipt')return this.validReceipt(v);
   if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
   const request=v.context.requests[0],candidate=request?.candidate;
   return object(request)&&request.request_id===v.binding.candidate_hash&&request.candidate_hash===v.binding.candidate_hash

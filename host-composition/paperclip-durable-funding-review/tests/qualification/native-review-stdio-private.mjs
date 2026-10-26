@@ -45,10 +45,13 @@ try{
  assert.equal(context.binding.producer_run_id,metadata.assignment.producer_run_id);
  const candidate=context.context.requests[0].candidate;
  assert.equal(candidate.producer_id,null);assert.equal(candidate.producer_run_id,null);
+ await assert.rejects(()=>bridge.call('receipt',{},callbacks),error=>error.outcomeUnconfirmed===true&&error.validationRejected!==true);
  const receipt=await bridge.call('admit',metadata.artifact,callbacks);
+ const readback=await bridge.call('receipt',{},callbacks);
  const replay=await bridge.call('admit',metadata.artifact,callbacks);
+ assert.deepEqual(receipt,readback);
  assert.deepEqual(receipt,replay);assert.deepEqual(receipt.binding,context.binding);
  assert.equal(receipt.state,'supported');
- console.log(JSON.stringify({stage:'actual-python-js-context-and-admit',nestedPayloadProducerNull:true,authoritativeBindingPreserved:true,duplicateAdmissionStable:true,authorityPins:pins.length,privateDatabase:'synthetic-sqlite-only',provider:false,network:false}));
+ console.log(JSON.stringify({stage:'actual-python-js-context-and-admit',nestedPayloadProducerNull:true,authoritativeBindingPreserved:true,duplicateAdmissionStable:true,readOnlyReceiptStable:true,authorityPins:pins.length,privateDatabase:'synthetic-sqlite-only',provider:false,network:false}));
 }catch(error){console.error(JSON.stringify({qualification:'failed',code:error.code??'qualification_error',message:error.message}));process.exitCode=1;}
 finally{await fs.rm(temp,{recursive:true,force:true});}
