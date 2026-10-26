@@ -3,6 +3,14 @@ import { BRIDGE_NAMESPACE } from '../store/postgres.js';
 import type { OrgProfile, OrgMember, OrgSource, OrgLogEntry, SourceKind } from './contracts.js';
 import { OrgError } from './contracts.js';
 
+export interface ObjectiveSource {
+  key: string;
+  title: string;
+  audience: string;
+  sourceSystem: string;
+  nativeIssueId: string | null;
+}
+
 export interface OrgStore {
   readProfile(companyId: string): Promise<OrgProfile | null>;
   createProfile(profile: OrgProfile, founder: OrgMember): Promise<boolean>;
@@ -13,6 +21,7 @@ export interface OrgStore {
   insertSource(source: OrgSource, content: Uint8Array | null): Promise<void>;
   readSource(companyId: string, sourceKey: string): Promise<OrgSource | null>;
   listSources(companyId: string, opts: { includeHidden: boolean; kind?: SourceKind; limit: number }): Promise<OrgSource[]>;
+  listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]>;
   setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean>;
   isHidden(companyId: string, sourceKey: string): Promise<boolean>;
   addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean>;
@@ -248,11 +257,24 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
     },
 
     async setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean> {
+      if (sourceKey.startsWith('objective:')) {
+        const count = await execute(
+          `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, pins, created_at)
+           VALUES ($1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, 0, now())
+           ON CONFLICT (company_id, source_key) DO UPDATE
+           SET hidden=$3::jsonb`,
+          [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null]
+        );
+        return count > 0;
+      }
+
+      const existing = await this.readSource(companyId, sourceKey);
+      if (!existing) {
+        return false;
+      }
+
       const count = await execute(
-        `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, pins, created_at)
-         VALUES ($1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, 0, now())
-         ON CONFLICT (company_id, source_key) DO UPDATE
-         SET hidden=$3::jsonb`,
+        `UPDATE ${sourcesTable} SET hidden=$3::jsonb WHERE company_id=$1 AND source_key=$2`,
         [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null]
       );
       return count > 0;
@@ -264,6 +286,36 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
         [companyId, sourceKey]
       );
       return rows[0]?.hidden !== null && rows[0]?.hidden !== undefined;
+    },
+
+    async listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]> {
+      const rows = await query<{
+        mapping_key: string;
+        title: string;
+        audience: string;
+        source_system: string;
+        native_issue_id: string | null;
+      }>(
+        `SELECT
+           mapping_key,
+           record->'snapshot'->>'title' as title,
+           record->'snapshot'->>'audience' as audience,
+           record->'snapshot'->>'sourceSystem' as source_system,
+           record->>'nativeIssueId' as native_issue_id
+         FROM plugin_netrxn_inertia_e936d62b87.objective_intake
+         WHERE record->>'companyId' = $1
+         ORDER BY mapping_key
+         LIMIT $2`,
+        [companyId, limit]
+      );
+
+      return rows.map(row => ({
+        key: row.mapping_key,
+        title: row.title,
+        audience: row.audience,
+        sourceSystem: row.source_system,
+        nativeIssueId: row.native_issue_id
+      }));
     },
 
     async addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean> {
