@@ -173,3 +173,12 @@ a read-only image preflight. Its additive Docker layer reuses only the matching
 native runner from the exact official multi-architecture build; it does not
 replace Codex, authentication or state. A verified source-image digest and
 target-platform qualification remain required before rollout.
+
+### Shared Paperclip home persistence preparation
+
+[SHARED-HOME-PERSISTENCE.md](SHARED-HOME-PERSISTENCE.md) follows the native
+once-configured home-persistence model, with read-only composition checks and no
+per-agent mounts. This is source preparation, not a launcher repair or deployment:
+private state/credential-retention approval, validated pre-teardown snapshot,
+effective mounts, complete API inventory and recreation checks remain required.
+
