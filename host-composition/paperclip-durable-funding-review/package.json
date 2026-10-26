@@ -32,6 +32,8 @@
     "preflight:native-runner": "node scripts/preflight-native-runner.mjs",
     "test:funding-package": "node --test packaging/funding-only.test.mjs",
     "apply-funding-deadline": "node scripts/apply-funding-deadline.mjs",
-    "test:funding-deadline": "node --test tests/funding-deadline*.test.mjs tests/codex-funding-preapproval.test.mjs"
+    "test:funding-deadline": "node --test tests/funding-deadline*.test.mjs tests/codex-funding-preapproval.test.mjs",
+    "apply-native-reconciliation": "node scripts/apply-native-reconciliation.mjs",
+    "test:native-reconciliation": "node --test tests/native-reconciliation-cancel.test.mjs tests/native-reconciliation-installer.test.mjs"
   }
 }
