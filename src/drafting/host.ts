@@ -4,6 +4,7 @@ import type { createRuntimeOwner } from "../bridge/ownership.js";
 import { readNativeDocument, writeNativeDocument } from "../discovery/documents.js";
 import { discoveryHash } from "../discovery/service.js";
 import type { PublicDraftingBridge, DraftingContext } from "./stdio.js";
+import { setTimeout as admissionDelay } from "node:timers/promises";
 
 type Host = Pick<PluginContext, "tools" | "issues">;
 type Owner = Pick<ReturnType<typeof createRuntimeOwner>, "own">;
@@ -270,7 +271,14 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
         }},input,immutable?{immutable:true}:{});
         await authorize(signal);
       };
-      const result=await owner.own({companyId:b.companyId,namespaceScope:"inertia:public-drafting",key:discoveryHash([b.projectId,b.applicantSlug,b.matchId])},async()=>{
+      const result=await (async()=>{
+      // The first attempt passed preflight above. Contention retries refresh it
+      // before acquisition and share the original absolute operation deadline.
+      for(;;) {
+      checkDeadline();
+      let callbackStarted=false;
+      const attempt=await owner.own({companyId:b.companyId,namespaceScope:"inertia:public-drafting",key:discoveryHash([b.projectId,b.applicantSlug,b.matchId])},async()=>{
+        callbackStarted=true;
         await preflight();
         const initialStatus=(await target(b,actor)).status;
         checkpointReplayOnly=b.nativeDependencyHandoff===true && role==="producer" && op==="checkpoint" && initialStatus!=="in_progress";
@@ -397,6 +405,17 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
           throw error;
         }
       });
+      // A null value after callback entry is work output, not failed admission.
+      // Throws (including an unconfirmed release) also leave this loop directly.
+      if(attempt===null && callbackStarted && operationDeadlineAt!==undefined)
+        throw Error("Public funding operation returned no result; outcome unconfirmed; reconcile before another invocation");
+      if(attempt!==null || callbackStarted || operationDeadlineAt===undefined)return attempt;
+      checkDeadline();
+      await admissionDelay(Math.min(250,Math.max(1,operationDeadlineAt-Date.now())),undefined,{signal:operation.signal});
+      checkDeadline();
+      await preflight();
+      }
+      })();
       checkDeadline();
       if(result===null) throw Error("Public drafting objective already owned; retry later");
       return {data:result};
