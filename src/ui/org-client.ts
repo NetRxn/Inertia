@@ -35,9 +35,10 @@ function id(raw: unknown): string {
 }
 
 function timestamp(raw: unknown): string {
-  const s = text(raw, 40);
+  const s = text(raw, 50);
+  // Accept both ISO 8601 (T separator, Z or +HH:MM) and PostgreSQL format (space separator, +HH or +HH:MM)
   check(
-    /^\d{4}-\d\d-\d\dT([01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(s) &&
+    /^\d{4}-\d\d-\d\d[T ]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(\.\d{1,6})?(Z|[+-](?:[01]\d|2[0-3])(?::[0-5]\d)?)$/.test(s) &&
       Number.isFinite(Date.parse(s))
   );
   check(Number(s.slice(0, 4)) > 0 && new Date(s.slice(0, 10) + 'T00:00:00Z').toISOString().slice(0, 10) === s.slice(0, 10));
@@ -60,19 +61,21 @@ function sourceKind(raw: unknown): SourceKind {
 }
 
 export interface OrgOverview {
+  profile: { companyId: string; name: string; createdBy: string; createdAt: string };
   role: OrgRole;
-  name: string;
   memberCount: number;
-  log: OrgLogEntry[];
-  keyDocuments: Array<{ sourceKey: string; title: string }>;
+  feed: OrgLogEntry[];
+  keyDocuments: Array<{ sourceKey: string; title: string; score: number }>;
   initiatives: Array<{ issueId: string; title: string; openTasks: number }>;
 }
 
 export function parseOrgOverview(raw: unknown): OrgOverview {
-  const r = row(raw, ['role', 'name', 'memberCount', 'log', 'keyDocuments', 'initiatives']);
+  const r = row(raw, ['profile', 'role', 'memberCount', 'feed', 'keyDocuments', 'initiatives']);
   check(Number.isSafeInteger(r.memberCount) && Number(r.memberCount) >= 0);
 
-  const log = list(r.log, x => {
+  const profile = row(r.profile, ['companyId', 'name', 'createdBy', 'createdAt']);
+
+  const feed = list(r.feed, x => {
     const l = row(x, ['companyId', 'seq', 'actor', 'action', 'subject', 'reason', 'at']);
     check(Number.isSafeInteger(l.seq) && Number(l.seq) > 0);
     check(
@@ -97,10 +100,12 @@ export function parseOrgOverview(raw: unknown): OrgOverview {
   });
 
   const keyDocuments = list(r.keyDocuments, x => {
-    const d = row(x, ['sourceKey', 'title']);
+    const d = row(x, ['sourceKey', 'title', 'score']);
+    check(Number.isSafeInteger(d.score) && Number(d.score) >= 0);
     return {
       sourceKey: id(d.sourceKey),
       title: text(d.title),
+      score: Number(d.score),
     };
   }, 10);
 
@@ -115,10 +120,15 @@ export function parseOrgOverview(raw: unknown): OrgOverview {
   }, 20);
 
   return {
+    profile: {
+      companyId: id(profile.companyId),
+      name: text(profile.name, 200),
+      createdBy: id(profile.createdBy),
+      createdAt: timestamp(profile.createdAt),
+    },
     role: role(r.role),
-    name: text(r.name, 200),
     memberCount: Number(r.memberCount),
-    log,
+    feed,
     keyDocuments,
     initiatives,
   };
@@ -139,9 +149,13 @@ export function parseOrgMembers(raw: unknown): OrgMember[] {
   }, 1000);
 }
 
-export function parseOrgSources(raw: unknown): OrgSource[] {
+export interface OrgSourceWithFeeds extends OrgSource {
+  feeds: { tasks: number };
+}
+
+export function parseOrgSources(raw: unknown): OrgSourceWithFeeds[] {
   return list(raw, x => {
-    const s = row(x, ['companyId', 'sourceKey', 'kind', 'title', 'url', 'mediaType', 'byteLength', 'sha256', 'sharedBy', 'audience', 'hidden', 'pins', 'createdAt']);
+    const s = row(x, ['companyId', 'sourceKey', 'kind', 'title', 'url', 'mediaType', 'byteLength', 'sha256', 'sharedBy', 'audience', 'hidden', 'pins', 'createdAt', 'feeds']);
     check(s.audience === 'members' || s.audience === 'moderators');
     check(Number.isSafeInteger(s.pins) && Number(s.pins) >= 0);
 
@@ -153,6 +167,9 @@ export function parseOrgSources(raw: unknown): OrgSource[] {
         reason: text(h.reason, 2000),
       };
     })();
+
+    const feeds = row(s.feeds, ['tasks']);
+    check(Number.isSafeInteger(feeds.tasks) && Number(feeds.tasks) >= 0);
 
     return {
       companyId: id(s.companyId),
@@ -168,6 +185,7 @@ export function parseOrgSources(raw: unknown): OrgSource[] {
       hidden,
       pins: Number(s.pins),
       createdAt: timestamp(s.createdAt),
+      feeds: { tasks: Number(feeds.tasks) },
     };
   }, 1000);
 }

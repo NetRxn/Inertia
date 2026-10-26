@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo, type CSSProperties, type FormEvent } from 'react';
 import type { PluginPageProps } from '@paperclipai/plugin-sdk/ui';
 import { usePluginAction } from '@paperclipai/plugin-sdk/ui';
-import { parseOrgOverview, parseOrgMembers, parseOrgSources, type OrgOverview } from './org-client.js';
-import type { OrgMember, OrgSource, SourceKind } from '../org/contracts.js';
+import { parseOrgOverview, parseOrgMembers, parseOrgSources, type OrgOverview, type OrgSourceWithFeeds } from './org-client.js';
+import type { OrgMember, SourceKind } from '../org/contracts.js';
 
 const control: CSSProperties = {
   padding: '0.4rem 0.65rem',
@@ -31,7 +31,7 @@ export function OrgPage({ context }: PluginPageProps) {
   const [tab, setTab] = useState<Tab>('overview');
   const [overview, setOverview] = useState<OrgOverview | null | undefined>(undefined);
   const [members, setMembers] = useState<OrgMember[]>([]);
-  const [sources, setSources] = useState<OrgSource[]>([]);
+  const [sources, setSources] = useState<OrgSourceWithFeeds[]>([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sourceFilter, setSourceFilter] = useState<SourceKind | 'all'>('all');
@@ -114,7 +114,7 @@ export function OrgPage({ context }: PluginPageProps) {
   async function loadSources() {
     try {
       const params = sourceFilter === 'all' ? { hidden: showHidden } : { kind: sourceFilter, hidden: showHidden };
-      const result = (await sourcesAction(params)) as ActionResult<OrgSource[]>;
+      const result = (await sourcesAction(params)) as ActionResult<OrgSourceWithFeeds[]>;
       if (result.ok) {
         setSources(parseOrgSources(result.data));
       } else {
@@ -397,7 +397,7 @@ export function OrgPage({ context }: PluginPageProps) {
     <section style={{ display: 'grid', gap: '1rem', maxWidth: 880 }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ margin: 0 }}>
-          {overview.name} · {overview.memberCount} {overview.memberCount === 1 ? 'member' : 'members'}
+          {overview.profile.name} · {overview.memberCount} {overview.memberCount === 1 ? 'member' : 'members'}
         </h2>
       </header>
 
@@ -473,10 +473,10 @@ export function OrgPage({ context }: PluginPageProps) {
 
             <section style={section} aria-label="Activity feed">
               <h3 style={{ margin: 0 }}>Activity</h3>
-              {overview.log.length === 0 ? (
+              {overview.feed.length === 0 ? (
                 <p>No activity yet</p>
               ) : (
-                overview.log.slice().reverse().map(entry => (
+                overview.feed.slice().reverse().map(entry => (
                   <article key={entry.seq} style={{ fontSize: '0.9em' }}>
                     {entry.action === 'source.share' && `${entry.actor} shared "${entry.subject}"`}
                     {entry.action === 'member.add' && `${entry.actor} added ${entry.subject}`}
@@ -678,7 +678,7 @@ export function OrgPage({ context }: PluginPageProps) {
                 }}
                 onClick={() => setSourceFilter(kind)}
               >
-                {kind.charAt(0).toUpperCase() + kind.slice(1)}
+                {kind === 'objective' ? 'Meetings' : kind.charAt(0).toUpperCase() + kind.slice(1)}
               </button>
             ))}
             <button
@@ -701,6 +701,7 @@ export function OrgPage({ context }: PluginPageProps) {
                   <th style={{ textAlign: 'left', padding: '0.5rem' }}>Shared by</th>
                   <th style={{ textAlign: 'left', padding: '0.5rem' }}>Status</th>
                   <th style={{ textAlign: 'left', padding: '0.5rem' }}>Who can see</th>
+                  <th style={{ textAlign: 'left', padding: '0.5rem' }}>Feeds</th>
                   <th style={{ textAlign: 'left', padding: '0.5rem' }}>Actions</th>
                 </tr>
               </thead>
@@ -711,6 +712,7 @@ export function OrgPage({ context }: PluginPageProps) {
                     <td style={{ padding: '0.5rem' }}>{source.sharedBy}</td>
                     <td style={{ padding: '0.5rem' }}>{source.hidden ? 'Hidden' : 'Visible'}</td>
                     <td style={{ padding: '0.5rem' }}>{source.audience}</td>
+                    <td style={{ padding: '0.5rem' }}>{source.feeds.tasks > 0 ? `${source.feeds.tasks} ${source.feeds.tasks === 1 ? 'task' : 'tasks'}` : '—'}</td>
                     <td style={{ padding: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                       {!source.hidden ? (
                         <button

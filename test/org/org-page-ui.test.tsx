@@ -67,11 +67,11 @@ describe('OrgPage', () => {
       'org.overview': async () => ({
         ok: true,
         data: {
+          profile: { companyId: 'company-1', name: 'Test DAO', createdBy: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
           role: 'member',
-          name: 'Test DAO',
           memberCount: 5,
-          log: [{ companyId: 'company-1', seq: 1, actor: 'user-2', action: 'source.share', subject: 'doc-1', reason: '', at: '2026-10-25T10:00:00Z' }],
-          keyDocuments: [{ sourceKey: 'doc-1', title: 'Budget 2026' }],
+          feed: [{ companyId: 'company-1', seq: 1, actor: 'user-2', action: 'source.share', subject: 'doc-1', reason: '', at: '2026-10-25T10:00:00Z' }],
+          keyDocuments: [{ sourceKey: 'doc-1', title: 'Budget 2026', score: 1 }],
           initiatives: [{ issueId: 'issue-1', title: 'Q4 Planning', openTasks: 3 }],
         },
       }),
@@ -101,10 +101,10 @@ describe('OrgPage', () => {
       'org.overview': async () => ({
         ok: true,
         data: {
+          profile: { companyId: 'company-1', name: 'Test DAO', createdBy: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
           role: 'member',
-          name: 'Test DAO',
           memberCount: 5,
-          log: [],
+          feed: [],
           keyDocuments: [],
           initiatives: [],
         },
@@ -112,8 +112,8 @@ describe('OrgPage', () => {
       'org.members': async () => ({
         ok: true,
         data: [
-          { userId: 'user-1', displayName: 'Alice', role: 'founder', status: 'active', joinedAt: '2026-01-01T00:00:00Z' },
-          { userId: 'user-2', displayName: 'Bob', role: 'member', status: 'active', joinedAt: '2026-02-01T00:00:00Z' },
+          { companyId: 'company-1', userId: 'user-1', displayName: 'Alice', role: 'founder', status: 'active', joinedAt: '2026-01-01T00:00:00Z' },
+          { companyId: 'company-1', userId: 'user-2', displayName: 'Bob', role: 'member', status: 'active', joinedAt: '2026-02-01T00:00:00Z' },
         ],
       }),
     });
@@ -139,10 +139,10 @@ describe('OrgPage', () => {
       'org.overview': async () => ({
         ok: true,
         data: {
+          profile: { companyId: 'company-1', name: 'Test DAO', createdBy: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
           role: 'moderator',
-          name: 'Test DAO',
           memberCount: 5,
-          log: [],
+          feed: [],
           keyDocuments: [],
           initiatives: [],
         },
@@ -184,10 +184,10 @@ describe('OrgPage', () => {
       'org.overview': async () => ({
         ok: true,
         data: {
+          profile: { companyId: 'company-1', name: 'Test DAO', createdBy: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
           role: 'founder',
-          name: 'Test DAO',
           memberCount: 2,
-          log: [],
+          feed: [],
           keyDocuments: [],
           initiatives: [],
         },
@@ -233,10 +233,10 @@ describe('OrgPage', () => {
       'org.overview': async () => ({
         ok: true,
         data: {
+          profile: { companyId: 'company-1', name: 'Test DAO', createdBy: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
           role: 'moderator',
-          name: 'Test DAO',
           memberCount: 2,
-          log: [],
+          feed: [],
           keyDocuments: [],
           initiatives: [],
         },
@@ -260,6 +260,7 @@ describe('OrgPage', () => {
               hidden: null,
               pins: 0,
               createdAt: '2026-10-25T10:00:00Z',
+              feeds: { tasks: 0 },
             },
           ],
         };
@@ -332,7 +333,7 @@ describe('OrgPage', () => {
     const { parseOrgOverview } = await import('../../src/ui/org-client.js');
 
     expect(() => {
-      parseOrgOverview({ role: 'member', name: 'DAO', memberCount: 5, log: [], keyDocuments: [], initiatives: [], extraKey: 'unexpected' });
+      parseOrgOverview({ profile: { companyId: 'c1', name: 'DAO', createdBy: 'u1', createdAt: '2026-01-01T00:00:00Z' }, role: 'member', memberCount: 5, feed: [], keyDocuments: [], initiatives: [], extraKey: 'unexpected' });
     }).toThrow();
   });
 });
