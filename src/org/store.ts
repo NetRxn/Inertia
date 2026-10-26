@@ -9,6 +9,9 @@ export interface ObjectiveSource {
   audience: string;
   sourceSystem: string;
   nativeIssueId: string | null;
+  updatedAt: string;
+  hidden: OrgSource['hidden'];
+  pins: number;
 }
 
 export interface OrgStore {
@@ -22,6 +25,7 @@ export interface OrgStore {
   readSource(companyId: string, sourceKey: string): Promise<OrgSource | null>;
   listSources(companyId: string, opts: { includeHidden: boolean; kind?: SourceKind; limit: number }): Promise<OrgSource[]>;
   listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]>;
+  readObjectiveSource(companyId: string, mappingKey: string): Promise<ObjectiveSource | null>;
   listHidden(companyId: string): Promise<Map<string, OrgSource['hidden']>>;
   setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean>;
   isHidden(companyId: string, sourceKey: string): Promise<boolean>;
@@ -41,6 +45,7 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
   const sourcesTable = table('org_sources');
   const pinsTable = table('org_source_pins');
   const logTable = table('org_log');
+  const intakeTable = table('objective_intake');
 
   const unavailableError = () => new OrgError('unavailable', 'Organization data unavailable.');
 
@@ -58,6 +63,46 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
     } catch {
       throw unavailableError();
     }
+  }
+
+  async function readObjectives(companyId: string, mappingKey: string | null, limit: number): Promise<ObjectiveSource[]> {
+    const rows = await query<{
+      mapping_key: string;
+      title: string;
+      audience: string;
+      source_system: string;
+      native_issue_id: string | null;
+      updated_at: string;
+      hidden: OrgSource['hidden'];
+      pins: number;
+    }>(
+      `SELECT
+         i.mapping_key,
+         i.record->'snapshot'->>'title' as title,
+         i.record->'snapshot'->>'audience' as audience,
+         i.record->'snapshot'->>'sourceSystem' as source_system,
+         i.record->>'nativeIssueId' as native_issue_id,
+         to_char(i.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as updated_at,
+         s.hidden,
+         (SELECT COUNT(*)::int FROM ${pinsTable} p WHERE p.company_id=$1 AND p.source_key='objective:' || i.mapping_key) as pins
+       FROM ${intakeTable} i
+       LEFT JOIN ${sourcesTable} s ON s.company_id=$1 AND s.source_key='objective:' || i.mapping_key
+       WHERE i.record->>'companyId' = $1 AND ($2::text IS NULL OR i.mapping_key=$2)
+       ORDER BY i.mapping_key
+       LIMIT $3`,
+      [companyId, mappingKey, limit]
+    );
+
+    return rows.map(row => ({
+      key: row.mapping_key,
+      title: row.title,
+      audience: row.audience,
+      sourceSystem: row.source_system,
+      nativeIssueId: row.native_issue_id,
+      updatedAt: row.updated_at,
+      hidden: row.hidden ?? null,
+      pins: Number(row.pins)
+    }));
   }
 
   return {
@@ -135,10 +180,10 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
 
     async countModerators(companyId: string): Promise<number> {
       const rows = await query<{ count: number }>(
-        `SELECT COUNT(*) as count FROM ${membersTable} WHERE company_id=$1 AND role IN ('founder', 'moderator') AND status='active'`,
+        `SELECT COUNT(*)::int as count FROM ${membersTable} WHERE company_id=$1 AND role IN ('founder', 'moderator') AND status='active'`,
         [companyId]
       );
-      return rows[0]?.count ?? 0;
+      return Number(rows[0]?.count ?? 0);
     },
 
     async insertSource(source: OrgSource, content: Uint8Array | null): Promise<void> {
@@ -203,7 +248,7 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
     },
 
     async listSources(companyId: string, opts: { includeHidden: boolean; kind?: SourceKind; limit: number }): Promise<OrgSource[]> {
-      const conditions = ['company_id=$1'];
+      const conditions = ['company_id=$1', "kind <> 'objective'"];
       const params: unknown[] = [companyId];
 
       if (!opts.includeHidden) {
@@ -261,10 +306,11 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       if (sourceKey.startsWith('objective:')) {
         const count = await execute(
           `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, pins, created_at)
-           VALUES ($1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, 0, now())
+           SELECT $1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, 0, now()
+           WHERE EXISTS (SELECT 1 FROM ${intakeTable} WHERE mapping_key=$4 AND record->>'companyId'=$1)
            ON CONFLICT (company_id, source_key) DO UPDATE
            SET hidden=$3::jsonb`,
-          [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null]
+          [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null, sourceKey.slice('objective:'.length)]
         );
         return count > 0;
       }
@@ -290,33 +336,11 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
     },
 
     async listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]> {
-      const rows = await query<{
-        mapping_key: string;
-        title: string;
-        audience: string;
-        source_system: string;
-        native_issue_id: string | null;
-      }>(
-        `SELECT
-           mapping_key,
-           record->'snapshot'->>'title' as title,
-           record->'snapshot'->>'audience' as audience,
-           record->'snapshot'->>'sourceSystem' as source_system,
-           record->>'nativeIssueId' as native_issue_id
-         FROM plugin_netrxn_inertia_e936d62b87.objective_intake
-         WHERE record->>'companyId' = $1
-         ORDER BY mapping_key
-         LIMIT $2`,
-        [companyId, limit]
-      );
+      return readObjectives(companyId, null, limit);
+    },
 
-      return rows.map(row => ({
-        key: row.mapping_key,
-        title: row.title,
-        audience: row.audience,
-        sourceSystem: row.source_system,
-        nativeIssueId: row.native_issue_id
-      }));
+    async readObjectiveSource(companyId: string, mappingKey: string): Promise<ObjectiveSource | null> {
+      return (await readObjectives(companyId, mappingKey, 1))[0] ?? null;
     },
 
     async listHidden(companyId: string): Promise<Map<string, OrgSource['hidden']>> {

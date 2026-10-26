@@ -157,6 +157,18 @@ it('rejects a root moved into a foreign native project before checkout or source
   f.f.revise({ revision: 'corrected' }); await f.save(); await f.job();
   expect(f.status().state).toBe('attention'); expect(await f.rows()).toHaveLength(1);
 });
+it('objective_source_context fails closed when the hidden check throws', async () => {
+  const f = await setup(); await f.job(); const issue = (await f.rows())[0]!, run = await f.activate(issue.id);
+  expect((await f.call(run)).data.source).toEqual(f.f.source);
+  const query = f.h.ctx.db.query;
+  f.h.ctx.db.query = (async (q: string, p: unknown[]) => {
+    if (/org_sources/.test(q)) throw Error('org store down');
+    return query(q, p);
+  }) as typeof query;
+  await expect(f.call(run)).rejects.toThrow(/^Objective source unavailable or task access denied\.$/);
+  f.h.ctx.db.query = query;
+  expect((await f.call(run)).data.source).toEqual(f.f.source);
+});
 it('objective_source_context denies a source hidden as spam and allows it again after restore', async () => {
   const f = await setup(); await f.job(); const issue = (await f.rows())[0]!, run = await f.activate(issue.id);
   const store = createOrgStore(f.h.ctx.db);

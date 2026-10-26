@@ -11,6 +11,7 @@ let db: PluginDatabaseClient;
 beforeAll(async () => {
   pg = new PGlite();
   await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`);
+  await pg.exec(await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf8'));
   await pg.exec(await readFile(new URL('../../migrations/009_org_profile.sql', import.meta.url), 'utf8'));
   db = {
     namespace: BRIDGE_NAMESPACE,
@@ -70,17 +71,31 @@ it('concurrent createProfile x8 yields exactly one true, one profile, one founde
   expect(members[0]).toMatchObject({ userId: 'bob', role: 'founder' });
 });
 
-it('setHidden on objective:abc with no row creates it; isHidden true; setHidden null → false', async () => {
+it('setHidden on an objective key needs an intake row for that company; never lists the stub as a shared source', async () => {
   const store = createOrgStore(db);
   const profile = { companyId: 'co3', name: 'Gamma LLC', createdBy: 'charlie', createdAt: new Date().toISOString() };
   const founder = { companyId: 'co3', userId: 'charlie', displayName: 'Charlie', role: 'founder' as const, status: 'active' as const, joinedAt: new Date().toISOString() };
   await store.createProfile(profile, founder);
 
+  const key = 'a'.repeat(64);
   const hidden = { by: 'charlie', at: new Date().toISOString(), reason: 'spam' };
-  expect(await store.setHidden('co3', 'objective:abc', hidden)).toBe(true);
-  expect(await store.isHidden('co3', 'objective:abc')).toBe(true);
-  expect(await store.setHidden('co3', 'objective:abc', null)).toBe(true);
-  expect(await store.isHidden('co3', 'objective:abc')).toBe(false);
+  expect(await store.setHidden('co3', `objective:${key}`, hidden)).toBe(false);
+  expect(await store.isHidden('co3', `objective:${key}`)).toBe(false);
+
+  await pg.query(`INSERT INTO ${BRIDGE_NAMESPACE}.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)`, [key, JSON.stringify({ companyId: 'co3', snapshot: { title: 'T', audience: 'members', sourceSystem: 's' } })]);
+  expect(await store.setHidden('co4', `objective:${key}`, hidden)).toBe(false);
+  expect(await store.setHidden('co3', `objective:${key}`, hidden)).toBe(true);
+  expect(await store.isHidden('co3', `objective:${key}`)).toBe(true);
+  expect(await store.setHidden('co3', `objective:${key}`, null)).toBe(true);
+  expect(await store.isHidden('co3', `objective:${key}`)).toBe(false);
+  expect(await store.listSources('co3', { includeHidden: true, limit: 10 })).toEqual([]);
+});
+
+it('countModerators returns a number', async () => {
+  const store = createOrgStore(db);
+  const count = await store.countModerators('co3');
+  expect(count).toBe(1);
+  expect(typeof count).toBe('number');
 });
 
 it('listSources includeHidden:false omits hidden rows', async () => {

@@ -308,4 +308,45 @@ describe('org-client contract', () => {
     expect(overview.initiatives).toHaveLength(20);
     expect(overview.initiatives[0]!.title).toMatch(/^Initiative \d+ y+…$/);
   });
+
+  it('org.sources objective rows (hidden, restored, restricted) satisfy parseOrgSources', async () => {
+    const h = createHarness();
+    const c = ctxFor('company-obj');
+    await h.performAction('org.setup', { name: 'Objective DAO', displayName: 'Founder Name' }, c);
+    await h.performAction('org.source.share', { kind: 'link', title: 'A link', url: 'https://example.com/a' }, c);
+    const keys = ['c'.repeat(64), 'd'.repeat(64), 'e'.repeat(64)];
+    const audiences = ['members', 'restricted', 'public'];
+    for (const [i, key] of keys.entries()) {
+      await pg.query(
+        `INSERT INTO ${BRIDGE_NAMESPACE}.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)`,
+        [key, JSON.stringify({
+          key, companyId: 'company-obj', version: 1,
+          snapshot: { sourceSystem: i === 0 ? 'Drive sync' : 'dao-platform', sourceId: 's' + i, audience: audiences[i], title: `Objective ${i}\nsecond line`, text: 't', withdrawn: false, authorRef: 'a' },
+          nativeIssueId: i === 0 ? 'issue-1' : null, pending: false, marker: 'm',
+        })]
+      );
+    }
+    for (const params of [
+      ['org.source.hide', { sourceKey: `objective:${keys[0]}`, reason: 'spam' }],
+      ['org.source.restore', { sourceKey: `objective:${keys[0]}`, reason: 'false alarm' }],
+      ['org.source.hide', { sourceKey: `objective:${keys[1]}`, reason: 'spam' }],
+    ] as const) {
+      const result = await h.performAction(params[0], params[1], c) as any;
+      expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
+    }
+
+    const all = await h.performAction('org.sources', { hidden: true }, c) as any;
+    const sources = parseOrgSources(all.data);
+    expect(sources.filter(s => s.kind === 'objective')).toHaveLength(3);
+    const restored = sources.find(s => s.sourceKey === `objective:${keys[0]}`)!;
+    expect(restored).toMatchObject({ sharedBy: 'Drive sync', audience: 'members', hidden: null, title: 'Objective 0 second line', feeds: { tasks: 1 } });
+    const hidden = sources.find(s => s.sourceKey === `objective:${keys[1]}`)!;
+    expect(hidden).toMatchObject({ sharedBy: 'dao-platform', audience: 'moderators', hidden: { by: 'founder-1', reason: 'spam' } });
+
+    const objectiveOnly = await h.performAction('org.sources', { kind: 'objective', hidden: false }, c) as any;
+    expect(parseOrgSources(objectiveOnly.data).map(s => s.sourceKey).sort()).toEqual([`objective:${keys[0]}`, `objective:${keys[2]}`]);
+
+    const overview = await h.performAction('org.overview', {}, c) as any;
+    expect(parseOrgOverview(overview.data).keyDocuments.map(d => d.title)).toEqual(['A link']);
+  });
 });

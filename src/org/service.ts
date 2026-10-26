@@ -3,6 +3,7 @@ import type { OrgProfile, OrgMember, OrgRole, OrgSource, OrgLogEntry } from './c
 import { OrgError } from './contracts.js';
 import { allowed } from './policy.js';
 import { validateShare, significance } from './sources.js';
+import { clean } from './text.js';
 import { webcrypto } from 'node:crypto';
 
 export interface OrgService {
@@ -35,6 +36,19 @@ function validateUserId(value: string): string {
     throw new OrgError('invalid', 'userId must be a non-empty string, at most 128 characters, without control characters.');
   }
   return value;
+}
+
+const sourceKeyPattern = /^(?:share:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|objective:[0-9a-f]{64})$/;
+
+function validateSourceKey(value: unknown): string {
+  if (typeof value !== 'string' || !sourceKeyPattern.test(value)) {
+    throw new OrgError('invalid', 'Invalid source key.');
+  }
+  return value;
+}
+
+function objectiveAudience(audience: string): OrgSource['audience'] {
+  return audience === 'public' || audience === 'members' ? 'members' : 'moderators';
 }
 
 export function createOrgService(
@@ -290,46 +304,38 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
-      const kindFilter = opts.kind && opts.kind !== 'objective' ? opts.kind : undefined;
-      const sharedSources = await store.listSources(companyId, {
-        includeHidden: opts.hidden,
-        ...(kindFilter ? { kind: kindFilter } : {}),
-        limit: 1000
-      });
+      const sharedSources = opts.kind === 'objective'
+        ? []
+        : await store.listSources(companyId, {
+          includeHidden: opts.hidden,
+          ...(opts.kind ? { kind: opts.kind } : {}),
+          limit: 1000
+        });
 
       const objectiveSources = opts.kind === undefined || opts.kind === 'objective'
         ? await store.listObjectiveSources(companyId, 1000)
         : [];
 
-      const hiddenMap = await store.listHidden(companyId);
-      const hiddenKeys = new Set(hiddenMap.keys());
-
       const allSources: Array<OrgSource & { feeds: { tasks: number } }> = [
         ...sharedSources.map(s => ({ ...s, feeds: { tasks: 0 } })),
         ...objectiveSources
-          .filter(obj => {
-            const key = `objective:${obj.key}`;
-            return opts.hidden || !hiddenKeys.has(key);
-          })
-          .map(obj => {
-            const key = `objective:${obj.key}`;
-            return {
-              companyId,
-              sourceKey: key,
-              kind: 'objective' as const,
-              title: obj.title,
-              url: null,
-              mediaType: null,
-              byteLength: null,
-              sha256: null,
-              sharedBy: '',
-              audience: obj.audience as 'members' | 'moderators',
-              hidden: hiddenKeys.has(key) ? { by: '', at: '', reason: '' } : null,
-              pins: 0,
-              createdAt: '',
-              feeds: { tasks: obj.nativeIssueId ? 1 : 0 }
-            };
-          })
+          .filter(obj => opts.hidden || !obj.hidden)
+          .map(obj => ({
+            companyId,
+            sourceKey: `objective:${obj.key}`,
+            kind: 'objective' as const,
+            title: clean(obj.title, 1000, 'Untitled source'),
+            url: null,
+            mediaType: null,
+            byteLength: null,
+            sha256: null,
+            sharedBy: clean(obj.sourceSystem, 200, 'intake'),
+            audience: objectiveAudience(obj.audience),
+            hidden: obj.hidden,
+            pins: obj.pins,
+            createdAt: obj.updatedAt,
+            feeds: { tasks: obj.nativeIssueId ? 1 : 0 }
+          }))
       ];
 
       return allSources;
@@ -341,10 +347,11 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
+      const sourceKey = validateSourceKey(input.sourceKey);
       const reason = validateText(input.reason, 'reason');
       const now = clock().toISOString();
 
-      const updated = await store.setHidden(companyId, input.sourceKey, {
+      const updated = await store.setHidden(companyId, sourceKey, {
         by: userId,
         at: now,
         reason
@@ -358,7 +365,7 @@ export function createOrgService(
         companyId,
         actor: userId,
         action: 'source.hide',
-        subject: input.sourceKey,
+        subject: sourceKey,
         reason
       });
     },
@@ -369,9 +376,10 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
+      const sourceKey = validateSourceKey(input.sourceKey);
       const reason = validateText(input.reason, 'reason');
 
-      const updated = await store.setHidden(companyId, input.sourceKey, null);
+      const updated = await store.setHidden(companyId, sourceKey, null);
 
       if (!updated) {
         throw new OrgError('invalid', 'Source not found.');
@@ -381,7 +389,7 @@ export function createOrgService(
         companyId,
         actor: userId,
         action: 'source.restore',
-        subject: input.sourceKey,
+        subject: sourceKey,
         reason
       });
     },
@@ -392,15 +400,29 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
-      await store.addPin(companyId, input.sourceKey, userId);
+      const sourceKey = validateSourceKey(input.sourceKey);
+      const isModerator = role === 'founder' || role === 'moderator';
+      let visible: boolean;
+      if (sourceKey.startsWith('objective:')) {
+        const objective = await store.readObjectiveSource(companyId, sourceKey.slice('objective:'.length));
+        visible = !!objective && (isModerator || (!objective.hidden && objectiveAudience(objective.audience) === 'members'));
+      } else {
+        const source = await store.readSource(companyId, sourceKey);
+        visible = !!source && (isModerator || !source.hidden);
+      }
+      if (!visible) {
+        throw new OrgError('invalid', 'Source not found.');
+      }
 
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'source.pin',
-        subject: input.sourceKey,
-        reason: ''
-      });
+      if (await store.addPin(companyId, sourceKey, userId)) {
+        await store.appendLog({
+          companyId,
+          actor: userId,
+          action: 'source.pin',
+          subject: sourceKey,
+          reason: ''
+        });
+      }
     },
 
     async overview(companyId: string, userId: string): Promise<null | { profile: OrgProfile; role: OrgRole; feed: OrgLogEntry[]; keyDocuments: Array<{ sourceKey: string; title: string; score: number }>; initiatives: Array<{ issueId: string; title: string; openTasks: number }> }> {

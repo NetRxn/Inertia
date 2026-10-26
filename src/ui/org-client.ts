@@ -180,7 +180,7 @@ export function parseOrgSources(raw: unknown): OrgSourceWithFeeds[] {
       mediaType: s.mediaType === null ? null : text(s.mediaType, 200),
       byteLength: s.byteLength === null ? null : (() => { check(Number.isSafeInteger(s.byteLength) && Number(s.byteLength) >= 0); return Number(s.byteLength); })(),
       sha256: s.sha256 === null ? null : (() => { check(typeof s.sha256 === 'string' && /^[a-f0-9]{64}$/.test(s.sha256)); return s.sha256; })(),
-      sharedBy: id(s.sharedBy),
+      sharedBy: text(s.sharedBy, 200),
       audience: s.audience as 'members' | 'moderators',
       hidden,
       pins: Number(s.pins),

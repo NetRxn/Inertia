@@ -41,7 +41,10 @@ describe('sources', () => {
     idCounter = 0;
   });
 
-  const newId = () => `id${++idCounter}`;
+  const newId = () => `00000000-0000-4000-8000-${String(++idCounter).padStart(12, '0')}`;
+  const OBJ1 = '1'.repeat(64);
+  const OBJ2 = '2'.repeat(64);
+  const OBJ3 = '3'.repeat(64);
   const clock = () => new Date('2026-10-26T12:00:00Z');
 
   describe('validateShare', () => {
@@ -195,11 +198,11 @@ describe('sources', () => {
       it('includes feeds.tasks from objective intake', async () => {
         await db.exec(`
           INSERT INTO plugin_netrxn_inertia_e936d62b87.objective_intake (mapping_key, record)
-          VALUES ('obj1', '{"key":"obj1","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s1","organizationId":"org1","revision":"r1","sourceHash":"h1","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Test Objective","text":"body","withdrawn":false},"nativeIssueId":"issue1","pending":false,"marker":"m1"}'::jsonb)
+          VALUES ('${OBJ1}', '{"key":"${OBJ1}","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s1","organizationId":"org1","revision":"r1","sourceHash":"h1","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Test Objective","text":"body","withdrawn":false},"nativeIssueId":"issue1","pending":false,"marker":"m1"}'::jsonb)
         `);
 
         const sources = await service.sources(companyId, moderatorId, { hidden: false });
-        const objSource = sources.find(s => s.sourceKey === 'objective:obj1');
+        const objSource = sources.find(s => s.sourceKey === `objective:${OBJ1}`);
 
         expect(objSource).toBeDefined();
         expect(objSource!.feeds.tasks).toBe(1);
@@ -208,11 +211,11 @@ describe('sources', () => {
       it('shows feeds.tasks = 0 for objective without nativeIssueId', async () => {
         await db.exec(`
           INSERT INTO plugin_netrxn_inertia_e936d62b87.objective_intake (mapping_key, record)
-          VALUES ('obj2', '{"key":"obj2","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s2","organizationId":"org1","revision":"r1","sourceHash":"h2","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Pending Objective","text":"body","withdrawn":false},"nativeIssueId":null,"pending":true,"marker":"m2"}'::jsonb)
+          VALUES ('${OBJ2}', '{"key":"${OBJ2}","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s2","organizationId":"org1","revision":"r1","sourceHash":"h2","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Pending Objective","text":"body","withdrawn":false},"nativeIssueId":null,"pending":true,"marker":"m2"}'::jsonb)
         `);
 
         const sources = await service.sources(companyId, moderatorId, { hidden: false });
-        const objSource = sources.find(s => s.sourceKey === 'objective:obj2');
+        const objSource = sources.find(s => s.sourceKey === `objective:${OBJ2}`);
 
         expect(objSource).toBeDefined();
         expect(objSource!.feeds.tasks).toBe(0);
@@ -288,15 +291,15 @@ describe('sources', () => {
       it('hides objective source without touching objective_intake', async () => {
         await db.exec(`
           INSERT INTO plugin_netrxn_inertia_e936d62b87.objective_intake (mapping_key, record)
-          VALUES ('obj3', '{"key":"obj3","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s3","organizationId":"org1","revision":"r1","sourceHash":"h3","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Test Objective","text":"body","withdrawn":false},"nativeIssueId":"issue3","pending":false,"marker":"m3"}'::jsonb)
+          VALUES ('${OBJ3}', '{"key":"${OBJ3}","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s3","organizationId":"org1","revision":"r1","sourceHash":"h3","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Test Objective","text":"body","withdrawn":false},"nativeIssueId":"issue3","pending":false,"marker":"m3"}'::jsonb)
         `);
 
-        await service.hide(companyId, moderatorId, { sourceKey: 'objective:obj3', reason: 'spam' });
+        await service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ3}`, reason: 'spam' });
 
-        const hidden = await store.isHidden(companyId, 'objective:obj3');
+        const hidden = await store.isHidden(companyId, `objective:${OBJ3}`);
         expect(hidden).toBe(true);
 
-        const intake = await db.query('SELECT * FROM plugin_netrxn_inertia_e936d62b87.objective_intake WHERE mapping_key=$1', ['obj3']);
+        const intake = await db.query('SELECT * FROM plugin_netrxn_inertia_e936d62b87.objective_intake WHERE mapping_key=$1', [OBJ3]);
         expect(intake.rows.length).toBe(1);
       });
 
@@ -395,6 +398,105 @@ describe('sources', () => {
 
         expect(pinEntry).toBeDefined();
         expect(pinEntry!.subject).toBe(shared.sourceKey);
+      });
+    });
+
+    async function insertObjective(key: string, snapshot: Record<string, unknown> = {}) {
+      const record = {
+        key, companyId, version: 1,
+        snapshot: { sourceSystem: 'Drive sync', sourceId: 's', organizationId: 'org1', revision: 'r1', sourceHash: 'h', expectedPreviousHash: null, authorRef: 'a1', audience: 'public', title: 'Objective', text: 'body', withdrawn: false, ...snapshot },
+        nativeIssueId: null, pending: false, marker: 'm',
+      };
+      await db.query('INSERT INTO plugin_netrxn_inertia_e936d62b87.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)', [key, JSON.stringify(record)]);
+    }
+
+    describe('objective sources', () => {
+      it('sources({kind:"objective"}) returns only objective rows', async () => {
+        await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await insertObjective(OBJ1);
+        const sources = await service.sources(companyId, moderatorId, { kind: 'objective', hidden: true });
+        expect(sources.map(s => s.kind)).toEqual(['objective']);
+      });
+
+      it('maps sharedBy, createdAt, audience and the stored hidden marker honestly', async () => {
+        await insertObjective(OBJ1, { audience: 'restricted' });
+        await insertObjective(OBJ2, { audience: 'members' });
+        await service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ1}`, reason: 'spam' });
+
+        const sources = await service.sources(companyId, moderatorId, { kind: 'objective', hidden: true });
+        const restricted = sources.find(s => s.sourceKey === `objective:${OBJ1}`)!;
+        const members = sources.find(s => s.sourceKey === `objective:${OBJ2}`)!;
+        expect(restricted.sharedBy).toBe('Drive sync');
+        expect(restricted.audience).toBe('moderators');
+        expect(members.audience).toBe('members');
+        expect(restricted.createdAt).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+        expect(restricted.hidden).toEqual({ by: moderatorId, at: clock().toISOString(), reason: 'spam' });
+        expect(members.hidden).toBeNull();
+      });
+
+      it('refuses to hide an objective key with no intake row, creating no stub', async () => {
+        await expect(service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ2}`, reason: 'spam' }))
+          .rejects.toMatchObject({ kind: 'invalid' });
+        expect(await store.isHidden(companyId, `objective:${OBJ2}`)).toBe(false);
+      });
+
+      it('refuses to hide an objective that belongs to another company', async () => {
+        const record = { key: OBJ2, companyId: 'other-co', version: 1, snapshot: { title: 'Foreign', audience: 'public', sourceSystem: 'x' }, nativeIssueId: null, pending: false, marker: 'm' };
+        await db.query('INSERT INTO plugin_netrxn_inertia_e936d62b87.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)', [OBJ2, JSON.stringify(record)]);
+        await expect(service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ2}`, reason: 'spam' }))
+          .rejects.toMatchObject({ kind: 'invalid' });
+      });
+
+      it('after hide and restore of an objective, no stub shows as a shared item or key document', async () => {
+        await insertObjective(OBJ1);
+        await service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ1}`, reason: 'spam' });
+        await service.restore(companyId, moderatorId, { sourceKey: `objective:${OBJ1}`, reason: 'ok' });
+
+        const overview = await service.overview(companyId, memberId);
+        expect(overview!.keyDocuments).toEqual([]);
+        expect(await store.listSources(companyId, { includeHidden: true, limit: 100 })).toEqual([]);
+        const sources = await service.sources(companyId, moderatorId, { hidden: true });
+        expect(sources.filter(s => s.sourceKey === `objective:${OBJ1}`)).toHaveLength(1);
+        expect(sources[0]!.title).toBe('Objective');
+      });
+
+      it('rejects malformed source keys in hide, restore and pin', async () => {
+        for (const sourceKey of ['share:nope', 'objective:abc', 'other:1', '']) {
+          await expect(service.hide(companyId, moderatorId, { sourceKey, reason: 'spam' })).rejects.toMatchObject({ kind: 'invalid' });
+          await expect(service.restore(companyId, moderatorId, { sourceKey, reason: 'ok' })).rejects.toMatchObject({ kind: 'invalid' });
+          await expect(service.pin(companyId, memberId, { sourceKey })).rejects.toMatchObject({ kind: 'invalid' });
+        }
+      });
+    });
+
+    describe('pin rules', () => {
+      it('refuses a well-formed key for a source that does not exist and logs nothing', async () => {
+        await expect(service.pin(companyId, memberId, { sourceKey: 'share:00000000-0000-4000-8000-999999999999' }))
+          .rejects.toMatchObject({ kind: 'invalid' });
+        expect((await store.listLog(companyId, 50)).some(e => e.action === 'source.pin')).toBe(false);
+      });
+
+      it('refuses a member pinning a hidden source; a moderator may', async () => {
+        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
+        await expect(service.pin(companyId, memberId, { sourceKey: shared.sourceKey })).rejects.toMatchObject({ kind: 'invalid' });
+        await service.pin(companyId, moderatorId, { sourceKey: shared.sourceKey });
+      });
+
+      it('lets a member pin a visible objective but not a restricted one', async () => {
+        await insertObjective(OBJ1);
+        await insertObjective(OBJ2, { audience: 'restricted' });
+        await service.pin(companyId, memberId, { sourceKey: `objective:${OBJ1}` });
+        await expect(service.pin(companyId, memberId, { sourceKey: `objective:${OBJ2}` })).rejects.toMatchObject({ kind: 'invalid' });
+        const sources = await service.sources(companyId, moderatorId, { kind: 'objective', hidden: false });
+        expect(sources.find(s => s.sourceKey === `objective:${OBJ1}`)!.pins).toBe(1);
+      });
+
+      it('logs source.pin only once when the same user pins twice', async () => {
+        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.pin(companyId, memberId, { sourceKey: shared.sourceKey });
+        await service.pin(companyId, memberId, { sourceKey: shared.sourceKey });
+        expect((await store.listLog(companyId, 50)).filter(e => e.action === 'source.pin')).toHaveLength(1);
       });
     });
 
