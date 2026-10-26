@@ -38,6 +38,13 @@
     "apply-agent-tool-use-restrictions": "node scripts/apply-agent-tool-use-restrictions.mjs",
     "test:agent-tool-use-restrictions": "node --test tests/agent-tool-use-restrictions*.test.mjs tests/funding-role-catalog.test.mjs",
     "apply-native-recovery-handback": "node scripts/apply-native-recovery-handback.mjs",
-    "test:native-recovery-handback": "node --test tests/native-recovery-handback*.test.mjs"
+    "test:native-recovery-handback": "node --test tests/native-recovery-handback*.test.mjs",
+    "apply-native-funding-profile": "node scripts/apply-native-funding-profile.mjs",
+    "test:native-funding-profile": "node --test tests/native-funding-policy.test.mjs tests/native-funding-roundtrip.test.mjs tests/native-funding-installer.test.mjs",
+    "qualify:native-funding-profile": "node tests/qualify-native-funding.mjs",
+    "apply-native-attention-deadline": "node scripts/apply-native-attention-deadline.mjs",
+    "test:native-attention-deadline-installer": "node --test tests/native-attention-deadline-installer.test.mjs",
+    "apply-native-domain-review": "node scripts/apply-native-domain-review.mjs",
+    "test:native-domain-review": "node --test tests/native-domain-review*.test.mjs tests/native-review-*.test.mjs"
   }
 }

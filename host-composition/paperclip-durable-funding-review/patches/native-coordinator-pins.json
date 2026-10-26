@@ -6,7 +6,7 @@
     "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
   },
   "patch": "native-coordinator.patch",
-  "patch_sha256": "f5c5747f25b8aa5a82a4a161da79e3f76f75bd25962526fd0406cdb1fea4cc27",
+  "patch_sha256": "f3768788546461c56d5c2838fc6731bd3e73fa5131cec9027dadfb803df35a51",
   "files": {
     "dist/services/native-runtime/native-execution-input.js": {
       "base_sha256": "69c25c7beafdb5797c89f2b9553fbf32fd8421512adaa5c5657a6706ae3103e9",
@@ -18,7 +18,7 @@
     },
     "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
       "base_sha256": "07154b848c2df84e047c0bdc4b318a2241e5c04f138c713312ef0e37e12fb216",
-      "candidate_sha256": "79e76d9dc04c499be63ff0c6e524f984b0aadccaa68749852d7c8ef0a36bfc8e"
+      "candidate_sha256": "14498392202de0456eed89b2e3c70672de5161c1b6c59790da22158a6ace320b"
     },
     "dist/services/native-runtime/provider-profile.js": {
       "base_sha256": "ce4047eab387d0e8a38aecd7bdcc02158fb47edcffb4e3ca9dcde4c83c1b9278",

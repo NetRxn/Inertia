@@ -15,6 +15,8 @@ export interface PublicDraftingBinding {
   projectId: string;
   applicantSlug: string;
   matchId: string;
+  /** Administrator opt-in: native attention owns lifecycle; plugin is producer-only. */
+  nativeAttention?: true;
   /** Administrator opt-in for the private immutable case handoff protocol. */
   nativeCaseProgression?: boolean;
   /** Requires the matching private run-freeze protocol and preconfigured P -> R dependency. */
@@ -113,9 +115,12 @@ function fundingDeadline(value:unknown,b:PublicDraftingBinding,run:ToolRunContex
 export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBinding[], owner: Owner): void {
   if (bindings.length > 1) throw Error("Only one DFW company database binding is supported");
   const gapEnabled = new WeakMap(bindings.map(b=>[b,b.nativeGapPlanReview===true]));
+  const attentionEnabled = new WeakMap(bindings.map(b=>[b,b.nativeAttention===true]));
   for (const b of bindings) {
     if ([b.companyId,b.projectId,b.applicantSlug,b.matchId,...Object.values(b.producer),...Object.values(b.reviewer)].some(v=>!text(v)) ||
-        b.producer.issueId===b.reviewer.issueId || b.producer.agentId===b.reviewer.agentId || b.producer.principalId===b.reviewer.principalId || typeof b.authorize!=="function" ||
+        (b.producer.issueId===b.reviewer.issueId && b.nativeAttention!==true) || b.producer.agentId===b.reviewer.agentId || b.producer.principalId===b.reviewer.principalId || typeof b.authorize!=="function" ||
+        (b.nativeAttention!==undefined && b.nativeAttention!==true) ||
+        (b.nativeAttention===true && (b.nativeCaseProgression===true || b.nativeDependencyHandoff===true || b.nativeGapPlanReview===true)) ||
         (b.nativeCaseProgression!==undefined && typeof b.nativeCaseProgression!=="boolean") ||
         (b.nativeDependencyHandoff!==undefined && typeof b.nativeDependencyHandoff!=="boolean") ||
         (b.nativeDependencyHandoff===true && b.nativeCaseProgression!==true) ||
@@ -125,7 +130,9 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   }
   async function configured(b: PublicDraftingBinding, signal?: AbortSignal) {
     notAborted(signal);
-    if (b.enabled!==true || (b.nativeDependencyHandoff===true && b.nativeCaseProgression!==true) ||
+    if (b.enabled!==true || (b.nativeAttention!==undefined && b.nativeAttention!==true) || attentionEnabled.get(b)!==(b.nativeAttention===true) ||
+      (b.nativeAttention===true && (b.nativeCaseProgression===true || b.nativeDependencyHandoff===true || b.nativeGapPlanReview===true)) ||
+      (b.nativeDependencyHandoff===true && b.nativeCaseProgression!==true) ||
       (b.nativeGapPlanReview!==undefined && typeof b.nativeGapPlanReview!=="boolean") || gapEnabled.get(b)!==(b.nativeGapPlanReview===true) ||
       (b.nativeGapPlanReview===true && (b.nativeCaseProgression!==true || b.nativeDependencyHandoff!==true)) || !(await b.authorize())) throw Error("Public drafting disabled or configuration changed");
     notAborted(signal);
@@ -170,6 +177,16 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   }
   async function context(b: PublicDraftingBinding, run: ToolRunContext, role: "producer"|"reviewer", signal?: AbortSignal): Promise<DraftingContext> {
     const actor=b[role];
+    if(b.nativeAttention===true) {
+      if(role!=="producer")throw Error("Use the assigned native completion review; reviewer plugin operations are disabled");
+      await validateNativeTaskRun(ctx,{companyId:b.companyId,projectId:b.projectId,issueId:actor.issueId,agentId:actor.agentId,
+        authorize:async()=>{await configured(b,signal);return true;}},run,signal);
+      const row=await target(b,actor,signal);
+      if(row.status!=="in_progress" || row.executionRunId!==run.runId || (row.checkoutRunId!=null && row.checkoutRunId!==run.runId))
+        throw Error("Native attention producer ownership unavailable");
+      await configured(b,signal);
+      return {company_id:b.companyId,applicant_slug:b.applicantSlug,match_id:b.matchId,principal_id:actor.principalId,run_id:run.runId,role};
+    }
     const dependencyAuthority=async()=>{
       if(!b.nativeDependencyHandoff)return;
       await dependencyGraph(b,signal);
@@ -189,6 +206,10 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
     ctx.tools.register(declaration.name,declaration,async (parameters, trustedRun) => {
       const run=structuredClone(trustedRun), original=bindings.find(v=>v.companyId===run.companyId);
       if (!original) throw Error("Public drafting disabled or actor denied");
+      if(original.nativeAttention===true && ["review","review_context","gap_plan_review"].includes(declaration.operation))
+        throw Error("Use the assigned native completion review; reviewer plugin operations are disabled");
+      if(original.nativeAttention===true && (run as ToolRunContext & {fundingExecution?:unknown}).fundingExecution===undefined)
+        throw Error("Native attention requires trusted funding execution metadata");
       const operationDeadlineAt=fundingDeadline((run as ToolRunContext & {fundingExecution?:unknown}).fundingExecution,original,run,declaration.name);
       const operation=new AbortController();
       const checkDeadline=()=>{if(operation.signal.aborted||(operationDeadlineAt!==undefined&&Date.now()>=operationDeadlineAt))throw Error("Public funding operation deadline expired; outcome unconfirmed");};
@@ -196,7 +217,7 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
       // Per-call wrapper checks the original live binding/fingerprint too. Weak
       // keys prevent transient deadline wrappers from accumulating in the registry.
       const b=operationDeadlineAt===undefined?original:{...original,authorize:async()=>{checkDeadline();await configured(original,operation.signal);checkDeadline();return true;}};
-      if(b!==original)gapEnabled.set(b,gapEnabled.get(original)??false);
+      if(b!==original){gapEnabled.set(b,gapEnabled.get(original)??false);attentionEnabled.set(b,attentionEnabled.get(original)??false);}
       try {
       let gapParams: Record<string,unknown>|undefined;
       let gapOperation: "gap_review_context"|"review_gap"|undefined;
@@ -229,6 +250,7 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
         return context(b,run,role,signal);
       };
       const preflight=async()=>{
+        if(b.nativeAttention===true){await context(b,run,"producer",operation.signal);return;}
         await validateNativeTaskRun(ctx,{companyId:b.companyId,projectId:b.projectId,issueId:actor.issueId,agentId:actor.agentId,
           authorize:async()=>{await configured(b);return true;},...(allowInReview?{allowInReview:true as const}:{})},run);
         await dependencyGraph(b);
@@ -287,8 +309,9 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
         // lifecycle only after exact live-run checks, then assert checkout before DFW.
         await preflight();
         if((await target(b,actor)).status!==initialStatus)throw Error("Native drafting task state changed");
-        if(initialStatus!=="in_progress" && !checkpointReplayOnly)await ctx.issues.update(actor.issueId,{status:"in_progress"},b.companyId,{actorAgentId:run.agentId,actorRunId:run.runId});
+        if(b.nativeAttention!==true && initialStatus!=="in_progress" && !checkpointReplayOnly)await ctx.issues.update(actor.issueId,{status:"in_progress"},b.companyId,{actorAgentId:run.agentId,actorRunId:run.runId});
         const restore=async()=>{
+          if(b.nativeAttention===true)return;
           if(initialStatus==="in_progress" || checkpointReplayOnly)return;
           await authorize();
           await ctx.issues.update(actor.issueId,{status:initialStatus},b.companyId,{actorAgentId:run.agentId,actorRunId:run.runId});
@@ -304,6 +327,11 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
             if(role!=="producer" || !object(request) || (gap?(!gapEnabled.get(b) || b.nativeGapPlanReview!==true || !uuid(request.request_id)):!hash(request.request_id)) || Buffer.byteLength(JSON.stringify(request))>128*1024)
               throw Error("Invalid public review dispatch");
             if(checkpointReplayOnly)throw Error("Read-only checkpoint replay cannot redispatch review");
+            if(b.nativeAttention===true) {
+              if(gap)throw Error("Native attention does not use legacy gap-plan review dispatch");
+              await context(b,run,"producer",signal);
+              return {state:"pending" as const,request_id:request.request_id as string};
+            }
             await context(b,run,"producer",signal);
             await dependencyGraph(b,signal);
             const before=await target(b,b.reviewer,signal,b.nativeDependencyHandoff===true);
@@ -389,8 +417,8 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
             !Array.isArray(result.packet.draft_candidates) || !Array.isArray(result.packet.remaining_work)) throw Error("Invalid authoritative public packet");
           await snapshot({issueId:b.producer.issueId,companyId:b.companyId,key:"public-drafting-checkpoint",
             body:checkpointBody(op,result,result.packet),
-            title:"Public funding preparation checkpoint; not human accepted or submitted",format:"markdown"});
-          if(op==="checkpoint") {
+            title:b.nativeAttention===true?"Public funding business checkpoint; native lifecycle unchanged; not human accepted or submitted":"Public funding preparation checkpoint; not human accepted or submitted",format:"markdown"});
+          if(op==="checkpoint" && b.nativeAttention!==true) {
             await authorize();
             await ctx.issues.update(b.producer.issueId,{status:result.packet.pending_review_count>0?"blocked":"in_review"},b.companyId,{actorAgentId:run.agentId,actorRunId:run.runId});
           }
@@ -425,17 +453,17 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
 }
 const schema=(properties: Record<string,unknown>,required=Object.keys(properties))=>({type:"object",properties,required,additionalProperties:false});
 const digest={type:"string",pattern:"^[a-f0-9]{64}$"};
-// Every operation also acquires native checkout/ownership state, so none is read-only.
-// Effects include mutable checkout ownership and issue lifecycle transitions, so
-// retain the destructive hint conservatively. No open-world action or proven global retry idempotency.
+// Legacy mode acquires checkout and changes issue lifecycle; native attention
+// restricts this adapter to domain/business writes. Keep conservative shared
+// effects truthful across both modes; no proven global retry idempotency.
 const boundedDraftingWrite = {readOnlyHint:false,destructiveHint:true,openWorldHint:false,idempotentHint:false} as const;
 export const publicDraftingTools = [
-  {name:"funding_drafting_workspace",operation:"workspace",annotations:boundedDraftingWrite,displayName:"Public funding drafting workspace",description:"Read the configured public evidence and requirements while acquiring native task ownership. No accepted private answers or submission authority.",parametersSchema:schema({})},
-  {name:"save_funding_proposals",operation:"save",annotations:boundedDraftingWrite,displayName:"Save public funding proposals",description:"Save public evidence-backed draft candidates, request independent native review, and return pending when review is not ready. Never accept or submit.",parametersSchema:schema({workspace_hash:digest,proposals:{type:"array",items:{type:"object"},minItems:1,maxItems:100}})},
+  {name:"funding_drafting_workspace",operation:"workspace",annotations:boundedDraftingWrite,displayName:"Public funding drafting workspace",description:"Read configured public evidence and requirements under current native task authority. Legacy mode may acquire checkout; native attention preserves lifecycle ownership. No accepted private answers or submission authority.",parametersSchema:schema({})},
+  {name:"save_funding_proposals",operation:"save",annotations:boundedDraftingWrite,displayName:"Save public funding proposals",description:"Save public evidence-backed draft candidates and return pending independent review. In native attention mode, use paperclip_finish to request the assigned native review; this tool does not wake a reviewer. Never accept or submit.",parametersSchema:schema({workspace_hash:digest,proposals:{type:"array",items:{type:"object"},minItems:1,maxItems:100}})},
   {name:"save_funding_gap_progress",operation:"save_gap_progress",annotations:boundedDraftingWrite,displayName:"Save public funding research progress",description:"Save bounded public research checkpoints in the configured task, preserving prior attempts and exact evidence hashes.",parametersSchema:schema({workspace_hash:digest,progress:{type:"object"},previous_hash:{anyOf:[digest,{type:"null"}]}},["workspace_hash","progress"])},
-  {name:"funding_drafting_checkpoint",operation:"checkpoint",annotations:boundedDraftingWrite,displayName:"Hand off public funding preparation",description:"Publish the current authoritative draft and remaining gaps, then hand this configured producer task to review (or block while independent review is pending). Never accept or submit an application. No shell needed.",parametersSchema:schema({})},
-  {name:"funding_review_context",operation:"review_context",annotations:boundedDraftingWrite,displayName:"Read protected public review context",description:"Only the configured reviewer may discover pending current candidates or read an exact request hash, public evidence and strict review contract. Uses domain records, never editable document identity. No shell needed.",parametersSchema:schema({request_id:digest},[])},
-  {name:"review_funding_candidate",operation:"review",annotations:boundedDraftingWrite,displayName:"Complete independent public candidate review",description:"Only the separately configured native reviewer may admit exact candidate, requirement and evidence hashes. The authenticated run, not document JSON, supplies identity.",parametersSchema:schema({request_id:digest,artifact:{type:"object"}})},
+  {name:"funding_drafting_checkpoint",operation:"checkpoint",annotations:boundedDraftingWrite,displayName:"Hand off public funding preparation",description:"Publish the current authoritative draft and remaining gaps. Native attention mode saves only a business checkpoint; use paperclip_finish for lifecycle handoff. Legacy mode may hand off or block the task. Never accept or submit an application. No shell needed.",parametersSchema:schema({})},
+  {name:"funding_review_context",operation:"review_context",annotations:boundedDraftingWrite,displayName:"Read protected public review context",description:"Legacy mode only: the configured reviewer may discover pending candidates or read an exact request hash, public evidence and strict review contract. Native attention uses the assigned native review instead. Domain records supply authority, never editable document identity. No shell needed.",parametersSchema:schema({request_id:digest},[])},
+  {name:"review_funding_candidate",operation:"review",annotations:boundedDraftingWrite,displayName:"Complete independent public candidate review",description:"Legacy mode only: the configured independent reviewer may admit exact candidate, requirement and evidence hashes. Native attention uses the assigned native review instead. The authenticated run, not document JSON, supplies identity.",parametersSchema:schema({request_id:digest,artifact:{type:"object"}})},
 ] as const;
 /** Separate declaration: the six legacy tool contracts above remain unchanged. */
 export const publicGapPlanReviewTool = {

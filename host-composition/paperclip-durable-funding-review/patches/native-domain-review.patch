@@ -1,0 +1,1030 @@
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -1,3 +1,5 @@
++import { preflightNativeReviewApplication, initializeNativeReviewApplication } from "./services/native-runtime/native-review-application.mjs";
++import { nativeDomainReviewComposition } from "./services/native-runtime/native-domain-review-composition.mjs";
+ import { cloudWarmStandbyServerOptions } from "./middleware/cloud-warm-standby.js";
+ import { createCloudWarmStandby } from "./services/cloud-warm-standby.js";
+ import { subscribeAllCompanyLiveEvents } from "./services/live-events.js";
+@@ -78,9 +80,10 @@
+     await sql.end({ timeout: timeoutSeconds });
+ }
+ export async function startServer() {
++    const nativeReviewApplication = await preflightNativeReviewApplication();
+     const startupDatabase = { close: null };
+     try {
+-        return await startServerWithDatabaseTeardown(startupDatabase);
++        return await startServerWithDatabaseTeardown(startupDatabase, nativeReviewApplication);
+     }
+     catch (error) {
+         if (startupDatabase.close) {
+@@ -91,7 +94,7 @@
+         throw error;
+     }
+ }
+-async function startServerWithDatabaseTeardown(startupDatabase) {
++async function startServerWithDatabaseTeardown(startupDatabase, nativeReviewApplication) {
+     setStartupRecoveryPhase("starting");
+     warnIfUnsupportedNodeVersion(process.versions.node, (message) => logger.warn(message));
+     // Tracing must be active (or have failed and logged) before the first DB
+@@ -465,6 +468,8 @@
+         await Promise.all(clients.map((client) => endDatabaseClient(client, 5)));
+     };
+     startupDatabase.close = closeDatabaseClients;
++    await initializeNativeReviewApplication(db, nativeReviewApplication);
++    nativeDomainReviewComposition.assertReady();
+     // A claimed warm-pool stack may restart while its provider environment still
+     // names the pool host. Restore the signed, durable identity before Better
+     // Auth, routes, or child-runtime configuration capture any public URL.
+--- a/dist/services/issue-thread-interactions.js
++++ b/dist/services/issue-thread-interactions.js
+@@ -1,3 +1,4 @@
++import { nativeDomainReviewComposition } from "./native-runtime/native-domain-review-composition.mjs";
+ import { currentContinuationOrigins, deliveredContinuationCommentIds, } from "./execution-continuation.js";
+ import { parseQuestionInteractionAnswers } from "./question-interaction-answers.js";
+ import { isUniqueViolation } from "../db-errors.js";
+@@ -226,7 +227,7 @@
+                     current.payload.secretProposal !== undefined)),
+     });
+ }
+-async function assertRequestConfirmationResolutionAllowedUnderLock(tx, issue, interaction, actor) {
++async function assertRequestConfirmationResolutionAllowedUnderLock(tx, issue, interaction, actor, decision, nestedTransaction) {
+     if (isTerminalIssueStatus(issue.status)) {
+         throw conflict("Interaction is no longer actionable because the issue is closed");
+     }
+@@ -234,29 +235,31 @@
+         isRequestConfirmationLikeKind(interaction.kind) &&
+         (await isIssueReviewVerdictInteraction(tx, { issue, interaction }));
+     assertInteractionResolutionAllowed(interaction, actor);
++    let assignment;
+     if (actor.agentId && isNativeCompletionReview(interaction)) {
+         const target = interaction.payload.target;
+-        if (!actor.runId || !await getNativeReviewAssignment(tx, {
++        assignment = actor.runId ? await getNativeReviewAssignment(tx, {
+             companyId: issue.companyId, issueId: issue.id, agentId: actor.agentId,
+             contextSnapshot: { nativeReviewInteractionId: interaction.id, nativeReviewDecisionId: target?.revisionId },
+             actingRunId: actor.runId,
+             issueExecutionRunId: issue.executionRunId,
+-        }))
++        }) : null;
++        if (!assignment)
+             throw conflict("This completion review is no longer current or assigned to this agent.");
+     }
+-    if (!isReviewVerdict)
+-        return;
+-    const verdictActor = actor.agentId
+-        ? { type: "agent", id: actor.agentId }
+-        : actor.userId
+-            ? { type: "user", id: actor.userId }
+-            : null;
+-    if (!verdictActor) {
+-        throw forbidden("A review verdict requires an authenticated agent or user");
+-    }
+-    await assertIssueReviewVerdictActorAllowed(tx, {
+-        issue,
+-        actor: verdictActor,
++    if (isReviewVerdict) {
++        const verdictActor = actor.agentId
++            ? { type: "agent", id: actor.agentId }
++            : actor.userId
++                ? { type: "user", id: actor.userId }
++                : null;
++        if (!verdictActor) {
++            throw forbidden("A review verdict requires an authenticated agent or user");
++        }
++        await assertIssueReviewVerdictActorAllowed(tx, { issue, actor: verdictActor });
++    }
++    return nativeDomainReviewComposition.acquireResolution({
++        decision, issue, interaction, actor, assignment, nestedTransaction,
+     });
+ }
+ const REQUEST_CONFIRMATION_INTERACTION_KINDS = [
+@@ -1338,6 +1341,8 @@
+         }
+     }
+     async function acceptRequestConfirmation(args) {
++        let domainReviewLease = null;
++        try {
+         const expired = await expireStaleRequestConfirmationTarget(db, {
+             row: args.current,
+             actor: args.actor,
+@@ -1361,6 +1366,7 @@
+                 .select({
+                 id: issues.id,
+                 companyId: issues.companyId,
++                projectId: issues.projectId,
+                 status: issues.status,
+                 executionRunId: issues.executionRunId,
+                 workMode: issues.workMode,
+@@ -1392,7 +1398,7 @@
+             if (lockedCurrent.status !== "pending") {
+                 throw issueThreadInteractionResolutionError(409, "interaction_already_resolved", "Interaction has already been resolved");
+             }
+-            await assertRequestConfirmationResolutionAllowedUnderLock(tx, issueContext, lockedCurrent, args.actor);
++            domainReviewLease = await assertRequestConfirmationResolutionAllowedUnderLock(tx, issueContext, lockedCurrent, args.actor, "accept", typeof db.rollback === "function");
+             const interaction = hydrateInteraction(lockedCurrent);
+             const selectedOptionIds = interaction.kind === "request_checkbox_confirmation"
+                 ? resolveSelectedCheckboxConfirmationOptions({
+@@ -1518,11 +1524,13 @@
+                     },
+                 });
+             }
++            await domainReviewLease?.assertAlive();
+             return {
+                 interaction: acceptedInteraction,
+                 continuationIssue,
+             };
+         });
++        await domainReviewLease?.release();
+         const publish = async (committedDb) => {
+             for (const publication of postCommitActivityPublications)
+                 publishActivity(publication);
+@@ -1533,6 +1541,9 @@
+         else
+             await publish(db);
+         return result;
++        } finally {
++            await domainReviewLease?.release();
++        }
+     }
+     async function rejectRequestConfirmation(args) {
+         const expired = await expireStaleRequestConfirmationTarget(db, {
+@@ -1592,7 +1603,7 @@
+             if (lockedCurrent.status !== "pending") {
+                 throw issueThreadInteractionResolutionError(409, "interaction_already_resolved", "Interaction has already been resolved");
+             }
+-            await assertRequestConfirmationResolutionAllowedUnderLock(tx, issueContext, lockedCurrent, args.actor);
++            await assertRequestConfirmationResolutionAllowedUnderLock(tx, issueContext, lockedCurrent, args.actor, "reject", typeof db.rollback === "function");
+             await resolveLinkedSecretProposal(tx, lockedCurrent, {
+                 status: "rejected",
+                 actor: args.actor,
+--- a/dist/services/native-runtime/status-decision-committer.js
++++ b/dist/services/native-runtime/status-decision-committer.js
+@@ -1,3 +1,4 @@
++import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { and, asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
+ import { agentWakeupRequests, agents, approvals, completionContracts, heartbeatRuns, issueApprovals, issueRecoveryActions, issueThreadInteractions, issues, nativeRunFinalizations, nativeRunResults, statusDecisionEffects, statusDecisions, workAssessments, workspaceOperations, } from "@paperclipai/db";
+ import { NATIVE_STATUS_ARBITER_POLICY_VERSION, } from "./status-arbiter.js";
+@@ -1223,6 +1224,7 @@
+             issue.lastStatusDecisionId !== input.priorDecisionId) {
+             throw new NativeStatusRaceError();
+         }
++        nativeDomainReviewComposition.assertCompletion({ issue, toStatus: input.decision.toStatus });
+         if (input.requireModelRejectionOwner || input.requireProviderFailureOwner) {
+             const owner = (input.requireProviderFailureOwner ?? input.requireModelRejectionOwner);
+             // A successor can claim execution without changing statusVersion. Keep
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1,3 +1,5 @@
++import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
++import { NATIVE_REVIEW_ARTIFACT_SCHEMA } from "./native-review-artifact-schema.mjs";
+ import { setIssueTitle } from "../issue-title.js";
+ import { externalObjectService } from "../external-objects.js";
+ import { instanceSettingsService } from "../instance-settings.js";
+@@ -164,7 +166,7 @@
+         const assignedTools = this.binding.assignedMcpTools?.definitions((tools) => runnerCodexDynamicToolsFit([...connectionTools, ...tools, ...definitions])) ?? [];
+         return [...connectionTools, ...assignedTools, ...definitions];
+     }
+-    #reviewDefinitions() {
++    #reviewDefinitions(domainBound = false) {
+             // Scope Paperclip control-plane actions. Provider file and shell access
+             // still follow the configured agent/environment policy, including tests.
+             return [
+@@ -179,6 +181,7 @@
+                         properties: {
+                             decision: { type: "string", enum: ["accept", "reject"] },
+                             reason: { type: "string", description: "Required when rejecting: the specific changes the worker must make." },
++                            ...(domainBound ? { domainReview: structuredClone(NATIVE_REVIEW_ARTIFACT_SCHEMA) } : {}),
+                         },
+                         required: ["decision"],
+                     },
+@@ -187,7 +190,7 @@
+     }
+     async #fundingDefinitions() {
+         const context = await this.#boundContext();
+-        if (this.binding.nativeFundingPolicy.role === "reviewer") return this.#reviewDefinitions();
++        if (this.binding.nativeFundingPolicy.role === "reviewer") return this.#reviewDefinitions(nativeDomainReviewComposition.isBound(context.issue));
+         const assigned = this.binding.assignedMcpTools;
+         if (typeof assigned?.definitionsFresh !== "function") throw Error("native_funding_catalog_incomplete");
+         const allowed = nativeFundingToolNames(this.binding.nativeFundingPolicy);
+@@ -417,6 +420,9 @@
+                         invocationSource: context.run.invocationSource,
+                     },
+                     connectionGuidance: CONNECTION_INTENT_AGENT_GUIDANCE,
++                    ...(this.binding.nativeFundingPolicy?.role === "reviewer" && nativeDomainReviewComposition.isBound(context.issue) ? {
++                        fundingDomainReview: await nativeDomainReviewComposition.reviewContext(await this.#domainReviewFacts(context)),
++                    } : {}),
+                     acceptedPlan: this.binding.nativeFundingPolicy ? null : scopedContext ? scopedContext.acceptedPlan : await this.#acceptedPlan(context.run.contextSnapshot),
+                     sourcePlanApproval: this.binding.nativeFundingPolicy ? null : scopedContext ? scopedContext.sourcePlanApproval : await handoffPlanContext(this.db, context.issue),
+                     childReviewOutcomes: this.binding.nativeFundingPolicy ? [] : scopedContext ? scopedContext.childReviewOutcomes : await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
+@@ -756,16 +762,25 @@
+         assertNativeFundingContext(this.binding, row);
+         return row;
+     }
++    async #domainReviewFacts(context, assignment) {
++        const review = assignment ?? await getNativeReviewAssignment(this.db, {
++            ...this.binding, contextSnapshot: this.binding.nativeReview,
++            allowResolvedByRunId: this.binding.runId,
++        });
++        return { issue: context.issue, interaction: review?.interaction,
++            actor: { agentId: this.binding.agentId, runId: this.binding.runId }, assignment: review };
++    }
+     async #resolveReview(value) {
+         const input = record(value);
+-        if (Object.keys(input).some((key) => !["decision", "reason"].includes(key))
++        const context = await this.#boundContext();
++        const domainBound = this.binding.nativeFundingPolicy?.role === "reviewer" && nativeDomainReviewComposition.isBound(context.issue);
++        if (Object.keys(input).some((key) => !(domainBound ? ["decision", "reason", "domainReview"] : ["decision", "reason"]).includes(key))
+             || !["accept", "reject"].includes(String(input.decision))) {
+             throw badRequest("Choose accept or reject for this run's assigned review.");
+         }
+         const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+         if (input.decision === "reject" && !reason)
+             throw badRequest("Explain the changes required before rejecting the review.");
+-        const context = await this.#boundContext();
+         const review = await getNativeReviewAssignment(this.db, {
+             ...this.binding, contextSnapshot: this.binding.nativeReview,
+             allowResolvedByRunId: this.binding.runId,
+@@ -776,7 +791,13 @@
+         if (review.interaction.status !== "pending") {
+             if (review.interaction.status !== expectedStatus)
+                 throw badRequest("This review already has a different decision.");
++            if (domainBound && (input.decision === "accept" || input.domainReview !== undefined)) {
++                await nativeDomainReviewComposition.readReviewReceipt(await this.#domainReviewFacts(context, review), input.domainReview);
++            }
+             return { interactionId: review.interaction.id, status: expectedStatus, deduplicated: true };
++        }
++        if (domainBound && (input.decision === "accept" || input.domainReview !== undefined)) {
++            await nativeDomainReviewComposition.admitReview(await this.#domainReviewFacts(context, review), input.domainReview);
+         }
+         const apiUrl = this.binding.apiUrl ?? process.env.PAPERCLIP_API_URL;
+         const token = createLocalAgentJwt(this.binding.agentId, this.binding.companyId, context.actor.adapterType, this.binding.runId, context.run.responsibleUserId);
+--- /dev/null
++++ b/dist/services/native-runtime/native-domain-review.mjs
+@@ -0,0 +1,57 @@
++/** Domain prerequisite only. Native owns locks, participant authorization and lifecycle.
++ * Construct from trusted immutable owning-host scope, never model/request JSON.
++ * Wiring must call this under the shared native confirmation lock, after the
++ * stock getNativeReviewAssignment check. This factory does not authenticate an
++ * arbitrary assignment object and must not be exposed as an agent tool.
++ */
++const scopeKeys=['companyId','projectId','issueId','producerAgentId','reviewerAgentId','producerPrincipalId','reviewerPrincipalId'];
++const bindingKeys=['company_id','issue_id','interaction_id','decision_id','producer_principal_id','producer_run_id','reviewer_principal_id','reviewer_run_id','candidate_hash'];
++const nonempty=x=>typeof x==='string'&&x.length>0&&x.length<=200&&!/[\s\x00-\x1f\x7f]/.test(x);
++const hash=x=>typeof x==='string'&&/^[0-9a-f]{64}$/.test(x);
++const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join() === [...keys].sort().join();
++const fail=code=>{throw Error(code);};
++export function nativeDomainReviewAssignment(scope,{issue,interaction,actor,assignment}={}, {allowResolved=false}={}) {
++    const target=interaction?.payload?.target;
++    const source=assignment?.sourceRun;
++    const applied=assignment?.sourceDecision;
++    const terminal=['accepted','rejected'].includes(interaction?.status);
++    const resolved=allowResolved&&terminal&&interaction.resolvedByAgentId===actor?.agentId&&interaction.resolvedByRunId===actor?.runId;
++    if(issue?.projectId!==scope.projectId||(!resolved&&(terminal||issue.status!=='in_review'||issue.executionRunId!==actor?.runId))
++      ||!actor?.runId||actor.agentId!==scope.reviewerAgentId
++      ||!interaction?.id||interaction.companyId!==issue.companyId||interaction.issueId!==issue.id
++      ||interaction.addresseeAgentId!==scope.reviewerAgentId||interaction.addresseeUserId
++      ||target?.type!=='custom'||target.key!=='native_completion_review'
++      ||!source||source.companyId!==issue.companyId||source.nativeIssueId!==issue.id||source.agentId!==scope.producerAgentId
++      ||source.id!==interaction.sourceRunId||source.id===actor.runId
++      ||!applied||applied.applicationState!=='applied'||applied.id!==target.revisionId
++      ||applied.companyId!==issue.companyId||applied.issueId!==issue.id||applied.runId!==source.id)fail('native_domain_review_assignment_required');
++    return Object.freeze({company_id:issue.companyId,issue_id:issue.id,interaction_id:interaction.id,decision_id:applied.id,producer_principal_id:scope.producerPrincipalId,producer_run_id:source.id,reviewer_principal_id:scope.reviewerPrincipalId,reviewer_run_id:actor.runId});
++}
++export function createNativeDomainReviewGuard({scopes,readCandidate,readAdmission}={}) {
++  if(!Array.isArray(scopes)||scopes.length<1||scopes.length>16||typeof readCandidate!=='function'||typeof readAdmission!=='function')fail('native_domain_review_configuration_invalid');
++  const pinned=scopes.map(s=>{
++    if(!exact(s,scopeKeys)||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
++    return Object.freeze({...s});
++  });
++  if(new Set(pinned.map(s=>s.companyId+'\0'+s.issueId)).size!==pinned.length)fail('native_domain_review_configuration_invalid');
++  return async function assertDomainReview({decision,issue,interaction,actor,assignment}={}) {
++    const scope=pinned.find(s=>s.companyId===issue?.companyId&&s.issueId===issue?.id);
++    if(!scope)return {required:false};
++    // Cancellation, withdrawal and conservative rejection do not assert that
++    // a domain requirement is satisfied. Do not convert them into acceptance.
++    if(decision==='reject')return {required:false};
++    if(decision!=='accept')fail('native_domain_review_assignment_required');
++    const facts=nativeDomainReviewAssignment(scope,{issue,interaction,actor,assignment});
++    const source=assignment.sourceRun;
++    const candidate=await readCandidate(Object.freeze({...scope,producerRunId:source.id}));
++    if(!hash(candidate?.candidate_hash)||candidate.producer_principal_id!==scope.producerPrincipalId||candidate.producer_run_id!==source.id)fail('native_domain_review_admission_required');
++    const binding=Object.freeze({...facts,candidate_hash:candidate.candidate_hash});
++    const receipt=await readAdmission(binding);
++    if(!receipt)fail('native_domain_review_admission_required');
++    if(!exact(receipt,['binding','review_id','candidate_id','artifact_hash','state'])
++      ||!exact(receipt.binding,bindingKeys)||bindingKeys.some(k=>receipt.binding[k]!==binding[k])
++      ||!nonempty(receipt.review_id)||!nonempty(receipt.candidate_id)||!hash(receipt.artifact_hash))fail('native_domain_review_receipt_mismatch');
++    if(receipt.state!=='supported')fail('native_domain_review_verdict_conflict');
++    return Object.freeze({required:true,domainReviewId:receipt.review_id,candidateId:receipt.candidate_id,candidateHash:binding.candidate_hash,artifactHash:receipt.artifact_hash,nativeInteractionId:interaction.id,nativeDecisionId:facts.decision_id});
++  };
++}
+--- /dev/null
++++ b/dist/services/native-runtime/native-domain-review-composition.mjs
+@@ -0,0 +1,110 @@
++/** One owning-host composition, installed before native startup/sweep work.
++ * No registration route, model configuration, queue, reset or reconfiguration.
++ * The root service must retain a returned lease until its OWN transaction ends.
++ */
++import {createHash} from 'node:crypto';
++import {createNativeDomainReviewGuard,nativeDomainReviewAssignment} from './native-domain-review.mjs';
++const fail=code=>{throw Error(code);};
++const digest=value=>createHash('sha256').update(canonical(value)).digest('hex');
++function canonical(value){
++ if(value===null||typeof value==='string'||typeof value==='boolean'||typeof value==='number'&&Number.isFinite(value))return JSON.stringify(value);
++ if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';
++ if(value&&typeof value==='object')return '{'+Object.keys(value).sort().map(k=>JSON.stringify(k)+':'+canonical(value[k])).join(',')+'}';
++ fail('native_domain_review_artifact_invalid');
++}
++const hash=value=>typeof value==='string'&&/^[0-9a-f]{64}$/.test(value);
++const toolContext='netrxn.inertia:funding_review_context',toolAdmit='netrxn.inertia:review_funding_candidate';
++function checkBinding(scope,input,binding,allowResolved=false){
++ const expected=nativeDomainReviewAssignment(scope,input,{allowResolved});
++ if(!binding||Object.keys(binding).length!==9||!hash(binding.candidate_hash)||Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_domain_review_receipt_mismatch');
++}
++
++export function createNativeDomainReviewComposition({required=false}={}) {
++  if(typeof required!=='boolean')fail('native_domain_review_configuration_invalid');
++  let installed;
++  const assertReady=()=>{if(required&&!installed)fail('native_domain_review_uninitialized');};
++  const isBound=issue=>installed?.scopes.some(s=>s.companyId===issue?.companyId&&s.issueId===issue?.id)===true;
++  return Object.freeze({
++    install({scopes,acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt}={}) {
++      if(installed)fail('native_domain_review_already_initialized');
++      if([acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt].some(f=>typeof f!=='function'))fail('native_domain_review_configuration_invalid');
++      // Validate/copy scope before anything can be installed or queried.
++      createNativeDomainReviewGuard({scopes,readCandidate:async()=>null,readAdmission:async()=>null});
++      installed=Object.freeze({scopes:Object.freeze(scopes.map(s=>Object.freeze({...s}))),acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt});
++    },
++    assertReady,
++    isBound(issue){assertReady();return isBound(issue);},
++    async reviewContext(input){
++      assertReady();if(!isBound(input?.issue))return null;
++      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      nativeDomainReviewAssignment(scope,input);
++      if(await installed.authorize(scope,input,toolContext,{},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
++      const result=await installed.readReviewContext(scope,input);
++      checkBinding(scope,input,result?.binding);
++      if(!result.context||typeof result.context!=='object'||Buffer.byteLength(JSON.stringify(result))>1024*1024)fail('native_domain_review_context_invalid');
++      return result;
++    },
++    async admitReview(input,artifact){
++      assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
++      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      nativeDomainReviewAssignment(scope,input);
++      if(!artifact||!hash(artifact.candidate_hash)||Buffer.byteLength(JSON.stringify(artifact))>128*1024)fail('native_domain_review_artifact_invalid');
++      if(await installed.authorize(scope,input,toolAdmit,{request_id:artifact.candidate_hash,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
++      const result=await installed.admitReview(scope,input,artifact);
++      checkBinding(scope,input,result?.binding);
++      if(result.binding.candidate_hash!==artifact.candidate_hash||result.artifact_hash!==digest(artifact)||!['supported','rejected'].includes(result.state))fail('native_domain_review_receipt_mismatch');
++      return result;
++    },
++    async readReviewReceipt(input,artifact){
++      assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
++      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      nativeDomainReviewAssignment(scope,input,{allowResolved:true});
++      for(const tool of [toolContext,toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
++      const result=await installed.readReviewReceipt(scope,input);
++      checkBinding(scope,input,result?.binding,true);
++      if(!artifact||result.binding.candidate_hash!==artifact.candidate_hash||result.artifact_hash!==digest(artifact)||!['supported','rejected'].includes(result.state))fail('native_domain_review_receipt_mismatch');
++      return result;
++    },
++    assertCompletion({issue,toStatus}={}) {
++      assertReady();
++      if(isBound(issue)&&toStatus==='done'&&issue.status!=='done')fail('native_domain_review_required_before_completion');
++    },
++    async acquireResolution(input) {
++      assertReady();
++      if(!isBound(input?.issue)||input.decision==='reject')return null;
++      if(input.nestedTransaction===true)fail('native_domain_review_nested_transaction_unsupported');
++      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      let fence,released;
++      const release=()=>released??=(async()=>{if(fence)await fence.release();})();
++      const acquire=async()=>{
++        if(!fence){
++          for(const tool of [toolContext,toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
++          fence=await installed.acquireFence(Object.freeze({...scope}),input);
++          if(!fence||typeof fence.release!=='function'||typeof fence.assertAlive!=='function')fail('native_domain_review_fence_invalid');
++        }
++        return fence;
++      };
++      try {
++        // The guard validates native facts before its first candidate read, so
++        // malformed or drifted authority cannot acquire private database locks.
++        const guard=createNativeDomainReviewGuard({scopes:[scope],
++          readCandidate:async value=>{const owned=await acquire();return owned.readCandidate(value);},
++          readAdmission:async value=>{if(!fence)fail('native_domain_review_fence_invalid');return fence.readAdmission(value);},
++        });
++        const receipt=await guard(input);
++        return Object.freeze({receipt,release,async assertAlive(){
++          if(released)fail('native_domain_review_fence_closed');
++          for(const tool of [toolContext,toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
++          await fence.assertAlive();
++        }});
++      } catch(error) {
++        try{await release();}catch(releaseError){throw new AggregateError([error,releaseError],'native_domain_review_fence_release_failed');}
++        throw error;
++      }
++    },
++  });
++}
++const flag=process.env.PAPERCLIP_NATIVE_DOMAIN_REVIEW_REQUIRED;
++if(flag!==undefined&&flag!=='0'&&flag!=='1')fail('native_domain_review_configuration_invalid');
++// Same ESM instance is imported by bootstrap and every native service constructor.
++export const nativeDomainReviewComposition=createNativeDomainReviewComposition({required:flag==='1'});
+--- /dev/null
++++ b/dist/services/native-runtime/native-review-runtime.mjs
+@@ -0,0 +1,83 @@
++/** Trusted native/private adapter. Native services retain identity, grants and
++ * lifecycle authority. No model-selected paths, credentials, routing or wakes.
++ */
++import fs from 'node:fs/promises';
++import {createHash} from 'node:crypto';
++import {nativeDomainReviewAssignment} from './native-domain-review.mjs';
++const fail=code=>{throw Error(code);};
++const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
++const toolNames=['netrxn.inertia:funding_review_context','netrxn.inertia:review_funding_candidate'];
++const scopeKeys=['companyId','projectId','issueId','producerAgentId','reviewerAgentId','producerPrincipalId','reviewerPrincipalId'];
++const nonempty=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\s\x00-\x1f\x7f]/.test(v);
++const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
++export async function createNativeReviewRuntime({bindings,native,stdioFactory}={}) {
++  if(!Array.isArray(bindings)||bindings.length!==1||typeof stdioFactory!=='function'
++    ||['assertHostAdmission','assertCurrentReviewer','getIssue','getReviewAssignment','decideTool'].some(k=>typeof native?.[k]!=='function'))fail('native_domain_review_runtime_configuration_invalid');
++  const entries=[];
++  for(const b of bindings){
++    const scope=b?.scope,policy=b?.reviewerPolicy;
++    if(!scope||Object.keys(scope).length!==scopeKeys.length||scopeKeys.some(k=>!nonempty(scope[k]))
++      ||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId
++      ||!policy||Object.keys(policy).sort().join()!=='issueIds,projectIds,role,version'
++      ||policy.version!==1||policy.role!=='reviewer'||!same(policy.projectIds,[scope.projectId])||!same(policy.issueIds,[scope.issueId]))fail('native_domain_review_runtime_configuration_invalid');
++    let config;
++    try{
++      const file=b.process?.configurationPath,meta=await fs.lstat(file),bytes=await fs.readFile(file);
++      if(!meta.isFile()||meta.isSymbolicLink()||(meta.mode&0o077)!==0||meta.uid!==process.getuid?.()||bytes.length>16384)throw Error();
++      const expected=b.process.pins?.find(p=>p.path===file)?.sha256;
++      if(createHash('sha256').update(bytes).digest('hex')!==expected)throw Error();
++      config=JSON.parse(bytes.toString('utf8'));
++      const ns=config.native_scope;
++      for(const [key,value] of Object.entries({company_id:scope.companyId,project_id:scope.projectId,issue_id:scope.issueId,producer_agent_id:scope.producerAgentId,producer_principal_id:scope.producerPrincipalId,reviewer_agent_id:scope.reviewerAgentId,reviewer_principal_id:scope.reviewerPrincipalId}))if(ns?.[key]!==value)throw Error();
++      if(config.company_id!==scope.companyId||!nonempty(config.applicant_slug)||!nonempty(config.match_id)||ns.target_type!=='sponsor_answer'||!nonempty(ns.target_key))throw Error();
++    }catch{fail('native_domain_review_runtime_configuration_invalid');}
++    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
++  }
++  function entry(scope){const e=entries.find(e=>scopeKeys.every(k=>e.scope[k]===scope?.[k]));if(!e)fail('native_domain_review_scope_unavailable');return e;}
++  async function hostAdmission(e,input){
++    // The owning dispatcher must read current plugin/company enablement and the
++    // exact enabled native-attention publicDrafting configuration fingerprint.
++    // Native identity and surviving tool grants cannot stand in for this check.
++    if(await native.assertHostAdmission(e.scope,freeze(structuredClone(input)))!==true)fail('native_domain_review_host_admission_denied');
++  }
++  async function fresh(e,input){
++    if(input?.actor?.agentId!==e.scope.reviewerAgentId||!nonempty(input.actor.runId)||input.issue?.id!==e.scope.issueId||input.issue.companyId!==e.scope.companyId)fail('native_domain_review_assignment_required');
++    await hostAdmission(e,input);
++    const binding={companyId:e.scope.companyId,issueId:e.scope.issueId,agentId:e.scope.reviewerAgentId,runId:input.actor.runId,
++      nativeFundingPolicy:{...e.policy,companyId:e.scope.companyId,agentId:e.scope.reviewerAgentId},
++      nativeReview:{nativeReviewInteractionId:input.interaction?.id,nativeReviewDecisionId:input.assignment?.sourceDecision?.id}};
++    await native.assertCurrentReviewer(binding);
++    const issue=await native.getIssue(e.scope.issueId,e.scope.companyId);
++    const assignment=await native.getReviewAssignment({...binding,contextSnapshot:binding.nativeReview,actingRunId:binding.runId,allowResolvedByRunId:binding.runId});
++    const facts={issue,interaction:assignment?.interaction,actor:{agentId:binding.agentId,runId:binding.runId},assignment};
++    nativeDomainReviewAssignment(e.scope,facts,{allowResolved:['accepted','rejected'].includes(facts.interaction?.status)});
++    await hostAdmission(e,input);
++    return facts;
++  }
++  async function decide(e,input,toolName,args={},options={}){
++    if(!toolNames.includes(toolName))fail('native_domain_review_tool_access_denied');
++    await fresh(e,input);
++    const result=await native.decideTool({companyId:e.scope.companyId,actor:{actorType:'agent',actorId:e.scope.reviewerAgentId,agentId:e.scope.reviewerAgentId},
++      runContext:{heartbeatRunId:input.actor.runId,issueId:e.scope.issueId,projectId:e.scope.projectId},
++      request:{toolName,providerType:'paperclip_plugin',arguments:args,sideEffecting:toolName===toolNames[1]},consumeRateLimit:options.consumeRateLimit===true});
++    return result?.allowed===true&&result.decision==='allow';
++  }
++  async function current(e,input){const facts=await fresh(e,input);for(const name of toolNames)if(!await decide(e,input,name,{},{}))fail('native_domain_review_tool_access_denied');return facts;}
++  async function callbacks(e,input){
++    await current(e,input);
++    return {
++      async context(signal){signal?.throwIfAborted();await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,applicant_slug:e.applicantSlug,match_id:e.matchId,principal_id:e.scope.reviewerPrincipalId,run_id:input.actor.runId,role:'reviewer'};},
++      async nativeAssignment(signal){signal?.throwIfAborted();const f=await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,project_id:f.issue.projectId,issue_id:f.issue.id,interaction_id:f.interaction.id,decision_id:f.assignment.sourceDecision.id,producer_agent_id:f.assignment.sourceRun.agentId,producer_run_id:f.assignment.sourceRun.id,reviewer_agent_id:e.scope.reviewerAgentId,reviewer_run_id:input.actor.runId};},
++    };
++  }
++  return Object.freeze({scopes:Object.freeze(entries.map(e=>e.scope)),
++    authorize:async(scope,input,toolName,args,options)=>decide(entry(scope),input,toolName,args,options),
++    async readReviewContext(scope,input){const e=entry(scope);return e.stdio.call('context',{},await callbacks(e,input));},
++    async admitReview(scope,input,artifact){const e=entry(scope);return e.stdio.call('admit',artifact,await callbacks(e,input));},
++    async readReviewReceipt(scope,input){const e=entry(scope);return e.stdio.call('receipt',{},await callbacks(e,input));},
++    async acquireFence(scope,input){
++      const e=entry(scope),lease=await e.stdio.call('fence',{},await callbacks(e,input));
++      return Object.freeze({...lease,async assertAlive(){await current(e,input);await lease.assertAlive();await current(e,input);}});
++    },
++  });
++}
+--- /dev/null
++++ b/dist/services/native-runtime/native-review-stdio.mjs
+@@ -0,0 +1,255 @@
++/** Pinned native-review stdio only; no lifecycle, routing, credentials or listener.
++ * An acquired fence has no expiry timer. The owning native transaction MUST
++ * explicitly release it after commit/rollback and reconcile uncertain outcomes.
++ * Callbacks are strictly read-only native facts. Deadline races discard late
++ * callback replies; they do not claim to cancel arbitrary callback side effects.
++ * Two database commits are not made atomic by this transport.
++ */
++import {readFile,lstat,stat} from 'node:fs/promises';
++import {createHash} from 'node:crypto';
++import {spawn} from 'node:child_process';
++import {isAbsolute} from 'node:path';
++const VERSION='dfw-native-review-v1',MAX_CALLBACKS=1024,MAX_FRAME=1024*1024;
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
++const keys=(v,fields)=>object(v)&&Object.keys(v).length===fields.length&&fields.every(k=>Object.hasOwn(v,k));
++const id=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\s\x00-\x1f\x7f]/.test(v);
++const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
++const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
++const canonical=v=>Array.isArray(v)?v.map(canonical):object(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
++const same=(a,b)=>equal(canonical(a),canonical(b));
++const freeze=v=>{if(v&&typeof v==='object'){for(const child of Object.values(v))freeze(child);Object.freeze(v);}return v;};
++const contextFields=['company_id','applicant_slug','match_id','principal_id','run_id','role'];
++const assignmentFields=['company_id','project_id','issue_id','interaction_id','decision_id','producer_agent_id','producer_run_id','reviewer_agent_id','reviewer_run_id'];
++const bindingFields=['company_id','issue_id','interaction_id','decision_id','producer_principal_id','producer_run_id','reviewer_principal_id','reviewer_run_id','candidate_hash'];
++const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
++export class NativeReviewTransportError extends Error {
++ constructor(code,message,uncertain=false){super(message);this.name='NativeReviewTransportError';this.code=code;this.outcomeUnconfirmed=uncertain;this.validationRejected=false;}
++}
++const error=(code,message,uncertain=false)=>new NativeReviewTransportError(code,message,uncertain);
++function validContext(v){return keys(v,contextFields)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
++function validAssignment(v){return keys(v,assignmentFields)&&assignmentFields.every(k=>id(v[k]))&&v.producer_agent_id!==v.reviewer_agent_id&&v.producer_run_id!==v.reviewer_run_id;}
++function validBinding(v){return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
++function validArtifact(v){
++ return keys(v,['candidate_hash','requirement_hash','evidence_set_hash','rubric_version','findings','requirement_supported'])
++  &&['candidate_hash','requirement_hash','evidence_set_hash'].every(k=>hash(v[k]))&&typeof v.rubric_version==='string'&&v.rubric_version.length>0
++  &&typeof v.requirement_supported==='boolean'&&Array.isArray(v.findings)&&v.findings.length<=4096
++  &&Array.from(v.findings).every(f=>keys(f,['claim_start','claim_end','support','excerpt','rationale'])&&Number.isSafeInteger(f.claim_start)&&Number.isSafeInteger(f.claim_end)
++   &&['supported','partial','unsupported','contradicted'].includes(f.support)&&typeof f.excerpt==='string'&&f.excerpt.length>0&&typeof f.rationale==='string'&&f.rationale.length>0);
++}
++function rejection(message,op,authenticated){
++ const unknown=text=>({message:text,validationRejected:false});
++ const generic=()=>unknown('Native review rejected request; outcome unconfirmed');
++ const allowed=['invalid_config','invalid_protocol','invalid_request','authentication_failed','drafting_rejected','internal_error'];
++ if(keys(message,['type','ok','error'])&&allowed.includes(message.error))return unknown(`Native review rejected request (${message.error}); outcome unconfirmed`);
++ if(op!=='admit'||!authenticated||!keys(message,['type','ok','error','details'])||message.error!=='review_validation_failed')return generic();
++ const d=message.details;
++ if(!keys(d,['issues','truncated'])||typeof d.truncated!=='boolean'||!Array.isArray(d.issues)||d.issues.length<1||d.issues.length>32||Buffer.byteLength(JSON.stringify(d))>8192)return generic();
++ const indices=new Set();
++ for(const item of d.issues){
++  if(!keys(item,['finding_index','field','code','evidence_ids'])||!Number.isSafeInteger(item.finding_index)||item.finding_index<0||item.finding_index>4095||indices.has(item.finding_index)
++   ||item.field!=='excerpt'||item.code!=='excerpt_not_in_bound_evidence'||!Array.isArray(item.evidence_ids)||item.evidence_ids.length<1||item.evidence_ids.length>32
++   ||new Set(item.evidence_ids).size!==item.evidence_ids.length||item.evidence_ids.some(x=>typeof x!=='string'||x.length>128||!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(x)))return generic();
++  indices.add(item.finding_index);
++ }
++ return {message:`Native review validation rejected: ${JSON.stringify({code:'review_validation_failed',details:d})}`,validationRejected:true};
++}
++function configuration(value){
++ const fields=['executable','args','cwd','entrypoint','configurationPath','pins','timeoutMs','maxOutputBytes'];
++ if(!keys(value,fields))throw error('native_review_configuration','Invalid native review process configuration');
++ const c=structuredClone(value);
++ if(![c.executable,c.cwd,c.entrypoint,c.configurationPath].every(x=>typeof x==='string'&&isAbsolute(x))
++  ||!Array.isArray(c.args)||c.args.length>30||c.args.some(x=>typeof x!=='string'||x.length>4096)||!c.args.includes(c.entrypoint)||!c.args.includes(c.configurationPath)
++  ||!Array.isArray(c.pins)||c.pins.length<2||c.pins.length>128||new Set(c.pins.map(x=>x?.path)).size!==c.pins.length
++  ||c.pins.some(p=>!keys(p,['path','sha256'])||typeof p.path!=='string'||!isAbsolute(p.path)||!hash(p.sha256))
++  ||![c.entrypoint,c.configurationPath].every(p=>c.pins.some(pin=>pin.path===p))
++  ||!Number.isInteger(c.timeoutMs)||c.timeoutMs<100||c.timeoutMs>120000||!Number.isInteger(c.maxOutputBytes)||c.maxOutputBytes<1024||c.maxOutputBytes>4*1024*1024)
++  throw error('native_review_configuration','Invalid native review process configuration');
++ return freeze(c);
++}
++export function createNativeReviewStdio(config){
++ const c=configuration(config);
++ return Object.freeze({async call(op,params,callbacks){
++  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?validArtifact(params):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
++  if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
++  if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
++  const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
++  const input=JSON.stringify({version:VERSION,op,params})+'\n';if(Buffer.byteLength(input)>128*1024)throw error('native_review_request','Native review request too large');
++  check();
++  for(const pin of c.pins){
++   check();const metadata=await lstat(pin.path);check();
++   if(!metadata.isFile()||metadata.size>16*1024*1024)throw error('native_review_pins','Native review pins must be bounded regular files');
++   if(createHash('sha256').update(await readFile(pin.path)).digest('hex')!==pin.sha256)throw error('native_review_pins','Native review pin mismatch');check();
++  }
++  if(!(await stat(c.cwd)).isDirectory())throw error('native_review_configuration','Native review cwd is not a directory');check();
++  return new NativeReviewSession(c,op,input,callbacks,deadline).initial.promise;
++ }});
++}
++class NativeReviewSession {
++ constructor(c,op,input,callbacks,deadline){
++  Object.assign(this,{c,op,callbacks,deadline,params:freeze(JSON.parse(input).params),sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
++  this.initial=deferred();this.controller=new AbortController();this.closeWait=deferred();
++  this.child=spawn(c.executable,c.args,{cwd:c.cwd,shell:false,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe'],env:{PATH:'/usr/bin:/bin',HOME:'/nonexistent',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONNOUSERSITE:'1'}});
++  this.timer=setTimeout(()=>this.fail('native_review_timeout','Native review timed out; outcome unconfirmed'),Math.max(1,deadline-Date.now()));
++  this.child.on('error',()=>this.fail('native_review_spawn','Native review process unavailable; outcome unconfirmed'));
++  this.child.stdin.on('error',()=>this.fail('native_review_input','Native review input failed; outcome unconfirmed'));
++  this.child.stdout.on('data',chunk=>this.data(chunk));
++  this.child.stderr.on('data',chunk=>{this.diagnostics+=chunk.length;if(this.diagnostics>64*1024)this.fail('native_review_diagnostics','Native review diagnostic limit exceeded; outcome unconfirmed');});
++  this.child.on('exit',code=>{this.exited=true;if(code!==0||!this.resultSeen)this.fail('native_review_exit','Native review process exited before acknowledgement; outcome unconfirmed');});
++  this.child.on('close',code=>{this.closed=true;this.terminate();if(!this.failure&&(code!==0||!this.resultSeen||this.buffer.length))this.failure=error('native_review_incomplete','Native review process incomplete; outcome unconfirmed',true);this.finish();});
++  this.child.stdin.write(input);
++ }
++ terminate(){if(this.terminated)return;this.terminated=true;if(process.platform!=='win32'&&this.child.pid)try{process.kill(-this.child.pid,'SIGKILL');}catch{}this.child.kill('SIGKILL');}
++ fail(code,message){
++  if(this.failure)return;
++  this.failure=error(code,message,true);clearTimeout(this.timer);this.controller.abort();
++  // After ready the child owns the private fence. A failed check cannot release
++  // it before the native owner rolls back. Only explicit release may terminate.
++  if(this.phase==='ready'&&!this.ownerReleasing&&!this.exited&&!this.closed){
++   if(this.pending){clearTimeout(this.pending.timer);this.pending.deferred.reject(this.failure);this.pending=null;}
++   return;
++  }
++  this.child.stdin.destroy();this.terminate();this.finish();
++ }
++ async trustedCallback(callback){
++  const deadline=this.phase==='initial'?this.deadline:this.pending?.deadline;
++  if(!Number.isSafeInteger(deadline)||deadline<=Date.now()){
++   this.fail('native_review_timeout','Native review callback timed out; outcome unconfirmed');throw this.failure;
++  }
++  let timer,onAbort;
++  const aborted=new Promise((_,reject)=>{
++   onAbort=()=>reject(this.failure??error('native_review_callback','Native review callback aborted; outcome unconfirmed',true));
++   this.controller.signal.addEventListener('abort',onAbort,{once:true});
++   if(this.controller.signal.aborted)onAbort();
++   timer=setTimeout(()=>{this.fail('native_review_timeout','Native review callback timed out; outcome unconfirmed');onAbort();},deadline-Date.now());
++  });
++  try{
++   const result=await Promise.race([Promise.resolve().then(()=>callback(this.controller.signal)),aborted]);
++   if(this.failure)throw this.failure;
++   if(Date.now()>=deadline){this.fail('native_review_timeout','Native review callback timed out; outcome unconfirmed');throw this.failure;}
++   return result;
++  }finally{clearTimeout(timer);this.controller.signal.removeEventListener('abort',onAbort);}
++ }
++ finish(){
++  if(!this.closed||this.busy)return;
++  clearTimeout(this.timer);if(this.pending)clearTimeout(this.pending.timer);this.controller.abort();
++  if(!this.failure&&this.terminalRejection)this.failure=this.terminalRejection;
++  if(this.failure){if(!this.initialResolved){this.initialResolved=true;this.initial.reject(this.failure);}this.pending?.deferred.reject(this.failure);}
++  else if(this.op==='fence'){this.pending?.deferred.resolve(this.finalResult);}
++  else if(!this.initialResolved){this.initialResolved=true;this.initial.resolve(this.finalResult);}
++  this.pending=null;this.closeWait.resolve();
++ }
++ send(value){if(this.failure||this.closed)return;const line=JSON.stringify(value)+'\n';if(Buffer.byteLength(line)>MAX_FRAME)return this.fail('native_review_callback_size','Native review callback too large; outcome unconfirmed');this.child.stdin.write(line);}
++ data(chunk){
++  if(this.failure)return;this.bytes+=chunk.length;if(this.bytes>this.c.maxOutputBytes)return this.fail('native_review_output','Native review response too large; outcome unconfirmed');
++  this.buffer=Buffer.concat([this.buffer,chunk]);
++  for(let end=this.buffer.indexOf(10);end>=0;end=this.buffer.indexOf(10)){
++   const line=this.buffer.subarray(0,end);this.buffer=this.buffer.subarray(end+1);
++   if(!line.length||line.length>=MAX_FRAME)return this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed');
++   void this.frame(line).catch(()=>this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed'));
++  }
++  if(this.buffer.length>=MAX_FRAME)this.fail('native_review_frame','Native review frame limit exceeded; outcome unconfirmed');
++ }
++ async frame(line){
++  if(this.failure)return;if(this.busy||this.resultSeen)return this.fail('native_review_protocol','Native review protocol violation; outcome unconfirmed');
++  let m;try{m=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(line));if(!object(m))throw Error();}catch{return this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed');}
++  if(m.type==='context'||m.type==='native_assignment'){
++   if(!keys(m,['type','id'])||!Number.isSafeInteger(m.id)||m.id!==this.sequence+1||m.id>MAX_CALLBACKS||(this.phase==='ready'&&this.pending?.kind!=='assert_alive'))return this.fail('native_review_callback','Native review invalid callback; outcome unconfirmed');
++   this.sequence++;this.busy=true;
++   try{
++    if(m.type==='context'){
++     const value=await this.trustedCallback(signal=>this.callbacks.context(signal));if(!validContext(value)||(this.context&&!same(value,this.context)))throw Error();
++     this.context=freeze(structuredClone(value));this.contextCount++;this.send({type:'context',id:m.id,context:this.context});
++    }else{
++     if(!this.contextCount)throw Error();const value=await this.trustedCallback(signal=>this.callbacks.nativeAssignment(signal));
++     if(!validAssignment(value)||value.company_id!==this.context.company_id||value.reviewer_run_id!==this.context.run_id||(this.assignment&&!same(value,this.assignment)))throw Error();
++     this.assignment=freeze(structuredClone(value));this.nativeCount++;this.send({type:'native_assignment',id:m.id,assignment:this.assignment});
++    }
++   }catch{this.fail('native_review_authority','Native review trusted callback rejected; outcome unconfirmed');}
++   finally{this.busy=false;this.finish();}
++   return;
++  }
++  if(m.type==='result'){
++   if(m.ok===false){
++    const rejected=rejection(m,this.op,this.contextCount>0&&this.nativeCount>0);
++    if(!rejected.validationRejected)return this.fail('native_review_rejected',rejected.message);
++    // Only this pre-admission validator is retryable. Keep it provisional until
++    // the pinned child exits0 with no further/trailing frames or protocol error.
++    this.resultSeen=true;this.terminalRejection=error('native_review_validation',rejected.message,false);this.terminalRejection.validationRejected=true;this.child.stdin.end();return;
++   }
++   if(!keys(m,['type','ok','result'])||m.ok!==true||!object(m.result)||!this.contextCount||!this.nativeCount)return this.fail('native_review_result','Native review invalid result; outcome unconfirmed');
++   if(this.op!=='fence'&&!this.validSuccess(m.result))return this.fail('native_review_result','Native review misbound result; outcome unconfirmed');
++   if(this.op==='fence'&&(!this.pending||this.pending.kind!=='release'||!keys(m.result,['released'])||m.result.released!==true))return this.fail('native_review_protocol','Native review unexpected final result; outcome unconfirmed');
++   this.resultSeen=true;this.finalResult=m.result;this.child.stdin.end();return;
++  }
++  if(m.type==='fence_ready'){
++   if(this.op!=='fence'||this.phase!=='initial'||!keys(m,['type','result'])||!this.contextCount||!this.nativeCount||!this.validReady(m.result))return this.fail('native_review_fence','Native review invalid fence binding; outcome unconfirmed');
++   this.ready=freeze(structuredClone(m.result));this.phase='ready';clearTimeout(this.timer);this.initialResolved=true;this.initial.resolve(this.lease());return;
++  }
++  if(m.type==='fence_alive'){
++   if(!keys(m,['type','id'])||this.phase!=='ready'||this.pending?.kind!=='assert_alive'||m.id!==this.pending.id)return this.fail('native_review_protocol','Native review invalid fence acknowledgement; outcome unconfirmed');
++   const p=this.pending;clearTimeout(p.timer);this.pending=null;p.deferred.resolve();return;
++  }
++  this.fail('native_review_protocol','Native review unknown protocol frame; outcome unconfirmed');
++ }
++ bindingMatches(b){
++  if(!validBinding(b)||!this.assignment||!this.context)return false;
++  return ['company_id','issue_id','interaction_id','decision_id','producer_run_id','reviewer_run_id'].every(k=>b[k]===this.assignment[k])
++   &&b.reviewer_principal_id===this.context.principal_id;
++ }
++ validReceipt(v,artifact){
++  if(!keys(v,['binding','review_id','candidate_id','artifact_hash','state'])||!this.bindingMatches(v.binding)||!id(v.review_id)||!id(v.candidate_id)||!hash(v.artifact_hash)||!['supported','rejected'].includes(v.state))return false;
++  if(!artifact)return true;
++  const digest=createHash('sha256').update(JSON.stringify(canonical(artifact))).digest('hex');
++  const state=artifact.requirement_supported&&artifact.findings.every(f=>f.support==='supported')?'supported':'rejected';
++  return v.binding.candidate_hash===artifact.candidate_hash&&v.artifact_hash===digest&&v.state===state;
++ }
++ validSuccess(v){
++  if(this.op==='admit')return this.validReceipt(v,this.params);
++  if(this.op==='receipt')return this.validReceipt(v);
++  if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
++  const request=v.context.requests[0],candidate=request?.candidate;
++  return object(request)&&request.request_id===v.binding.candidate_hash&&request.candidate_hash===v.binding.candidate_hash
++   &&object(candidate)&&candidate.candidate_hash===v.binding.candidate_hash
++   // The immutable candidate payload can predate producer column attribution.
++   // Binding identity is authoritative; do not invent missing payload metadata.
++   &&(candidate.producer_id==null||candidate.producer_id===v.binding.producer_principal_id)
++   &&(candidate.producer_run_id==null||candidate.producer_run_id===v.binding.producer_run_id);
++ }
++ validReady(v){
++  return keys(v,['binding','candidate','receipt'])&&this.bindingMatches(v.binding)&&keys(v.candidate,['candidate_hash','producer_principal_id','producer_run_id'])
++   &&v.candidate.candidate_hash===v.binding.candidate_hash&&v.candidate.producer_principal_id===v.binding.producer_principal_id&&v.candidate.producer_run_id===v.binding.producer_run_id
++   &&this.validReceipt(v.receipt)&&same(v.receipt.binding,v.binding);
++ }
++ usable(){if(this.failure)throw this.failure;if(this.closed||this.phase!=='ready')throw error('native_review_closed','Native review fence closed; outcome unconfirmed',true);}
++ command(kind){
++  this.usable();if(this.pending||this.commandSequence>=MAX_CALLBACKS){this.fail('native_review_protocol','Native review command unavailable; outcome unconfirmed');return Promise.reject(this.failure);}
++  const d=deferred(),id=++this.commandSequence,timer=setTimeout(()=>this.fail('native_review_timeout','Native review fence command timed out; outcome unconfirmed'),this.c.timeoutMs);
++  this.pending={kind,id,deferred:d,timer,deadline:Date.now()+this.c.timeoutMs};this.send({type:kind,id});return d.promise;
++ }
++ lease(){
++  const self=this;let alivePromise,releasePromise;
++  return Object.freeze({binding:self.ready.binding,
++   async readCandidate(selector){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);
++    if(selector!==undefined){const expected={companyId:self.assignment.company_id,projectId:self.assignment.project_id,issueId:self.assignment.issue_id,producerAgentId:self.assignment.producer_agent_id,reviewerAgentId:self.assignment.reviewer_agent_id,producerPrincipalId:self.ready.binding.producer_principal_id,reviewerPrincipalId:self.ready.binding.reviewer_principal_id,producerRunId:self.assignment.producer_run_id};if(!object(selector)||Object.keys(selector).some(k=>!Object.hasOwn(expected,k)||selector[k]!==expected[k]))throw error('native_review_scope','Native review fence scope mismatch');}
++    return self.ready.candidate;
++   },
++   async readAdmission(binding){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);if(!same(binding,self.ready.binding))throw error('native_review_scope','Native review fence binding mismatch');return self.ready.receipt;},
++   assertAlive(){if(releasePromise)return Promise.reject(error('native_review_closed','Native review fence releasing; outcome unconfirmed',true));if(!alivePromise)alivePromise=Promise.resolve().then(()=>self.command('assert_alive')).finally(()=>{alivePromise=undefined;});return alivePromise;},
++   release(){
++    if(!releasePromise){
++     self.ownerReleasing=true;
++     releasePromise=(async()=>{
++      try{if(alivePromise)await alivePromise;self.usable();return await self.command('release');}
++      catch(cause){
++       // The native owner has explicitly finished commit/rollback. An unhealthy
++       // protocol cannot provide a clean release ack; reap only this owned child.
++       self.child.stdin.destroy();self.terminate();await self.closeWait.promise;
++       const failure=self.failure??cause;failure.childReaped=self.closed;failure.fenceReleaseConfirmed=false;throw failure;
++      }
++     })();
++    }
++    return releasePromise;
++   },
++  });
++ }
++}
+--- /dev/null
++++ b/dist/services/native-runtime/native-review-artifact-schema.mjs
+@@ -0,0 +1,83 @@
++/** Exact public CandidateReview JSON contract, with nested references inlined for a tool property. Identity is never model input. */
++export const NATIVE_REVIEW_ARTIFACT_SCHEMA = {
++  "additionalProperties": false,
++  "properties": {
++    "candidate_hash": {
++      "title": "Candidate Hash",
++      "type": "string"
++    },
++    "evidence_set_hash": {
++      "title": "Evidence Set Hash",
++      "type": "string"
++    },
++    "findings": {
++      "items": {
++        "additionalProperties": false,
++        "properties": {
++          "claim_end": {
++            "title": "Claim End",
++            "type": "integer"
++          },
++          "claim_start": {
++            "title": "Claim Start",
++            "type": "integer"
++          },
++          "excerpt": {
++            "minLength": 1,
++            "title": "Excerpt",
++            "type": "string"
++          },
++          "rationale": {
++            "minLength": 1,
++            "title": "Rationale",
++            "type": "string"
++          },
++          "support": {
++            "enum": [
++              "supported",
++              "partial",
++              "unsupported",
++              "contradicted"
++            ],
++            "title": "Support",
++            "type": "string"
++          }
++        },
++        "required": [
++          "claim_start",
++          "claim_end",
++          "support",
++          "excerpt",
++          "rationale"
++        ],
++        "title": "ReviewFinding",
++        "type": "object"
++      },
++      "title": "Findings",
++      "type": "array"
++    },
++    "requirement_hash": {
++      "title": "Requirement Hash",
++      "type": "string"
++    },
++    "requirement_supported": {
++      "title": "Requirement Supported",
++      "type": "boolean"
++    },
++    "rubric_version": {
++      "minLength": 1,
++      "title": "Rubric Version",
++      "type": "string"
++    }
++  },
++  "required": [
++    "candidate_hash",
++    "requirement_hash",
++    "evidence_set_hash",
++    "rubric_version",
++    "findings",
++    "requirement_supported"
++  ],
++  "title": "CandidateReview",
++  "type": "object"
++};
+--- /dev/null
++++ b/dist/services/native-runtime/native-review-host-admission.mjs
+@@ -0,0 +1,91 @@
++/** Fresh native-table admission for the existing owning-host review runtime.
++ * No listener, lifecycle operation, grants, cache or configuration write.
++ * Construction inputs are protected administrator state, never model arguments.
++ */
++import {createHash} from 'node:crypto';
++import {isAbsolute} from 'node:path';
++const pluginKey='netrxn.inertia';
++const scopeKeys=['companyId','projectId','issueId','producerAgentId','reviewerAgentId','producerPrincipalId','reviewerPrincipalId'];
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
++const keys=(v,allowed,required=allowed)=>object(v)&&Object.keys(v).every(k=>allowed.includes(k))&&required.every(k=>Object.hasOwn(v,k));
++const id=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\s\x00-\x1f\x7f]/.test(v);
++const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
++const invalid=()=>{throw Error('native_domain_review_host_configuration_invalid');};
++function canonical(v){
++  if(v===null||typeof v==='string'||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v))return JSON.stringify(v);
++  if(Array.isArray(v))return '['+Array.from(v,canonical).join(',')+']';
++  if(object(v))return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';
++  return invalid();
++}
++const fingerprint=v=>createHash('sha256').update(canonical(v)).digest('hex');
++function validProcess(p){
++  return keys(p,['executable','args','cwd','entrypoint','configurationPath','timeoutMs','maxOutputBytes','pins'])
++    &&[p.executable,p.cwd,p.entrypoint,p.configurationPath].every(v=>typeof v==='string'&&isAbsolute(v))
++    &&Array.isArray(p.args)&&p.args.length<=30&&p.args.every(v=>typeof v==='string'&&v.length<=4096)
++    &&p.args.includes(p.entrypoint)&&p.args.includes(p.configurationPath)
++    &&Number.isInteger(p.timeoutMs)&&p.timeoutMs>=100&&p.timeoutMs<=120000
++    &&Number.isInteger(p.maxOutputBytes)&&p.maxOutputBytes>=1024&&p.maxOutputBytes<=4*1024*1024
++    &&Array.isArray(p.pins)&&p.pins.length>=2&&p.pins.length<=128
++    &&p.pins.every(v=>keys(v,['path','sha256'])&&typeof v.path==='string'&&isAbsolute(v.path)&&hash(v.sha256))
++    &&new Set(p.pins.map(v=>v.path)).size===p.pins.length
++    &&[p.entrypoint,p.configurationPath].every(path=>p.pins.some(pin=>pin.path===path));
++}
++function validDrafting(c,s){
++  const required=['enabled','nativeAttention','projectId','applicantSlug','matchId','producer','reviewer','process'];
++  if(!keys(c,[...required,'nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'],required)
++    ||c.enabled!==true||c.nativeAttention!==true||c.projectId!==s.projectId||!id(c.applicantSlug)||c.applicantSlug.length>128||!id(c.matchId)
++    ||['nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'].some(k=>Object.hasOwn(c,k)&&c[k]!==false)
++    ||!validProcess(c.process))return false;
++  return [['producer',s.producerAgentId,s.producerPrincipalId],['reviewer',s.reviewerAgentId,s.reviewerPrincipalId]].every(([role,agentId,principalId])=>
++    keys(c[role],['issueId','agentId','principalId'])&&c[role].issueId===s.issueId&&c[role].agentId===agentId&&c[role].principalId===principalId);
++}
++
++/** Pure policy shared by the real table reader and focused source tests.
++ * The complete original publicDrafting object, including process pins, is hashed.
++ * Native participant authorization is a separate mandatory runtime check.
++ */
++export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting}={}){
++  if(!id(expectedPluginId)||!keys(scope,scopeKeys)||scopeKeys.some(k=>!id(scope[k]))||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
++  const pinned=Object.freeze({...scope});
++  if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(publicDrafting,pinned)||publicDrafting.applicantSlug!==applicantSlug||publicDrafting.matchId!==matchId)invalid();
++  const initial=fingerprint(publicDrafting);
++  return (rows,requestedScope,input)=>{
++    if(!keys(requestedScope,scopeKeys)||scopeKeys.some(k=>requestedScope[k]!==pinned[k])
++      ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==pinned.issueId||input.issue.projectId!==pinned.projectId
++      ||input.actor?.agentId!==pinned.reviewerAgentId||!id(input.actor.runId)||!Array.isArray(rows)||rows.length!==1)return false;
++    const row=rows[0];
++    if(!row||row.pluginId!==expectedPluginId||row.pluginKey!==pluginKey||row.status!=='ready'
++      ||!id(row.configId)||row.configPluginId!==row.pluginId||row.configCompanyId!==pinned.companyId)return false;
++    if(row.settingsId!==null&&row.settingsId!==undefined){
++      if(!id(row.settingsId)||row.settingsPluginId!==row.pluginId||row.settingsCompanyId!==pinned.companyId||row.enabled!==true)return false;
++    }else if(row.settingsPluginId!=null||row.settingsCompanyId!=null||row.enabled!=null)return false;
++    const config=row.configJson;
++    try{return config?.nativeFundingToolPreapproval===true&&validDrafting(config.publicDrafting,pinned)&&fingerprint(config.publicDrafting)===initial;}
++    catch{return false;}
++  };
++}
++
++/** Produces native.assertHostAdmission(scope, immutableInput).
++ * Uses stock schema tables and one SELECT snapshot on every invocation; it never
++ * calls the plugin-host ensurePluginAvailableForCompany no-op or infers grants.
++ * Root owns installation and the immutable trusted publicDrafting snapshot.
++ */
++export async function createNativeReviewHostAdmission(db,expected){
++  const check=createNativeReviewHostAdmissionPolicy(expected);
++  if(typeof db?.select!=='function')invalid();
++  const companyId=expected.scope.companyId,pinnedPluginId=expected.expectedPluginId;
++  const [{and,eq},{plugins,pluginCompanySettings,pluginConfig}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++  return async(requestedScope,input)=>{
++    let rows;
++    try{
++      rows=await db.select({pluginId:plugins.id,pluginKey:plugins.pluginKey,status:plugins.status,
++        settingsId:pluginCompanySettings.id,settingsPluginId:pluginCompanySettings.pluginId,settingsCompanyId:pluginCompanySettings.companyId,enabled:pluginCompanySettings.enabled,
++        configId:pluginConfig.id,configPluginId:pluginConfig.pluginId,configCompanyId:pluginConfig.companyId,configJson:pluginConfig.configJson})
++        .from(plugins)
++        .leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,companyId)))
++        .leftJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,companyId)))
++        .where(and(eq(plugins.pluginKey,pluginKey),eq(plugins.id,pinnedPluginId))).limit(2);
++    }catch{throw Error('native_domain_review_host_admission_unavailable');}
++    return check(rows,requestedScope,input);
++  };
++}
+--- /dev/null
++++ b/dist/services/native-runtime/native-review-application.mjs
+@@ -0,0 +1,69 @@
++/** Owning-server initialization only. No model route, listener or lifecycle controller. */
++import fs from 'node:fs/promises';
++import {constants} from 'node:fs';
++import path from 'node:path';
++import {createHash} from 'node:crypto';
++import {createNativeReviewHostAdmissionPolicy} from './native-review-host-admission.mjs';
++import {createNativeReviewStdio} from './native-review-stdio.mjs';
++const fail=()=>{throw Error('native_domain_review_application_configuration_invalid');};
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
++const exact=(v,keys)=>object(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
++const freeze=v=>{if(v&&typeof v==='object'){for(const c of Object.values(v))freeze(c);Object.freeze(v);}return v;};
++function validate(registry){
++  if(!exact(registry,['version','bindings'])||registry.version!==1||!Array.isArray(registry.bindings)||registry.bindings.length!==1)fail();
++  for(const b of registry.bindings){
++    if(!exact(b,['scope','reviewerPolicy','process','host'])||!exact(b.host,['expectedPluginId','publicDrafting']))fail();
++    const p=b.reviewerPolicy,s=b.scope;
++    if(!exact(p,['version','role','projectIds','issueIds'])||p.version!==1||p.role!=='reviewer'||JSON.stringify(p.projectIds)!==JSON.stringify([s?.projectId])||JSON.stringify(p.issueIds)!==JSON.stringify([s?.issueId]))fail();
++    // Producer and reviewer are distinct pinned protocols, not interchangeable.
++    // Construction validates the reviewer process without launching a child.
++    createNativeReviewStdio(b.process);
++    createNativeReviewHostAdmissionPolicy({scope:s,expectedPluginId:b.host.expectedPluginId,publicDrafting:b.host.publicDrafting,applicantSlug:b.host.publicDrafting?.applicantSlug,matchId:b.host.publicDrafting?.matchId});
++  }
++  return registry;
++}
++export async function preflightNativeReviewApplication(env=process.env){
++  const flag=env.PAPERCLIP_NATIVE_DOMAIN_REVIEW_REQUIRED;
++  if(flag===undefined||flag==='0')return null;
++  if(flag!=='1')fail();
++  const file=env.PAPERCLIP_NATIVE_DOMAIN_REVIEW_CONFIG,pin=env.PAPERCLIP_NATIVE_DOMAIN_REVIEW_CONFIG_SHA256;
++  if(typeof file!=='string'||!path.isAbsolute(file)||typeof pin!=='string'||!/^[a-f0-9]{64}$/.test(pin))fail();
++  let handle;
++  try{
++    if(await fs.realpath(file)!==file)fail();
++    handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW);
++    const before=await handle.stat();
++    if(!before.isFile()||(before.mode&0o777)!==0o600||before.uid!==process.getuid?.()||before.size>256*1024)fail();
++    const bytes=await handle.readFile(),after=await handle.stat(),current=await fs.lstat(file);
++    if(bytes.length>256*1024||before.size!==after.size||before.mtimeMs!==after.mtimeMs||current.isSymbolicLink()||current.dev!==after.dev||current.ino!==after.ino||createHash('sha256').update(bytes).digest('hex')!==pin)fail();
++    return freeze(structuredClone(validate(JSON.parse(bytes.toString('utf8')))));
++  }catch{fail();}finally{await handle?.close();}
++}
++export async function createNativeReviewApplicationRuntime(db,bindings){
++  // Validate host configuration before constructing any private process adapter.
++  bindings=freeze(structuredClone(validate({version:1,bindings}).bindings));
++  const [{and,eq},{agents,heartbeatRuns,issues},{getNativeReviewAssignment},{assertNativeFundingContext},{toolAccessPolicyService},{createNativeReviewHostAdmission},{createNativeReviewRuntime}]=await Promise.all([
++    import('drizzle-orm'),import('@paperclipai/db'),import('./native-review-participant.js'),import('./native-funding-policy.js'),import('../tool-access-policy.js'),import('./native-review-host-admission.mjs'),import('./native-review-runtime.mjs'),
++  ]);
++  const checks=await Promise.all(bindings.map(b=>createNativeReviewHostAdmission(db,{scope:b.scope,...b.host,applicantSlug:b.host.publicDrafting.applicantSlug,matchId:b.host.publicDrafting.matchId})));
++  const policy=toolAccessPolicyService(db);
++  const getIssue=async(issueId,companyId)=>(await db.select().from(issues).where(and(eq(issues.id,issueId),eq(issues.companyId,companyId))).limit(1))[0];
++  return createNativeReviewRuntime({bindings,stdioFactory:createNativeReviewStdio,native:{
++    assertHostAdmission(scope,input){const i=bindings.findIndex(b=>b.scope.companyId===scope.companyId&&b.scope.issueId===scope.issueId);return i<0?false:checks[i](scope,input);},
++    async assertCurrentReviewer(binding){
++      const [actor]=await db.select().from(agents).where(and(eq(agents.id,binding.agentId),eq(agents.companyId,binding.companyId))).limit(1);
++      const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId),eq(heartbeatRuns.agentId,binding.agentId))).limit(1);
++      const issue=await getIssue(binding.issueId,binding.companyId);
++      if(!actor||!run||run.finishedAt||!issue)throw Error('native_funding_scope_revoked');
++      assertNativeFundingContext(binding,{actor,run,issue});
++    },
++    getIssue,getReviewAssignment:p=>getNativeReviewAssignment(db,p),decideTool:p=>policy.decide(p),
++  }});
++}
++export async function initializeNativeReviewApplication(db,registry){
++  if(registry===null)return;
++  const {nativeDomainReviewComposition}=await import('./native-domain-review-composition.mjs');
++  const runtime=await createNativeReviewApplicationRuntime(db,registry.bindings);
++  nativeDomainReviewComposition.install(runtime);
++  nativeDomainReviewComposition.assertReady();
++}

@@ -5,6 +5,7 @@ export const publicDraftingSchema:JsonSchema={
   type:"object",additionalProperties:false,
   properties:{
     enabled:{type:"boolean",default:false},projectId:text,applicantSlug:text,matchId:text,producer:actor,reviewer:actor,
+    nativeAttention:{type:"boolean",const:true,description:"Administrator opt-in to lifecycle-free producer tools. Native attention owns same-task independent review and continuation. Mutually exclusive with legacy case progression, dependency handoff and gap-plan review; requires matching native role and trusted execution metadata."},
     nativeCaseProgression:{type:"boolean",default:false,description:"Administrator opt-in to immutable private case checkpoint receipts. Requires matching pinned domain protocol; does not schedule new runs."},
     nativeDependencyHandoff:{type:"boolean",default:false,description:"Experimental fixed-pair native dependency handoff. Requires nativeCaseProgression, the matching private run-freeze protocol and a preconfigured producer-blocked-by-reviewer edge. Live finalization/replay qualification remains required; not owner or next-case closure."},
     nativeGapPlanReview:{type:"boolean",default:false,description:"Optional seventh independent machine gap-plan reviewer tool. Requires nativeCaseProgression and nativeDependencyHandoff plus matching pinned domain protocol. Source support is not runtime admission or human authorization."},
