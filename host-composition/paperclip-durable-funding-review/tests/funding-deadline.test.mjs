@@ -9,6 +9,7 @@ import os from 'node:os';
 process.env.PAPERCLIP_API_URL='http://127.0.0.1:3100';
 const publicRoot=process.env.QUALIFICATION_PUBLIC_ROOT??'/qual/source';
 const {nativeDatabase,nativeIdentityFixture,loadNative,schema,eq}=await import(pathToFileURL(path.join(publicRoot,'scripts/drafting-qualification/native-fixture.mjs')));
+const {manifest:fullManifest}=await import(pathToFileURL(process.env.QUALIFICATION_FULL_MANIFEST??path.join(publicRoot,'dist/src/manifest.js')));assert.equal(fullManifest.tools.length,21);
 const {buildPaperclipRuntimeMcpServers}=await loadNative('@paperclipai/server/dist/services/heartbeat.js');
 const {createToolGatewayService}=await loadNative('@paperclipai/server/dist/services/tool-gateway.js');
 const {createPluginToolDispatcher}=await loadNative('@paperclipai/server/dist/services/plugin-tool-dispatcher.js');
@@ -23,7 +24,7 @@ async function fixture(role='producer',extra=[],realWorker){
  const names=[...roles[role],...extra].map(n=>'netrxn.inertia:'+n),pluginId=randomUUID();
  for(const r of ['producer','reviewer'])await db.update(schema.agents).set({adapterType:'codex_local',adapterConfig:{disableCommandExecution:true,engine:'cli',dangerouslyBypassApprovalsAndSandbox:false}}).where(eq(schema.agents.id,identity[r].agentId));
  const config={nativeFundingToolPreapproval:true,publicDrafting:{enabled:true,projectId:identity.projectId,applicantSlug:'synthetic-public',matchId:randomUUID(),producer:{issueId:identity.producer.issueId,agentId:identity.producer.agentId,principalId:identity.producer.principalId},reviewer:{issueId:identity.reviewer.issueId,agentId:identity.reviewer.agentId,principalId:identity.reviewer.principalId}}};
- const manifest={id:'netrxn.inertia',apiVersion:1,version:'0.0.0',capabilities:['agent.tools.register'],tools:names.map(n=>({name:n.split(':')[1],displayName:n,description:'Synthetic lifecycle write',parametersSchema:{type:'object',additionalProperties:false,properties:{}},annotations:{readOnlyHint:false,destructiveHint:true,openWorldHint:false,idempotentHint:false}}))};
+ const manifest={...fullManifest,tools:[...fullManifest.tools,...extra.filter(name=>!fullManifest.tools.some(tool=>tool.name===name)).map(name=>({name,displayName:name,description:'Synthetic extra tool',parametersSchema:{type:'object',additionalProperties:false,properties:{}}}))]};
  await db.insert(schema.plugins).values({id:pluginId,pluginKey:'netrxn.inertia',packageName:'synthetic-deadline',version:'0.0.0',status:'ready',manifestJson:manifest});await db.insert(schema.pluginConfig).values({pluginId,companyId:identity.companyId,configJson:config});
  for(const r of ['producer','reviewer'])await db.insert(schema.principalPermissionGrants).values({companyId:identity.companyId,principalType:'agent',principalId:identity[r].agentId,permissionKey:'tools:use',scope:{allow:[...roles[r],...(r===role?extra:[])].map(n=>'tool:netrxn.inertia:'+n)}});
  const calls=[];const worker=realWorker??{isRunning:()=>true,call:async(...args)=>{calls.push(args);return {content:'Synthetic exact operation',data:{committed:true}};}};

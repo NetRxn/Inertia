@@ -34,6 +34,8 @@
     "apply-funding-deadline": "node scripts/apply-funding-deadline.mjs",
     "test:funding-deadline": "node --test tests/funding-deadline*.test.mjs tests/codex-funding-preapproval.test.mjs",
     "apply-native-reconciliation": "node scripts/apply-native-reconciliation.mjs",
-    "test:native-reconciliation": "node --test tests/native-reconciliation-cancel.test.mjs tests/native-reconciliation-installer.test.mjs"
+    "test:native-reconciliation": "node --test tests/native-reconciliation-cancel.test.mjs tests/native-reconciliation-installer.test.mjs",
+    "apply-agent-tool-use-restrictions": "node scripts/apply-agent-tool-use-restrictions.mjs",
+    "test:agent-tool-use-restrictions": "node --test tests/agent-tool-use-restrictions*.test.mjs tests/funding-role-catalog.test.mjs"
   }
 }

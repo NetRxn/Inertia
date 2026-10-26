@@ -26,8 +26,11 @@ No database listener or production data source is used.
 
 - HTTP authentication is **not** tested. The already-authenticated actor supplied
   to the gateway service is a deterministic fixture, not a real login or token.
-- Native company/project/agents/issues/runs and the tool allow policy are fixtures
-  inserted only into the isolated in-memory database.
+- Native company/project/agents/issues/runs and exact producer/reviewer tool
+  grants are fixtures inserted only into the isolated in-memory database.
+  Identity creation grants no tool access. Drafting consumers explicitly grant
+  the four producer tools and two reviewer tools; no blanket plugin allow policy
+  substitutes for their native permission checks.
 - The worker-manager transport is in-memory, but the dispatcher, registry,
   JSON-RPC host and host-client capability/scope handlers are unmodified native
   code. This does not establish OS process isolation or deployment admission.
@@ -109,3 +112,30 @@ reload after Beta without remembered proposal arguments. Actor authentication, m
 and wake scheduling remain fixtures. No claim is made that Docker shell commands work; the
 application route uses plugin MCP callbacks only. The source harness itself runs local test
 commands, which is not a deployed Codex command capability.
+
+## Complete-manifest catalog regression
+
+`host-composition/paperclip-durable-funding-review/tests/funding-role-catalog.test.mjs`
+uses the compiled, complete 21-tool public manifest with two exact native grant
+rows. It checks each role's catalog and rejects every other declared tool through
+both direct native execution and HTTP MCP. It also checks revocation against
+already-issued gateways and demonstrates that a broad native grant overrides a
+narrow profile. MCP inventories must equal the role tools plus the four stock
+Paperclip resource/prompt facade tools; unexpected names are not filtered away.
+
+Run with the existing pinned native dependencies and a full source build:
+
+```sh
+QUALIFICATION_PUBLIC_ROOT=/absolute/path/Inertia \
+QUALIFICATION_NATIVE_ROOT=/absolute/path/pinned-host/node_modules \
+QUALIFICATION_FULL_MANIFEST=/absolute/path/full-build/src/manifest.js \
+node --test host-composition/paperclip-durable-funding-review/tests/funding-role-catalog.test.mjs
+```
+
+`QUALIFICATION_FULL_MANIFEST` defaults to this checkout's `dist/src/manifest.js`.
+Reduced synthetic catalogs are deliberately rejected for this regression and
+for the deadline/preapproval native fixtures. The funding-only composition also
+retains all 21 declarations; disabled feature registration does not narrow the
+native manifest catalog. The worker result is
+synthetic; these tests establish native admission and revocation, not domain
+writes, HTTP actor authentication, deployed configuration, or model execution.
