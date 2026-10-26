@@ -18,7 +18,16 @@ if(cfg.mode==='early-exit')exit();
 else if(req.op!=='fence'){
  if(cfg.mode.startsWith('error-details')){send({type:'result',ok:false,error:'review_validation_failed',details:{issues:[{finding_index:0,field:'excerpt',code:'excerpt_not_in_bound_evidence',evidence_ids:['evidence-1'],...(cfg.mode==='error-details-bad'?{excerpt:'raw-private-canary'}:{})}],truncated:false}});if(cfg.mode==='error-details-extra')send({type:'result',ok:true,result:{unexpected:true}});if(cfg.mode==='error-details-exit1'){rl.close();process.stdout.write('',()=>process.exit(1));await new Promise(()=>{});}}
  else if(cfg.mode==='error-generic')send({type:'result',ok:false,error:'drafting_rejected'});
- else {send({type:'result',ok:true,result:{op:req.op,params:req.params,envCanary:process.env.NATIVE_STDIO_CANARY??null}});if(cfg.mode==='extra-output')send({type:'result',ok:true,result:{duplicate:true}});}
+ else {
+  let result=req.op==='admit'?structuredClone(cfg.ready.receipt):{binding:cfg.ready.binding,context:{requests:[{request_id:cfg.ready.binding.candidate_hash,candidate_hash:cfg.ready.binding.candidate_hash,candidate:{candidate_hash:cfg.ready.binding.candidate_hash,producer_id:cfg.ready.binding.producer_principal_id,producer_run_id:cfg.ready.binding.producer_run_id},instructions:'envCanary='+JSON.stringify(process.env.NATIVE_STDIO_CANARY??null)}],next_action:'review_candidates'}};
+  if(cfg.mode==='success-extra')result.extra=true;
+  if(cfg.mode==='context-generic'||cfg.mode==='admit-generic')result={echo:req.params};
+  if(cfg.mode==='context-wrong-run')result.binding={...result.binding,reviewer_run_id:'other'};
+  if(cfg.mode==='context-wrong-source')result.context.requests[0].candidate.producer_run_id='other';
+  if(cfg.mode==='admit-wrong-hash')result.binding={...result.binding,candidate_hash:'c'.repeat(64)};
+  if(cfg.mode==='admit-wrong-digest')result.artifact_hash='b'.repeat(64);
+  send({type:'result',ok:true,result});if(cfg.mode==='extra-output')send({type:'result',ok:true,result:{duplicate:true}});
+ }
  exit();
 }else{
  send({type:'fence_ready',result:cfg.ready});

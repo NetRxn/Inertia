@@ -1,6 +1,8 @@
 /** Pinned native-review stdio only; no lifecycle, routing, credentials or listener.
  * An acquired fence has no expiry timer. The owning native transaction MUST
  * explicitly release it after commit/rollback and reconcile uncertain outcomes.
+ * Callbacks are strictly read-only native facts. Deadline races discard late
+ * callback replies; they do not claim to cancel arbitrary callback side effects.
  * Two database commits are not made atomic by this transport.
  */
 import {readFile,lstat,stat} from 'node:fs/promises';
@@ -31,7 +33,7 @@ function validArtifact(v){
  return keys(v,['candidate_hash','requirement_hash','evidence_set_hash','rubric_version','findings','requirement_supported'])
   &&['candidate_hash','requirement_hash','evidence_set_hash'].every(k=>hash(v[k]))&&typeof v.rubric_version==='string'&&v.rubric_version.length>0
   &&typeof v.requirement_supported==='boolean'&&Array.isArray(v.findings)&&v.findings.length<=4096
-  &&v.findings.every(f=>keys(f,['claim_start','claim_end','support','excerpt','rationale'])&&Number.isSafeInteger(f.claim_start)&&Number.isSafeInteger(f.claim_end)
+  &&Array.from(v.findings).every(f=>keys(f,['claim_start','claim_end','support','excerpt','rationale'])&&Number.isSafeInteger(f.claim_start)&&Number.isSafeInteger(f.claim_end)
    &&['supported','partial','unsupported','contradicted'].includes(f.support)&&typeof f.excerpt==='string'&&f.excerpt.length>0&&typeof f.rationale==='string'&&f.rationale.length>0);
 }
 function rejection(message,op,authenticated){
@@ -84,7 +86,7 @@ export function createNativeReviewStdio(config){
 }
 class NativeReviewSession {
  constructor(c,op,input,callbacks,deadline){
-  Object.assign(this,{c,op,callbacks,sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
+  Object.assign(this,{c,op,callbacks,deadline,params:freeze(JSON.parse(input).params),sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
   this.initial=deferred();this.controller=new AbortController();this.closeWait=deferred();
   this.child=spawn(c.executable,c.args,{cwd:c.cwd,shell:false,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe'],env:{PATH:'/usr/bin:/bin',HOME:'/nonexistent',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONNOUSERSITE:'1'}});
   this.timer=setTimeout(()=>this.fail('native_review_timeout','Native review timed out; outcome unconfirmed'),Math.max(1,deadline-Date.now()));
@@ -92,12 +94,41 @@ class NativeReviewSession {
   this.child.stdin.on('error',()=>this.fail('native_review_input','Native review input failed; outcome unconfirmed'));
   this.child.stdout.on('data',chunk=>this.data(chunk));
   this.child.stderr.on('data',chunk=>{this.diagnostics+=chunk.length;if(this.diagnostics>64*1024)this.fail('native_review_diagnostics','Native review diagnostic limit exceeded; outcome unconfirmed');});
-  this.child.on('exit',code=>{if(code!==0||!this.resultSeen)this.fail('native_review_exit','Native review process exited before acknowledgement; outcome unconfirmed');});
+  this.child.on('exit',code=>{this.exited=true;if(code!==0||!this.resultSeen)this.fail('native_review_exit','Native review process exited before acknowledgement; outcome unconfirmed');});
   this.child.on('close',code=>{this.closed=true;this.terminate();if(!this.failure&&(code!==0||!this.resultSeen||this.buffer.length))this.failure=error('native_review_incomplete','Native review process incomplete; outcome unconfirmed',true);this.finish();});
   this.child.stdin.write(input);
  }
  terminate(){if(this.terminated)return;this.terminated=true;if(process.platform!=='win32'&&this.child.pid)try{process.kill(-this.child.pid,'SIGKILL');}catch{}this.child.kill('SIGKILL');}
- fail(code,message){if(this.failure)return;this.failure=error(code,message,true);this.controller.abort();this.child.stdin.destroy();this.terminate();this.finish();}
+ fail(code,message){
+  if(this.failure)return;
+  this.failure=error(code,message,true);clearTimeout(this.timer);this.controller.abort();
+  // After ready the child owns the private fence. A failed check cannot release
+  // it before the native owner rolls back. Only explicit release may terminate.
+  if(this.phase==='ready'&&!this.ownerReleasing&&!this.exited&&!this.closed){
+   if(this.pending){clearTimeout(this.pending.timer);this.pending.deferred.reject(this.failure);this.pending=null;}
+   return;
+  }
+  this.child.stdin.destroy();this.terminate();this.finish();
+ }
+ async trustedCallback(callback){
+  const deadline=this.phase==='initial'?this.deadline:this.pending?.deadline;
+  if(!Number.isSafeInteger(deadline)||deadline<=Date.now()){
+   this.fail('native_review_timeout','Native review callback timed out; outcome unconfirmed');throw this.failure;
+  }
+  let timer,onAbort;
+  const aborted=new Promise((_,reject)=>{
+   onAbort=()=>reject(this.failure??error('native_review_callback','Native review callback aborted; outcome unconfirmed',true));
+   this.controller.signal.addEventListener('abort',onAbort,{once:true});
+   if(this.controller.signal.aborted)onAbort();
+   timer=setTimeout(()=>{this.fail('native_review_timeout','Native review callback timed out; outcome unconfirmed');onAbort();},deadline-Date.now());
+  });
+  try{
+   const result=await Promise.race([Promise.resolve().then(()=>callback(this.controller.signal)),aborted]);
+   if(this.failure)throw this.failure;
+   if(Date.now()>=deadline){this.fail('native_review_timeout','Native review callback timed out; outcome unconfirmed');throw this.failure;}
+   return result;
+  }finally{clearTimeout(timer);this.controller.signal.removeEventListener('abort',onAbort);}
+ }
  finish(){
   if(!this.closed||this.busy)return;
   clearTimeout(this.timer);if(this.pending)clearTimeout(this.pending.timer);this.controller.abort();
@@ -114,7 +145,7 @@ class NativeReviewSession {
   for(let end=this.buffer.indexOf(10);end>=0;end=this.buffer.indexOf(10)){
    const line=this.buffer.subarray(0,end);this.buffer=this.buffer.subarray(end+1);
    if(!line.length||line.length>=MAX_FRAME)return this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed');
-   void this.frame(line);
+   void this.frame(line).catch(()=>this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed'));
   }
   if(this.buffer.length>=MAX_FRAME)this.fail('native_review_frame','Native review frame limit exceeded; outcome unconfirmed');
  }
@@ -126,10 +157,10 @@ class NativeReviewSession {
    this.sequence++;this.busy=true;
    try{
     if(m.type==='context'){
-     const value=await this.callbacks.context(this.controller.signal);if(!validContext(value)||(this.context&&!same(value,this.context)))throw Error();
+     const value=await this.trustedCallback(signal=>this.callbacks.context(signal));if(!validContext(value)||(this.context&&!same(value,this.context)))throw Error();
      this.context=freeze(structuredClone(value));this.contextCount++;this.send({type:'context',id:m.id,context:this.context});
     }else{
-     if(!this.contextCount)throw Error();const value=await this.callbacks.nativeAssignment(this.controller.signal);
+     if(!this.contextCount)throw Error();const value=await this.trustedCallback(signal=>this.callbacks.nativeAssignment(signal));
      if(!validAssignment(value)||value.company_id!==this.context.company_id||value.reviewer_run_id!==this.context.run_id||(this.assignment&&!same(value,this.assignment)))throw Error();
      this.assignment=freeze(structuredClone(value));this.nativeCount++;this.send({type:'native_assignment',id:m.id,assignment:this.assignment});
     }
@@ -146,6 +177,7 @@ class NativeReviewSession {
     this.resultSeen=true;this.terminalRejection=error('native_review_validation',rejected.message,false);this.terminalRejection.validationRejected=true;this.child.stdin.end();return;
    }
    if(!keys(m,['type','ok','result'])||m.ok!==true||!object(m.result)||!this.contextCount||!this.nativeCount)return this.fail('native_review_result','Native review invalid result; outcome unconfirmed');
+   if(this.op!=='fence'&&!this.validSuccess(m.result))return this.fail('native_review_result','Native review misbound result; outcome unconfirmed');
    if(this.op==='fence'&&(!this.pending||this.pending.kind!=='release'||!keys(m.result,['released'])||m.result.released!==true))return this.fail('native_review_protocol','Native review unexpected final result; outcome unconfirmed');
    this.resultSeen=true;this.finalResult=m.result;this.child.stdin.end();return;
   }
@@ -159,18 +191,35 @@ class NativeReviewSession {
   }
   this.fail('native_review_protocol','Native review unknown protocol frame; outcome unconfirmed');
  }
+ bindingMatches(b){
+  if(!validBinding(b)||!this.assignment||!this.context)return false;
+  return ['company_id','issue_id','interaction_id','decision_id','producer_run_id','reviewer_run_id'].every(k=>b[k]===this.assignment[k])
+   &&b.reviewer_principal_id===this.context.principal_id;
+ }
+ validReceipt(v,artifact){
+  if(!keys(v,['binding','review_id','candidate_id','artifact_hash','state'])||!this.bindingMatches(v.binding)||!id(v.review_id)||!id(v.candidate_id)||!hash(v.artifact_hash)||!['supported','rejected'].includes(v.state))return false;
+  if(!artifact)return true;
+  const digest=createHash('sha256').update(JSON.stringify(canonical(artifact))).digest('hex');
+  const state=artifact.requirement_supported&&artifact.findings.every(f=>f.support==='supported')?'supported':'rejected';
+  return v.binding.candidate_hash===artifact.candidate_hash&&v.artifact_hash===digest&&v.state===state;
+ }
+ validSuccess(v){
+  if(this.op==='admit')return this.validReceipt(v,this.params);
+  if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
+  const request=v.context.requests[0],candidate=request?.candidate;
+  return object(request)&&request.request_id===v.binding.candidate_hash&&request.candidate_hash===v.binding.candidate_hash
+   &&object(candidate)&&candidate.candidate_hash===v.binding.candidate_hash&&candidate.producer_id===v.binding.producer_principal_id&&candidate.producer_run_id===v.binding.producer_run_id;
+ }
  validReady(v){
-  if(!keys(v,['binding','candidate','receipt'])||!validBinding(v.binding)||!keys(v.candidate,['candidate_hash','producer_principal_id','producer_run_id'])||!keys(v.receipt,['binding','review_id','candidate_id','artifact_hash','state']))return false;
-  const b=v.binding,a=this.assignment,c=this.context;
-  return ['company_id','issue_id','interaction_id','decision_id','producer_run_id','reviewer_run_id'].every(k=>b[k]===a[k])&&b.reviewer_principal_id===c.principal_id
-   &&v.candidate.candidate_hash===b.candidate_hash&&v.candidate.producer_principal_id===b.producer_principal_id&&v.candidate.producer_run_id===b.producer_run_id
-   &&same(v.receipt.binding,b)&&id(v.receipt.review_id)&&id(v.receipt.candidate_id)&&hash(v.receipt.artifact_hash)&&['supported','rejected'].includes(v.receipt.state);
+  return keys(v,['binding','candidate','receipt'])&&this.bindingMatches(v.binding)&&keys(v.candidate,['candidate_hash','producer_principal_id','producer_run_id'])
+   &&v.candidate.candidate_hash===v.binding.candidate_hash&&v.candidate.producer_principal_id===v.binding.producer_principal_id&&v.candidate.producer_run_id===v.binding.producer_run_id
+   &&this.validReceipt(v.receipt)&&same(v.receipt.binding,v.binding);
  }
  usable(){if(this.failure)throw this.failure;if(this.closed||this.phase!=='ready')throw error('native_review_closed','Native review fence closed; outcome unconfirmed',true);}
  command(kind){
-  this.usable();if(this.pending||this.commandSequence>=MAX_CALLBACKS){this.fail('native_review_protocol','Native review command unavailable; outcome unconfirmed');return this.closeWait.promise.then(()=>{throw this.failure;});}
+  this.usable();if(this.pending||this.commandSequence>=MAX_CALLBACKS){this.fail('native_review_protocol','Native review command unavailable; outcome unconfirmed');return Promise.reject(this.failure);}
   const d=deferred(),id=++this.commandSequence,timer=setTimeout(()=>this.fail('native_review_timeout','Native review fence command timed out; outcome unconfirmed'),this.c.timeoutMs);
-  this.pending={kind,id,deferred:d,timer};this.send({type:kind,id});return d.promise;
+  this.pending={kind,id,deferred:d,timer,deadline:Date.now()+this.c.timeoutMs};this.send({type:kind,id});return d.promise;
  }
  lease(){
   const self=this;let alivePromise,releasePromise;
@@ -181,7 +230,21 @@ class NativeReviewSession {
    },
    async readAdmission(binding){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);if(!same(binding,self.ready.binding))throw error('native_review_scope','Native review fence binding mismatch');return self.ready.receipt;},
    assertAlive(){if(releasePromise)return Promise.reject(error('native_review_closed','Native review fence releasing; outcome unconfirmed',true));if(!alivePromise)alivePromise=Promise.resolve().then(()=>self.command('assert_alive')).finally(()=>{alivePromise=undefined;});return alivePromise;},
-   release(){if(!releasePromise)releasePromise=(async()=>{if(alivePromise)await alivePromise;self.usable();return self.command('release');})();return releasePromise;},
+   release(){
+    if(!releasePromise){
+     self.ownerReleasing=true;
+     releasePromise=(async()=>{
+      try{if(alivePromise)await alivePromise;self.usable();return await self.command('release');}
+      catch(cause){
+       // The native owner has explicitly finished commit/rollback. An unhealthy
+       // protocol cannot provide a clean release ack; reap only this owned child.
+       self.child.stdin.destroy();self.terminate();await self.closeWait.promise;
+       const failure=self.failure??cause;failure.childReaped=self.closed;failure.fenceReleaseConfirmed=false;throw failure;
+      }
+     })();
+    }
+    return releasePromise;
+   },
   });
  }
 }
