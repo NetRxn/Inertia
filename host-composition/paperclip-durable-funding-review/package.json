@@ -29,6 +29,7 @@
     "qualify:native-coordinator": "node tests/qualify-native-coordinator.mjs",
     "apply-native-runner-resolution": "node scripts/apply-native-runner-resolution.mjs",
     "test:native-runner": "node --test tests/native-runner-*.test.mjs tests/native-coordinator*.test.mjs",
-    "preflight:native-runner": "node scripts/preflight-native-runner.mjs"
+    "preflight:native-runner": "node scripts/preflight-native-runner.mjs",
+    "test:funding-package": "node --test packaging/funding-only.test.mjs"
   }
 }
