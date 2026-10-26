@@ -1,0 +1,37 @@
+--- a/@paperclipai/server/dist/services/heartbeat.js
++++ b/@paperclipai/server/dist/services/heartbeat.js
+@@ -5365,6 +5365,25 @@
+     const recoveryEvidence = parseObject(recoveryAction?.evidence);
+     const executionAlreadyReconciled = recoveryAction?.status === "resolved" &&
+         Boolean(recoveryEvidence.executionReconciliation);
++    // A settled disposition repair handed back to the current source owner is
++    // ordinary task continuation. Never let an old action hide a current hold.
++    let settledRestoredHandback = false;
++    if (recoveryAction?.status === "resolved" && recoveryAction.outcome === "handed_back" && recoveryAction.resolvedAt &&
++        recoveryAction.kind === "deliberate_wait_without_target" && recoveryAction.cause === "deliberate_wait_without_target" &&
++        recoveryAction.sourceIssueId === issueId && recoveryAction.returnOwnerAgentId === input.agentId &&
++        issueSummary?.id === issueId && input.contextSnapshot.issueId === issueId && input.contextSnapshot.taskId === issueId &&
++        input.contextSnapshot.wakeReason === "issue_recovery_action_restored" && input.contextSnapshot.source === "issue.recovery_action_resolution" &&
++        (input.contextSnapshot.recoveryCause === undefined || input.contextSnapshot.recoveryCause === recoveryAction.cause) &&
++        parseObject(recoveryEvidence.automaticRecovery).replay !== "blocked") {
++        const [currentIssue] = await input.db.select({ assigneeAgentId: issues.assigneeAgentId, status: issues.status }).from(issues)
++            .where(and(eq(issues.companyId, input.companyId), eq(issues.id, issueId)));
++        if (currentIssue?.assigneeAgentId === input.agentId && ["todo", "in_progress"].includes(currentIssue.status)) {
++            const [activeRecovery] = await input.db.select({ id: issueRecoveryActions.id }).from(issueRecoveryActions)
++                .where(and(eq(issueRecoveryActions.companyId, input.companyId), eq(issueRecoveryActions.sourceIssueId, issueId),
++                inArray(issueRecoveryActions.status, ["active", "escalated"]))).limit(1);
++            settledRestoredHandback = !activeRecovery;
++        }
++    }
+     const originalAssigneeId = recoveryAction?.returnOwnerAgentId ??
+         recoveryAction?.previousOwnerAgentId ??
+         null;
+@@ -5398,7 +5417,7 @@
+         chatCompletionUpdates: input.contextSnapshot.chatCompletionUpdates ?? null,
+         attachmentOmissions,
+         externalChatProvider,
+-        recovery: !executionAlreadyReconciled && (recoveryAction || recoveryCause)
++        recovery: !executionAlreadyReconciled && !settledRestoredHandback && (recoveryAction || recoveryCause)
+             ? {
+                 cause: recoveryAction?.cause ?? recoveryCause,
+                 failureSummary: readNonEmptyString(recoveryEvidence.failureSummary),
