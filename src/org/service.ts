@@ -190,6 +190,8 @@ export function createOrgService(
         }
       }
 
+      // Concurrent demotions may race past the countModerators check; acceptable for v1.
+
       const updated: OrgMember = {
         ...targetMember,
         role: targetRole
