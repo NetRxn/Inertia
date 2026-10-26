@@ -208,7 +208,11 @@ class NativeReviewSession {
   if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
   const request=v.context.requests[0],candidate=request?.candidate;
   return object(request)&&request.request_id===v.binding.candidate_hash&&request.candidate_hash===v.binding.candidate_hash
-   &&object(candidate)&&candidate.candidate_hash===v.binding.candidate_hash&&candidate.producer_id===v.binding.producer_principal_id&&candidate.producer_run_id===v.binding.producer_run_id;
+   &&object(candidate)&&candidate.candidate_hash===v.binding.candidate_hash
+   // The immutable candidate payload can predate producer column attribution.
+   // Binding identity is authoritative; do not invent missing payload metadata.
+   &&(candidate.producer_id==null||candidate.producer_id===v.binding.producer_principal_id)
+   &&(candidate.producer_run_id==null||candidate.producer_run_id===v.binding.producer_run_id);
  }
  validReady(v){
   return keys(v,['binding','candidate','receipt'])&&this.bindingMatches(v.binding)&&keys(v.candidate,['candidate_hash','producer_principal_id','producer_run_id'])

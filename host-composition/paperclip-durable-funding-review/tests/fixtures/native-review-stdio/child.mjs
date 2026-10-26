@@ -24,6 +24,9 @@ else if(req.op!=='fence'){
   if(cfg.mode==='context-generic'||cfg.mode==='admit-generic')result={echo:req.params};
   if(cfg.mode==='context-wrong-run')result.binding={...result.binding,reviewer_run_id:'other'};
   if(cfg.mode==='context-wrong-source')result.context.requests[0].candidate.producer_run_id='other';
+  if(cfg.mode==='context-wrong-principal')result.context.requests[0].candidate.producer_id='other';
+  if(cfg.mode==='context-null-producer'){result.context.requests[0].candidate.producer_id=null;result.context.requests[0].candidate.producer_run_id=null;}
+  if(cfg.mode==='context-absent-producer'){delete result.context.requests[0].candidate.producer_id;delete result.context.requests[0].candidate.producer_run_id;}
   if(cfg.mode==='admit-wrong-hash')result.binding={...result.binding,candidate_hash:'c'.repeat(64)};
   if(cfg.mode==='admit-wrong-digest')result.artifact_hash='b'.repeat(64);
   send({type:'result',ok:true,result});if(cfg.mode==='extra-output')send({type:'result',ok:true,result:{duplicate:true}});
