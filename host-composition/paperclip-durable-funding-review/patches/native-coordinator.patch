@@ -102,8 +102,8 @@
          const input = record(call.arguments);
 +        const readTools = ["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"];
 +        if (input.targetTaskId !== undefined && (!this.binding.nativeCoordinatorPolicy || !readTools.includes(call.tool))) throw Error("native_coordination_target_denied");
-+        const readIssue = this.binding.nativeCoordinatorPolicy && readTools.includes(call.tool) && input.targetTaskId !== undefined
-+            ? await this.#coordinatorReadTask(requiredUuid(input.targetTaskId)) : context.issue;
++        const readIssue = this.binding.nativeCoordinatorPolicy && readTools.includes(call.tool)
++            ? await this.#coordinatorReadTask(input.targetTaskId === undefined ? context.issue.id : requiredUuid(input.targetTaskId)) : context.issue;
          if (call.tool === READ_CHAT_ATTACHMENT_TOOL_NAME) {
              const scope = this.binding.chatAttachmentReadScope;
              const identityKeys = ["companyId", "issueId", "runId", "agentId"];
@@ -118,7 +118,7 @@
                  const apiUrl = this.binding.apiUrl ?? process.env.PAPERCLIP_API_URL;
                  const token = createLocalAgentJwt(this.binding.agentId, this.binding.companyId, context.actor.adapterType, this.binding.runId, context.run.responsibleUserId);
                  if (!apiUrl || !token)
-@@ -361,14 +375,14 @@
+@@ -361,14 +375,16 @@
              }
              case "get_task_context": {
                  const childTasks = await this.db.select().from(issues)
@@ -126,6 +126,8 @@
 +                    .where(and(eq(issues.companyId, this.binding.companyId), eq(issues.parentId, readIssue.id), isNull(issues.hiddenAt)))
                      .orderBy(desc(issues.createdAt), desc(issues.id))
                      .limit(101);
++                const scopedContext = this.binding.nativeCoordinatorPolicy
++                    ? await this.#coordinatorTaskContext(readIssue, context.run.contextSnapshot) : null;
                  return {
                      company: { id: this.binding.companyId },
                      actor: redactedActor(context.actor),
@@ -136,20 +138,20 @@
                      childTasksTruncated: childTasks.length > 100,
                      delegationGuidance: "Reuse existing child tasks for delegated work. Inspect a completed child's comments and documents before creating another task for the same deliverable. Use search_tasks if the child task list is truncated.",
                      run: {
-@@ -377,9 +391,9 @@
+@@ -377,9 +393,9 @@
                          invocationSource: context.run.invocationSource,
                      },
                      connectionGuidance: CONNECTION_INTENT_AGENT_GUIDANCE,
 -                    acceptedPlan: await this.#acceptedPlan(context.run.contextSnapshot),
 -                    sourcePlanApproval: await handoffPlanContext(this.db, context.issue),
 -                    childReviewOutcomes: await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
-+                    acceptedPlan: this.binding.nativeCoordinatorPolicy ? null : await this.#acceptedPlan(context.run.contextSnapshot),
-+                    sourcePlanApproval: this.binding.nativeCoordinatorPolicy ? null : await handoffPlanContext(this.db, context.issue),
-+                    childReviewOutcomes: this.binding.nativeCoordinatorPolicy ? [] : await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
++                    acceptedPlan: scopedContext ? scopedContext.acceptedPlan : await this.#acceptedPlan(context.run.contextSnapshot),
++                    sourcePlanApproval: scopedContext ? scopedContext.sourcePlanApproval : await handoffPlanContext(this.db, context.issue),
++                    childReviewOutcomes: scopedContext ? scopedContext.childReviewOutcomes : await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
                      ...(this.binding.nativeReview ? {
                          assignedReview: (await getNativeReviewAssignment(this.db, {
                              ...this.binding, contextSnapshot: this.binding.nativeReview,
-@@ -397,7 +411,7 @@
+@@ -397,7 +413,7 @@
                      authorUserId: issueComments.authorUserId,
                      createdAt: issueComments.createdAt,
                  }).from(issueComments)
@@ -158,7 +160,7 @@
                      .orderBy(desc(issueComments.createdAt))
                      .limit(limit);
                  return { comments: comments.reverse() };
-@@ -406,19 +420,19 @@
+@@ -406,19 +422,19 @@
                  const tasks = await issueService(this.db).list(this.binding.companyId);
                  const query = typeof input.query === "string" ? input.query.toLowerCase() : "";
                  const statuses = Array.isArray(input.statuses) ? new Set(input.statuses.filter((value) => typeof value === "string")) : null;
@@ -182,7 +184,7 @@
              case "write_document": return this.#writeDocument(input);
              case "list_agents":
                  return { actors: (await agentService(this.db).list(this.binding.companyId)).map(redactedActor) };
-@@ -712,6 +726,7 @@
+@@ -712,6 +728,7 @@
                  throw forbidden("The assigned review is no longer available to this run.");
              }
          }
@@ -190,7 +192,7 @@
          return row;
      }
      async #resolveReview(value) {
-@@ -865,6 +880,8 @@
+@@ -865,6 +882,8 @@
          const authorizeCreate = async (tx, context) => {
              const parentIssueId = context.issue.conversationAgentId ? null : context.issue.id;
              const projectId = nullableProviderId(input.projectId) ?? (parentIssueId ? context.issue.projectId : null);
@@ -199,7 +201,7 @@
              const scope = { projectId, parentIssueId, assigneeAgentId, assigneeUserId: null };
              const decision = await authorizationService(tx).decide({
                  actor: { type: "agent", source: "agent_jwt", companyId: this.binding.companyId,
-@@ -893,6 +910,7 @@
+@@ -893,6 +912,7 @@
              const conversation = Boolean(context.issue.conversationAgentId);
              const existingChild = await tx.select().from(issues).where(and(eq(issues.companyId, this.binding.companyId), eq(issues.originId, durableIdempotencyKey))).limit(1).then((rows) => rows[0] ?? null);
              if (existingChild) {
@@ -207,7 +209,7 @@
                  if (existingChild.originFingerprint !== inputFingerprint) {
                      throw new Error("paperclip_runner_tool_idempotency_conflict");
                  }
-@@ -992,7 +1010,13 @@
+@@ -992,7 +1012,13 @@
                      assigneeActorId: child.assigneeAgentId,
                  },
              };
@@ -222,7 +224,7 @@
          if (publication)
              publishActivity(publication);
          const task = record(result.task);
-@@ -1052,6 +1076,7 @@
+@@ -1052,6 +1078,7 @@
              const [target] = await tx.select().from(issues).where(and(eq(issues.id, taskId), eq(issues.companyId, this.binding.companyId))).for("update");
              if (!target)
                  throw new Error("paperclip_runner_task_not_found");
@@ -230,17 +232,53 @@
              const actor = { type: "agent", source: "agent_jwt", companyId: this.binding.companyId,
                  agentId: this.binding.agentId, runId: this.binding.runId, onBehalfOfUserId: run.responsibleUserId };
              for (const action of ["issue:read", "tasks:assign"]) {
-@@ -1214,6 +1239,19 @@
+@@ -1214,6 +1241,55 @@
          await syncExternalObjects(this.binding.issueId);
          return result;
      }
-+    async #coordinatorReadTask(id) {
++    async #coordinatorReadTask(id, optional = false) {
 +        const [task] = await this.db.select().from(issues).where(and(eq(issues.id,id),eq(issues.companyId,this.binding.companyId),isNull(issues.hiddenAt))).limit(1);
-+        if (!task || !nativeCoordinatorProjectAllowed(this.binding,task)) throw Error("native_coordination_project_denied");
++        if (!task || !nativeCoordinatorProjectAllowed(this.binding,task)) {
++            if (optional) return null;
++            throw Error("native_coordination_project_denied");
++        }
 +        const context = await this.#boundContext();
 +        const decision = await authorizationService(this.db).decide({actor:{type:"agent",source:"agent_jwt",companyId:this.binding.companyId,agentId:this.binding.agentId,runId:this.binding.runId,onBehalfOfUserId:context.run.responsibleUserId},action:"issue:read",resource:{type:"issue",companyId:this.binding.companyId,issueId:task.id,projectId:task.projectId,parentIssueId:task.parentId,assigneeAgentId:task.assigneeAgentId,assigneeUserId:task.assigneeUserId,status:task.status}});
-+        if (!decision.allowed) throw forbidden(decision.explanation);
++        if (!decision.allowed) {
++            if (optional) return null;
++            throw forbidden(decision.explanation);
++        }
 +        return task;
++    }
++    async #coordinatorTaskContext(task, contextSnapshot) {
++        // A target read never borrows the bound run's accepted-plan snapshot.
++        const acceptedPlan = await this.#acceptedPlan(task.id === this.binding.issueId ? contextSnapshot : {}, task.id);
++        let sourcePlanApproval = null;
++        if (task.originRunId && !task.conversationAgentId) {
++            const [sourceRun] = await this.db.select().from(heartbeatRuns).where(and(
++                eq(heartbeatRuns.id, task.originRunId), eq(heartbeatRuns.companyId, this.binding.companyId)));
++            const sourceId = sourceRun?.nativeIssueId ?? sourceRun?.contextSnapshot?.issueId;
++            const source = typeof sourceId === "string" && sourceId !== task.id
++                ? await this.#coordinatorReadTask(sourceId, true) : null;
++            if (source?.conversationAgentId) {
++                const approval = await handoffPlanContext(this.db, task);
++                if (approval?.sourceIssueId === source.id) {
++                    const freshSource = await this.#coordinatorReadTask(source.id, true);
++                    if (freshSource?.conversationAgentId) sourcePlanApproval = approval;
++                }
++            }
++        }
++        const outcomes = await childReviewOutcomes(this.db, this.binding.companyId, task.id);
++        const visibleOutcomes = [];
++        for (const outcome of outcomes) {
++            const child = await this.#coordinatorReadTask(outcome.result.childTaskId, true);
++            if (child?.parentId === task.id) visibleOutcomes.push(outcome);
++        }
++        // Recheck scope/revocation after all projection reads, before returning content.
++        const fresh = await this.#coordinatorReadTask(task.id);
++        if (fresh.originRunId !== task.originRunId || fresh.conversationAgentId !== task.conversationAgentId)
++            throw Error("native_coordination_context_changed");
++        return { acceptedPlan, sourcePlanApproval, childReviewOutcomes: visibleOutcomes };
 +    }
 +    async #assertCoordinatorTargets(tx, ids) {
 +        if (!this.binding.nativeCoordinatorPolicy || !ids.length) return;
@@ -250,7 +288,7 @@
      async #setDependencies(input) {
          const idempotencyKey = requiredString(input.idempotencyKey);
          if (!Array.isArray(input.blockedByTaskIds)) {
-@@ -1221,6 +1259,7 @@
+@@ -1221,6 +1297,7 @@
          }
          const blockedByIssueIds = input.blockedByTaskIds.map(requiredString);
          return this.#withMutationReceipt("set_dependencies", idempotencyKey, input, async (tx) => {
@@ -258,7 +296,7 @@
              const updated = await issueService(tx).update(this.binding.issueId, {
                  blockedByIssueIds,
                  actorAgentId: this.binding.agentId,
-@@ -1234,7 +1273,7 @@
+@@ -1234,7 +1311,7 @@
                  entityRefs: [updated.id, ...blockedByIssueIds],
                  scheduledWakeIds: [],
              };
@@ -267,7 +305,56 @@
      }
      async #registerDeliverable(input) {
          const idempotencyKey = requiredString(input.idempotencyKey);
-@@ -1625,6 +1664,7 @@
+@@ -1390,13 +1467,16 @@
+             publishActivity(publication);
+         return result;
+     }
+-    async #acceptedPlan(contextSnapshot) {
++    async #acceptedPlan(contextSnapshot, issueId = this.binding.issueId) {
+         const acceptedTarget = record(record(record(contextSnapshot).planReviewInteraction).acceptedTargetRevision);
+         let revisionId = typeof acceptedTarget.revisionId === "string"
+             ? acceptedTarget.revisionId
+             : null;
++        if (revisionId && this.binding.nativeCoordinatorPolicy
++            && await this.#latestAcceptedPlanRevisionId(issueId, revisionId) !== revisionId)
++            return null;
+         if (!revisionId)
+-            revisionId = await this.#latestAcceptedPlanRevisionId();
++            revisionId = await this.#latestAcceptedPlanRevisionId(issueId);
+         if (!revisionId)
+             return null;
+         const [revision] = await this.db.select({
+@@ -1406,23 +1486,24 @@
+             markdown: documentRevisions.body,
+         })
+             .from(documentRevisions)
+-            .innerJoin(issueDocuments, and(eq(issueDocuments.documentId, documentRevisions.documentId), eq(issueDocuments.companyId, this.binding.companyId), eq(issueDocuments.issueId, this.binding.issueId), eq(issueDocuments.key, "plan")))
++            .innerJoin(issueDocuments, and(eq(issueDocuments.documentId, documentRevisions.documentId), eq(issueDocuments.companyId, this.binding.companyId), eq(issueDocuments.issueId, issueId), eq(issueDocuments.key, "plan")))
+             .where(and(eq(documentRevisions.id, revisionId), eq(documentRevisions.companyId, this.binding.companyId)))
+             .limit(1);
+         return revision ?? null;
+     }
+-    async #latestAcceptedPlanRevisionId() {
++    async #latestAcceptedPlanRevisionId(issueId = this.binding.issueId, requiredRevisionId = null) {
+         const rows = await this.db.select({ payload: issueThreadInteractions.payload })
+             .from(issueThreadInteractions)
+-            .where(and(eq(issueThreadInteractions.companyId, this.binding.companyId), eq(issueThreadInteractions.issueId, this.binding.issueId), eq(issueThreadInteractions.kind, "request_confirmation"), eq(issueThreadInteractions.status, "accepted")))
++            .where(and(eq(issueThreadInteractions.companyId, this.binding.companyId), eq(issueThreadInteractions.issueId, issueId), eq(issueThreadInteractions.kind, "request_confirmation"), eq(issueThreadInteractions.status, "accepted")))
+             .orderBy(desc(issueThreadInteractions.resolvedAt), desc(issueThreadInteractions.createdAt));
+         for (const row of rows) {
+             const target = record(record(row.payload).target);
+             if (target.type === "issue_document"
+-                && (target.issueId === undefined || target.issueId === this.binding.issueId)
++                && (target.issueId === undefined || target.issueId === issueId)
+                 && target.key === "plan"
+                 && typeof target.revisionId === "string"
+-                && target.revisionId.length > 0)
++                && target.revisionId.length > 0
++                && (requiredRevisionId === null || target.revisionId === requiredRevisionId))
+                 return target.revisionId;
+         }
+         return null;
+@@ -1625,6 +1706,7 @@
              || ["paused", "terminated", "pending_approval", "error"].includes(context.actor.status)) {
              throw new Error("paperclip_runner_tool_binding_not_authorized");
          }
@@ -275,7 +362,7 @@
          return context;
      }
      async #requestHumanInput(input, identityContextId) {
-@@ -1646,6 +1686,7 @@
+@@ -1646,6 +1728,7 @@
              const suppliedPayload = record(input.payload);
              const targetRevisionId = nullableProviderId(input.targetRevisionId);
              const suppliedTarget = record(suppliedPayload.target);
@@ -283,7 +370,7 @@
              const inferredPlanningTarget = targetRevisionId !== null
                  && suppliedPayload.target === undefined
                  && kind === "request_confirmation"
-@@ -1674,6 +1715,7 @@
+@@ -1674,6 +1757,7 @@
                      : suppliedPayload;
              const interaction = await issueThreadInteractionService(tx).create(context.issue, {
                  kind,
