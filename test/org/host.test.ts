@@ -44,6 +44,15 @@ it('agent actor calling org.members returns forbidden', async () => {
   expect(result).toEqual({ ok: false, error: { kind: 'forbidden', message: 'Access denied.' } });
 });
 
+it('org.overview before org.setup returns null (setup form can show)', async () => {
+  const h = createHarness();
+  const result = await h.performAction('org.overview', {}, {
+    actor: { type: 'user', userId: 'user1', agentId: null, runId: null, companyId: 'co-no-profile' },
+    companyId: 'co-no-profile',
+  });
+  expect(result).toEqual({ ok: true, data: null });
+});
+
 it('user not in org calling org.overview returns forbidden and response has no data field', async () => {
   const h = createHarness();
 
