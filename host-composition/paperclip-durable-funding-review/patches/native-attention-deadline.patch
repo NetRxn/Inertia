@@ -1,0 +1,72 @@
+--- a/dist/services/native-runtime/funding-tool-preapproval.js
++++ b/dist/services/native-runtime/funding-tool-preapproval.js
+@@ -2,6 +2,7 @@
+ import { agents, heartbeatRuns, issues, plugins, pluginConfig, pluginCompanySettings } from "@paperclipai/db";
+ import { toolAccessPolicyService } from "../tool-access-policy.js";
+ import { resolveAssignedPluginToolsForRun } from "./assigned-mcp-tools.js";
++import { normalizeNativeFundingPolicy } from "./native-funding-policy.js";
+ export const FUNDING_ROLE_TOOLS = Object.freeze({
+  producer:Object.freeze(["funding_drafting_workspace","save_funding_proposals","save_funding_gap_progress","funding_drafting_checkpoint"].map(n=>"netrxn.inertia:"+n)),
+  reviewer:Object.freeze(["funding_review_context","review_funding_candidate"].map(n=>"netrxn.inertia:"+n)),
+@@ -19,20 +20,31 @@
+   const [row]=await db.select().from(pluginConfig).where(and(eq(pluginConfig.pluginId,plugin.id),eq(pluginConfig.companyId,input.companyId))).limit(1);
+   const config=row?.configJson,b=config?.publicDrafting;
+   if(config?.nativeFundingToolPreapproval!==true||!object(b)||b.enabled!==true||![b.projectId,b.applicantSlug,b.matchId].every(text))return null;
++  const nativeAttention=b.nativeAttention===true;
+   const a=b.producer,z=b.reviewer;
+-  if(!object(a)||!object(z)||![a.issueId,a.agentId,a.principalId,z.issueId,z.agentId,z.principalId].every(text)||a.issueId===z.issueId||a.agentId===z.agentId||a.principalId===z.principalId)return null;
++  if(!object(a)||!object(z)||![a.issueId,a.agentId,a.principalId,z.issueId,z.agentId,z.principalId].every(text)||
++    (nativeAttention?a.issueId!==z.issueId:a.issueId===z.issueId)||a.agentId===z.agentId||a.principalId===z.principalId)return null;
++  if(nativeAttention && [b.nativeCaseProgression,b.nativeDependencyHandoff,b.nativeGapPlanReview].some(v=>v!==undefined&&v!==false))return null;
+   const role=a.agentId===input.agentId?"producer":z.agentId===input.agentId?"reviewer":null;if(!role)return null;
+   const actor=b[role];
+   const [agent]=await db.select().from(agents).where(and(eq(agents.id,input.agentId),eq(agents.companyId,input.companyId))).limit(1);
+   const cfg=agent?.adapterConfig;
+-  if(!agent||!["idle","running"].includes(agent.status)||agent.adapterType!=="codex_local"||cfg?.disableCommandExecution!==true||cfg.engine!=="cli"||cfg.dangerouslyBypassApprovalsAndSandbox!==false||cfg.dangerouslyBypassSandbox===true||[cfg.extraArgs,cfg.args].some(v=>v!==undefined&&(!Array.isArray(v)||v.length)))return null;
++  let nativePolicy;
++  if(nativeAttention) {
++    try { nativePolicy=normalizeNativeFundingPolicy(cfg); } catch { return null; }
++    if(!agent||!["idle","running"].includes(agent.status)||agent.role!=="general"||agent.adapterType!=="paperclip_runner"||role!=="producer"||
++      !nativePolicy||nativePolicy.role!=="producer"||!nativePolicy.projectIds.includes(b.projectId)||!nativePolicy.issueIds.includes(actor.issueId))return null;
++  } else if(!agent||!["idle","running"].includes(agent.status)||agent.adapterType!=="codex_local"||cfg?.disableCommandExecution!==true||cfg.engine!=="cli"||cfg.dangerouslyBypassApprovalsAndSandbox!==false||cfg.dangerouslyBypassSandbox===true||[cfg.extraArgs,cfg.args].some(v=>v!==undefined&&(!Array.isArray(v)||v.length)))return null;
+   const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,input.runId),eq(heartbeatRuns.companyId,input.companyId),eq(heartbeatRuns.agentId,input.agentId))).limit(1);
+   if(!run||run.status!=="running"||run.finishedAt)return null;
++  if(nativeAttention && (run.runtimeMode!=="native" || run.nativeIssueId!==actor.issueId))return null;
+   const ids=[run.nativeIssueId,run.contextSnapshot?.issueId,run.contextSnapshot?.taskId].filter(v=>v!=null);
+   if(!ids.length||ids.some(v=>v!==actor.issueId)||run.contextSnapshot?.projectId!=null&&run.contextSnapshot.projectId!==b.projectId)return null;
+   const [issue]=await db.select().from(issues).where(and(eq(issues.id,actor.issueId),eq(issues.companyId,input.companyId))).limit(1);
+   if(!issue||issue.projectId!==b.projectId||issue.assigneeAgentId!==input.agentId||!["todo","in_progress","blocked","in_review"].includes(issue.status)||issue.executionRunId&&issue.executionRunId!==input.runId)return null;
+-  return{version:1,role,companyId:input.companyId,agentId:input.agentId,runId:input.runId,issueId:actor.issueId,projectId:b.projectId,configSnapshot:JSON.stringify(b),issueStatus:issue.status};
++  if(nativeAttention && (issue.hiddenAt || issue.status!=="in_progress" || issue.executionRunId!==input.runId || (issue.checkoutRunId!=null && issue.checkoutRunId!==input.runId)))return null;
++  return{version:1,role,companyId:input.companyId,agentId:input.agentId,runId:input.runId,issueId:actor.issueId,projectId:b.projectId,configSnapshot:JSON.stringify(b),issueStatus:issue.status,
++    ...(nativeAttention?{nativePolicySnapshot:JSON.stringify(nativePolicy)}:{})};
+  }
+  const before=await state();if(!before)return null;
+  const live=new Set((await resolveAssignedPluginToolsForRun(db,{companyId:input.companyId,agentId:input.agentId,runId:input.runId})).map(t=>t.name));
+@@ -44,5 +56,5 @@
+   if(decision.allowed===true&&decision.decision==="allow")tools.push(name);
+  }
+  const after=await state();if(!after||JSON.stringify(before)!==JSON.stringify(after))return null;
+- const {configSnapshot:_,issueStatus:__,...binding}=after;return tools.length?{...binding,tools:tools.sort()}:null;
++ const {configSnapshot:_,issueStatus:__,nativePolicySnapshot:___,...binding}=after;return tools.length?{...binding,tools:tools.sort()}:null;
+ }
+--- a/dist/services/native-runtime/assigned-mcp-tools.js
++++ b/dist/services/native-runtime/assigned-mcp-tools.js
+@@ -189,6 +189,7 @@
+                 sessionToken: input.bearerToken,
+                 tool: descriptor.name,
+                 parameters,
++                ...(input.fundingProducer === true ? {nativeMcpExecution:true} : {}),
+             });
+             if (result.status !== "completed" && result.status !== "replayed") {
+                 throw new Error("assigned_mcp_tool_execution_incomplete");
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -8138,6 +8138,7 @@
+             gatewayPublicId: assignedGatewayPublicId,
+             bearerToken: assignedMcpToken,
+             workMode: input.execution.task.workMode,
++            ...(input.execution.provider.nativeFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
+         })
+         : undefined;
+     const coordinator = input.execution.provider.nativeCoordinatorPolicy;

@@ -41,6 +41,8 @@
     "test:native-recovery-handback": "node --test tests/native-recovery-handback*.test.mjs",
     "apply-native-funding-profile": "node scripts/apply-native-funding-profile.mjs",
     "test:native-funding-profile": "node --test tests/native-funding-policy.test.mjs tests/native-funding-roundtrip.test.mjs tests/native-funding-installer.test.mjs",
-    "qualify:native-funding-profile": "node tests/qualify-native-funding.mjs"
+    "qualify:native-funding-profile": "node tests/qualify-native-funding.mjs",
+    "apply-native-attention-deadline": "node scripts/apply-native-attention-deadline.mjs",
+    "test:native-attention-deadline-installer": "node --test tests/native-attention-deadline-installer.test.mjs"
   }
 }

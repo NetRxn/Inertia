@@ -51,3 +51,20 @@ installed pinned authority, provider/parser roundtrip, exact catalogs, restricti
 settings, gateway intersection and hash-checked installer. Those checks are not
 proof of actual model exposure or connected autonomous execution; both need the
 separate bounded native acceptance trace.
+
+## Native-attention producer metadata overlay
+
+Apply `npm run apply-native-attention-deadline` after this profile and before
+the downstream guarded overlays. This separate exact-hash overlay carries the
+producer-only trusted flag through the existing assigned-MCP channel and reuses
+the existing funding execution policy. The resolver requires the live native
+producer policy, current task/run ownership, exact existing grants and a same-task
+`publicDrafting.nativeAttention` binding with independent producer/reviewer identities.
+Legacy Codex-local distinct-task approval remains unchanged. No model argument can
+set the trusted channel flag; tool argument validation remains the handler's job.
+The existing 120/160/170-second operation/RPC/gateway budgets remain unchanged.
+Native-attention host handlers remain fail-closed without this authentic metadata.
+
+Run `npm run test:native-attention-deadline-installer` against the exact qualified
+server tree; the separate native PostgreSQL fixture exercises real gateway dispatch
+and revocation without provider inference or production state.

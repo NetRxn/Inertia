@@ -1,0 +1,30 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e",
+    "dist/services/native-runtime/native-funding-policy.js": "c8dca6746fb1bafc5e6b2fb47cfb066d33c37ff9ec2b96a7dfcda6e2d4bf0215",
+    "dist/services/native-runtime/funding-execution-policy.js": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57"
+  },
+  "patch": "native-attention-deadline.patch",
+  "patch_sha256": "183879df15914952a392b0732e394b00e0cd9dddcee8752226c47b409e1bb0cc",
+  "files": {
+    "dist/services/native-runtime/funding-tool-preapproval.js": {
+      "base_sha256": "c51b799fd85f4addb2a1679b4f738e2b9d676d6ba9a172f9f25f9717f11b5cdf",
+      "candidate_sha256": "265e28f725185e4190e351d194f8ad790afb0c59d127e5b34174c3bc4db855df"
+    },
+    "dist/services/native-runtime/assigned-mcp-tools.js": {
+      "base_sha256": "6cbf8fc7fc171519f14052cfaf1b3690d02658bb962c2f233aa27944fb9a896f",
+      "candidate_sha256": "77cc7c6e604b5c7349ed020355b6bf8906d9b1be6fa4c8c3f809edb33ca76041"
+    },
+    "dist/services/native-runtime/native-session-executor.js": {
+      "base_sha256": "2f127e9a420ed78734e8e2ad765e10990b240a7dd44df257b84b276f5457d32a",
+      "candidate_sha256": "f226de12173dafb263689e82b68e72cd274b8d5a816e04ea34515481b2f6f053"
+    }
+  },
+  "newFiles": {}
+}

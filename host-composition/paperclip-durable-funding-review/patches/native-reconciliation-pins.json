@@ -24,7 +24,7 @@
     "@paperclipai/server/dist/services/native-runtime/paperclip-runner-tool-authority.js": "8d04770e1a28eb613c79dc8cceb643fa1116345a371a9702fd291095d99be31f",
     "@paperclipai/server/dist/services/native-runtime/native-coordinator-policy.js": "c1e4e9d7b0f6199d3b0036f84092fa40706979f04001d7203197d7d6f442cb0a",
     "@paperclipai/server/dist/services/native-runtime/funding-execution-policy.js": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57",
-    "@paperclipai/server/dist/services/native-runtime/funding-tool-preapproval.js": "c51b799fd85f4addb2a1679b4f738e2b9d676d6ba9a172f9f25f9717f11b5cdf",
+    "@paperclipai/server/dist/services/native-runtime/funding-tool-preapproval.js": "265e28f725185e4190e351d194f8ad790afb0c59d127e5b34174c3bc4db855df",
     "@paperclipai/server/dist/services/plugin-tool-registry.js": "5e01de6dacc298563ce8f184d43f02695b1a2e47d2dc4959a31abb1e52d49acf",
     "@paperclipai/adapter-codex-local/dist/server/codex-args.js": "89f0360e73e6fd2c8cb642b2e438db8d63e7e34131b9392a1caf477610c9690b",
     "@paperclipai/server/dist/services/authorization.js": "0b05137b4df0bee6c7edf8347470d3651fb3c85a3a1be4ca3b7feb9d49edca88",
