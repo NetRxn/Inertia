@@ -8,7 +8,7 @@ import { createIntakeStore } from '../intake/store.js';
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: { kind: string; message?: string } };
 
 function forbidden(): ActionResult<never> {
-  return { ok: false, error: { kind: 'forbidden' } };
+  return { ok: false, error: { kind: 'forbidden', message: 'Access denied.' } };
 }
 
 function unavailable(): ActionResult<never> {
@@ -49,7 +49,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
     return withUser(context, async (userId, companyId) => {
       const overview = await service.overview(companyId, userId);
       if (!overview) {
-        throw new OrgError('forbidden', 'Access denied.');
+        return null;
       }
 
       const issues = await ctx.issues.list({ companyId, limit: 50 });
@@ -66,7 +66,10 @@ export function registerOrgProfile(ctx: PluginContext): void {
           };
         });
 
-      return { ...overview, initiatives };
+      const members = await service.members(companyId, userId);
+      const memberCount = members.filter(m => m.status === 'active').length;
+
+      return { ...overview, initiatives, memberCount };
     });
   });
 
@@ -147,15 +150,15 @@ export function registerOrgProfile(ctx: PluginContext): void {
   ctx.actions.register('org.task.trail', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
       const input = params as { issueId: string };
-      const issue = await ctx.issues.get(input.issueId, companyId);
-
-      if (!issue) {
-        throw new OrgError('invalid', 'Task not found.');
-      }
 
       const role = await service.actorRole(companyId, userId);
       if (!role) {
         throw new OrgError('forbidden', 'Access denied.');
+      }
+
+      const issue = await ctx.issues.get(input.issueId, companyId);
+      if (!issue) {
+        throw new OrgError('invalid', 'Task not found.');
       }
 
       const trail = await buildTrail(

@@ -30,6 +30,13 @@ function validateText(value: string, fieldName: string): string {
   return trimmed;
 }
 
+function validateUserId(value: string): string {
+  if (typeof value !== 'string' || value.length < 1 || value.length > 128 || /[\x00-\x1F\x7F]/.test(value)) {
+    throw new OrgError('invalid', 'userId must be a non-empty string, at most 128 characters, without control characters.');
+  }
+  return value;
+}
+
 export function createOrgService(
   store: OrgStore,
   clock: () => Date,
@@ -115,13 +122,14 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
+      const targetUserId = validateUserId(input.userId);
       const displayName = validateText(input.displayName, 'displayName');
       const reason = validateText(input.reason, 'reason');
 
       const now = clock().toISOString();
       const newMember: OrgMember = {
         companyId,
-        userId: input.userId,
+        userId: targetUserId,
         displayName,
         role: 'member',
         status: 'active',
@@ -133,7 +141,7 @@ export function createOrgService(
         companyId,
         actor: userId,
         action: 'member.add',
-        subject: input.userId,
+        subject: targetUserId,
         reason
       });
     },
@@ -144,9 +152,10 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
+      const targetUserId = validateUserId(input.userId);
       const reason = validateText(input.reason, 'reason');
 
-      const targetMember = await store.readMember(companyId, input.userId);
+      const targetMember = await store.readMember(companyId, targetUserId);
       if (!targetMember || targetMember.status === 'removed') {
         throw new OrgError('invalid', 'Member not found.');
       }
@@ -168,7 +177,7 @@ export function createOrgService(
         companyId,
         actor: userId,
         action: 'member.remove',
-        subject: input.userId,
+        subject: targetUserId,
         reason
       });
     },
@@ -179,9 +188,10 @@ export function createOrgService(
         throw new OrgError('forbidden', 'Access denied.');
       }
 
+      const targetUserId = validateUserId(input.userId);
       const reason = validateText(input.reason, 'reason');
 
-      const targetMember = await store.readMember(companyId, input.userId);
+      const targetMember = await store.readMember(companyId, targetUserId);
       if (!targetMember || targetMember.status === 'removed') {
         throw new OrgError('invalid', 'Member not found.');
       }
@@ -211,7 +221,7 @@ export function createOrgService(
         companyId,
         actor: userId,
         action: 'moderator.set',
-        subject: input.userId,
+        subject: targetUserId,
         reason
       });
     },
