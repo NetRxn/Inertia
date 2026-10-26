@@ -1,0 +1,305 @@
+--- a/dist/services/native-runtime/assigned-mcp-tools.js
++++ b/dist/services/native-runtime/assigned-mcp-tools.js
+@@ -150,6 +150,18 @@
+                 throw new Error("assigned_mcp_tool_catalog_capacity_exceeded");
+             return compact;
+         },
++        async definitionsFresh(currentWorkMode) {
++            // Intersect current gateway admission with this session's pinned
++            // catalog. New grants need a fresh session; revocation is immediate.
++            const current = new Map((await input.gateway.listToolsForNamedGateway({
++                gatewayPublicId: input.gatewayPublicId, bearerToken: input.bearerToken,
++            })).map(tool => [tool.name, tool]));
++            return [...tools].filter(([, tool]) => {
++                const fresh = current.get(tool.name);
++                return fresh && permits(tool) && permits(tool, currentWorkMode)
++                    && permits(fresh) && permits(fresh, currentWorkMode);
++            }).map(([name, tool]) => definition(name, tool));
++        },
+         has(name) {
+             return tools.has(name) || name === SEARCH_TOOL || name === CALL_TOOL;
+         },
+--- a/dist/services/native-runtime/native-coordinator-policy.js
++++ b/dist/services/native-runtime/native-coordinator-policy.js
+@@ -3,6 +3,7 @@
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ export function normalizeNativeCoordinatorPolicy(config={}) {
+  if(config.nativeCoordinator===undefined)return null;
++ if(config.nativeFunding!==undefined)throw Error("native_coordination_configuration_invalid");
+  const p=config.nativeCoordinator;
+  if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!['version','projectIds'].includes(k))||p.version!==1||!Array.isArray(p.projectIds)||!p.projectIds.length||p.projectIds.length>16||p.projectIds.some(id=>typeof id!=='string'||!uuid.test(id))||new Set(p.projectIds).size!==p.projectIds.length||config.disableCommandExecution!==true||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'||[config.extraArgs,config.args].some(a=>a!==undefined&&(!Array.isArray(a)||a.length)))throw Error('native_coordination_configuration_invalid');
+  return Object.freeze({version:1,projectIds:Object.freeze([...p.projectIds].sort())});
+--- a/dist/services/native-runtime/provider-profile.js
++++ b/dist/services/native-runtime/provider-profile.js
+@@ -237,10 +237,13 @@
+  * profile's immutable remote resource identity.
+  */
+ import { normalizeNativeCoordinatorPolicy } from "./native-coordinator-policy.js";
++import { normalizeNativeFundingPolicy } from "./native-funding-policy.js";
+ export function resolvePaperclipRunnerNativeProviderInput(input) {
+     const config = asRecord(input.adapterConfig);
+     const profile = resolvePaperclipRunnerProviderProfile(config);
+     const coordinator = normalizeNativeCoordinatorPolicy(config);
++    const funding = normalizeNativeFundingPolicy(config);
++    if (funding && profile.provider !== "codex") throw Error("native_funding_provider_denied");
+     if (coordinator && profile.provider !== "codex") throw Error("native_coordination_provider_denied");
+     if (profile.backend !== input.backend) {
+         throw new PaperclipRunnerProviderProfileError("paperclip_runner_provider_changed", "Paperclip Runner provider changed after this run selected its native backend.");
+@@ -363,6 +366,7 @@
+         model: profile.model,
+         codexApprovalPolicy: resolvePaperclipRunnerPermissionMode("codex", config.codexPermissionMode),
+         ...(coordinator ? {nativeCoordinatorPolicy:coordinator} : {}),
++        ...(funding ? {nativeFundingPolicy:funding} : {}),
+         ...(typeof effort === "string" && effort ? { codexReasoningEffort: effort } : {}),
+     };
+ }
+--- a/dist/services/native-runtime/native-execution-input.js
++++ b/dist/services/native-runtime/native-execution-input.js
+@@ -185,6 +185,7 @@
+                             model: input.model ?? null,
+                             approvalPolicy: input.codexApprovalPolicy ?? "never",
+                             ...(input.nativeCoordinatorPolicy ? {nativeCoordinatorPolicy:input.nativeCoordinatorPolicy} : {}),
++                            ...(input.nativeFundingPolicy ? {nativeFundingPolicy:input.nativeFundingPolicy} : {}),
+                             ...(input.codexReasoningEffort ? { reasoningEffort: input.codexReasoningEffort } : {}),
+                         },
+         completionContract: {
+--- a/dist/vendor/paperclip-runner/contracts/native-execution.js
++++ b/dist/vendor/paperclip-runner/contracts/native-execution.js
+@@ -165,7 +165,7 @@
+             : provider.kind === "acpx"
+                 ? ["kind", "agent", "model", isV4 ? "permissionMode" : "permissionPolicy", "profile"]
+                 : provider.kind === "codex" && isV4
+-                    ? ["kind", "model", "approvalPolicy", ...(isV5 ? ["reasoningEffort", "nativeCoordinatorPolicy"] : [])]
++                    ? ["kind", "model", "approvalPolicy", ...(isV5 ? ["reasoningEffort", "nativeCoordinatorPolicy", "nativeFundingPolicy"] : [])]
+                     : provider.kind === "opencode" && isV4
+                         ? ["kind", "model", "permissionMode"]
+                         : ["kind", "model"], "input.provider");
+@@ -358,7 +358,17 @@
+             if (!isV5 || provider.approvalPolicy !== "never" || policy.version !== 1 || !Array.isArray(policy.projectIds) || !policy.projectIds.length || policy.projectIds.length > 16 || policy.projectIds.some(id=>typeof id!=="string"||!uuid.test(id)) || new Set(policy.projectIds).size!==policy.projectIds.length) throw new NativeExecutionInputError("input.provider.nativeCoordinatorPolicy is invalid");
+             nativeCoordinatorPolicy=Object.freeze({version:1,projectIds:Object.freeze([...policy.projectIds].sort())});
+         }
++        let nativeFundingPolicy;
++        if (provider.nativeFundingPolicy !== undefined) {
++            const policy = record(provider.nativeFundingPolicy, "input.provider.nativeFundingPolicy");
++            exactKeys(policy,["version","role","projectIds","issueIds"],"input.provider.nativeFundingPolicy");
++            const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
++            const ids=values=>Array.isArray(values)&&values.length>=1&&values.length<=16&&values.every(id=>typeof id==="string"&&uuid.test(id))&&new Set(values).size===values.length;
++            if (!isV5 || provider.approvalPolicy !== "never" || provider.nativeCoordinatorPolicy !== undefined || policy.version !== 1 || !["producer","reviewer"].includes(policy.role) || !ids(policy.projectIds) || !ids(policy.issueIds)) throw new NativeExecutionInputError("input.provider.nativeFundingPolicy is invalid");
++            nativeFundingPolicy=Object.freeze({version:1,role:policy.role,projectIds:Object.freeze([...policy.projectIds].sort()),issueIds:Object.freeze([...policy.issueIds].sort())});
++        }
+         parsedProvider = {
++            ...(nativeFundingPolicy ? {nativeFundingPolicy} : {}),
+             ...(nativeCoordinatorPolicy ? {nativeCoordinatorPolicy} : {}),
+             kind: "codex",
+             model: providerModel,
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -5382,6 +5382,7 @@
+     };
+ }
+ export async function executePaperclipNativeSession(input) {
++    if (input.execution.provider.nativeFundingPolicy && (input.execution.provider.nativeCoordinatorPolicy || input.useRunnerd !== true || input.backend !== undefined || input.runnerExecutionTarget?.kind === "remote" || input.managedGitHub || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_funding_execution_denied");
+     if (input.execution.provider.nativeCoordinatorPolicy && (input.useRunnerd !== true || input.backend !== undefined || input.runnerExecutionTarget?.kind === "remote" || input.managedGitHub || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
+     const runId = input.execution.binding.runId;
+     if (nativeSessionStartups.has(runId)) {
+@@ -8140,9 +8141,12 @@
+         })
+         : undefined;
+     const coordinator = input.execution.provider.nativeCoordinatorPolicy;
++    const funding = input.execution.provider.nativeFundingPolicy;
++    if (funding && (coordinator || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never" || (funding.role === "reviewer") !== Boolean(nativeReview))) throw Error("native_funding_execution_denied");
+     if (coordinator && (nativeReview || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
+     const authority = new PaperclipRunnerToolAuthority(input.db, {
+         ...(coordinator ? {nativeCoordinatorPolicy:{...coordinator,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
++        ...(funding ? {nativeFundingPolicy:{...funding,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
+         ...(nativeReview ? { nativeReview } : {}),
+         connectorAssignments: connectorAssignments.filter((assignment) => pinnedSkills.has(assignment.skillKey)),
+         assignedMcpTools,
+@@ -9386,7 +9390,7 @@
+     // Codex sandbox for a local runner by supplying the same key.
+     delete effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_EXTERNAL_SANDBOX;
+     delete effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION;
+-    if (coordinator) effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION = "1";
++    if (coordinator || funding) effectiveRunnerEnvironmentBase.PAPERCLIP_RUNNER_DISABLE_COMMAND_EXECUTION = "1";
+     const effectiveRunnerEnvironment = remoteRuntimeRoot
+         ? {
+             ...effectiveRunnerEnvironmentBase,
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -99,39 +99,25 @@
+     return JSON.stringify(value) ?? "null";
+ }
+ import { NATIVE_COORDINATOR_TOOLS, assertNativeCoordinatorContext, nativeCoordinatorProjectAllowed } from "./native-coordinator-policy.js";
++import { assertNativeFundingContext, assertNativeFundingTool, nativeFundingToolNames } from "./native-funding-policy.js";
+ export class PaperclipRunnerToolAuthority {
+     db;
+     binding;
+     constructor(db, binding) {
+         this.db = db;
+         this.binding = binding.nativeCoordinatorPolicy ? { ...binding, nativeCoordinatorPolicy: Object.freeze({ ...binding.nativeCoordinatorPolicy, projectIds: Object.freeze([...binding.nativeCoordinatorPolicy.projectIds]) }) } : binding;
++        if (binding.nativeFundingPolicy) {
++            if (binding.nativeCoordinatorPolicy) throw Error("native_funding_configuration_invalid");
++            this.binding = {...this.binding,nativeFundingPolicy:Object.freeze({...binding.nativeFundingPolicy,projectIds:Object.freeze([...binding.nativeFundingPolicy.projectIds]),issueIds:Object.freeze([...binding.nativeFundingPolicy.issueIds])})};
++        }
+     }
+     definitions() {
++        if (this.binding.nativeFundingPolicy) return this.#fundingDefinitions();
+         if (this.binding.nativeCoordinatorPolicy) {
+             if (this.binding.nativeReview) throw Error("native_coordination_review_conflict");
+             return CAPABILITY_SEMANTIC_TOOL_CATALOG.filter(t => NATIVE_COORDINATOR_TOOLS.includes(t.operationId)).map(t => ({name:t.operationId,description:t.description + (["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? " Coordinator may inspect targetTaskId only within server-configured projects; ownership and writes remain bound to the current task." : ""),inputSchema:["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? {...t.inputSchema,properties:{...t.inputSchema.properties,targetTaskId:{type:"string",format:"uuid",description:"Optional task in the server-authorized project scope; omission reads the current task."}}} : t.inputSchema}));
+         }
+-        if (this.binding.nativeReview) {
+-            // Scope Paperclip control-plane actions. Provider file and shell access
+-            // still follow the configured agent/environment policy, including tests.
+-            return [
+-                ...CAPABILITY_SEMANTIC_TOOL_CATALOG
+-                    .filter((tool) => NATIVE_REVIEW_READ_TOOLS.has(tool.operationId))
+-                    .map((tool) => ({ name: tool.operationId, description: tool.description, inputSchema: tool.inputSchema })),
+-                {
+-                    name: "resolve_review",
+-                    description: "Record your decision on the one completion review assigned to this run. Inspect the submitted work first. Accept only if it meets the request; otherwise reject with specific changes. This does not change task ownership. After recording the decision, report your review complete with paperclip_finish. Do not redo the worker's task or wait for your own parent task to become runnable.",
+-                    inputSchema: {
+-                        type: "object", additionalProperties: false,
+-                        properties: {
+-                            decision: { type: "string", enum: ["accept", "reject"] },
+-                            reason: { type: "string", description: "Required when rejecting: the specific changes the worker must make." },
+-                        },
+-                        required: ["decision"],
+-                    },
+-                },
+-            ];
+-        }
++        if (this.binding.nativeReview) return this.#reviewDefinitions();
+         const workMode = this.binding.workMode ?? "standard";
+         const definitions = CAPABILITY_SEMANTIC_TOOL_CATALOG.filter((descriptor) => IMPLEMENTED_OPERATIONS.has(descriptor.operationId) &&
+             (runnerApiToolsEnabled(this.binding.companyId, this.binding.apiToolsEnabled) ||
+@@ -178,7 +164,44 @@
+         const assignedTools = this.binding.assignedMcpTools?.definitions((tools) => runnerCodexDynamicToolsFit([...connectionTools, ...tools, ...definitions])) ?? [];
+         return [...connectionTools, ...assignedTools, ...definitions];
+     }
++    #reviewDefinitions() {
++            // Scope Paperclip control-plane actions. Provider file and shell access
++            // still follow the configured agent/environment policy, including tests.
++            return [
++                ...CAPABILITY_SEMANTIC_TOOL_CATALOG
++                    .filter((tool) => NATIVE_REVIEW_READ_TOOLS.has(tool.operationId))
++                    .map((tool) => ({ name: tool.operationId, description: tool.description, inputSchema: tool.inputSchema })),
++                {
++                    name: "resolve_review",
++                    description: "Record your decision on the one completion review assigned to this run. Inspect the submitted work first. Accept only if it meets the request; otherwise reject with specific changes. This does not change task ownership. After recording the decision, report your review complete with paperclip_finish. Do not redo the worker's task or wait for your own parent task to become runnable.",
++                    inputSchema: {
++                        type: "object", additionalProperties: false,
++                        properties: {
++                            decision: { type: "string", enum: ["accept", "reject"] },
++                            reason: { type: "string", description: "Required when rejecting: the specific changes the worker must make." },
++                        },
++                        required: ["decision"],
++                    },
++                },
++            ];
++    }
++    async #fundingDefinitions() {
++        const context = await this.#boundContext();
++        if (this.binding.nativeFundingPolicy.role === "reviewer") return this.#reviewDefinitions();
++        const assigned = this.binding.assignedMcpTools;
++        if (typeof assigned?.definitionsFresh !== "function") throw Error("native_funding_catalog_incomplete");
++        const allowed = nativeFundingToolNames(this.binding.nativeFundingPolicy);
++        const tools = (await assigned.definitionsFresh(context.issue.workMode)).filter(tool => allowed.includes(tool.name));
++        if (tools.length !== allowed.length || new Set(tools.map(tool=>tool.name)).size !== allowed.length || !runnerCodexDynamicToolsFit(tools)) throw Error("native_funding_catalog_incomplete");
++        await this.#boundContext();
++        return tools.map(tool => structuredClone(tool));
++    }
+     async execute(call) {
++        if (this.binding.nativeFundingPolicy) {
++            assertNativeFundingTool(this.binding.nativeFundingPolicy,call.tool);
++            await this.#boundContext();
++            if (this.binding.nativeFundingPolicy.role === "producer" && !this.binding.assignedMcpTools?.has(call.tool)) throw Error("native_funding_catalog_incomplete");
++        }
+         if (this.binding.nativeCoordinatorPolicy && !NATIVE_COORDINATOR_TOOLS.includes(call.tool)) throw Error("native_coordination_tool_denied");
+         if (this.binding.nativeReview) {
+             if (call.tool === "resolve_review")
+@@ -375,7 +398,8 @@
+             }
+             case "get_task_context": {
+                 const childTasks = await this.db.select().from(issues)
+-                    .where(and(eq(issues.companyId, this.binding.companyId), eq(issues.parentId, readIssue.id), isNull(issues.hiddenAt)))
++                    .where(and(eq(issues.companyId, this.binding.companyId), eq(issues.parentId, readIssue.id), isNull(issues.hiddenAt),
++                        ...(this.binding.nativeFundingPolicy ? [inArray(issues.projectId,this.binding.nativeFundingPolicy.projectIds),inArray(issues.id,this.binding.nativeFundingPolicy.issueIds)] : [])))
+                     .orderBy(desc(issues.createdAt), desc(issues.id))
+                     .limit(101);
+                 const scopedContext = this.binding.nativeCoordinatorPolicy
+@@ -393,9 +417,9 @@
+                         invocationSource: context.run.invocationSource,
+                     },
+                     connectionGuidance: CONNECTION_INTENT_AGENT_GUIDANCE,
+-                    acceptedPlan: scopedContext ? scopedContext.acceptedPlan : await this.#acceptedPlan(context.run.contextSnapshot),
+-                    sourcePlanApproval: scopedContext ? scopedContext.sourcePlanApproval : await handoffPlanContext(this.db, context.issue),
+-                    childReviewOutcomes: scopedContext ? scopedContext.childReviewOutcomes : await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
++                    acceptedPlan: this.binding.nativeFundingPolicy ? null : scopedContext ? scopedContext.acceptedPlan : await this.#acceptedPlan(context.run.contextSnapshot),
++                    sourcePlanApproval: this.binding.nativeFundingPolicy ? null : scopedContext ? scopedContext.sourcePlanApproval : await handoffPlanContext(this.db, context.issue),
++                    childReviewOutcomes: this.binding.nativeFundingPolicy ? [] : scopedContext ? scopedContext.childReviewOutcomes : await childReviewOutcomes(this.db, this.binding.companyId, this.binding.issueId),
+                     ...(this.binding.nativeReview ? {
+                         assignedReview: (await getNativeReviewAssignment(this.db, {
+                             ...this.binding, contextSnapshot: this.binding.nativeReview,
+@@ -729,6 +753,7 @@
+             }
+         }
+         assertNativeCoordinatorContext(this.binding, row);
++        assertNativeFundingContext(this.binding, row);
+         return row;
+     }
+     async #resolveReview(value) {
+@@ -1707,6 +1732,7 @@
+             throw new Error("paperclip_runner_tool_binding_not_authorized");
+         }
+         assertNativeCoordinatorContext(this.binding, context);
++        assertNativeFundingContext(this.binding, context);
+         return context;
+     }
+     async #requestHumanInput(input, identityContextId) {
+--- /dev/null
++++ b/dist/services/native-runtime/native-funding-policy.js
+@@ -0,0 +1,43 @@
++/** Exact existing funding-role ceiling; native Paperclip retains lifecycle authority. */
++import { createHash } from 'node:crypto';
++export const NATIVE_FUNDING_PRODUCER_TOOLS = Object.freeze(['funding_drafting_workspace','save_funding_proposals','save_funding_gap_progress','funding_drafting_checkpoint'].map(name => 'netrxn.inertia:' + name));
++export const NATIVE_FUNDING_REVIEW_TOOLS = Object.freeze(['get_task_context','get_task_history','list_documents','read_document','list_document_revisions','resolve_review']);
++const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
++const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join() === [...keys].sort().join();
++const ids=values=>Array.isArray(values)&&values.length>=1&&values.length<=16&&values.every(id=>typeof id==='string'&&uuid.test(id))&&new Set(values).size===values.length;
++function projectedName(name) {
++ const sanitize=value=>value.replace(/[^a-zA-Z0-9_]+/g,'_').replace(/^_+|_+$/g,'');
++ const separator=name.lastIndexOf(':');
++ return `app_${sanitize(name.slice(0,separator)).slice(0,20)}_${sanitize(name.slice(separator+1)).slice(-26)}_${createHash('sha256').update(name).digest('hex').slice(0,12)}`;
++}
++const producerNames=Object.freeze(NATIVE_FUNDING_PRODUCER_TOOLS.map(projectedName));
++export function normalizeNativeFundingPolicy(config={}) {
++ if(config.nativeFunding===undefined)return null;
++ const p=config.nativeFunding;
++ if(!exact(p,['version','role','projectIds','issueIds'])||p.version!==1||!['producer','reviewer'].includes(p.role)||!ids(p.projectIds)||!ids(p.issueIds)
++  ||config.nativeCoordinator!==undefined||config.provider!=='codex'||config.engine!=='cli'||config.disableCommandExecution!==true
++  ||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'
++  ||Object.hasOwn(config,'extraArgs')||Object.hasOwn(config,'args'))throw Error('native_funding_configuration_invalid');
++ return Object.freeze({version:1,role:p.role,projectIds:Object.freeze([...p.projectIds].sort()),issueIds:Object.freeze([...p.issueIds].sort())});
++}
++export function nativeFundingToolNames(policy) {
++ if(policy?.role==='producer')return producerNames;
++ if(policy?.role==='reviewer')return NATIVE_FUNDING_REVIEW_TOOLS;
++ throw Error('native_funding_scope_revoked');
++}
++export function assertNativeFundingTool(policy,tool) {
++ if(!nativeFundingToolNames(policy).includes(tool))throw Error('native_funding_tool_denied');
++}
++export function assertNativeFundingContext(binding,context) {
++ const p=binding.nativeFundingPolicy;if(!p)return;
++ const now=normalizeNativeFundingPolicy(context.actor.adapterConfig);
++ if(binding.nativeCoordinatorPolicy||p.companyId!==binding.companyId||p.agentId!==binding.agentId
++  ||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='general'
++  ||context.actor.adapterType!=='paperclip_runner'||['paused','terminated','pending_approval','error'].includes(context.actor.status)
++  ||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,role:p.role,projectIds:p.projectIds,issueIds:p.issueIds})
++  ||context.issue.companyId!==binding.companyId||context.issue.id!==binding.issueId||context.issue.hiddenAt
++  ||!p.projectIds.includes(context.issue.projectId)||!p.issueIds.includes(context.issue.id)
++  ||context.run.id!==binding.runId||context.run.companyId!==binding.companyId||context.run.agentId!==binding.agentId
++  ||context.run.nativeIssueId!==binding.issueId||context.run.runtimeMode!=='native'||context.run.status!=='running'
++  ||(p.role==='reviewer')!==Boolean(binding.nativeReview))throw Error('native_funding_scope_revoked');
++}

@@ -1,0 +1,48 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  },
+  "patch": "native-funding-profile.patch",
+  "patch_sha256": "54c28f4c438ff3fad62c5865b9138a3e1d7be5248ce4f593154591173953091d",
+  "files": {
+    "dist/services/native-runtime/assigned-mcp-tools.js": {
+      "base_sha256": "bb81c48238c91b37651615ae80fe9febf2fbfefb90df19d2863a6e66feae4149",
+      "candidate_sha256": "6cbf8fc7fc171519f14052cfaf1b3690d02658bb962c2f233aa27944fb9a896f"
+    },
+    "dist/services/native-runtime/native-coordinator-policy.js": {
+      "base_sha256": "cae6e7ac609781447e80ad6d71c3f3272817c0dae0e206cea39ec913d0256919",
+      "candidate_sha256": "c1e4e9d7b0f6199d3b0036f84092fa40706979f04001d7203197d7d6f442cb0a"
+    },
+    "dist/services/native-runtime/provider-profile.js": {
+      "base_sha256": "5619f39fa24d9dbffa4d5aa018110ef152a52e46ed2d4cbf8f3c25e107cd26ae",
+      "candidate_sha256": "865dfd7f5726cd5ccb8488081a11c27ab17b37d0834060a510af7e8fc990906c"
+    },
+    "dist/services/native-runtime/native-execution-input.js": {
+      "base_sha256": "b24bb6a4213305baccefccb40e4fb20ea3520365e4b4cb0df5eb58b0c7b3c542",
+      "candidate_sha256": "673598e82a0f8a1fbe4a55719f1a0db6893bb54f7c4494bcfebfe104244c7f8e"
+    },
+    "dist/vendor/paperclip-runner/contracts/native-execution.js": {
+      "base_sha256": "f20f2cf88e1cbf1a14694d7442e93423a2b3f71b5acd7820ff59ee92d059da23",
+      "candidate_sha256": "f177cf7537d7272fbfb5fb5f36347d7992645cd295eb5a0b810f52baf5df8d07"
+    },
+    "dist/services/native-runtime/native-session-executor.js": {
+      "base_sha256": "5298f2a2c856b9d0591818a692fb0cc918f4b5658b1a9a56df60878b931d2bba",
+      "candidate_sha256": "2f127e9a420ed78734e8e2ad765e10990b240a7dd44df257b84b276f5457d32a"
+    },
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "base_sha256": "14498392202de0456eed89b2e3c70672de5161c1b6c59790da22158a6ace320b",
+      "candidate_sha256": "8d04770e1a28eb613c79dc8cceb643fa1116345a371a9702fd291095d99be31f"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-funding-policy.js": {
+      "candidate_sha256": "c8dca6746fb1bafc5e6b2fb47cfb066d33c37ff9ec2b96a7dfcda6e2d4bf0215"
+    }
+  }
+}
