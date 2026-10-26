@@ -15,6 +15,28 @@ export interface ContextBridge<C> {
 }
 const object=(v:unknown):v is Record<string,unknown>=>!!v && typeof v==="object" && !Array.isArray(v);
 const keys=(v:Record<string,unknown>,fields:string[])=>Object.keys(v).length===fields.length && fields.every(k=>Object.hasOwn(v,k));
+const safeRejectionCodes=new Set(["invalid_config","invalid_protocol","invalid_request","authentication_failed","drafting_rejected","native_preparation_rejected","internal_error"]);
+function rejectionMessage(message:Record<string,unknown>,version:string,operation:string,authenticated:boolean):string {
+  const generic="DFW drafting rejected request";
+  if(version!=="dfw-public-drafting-v1")return generic;
+  if(keys(message,["type","ok","error"]) && typeof message.error==="string" && safeRejectionCodes.has(message.error))return `${generic} (${message.error})`;
+  if(version!=="dfw-public-drafting-v1" || operation!=="review" || !authenticated ||
+     !keys(message,["type","ok","error","details"]) || message.error!=="review_validation_failed")return generic;
+  const details=message.details;
+  if(!object(details) || !keys(details,["issues","truncated"]) || typeof details.truncated!=="boolean" ||
+     !Array.isArray(details.issues) || details.issues.length<1 || details.issues.length>32)return generic;
+  const indices=new Set<number>();
+  for(const issue of details.issues) {
+    if(!object(issue) || !keys(issue,["finding_index","field","code","evidence_ids"]) ||
+       !Number.isSafeInteger(issue.finding_index) || Number(issue.finding_index)<0 || Number(issue.finding_index)>4095 || indices.has(Number(issue.finding_index)) ||
+       issue.field!=="excerpt" || issue.code!=="excerpt_not_in_bound_evidence" || !Array.isArray(issue.evidence_ids) ||
+       issue.evidence_ids.length<1 || issue.evidence_ids.length>32 || new Set(issue.evidence_ids).size!==issue.evidence_ids.length ||
+       issue.evidence_ids.some(id=>typeof id!=="string" || id.length>128 || !/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(id)))return generic;
+    indices.add(Number(issue.finding_index));
+  }
+  if(Buffer.byteLength(JSON.stringify(details))>8192)return generic;
+  return `${generic}: ${JSON.stringify({code:"review_validation_failed",details})}`;
+}
 /** Narrow one-operation duplex protocol. No paths, scope or identity come from model arguments. */
 export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig, version:string):ContextBridge<C> {
   const c=structuredClone(configuration);
@@ -86,7 +108,7 @@ export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig
         try { const decoded=new TextDecoder("utf-8",{fatal:true}).decode(line);const parsed:unknown=JSON.parse(decoded);if(!object(parsed))throw Error();message=parsed; }
         catch {return fail("DFW drafting invalid frame; outcome unconfirmed");}
         if(message.type==="result") {
-          if(message.ok===false && keys(message,["type","ok","error"]))return fail("DFW drafting rejected request");
+          if(message.ok===false)return fail(rejectionMessage(message,version,op,contextCount>0));
           if(!keys(message,["type","ok","result"]) || message.ok!==true || contextCount<1)return fail("DFW drafting invalid result; outcome unconfirmed");
           resultSeen=true;result=message.result;child.stdin.end();return;
         }
