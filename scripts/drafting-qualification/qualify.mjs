@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {randomUUID,createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-import {nativeDatabase,nativeIdentityFixture,loadNative,nativeRoot,schema,eq} from './native-fixture.mjs';
+import {nativeDatabase,nativeIdentityFixture,nativeDraftingGrants,loadNative,nativeRoot,schema,eq} from './native-fixture.mjs';
 import {sdkWire} from './sdk-wire.mjs';
 const harnessRoot=path.dirname(fileURLToPath(import.meta.url));
 const root=process.env.QUALIFICATION_OUTPUT_DIR;
@@ -45,6 +45,7 @@ try{
   }});}};
   const binding={enabled:true,companyId,projectId,applicantSlug:fixture.applicant_slug,matchId:fixture.match_id,producer,reviewer,bridge,authorize:async()=>authorized};
   const pluginId=randomUUID(),pluginKey='netrxn.drafting-qualification';
+  await nativeDraftingGrants(db,identity,pluginKey);
   const manifest={id:pluginKey,apiVersion:1,version:'0.0.0',capabilities:publicDraftingCapabilities,tools:publicDraftingTools};
   await db.insert(schema.plugins).values({id:pluginId,pluginKey,packageName:'fixture-public-drafting',version:'0.0.0',status:'ready',manifestJson:manifest});
   wire=await sdkWire({db,pluginId,manifest,companyId,setup:async ctx=>registerPublicDrafting(ctx,[binding],{own:async(_scope,work)=>work()})});
@@ -188,7 +189,9 @@ try{
     for(const key of ['excerpt','rationale']){assert.equal(finding.properties[key].type,'string');assert.equal(finding.properties[key].minLength,1);}
   });
   await check('protected reviewer context rejects producer, identity arguments and unknown request hashes',async()=>{
-    await assert.rejects(()=>call('funding_review_context'),/actor denied/);
+    const before=bridgeCalls;
+    await assert.rejects(()=>call('funding_review_context'),error=>error.reasonCode==='deny_default');
+    assert.equal(bridgeCalls,before,'Native role policy must reject before private bridge dispatch');
     await assert.rejects(()=>call('funding_review_context',{principal_id:reviewer.principalId},reviewer),/Invalid public drafting parameters/);
     await assert.rejects(()=>call('funding_review_context',{request_id:'f'.repeat(64)},reviewer),/rejected request/);
     const exact=await call('funding_review_context',{request_id:request.request_id},reviewer);
@@ -202,7 +205,9 @@ try{
   });
   const artifact={candidate_hash:request?.candidate.candidate_hash,requirement_hash:request?.candidate.requirement_hash,evidence_set_hash:request?.candidate.evidence_set_hash,rubric_version:'qualification-deterministic-v1',requirement_supported:true,findings:[{claim_start:0,claim_end:text.length,support:'supported',excerpt:'Describe the program and measurable outcomes.',rationale:'Deterministic fixture judgment, not live model quality.'}]};
   await check('reviewer identity comes from native callback, never candidate JSON',async()=>{
-    await assert.rejects(()=>call('review_funding_candidate',{request_id:request.request_id,artifact}),/actor denied/);
+    const before=bridgeCalls;
+    await assert.rejects(()=>call('review_funding_candidate',{request_id:request.request_id,artifact}),error=>error.reasonCode==='deny_default');
+    assert.equal(bridgeCalls,before,'Native role policy must reject before private bridge dispatch');
     await assert.rejects(()=>call('review_funding_candidate',{request_id:request.request_id,artifact,principal_id:reviewer.principalId},reviewer),/Invalid public drafting parameters/);
     await assert.rejects(()=>call('review_funding_candidate',{request_id:request.request_id,artifact:{...artifact,principal_id:'forged-reviewer'}},reviewer),/rejected request/);
     await assert.rejects(()=>call('review_funding_candidate',{request_id:'f'.repeat(64),artifact},reviewer),/rejected request/);
@@ -274,7 +279,8 @@ try{
     assert.equal(domainSnapshot.applicant_field_count,baseline.applicant_field_count);
     assert.equal(domainSnapshot.outcome_count,baseline.outcome_count);
   });
-  const receipt={scope:'Controlled native gateway integration; no HTTP authentication, deployed runtime, real model, source acquisition, or live wake qualification.',nativeVersion:'2026.1012.0',migrationCount,nativeDatabase:'isolated in-memory PGlite with all pinned migrations and constraints',domainDatabase:'isolated SQLite using real DFW domain services',fixtures:['authenticated-route actor identity','native company/project/issues/agents/runs and tool allow policy','owner serialization callback','reviewer wake queue and deterministic candidate judgment','public sponsor evidence'],realPath:['createToolGatewayService.executePluginTool','createPluginToolDispatcher.executeTool','createPluginToolRegistry.executeTool','startWorkerRpcHost executeTool JSON-RPC','registerPublicDrafting callback','native buildHostServices issue reads/checkout/documents/update','createPublicDraftingBridge','public_drafting_stdio.py','PublicDraftingService'],checks,bridgeCalls,freshContextReads:contexts.length,wakeRequests:wire.wakeups.length,workDirectory:work};
+  const receipt={scope:'Controlled native gateway integration; no HTTP authentication, deployed runtime, real model, source acquisition, or live wake qualification.',nativeVersion:'2026.1012.0',migrationCount,nativeDatabase:'isolated in-memory PGlite with all pinned migrations and constraints',domainDatabase:'isolated SQLite using real DFW domain services',fixtures:['authenticated-route actor identity','native company/project/issues/agents/runs and explicit four-producer/two-reviewer tool grants','owner serialization callback','reviewer wake queue and deterministic candidate judgment','public sponsor evidence'],realPath:['createToolGatewayService.executePluginTool','createPluginToolDispatcher.executeTool','createPluginToolRegistry.executeTool','startWorkerRpcHost executeTool JSON-RPC','registerPublicDrafting callback','native buildHostServices issue reads/checkout/documents/update','createPublicDraftingBridge','public_drafting_stdio.py','PublicDraftingService'],checks,bridgeCalls,freshContextReads:contexts.length,wakeRequests:wire.wakeups.length,workDirectory:work};
+  receipt.fixtureHelper=fixture.fixture_helper;
   receipt.domainSnapshot=domainSnapshot;
   receipt.sourcePins=selectedPins;
   receipt.publicSourceHashes={};

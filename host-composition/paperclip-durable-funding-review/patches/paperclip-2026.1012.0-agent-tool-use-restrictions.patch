@@ -1,0 +1,115 @@
+--- a/@paperclipai/server/dist/routes/agents.js
++++ b/@paperclipai/server/dist/routes/agents.js
+@@ -4118,6 +4118,15 @@
+         }
+         res.status(201).json(redactAgentRowForResponse(agent));
+     });
++    router.post("/agents/:id/tool-use-restrictions", async (req, res) => {
++        assertBoard(req);
++        const existing = await getAccessibleResource(req, res, svc.getById(req.params.id), "Agent not found");
++        if (!existing) return;
++        assertCompanyAccess(req, existing.companyId);
++        const decision = await access.decide({actor: req.actor, action: "users:manage_permissions", resource: {type: "company", companyId: existing.companyId}});
++        if (!decision.allowed) throw forbidden(decision.explanation, authorizationDeniedDetails(decision));
++        res.json(await access.restrictAgentToolUse({companyId: existing.companyId, agentId: existing.id, actor: req.actor, body: req.body}));
++    });
+     router.patch("/agents/:id/permissions", validate(updateAgentPermissionsSchema), async (req, res) => {
+         const id = req.params.id;
+         const existing = await getAccessibleResource(req, res, svc.getById(id), "Agent not found");
+--- a/@paperclipai/server/dist/services/access.js
++++ b/@paperclipai/server/dist/services/access.js
+@@ -1,11 +1,85 @@
+ import { and, eq, inArray, ne, notInArray, sql } from "drizzle-orm";
+ import { companyMemberships, companySecretBindings, companySecrets, connectionGrantDelegations, connectionGrantMembers, connectionGrants, instanceUserRoles, issues, principalPermissionGrants, toolAccessAuditEvents, toolConnections, userSecretDeclarations, } from "@paperclipai/db";
+-import { conflict } from "../errors.js";
++import { badRequest, conflict, forbidden, notFound } from "../errors.js";
++import { createHash } from "node:crypto";
++import { agents, companies } from "@paperclipai/db";
++import { logActivity, publishActivity } from "./activity-log.js";
+ import { assertAssignableAgent } from "./agent-assignability.js";
+ import { authorizationService } from "./authorization.js";
+ import { ensureHumanRoleDefaultGrants } from "./principal-access-compatibility.js";
+ export function accessService(db) {
+     const authorization = authorizationService(db);
++    // Board-only narrowing of one existing grant. Never creates membership or authority.
++    async function restrictAgentToolUse(input) {
++        if (input.actor?.type !== "board" || typeof input.actor.userId !== "string" || !input.actor.userId.trim()) {
++            throw forbidden("Only an identified board actor may restrict agent tool use");
++        }
++        const body = input.body;
++        const namePattern = /^[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9][A-Za-z0-9._-]*$/;
++        const validName = name => typeof name === "string" && name.length <= 240 && namePattern.test(name);
++        if (!body || typeof body !== "object" || Array.isArray(body) ||
++            Object.keys(body).length !== 2 || !Object.hasOwn(body, "toolNames") || !Object.hasOwn(body, "expectedGrantFingerprint") ||
++            !Array.isArray(body.toolNames) || body.toolNames.length === 0 || body.toolNames.length > 250 ||
++            !body.toolNames.every(validName) || new Set(body.toolNames).size !== body.toolNames.length ||
++            typeof body.expectedGrantFingerprint !== "string" || !/^[a-f0-9]{64}$/.test(body.expectedGrantFingerprint)) {
++            throw badRequest("Expected an exact nonempty namespaced tool allowlist and current grant fingerprint");
++        }
++        const toolNames = [...body.toolNames].sort();
++        const fingerprint = grant => createHash("sha256").update(JSON.stringify({
++            version: 1, companyId: grant.companyId, agentId: grant.principalId,
++            grantId: grant.id, scope: grant.scope, updatedAt: grant.updatedAt.toISOString(),
++        })).digest("hex");
++        function finiteScope(scope) {
++            if (scope === null || (scope && typeof scope === "object" && !Array.isArray(scope) && Object.keys(scope).length === 0)) return null;
++            if (!scope || typeof scope !== "object" || Array.isArray(scope) || Object.keys(scope).length !== 1) throw conflict("Unsupported current tool grant scope");
++            let values;
++            if (Object.hasOwn(scope, "allow")) {
++                const allow = typeof scope.allow === "string" ? [scope.allow] : scope.allow;
++                if (!Array.isArray(allow) || !allow.every(value => typeof value === "string" && value.startsWith("tool:") && validName(value.slice(5)))) throw conflict("Unsupported current tool grant scope");
++                values = allow.map(value => value.slice(5));
++            } else if (Object.hasOwn(scope, "toolNames") && Array.isArray(scope.toolNames) && scope.toolNames.every(validName)) {
++                values = scope.toolNames;
++            } else throw conflict("Unsupported current tool grant scope");
++            return new Set(values);
++        }
++        const publications = [];
++        const result = await db.transaction(async tx => {
++            const [company] = await tx.select().from(companies).where(eq(companies.id, input.companyId)).for("update");
++            if (!company || company.status !== "active") throw conflict("Company is not active");
++            const [agent] = await tx.select().from(agents).where(and(eq(agents.id, input.agentId), eq(agents.companyId, input.companyId))).for("update");
++            if (!agent) throw notFound("Agent not found");
++            if (!["active", "paused", "idle", "running", "error"].includes(agent.status)) throw conflict("Agent is not active");
++            const [membership] = await tx.select().from(companyMemberships).where(and(
++                eq(companyMemberships.companyId, input.companyId), eq(companyMemberships.principalType, "agent"), eq(companyMemberships.principalId, input.agentId),
++            )).for("update");
++            if (!membership || membership.status !== "active") throw conflict("Existing active agent membership required");
++            // Recheck current native board authority in the same transaction. Lock
++            // the company-scoped human membership/grant against concurrent revocation.
++            await tx.select().from(companyMemberships).where(and(eq(companyMemberships.companyId, input.companyId), eq(companyMemberships.principalType, "user"), eq(companyMemberships.principalId, input.actor.userId))).for("update");
++            await tx.select().from(principalPermissionGrants).where(and(eq(principalPermissionGrants.companyId, input.companyId), eq(principalPermissionGrants.principalType, "user"), eq(principalPermissionGrants.principalId, input.actor.userId), eq(principalPermissionGrants.permissionKey, "users:manage_permissions"))).for("update");
++            const decision = await authorizationService(tx).decide({actor: input.actor, action: "users:manage_permissions", resource: {type: "company", companyId: input.companyId}});
++            if (!decision.allowed) throw forbidden("Current board permission-management authority required");
++            const [grant] = await tx.select().from(principalPermissionGrants).where(and(
++                eq(principalPermissionGrants.companyId, input.companyId), eq(principalPermissionGrants.principalType, "agent"), eq(principalPermissionGrants.principalId, input.agentId), eq(principalPermissionGrants.permissionKey, "tools:use"),
++            )).for("update");
++            if (!grant) throw conflict("Existing agent tools:use grant required");
++            if (fingerprint(grant) !== body.expectedGrantFingerprint) throw conflict("Current tool grant fingerprint changed");
++            const finite = finiteScope(grant.scope);
++            if (finite && toolNames.some(name => !finite.has(name))) throw conflict("Tool restriction cannot widen the current grant");
++            const scope = {allow: toolNames.map(name => `tool:${name}`)};
++            if (JSON.stringify(grant.scope) === JSON.stringify(scope)) return {companyId: input.companyId, agentId: input.agentId, toolNames, grantFingerprint: fingerprint(grant), replayed: true};
++            const [updated] = await tx.update(principalPermissionGrants).set({scope, updatedAt: new Date()}).where(eq(principalPermissionGrants.id, grant.id)).returning();
++            const grantFingerprint = fingerprint(updated);
++            await logActivity(tx, {
++                companyId: input.companyId, actorType: "user", actorId: input.actor.userId,
++                action: "agent.tool_use_restricted", entityType: "agent", entityId: input.agentId,
++                details: {grantId: grant.id, beforeScope: grant.scope, afterScope: scope, expectedGrantFingerprint: body.expectedGrantFingerprint, grantFingerprint},
++            }, publications);
++            return {companyId: input.companyId, agentId: input.agentId, toolNames, grantFingerprint, replayed: false};
++        });
++        for (const publication of publications) publishActivity(publication);
++        return result;
++    }
+     async function sweepMemberConnectionAccess(tx, companyId, userId, now) {
+         const departingAudienceRows = await tx.select({
+             grantId: connectionGrantMembers.grantId,
+@@ -759,6 +833,7 @@
+         ensureRoleDefaultGrants,
+         archiveMember,
+         setMemberPermissions,
++        restrictAgentToolUse,
+         updateMemberAndPermissions,
+         promoteInstanceAdmin,
+         demoteInstanceAdmin,
