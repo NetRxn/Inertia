@@ -281,6 +281,49 @@ describe('buildTrail', () => {
     expect(result.steps[0]!.available).toBe(false);
     expect(result.steps[0]!.detail).toBe('Source not available to you');
   });
+
+  it('shows restricted source to moderator with title in summary', async () => {
+    const mapping: IntakeMapping = {
+      key: 'obj-123',
+      companyId: 'co-1',
+      version: 1,
+      snapshot: {
+        sourceSystem: 'github',
+        sourceId: 'issue-456',
+        organizationId: 'org-1',
+        revision: 'rev-1',
+        sourceHash: 'hash-1',
+        expectedPreviousHash: null,
+        authorRef: 'user-1',
+        audience: 'restricted',
+        title: 'Implement feature X',
+        text: 'Details here',
+        withdrawn: false,
+      },
+      nativeIssueId: 'task-1',
+      pending: false,
+      marker: 'marker-1',
+    };
+    const deps = {
+      ...mockDeps,
+      readMapping: async (key: string) => (key === 'obj-123' ? mapping : null),
+      viewerRole: 'moderator' as OrgRole,
+    };
+    const issue = {
+      id: 'task-1',
+      title: 'Fix bug',
+      status: 'open',
+      originKind: 'plugin:netrxn.inertia:objective',
+      originId: 'obj-123',
+      description: null,
+      assigneeAgentId: null,
+      assigneeUserId: null,
+    };
+    const result = await buildTrail(issue, [objectiveTrailAdapter], deps);
+    expect(result.summary).toBe('from Implement feature X · uses 1 source');
+    expect(result.steps[0]!.available).toBe(true);
+    expect(result.steps[0]!.detail).toBe('Implement feature X (github, restricted)');
+  });
 });
 
 describe('parseTaskFields', () => {

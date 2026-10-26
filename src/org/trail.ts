@@ -84,9 +84,8 @@ export const objectiveTrailAdapter: TrailAdapter = {
     const sourceKey = `objective:${issue.originId}`;
     const hidden = await deps.isHidden(sourceKey);
     const snapshot = mapping.snapshot;
-    const canView =
-      snapshot.audience !== 'restricted' &&
-      (!hidden || deps.viewerRole === 'founder' || deps.viewerRole === 'moderator');
+    const isModerator = deps.viewerRole === 'founder' || deps.viewerRole === 'moderator';
+    const canView = isModerator || (snapshot.audience !== 'restricted' && !hidden);
 
     const alsoUsed: string[] = [];
     const sourceCount = 1 + alsoUsed.length;
