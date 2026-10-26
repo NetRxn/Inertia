@@ -262,4 +262,50 @@ describe('org-client contract', () => {
       expect(result.error.kind).toBe('invalid');
     }
   });
+
+  it('org.task.trail sanitizes a 5000-char multi-line title and CRLF fields so the parser accepts them', async () => {
+    const h = createHarness();
+    const c = ctxFor('company-trail');
+    await h.performAction('org.setup', { name: 'Trail DAO', displayName: 'Founder Name' }, c);
+    const longTitle = ('Line one\nline\ttwo ' + 'x'.repeat(100) + '\n').repeat(40).slice(0, 5000);
+    const issue = await h.ctx.issues.create({
+      companyId: 'company-trail',
+      title: longTitle,
+      description: 'Intro\r\nDone when: ' + 'd'.repeat(3000) + '\r\nNext step: Ship it  \r\n',
+      status: 'in_progress',
+      originKind: 'plugin:netrxn.inertia:objective',
+      originId: 'objective-long',
+    });
+    await pg.query(
+      `INSERT INTO ${BRIDGE_NAMESPACE}.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)`,
+      ['objective-long', JSON.stringify({
+        key: 'objective-long', companyId: 'company-trail', version: 1,
+        snapshot: { sourceSystem: 'Drive sync', sourceId: 'source-long', audience: 'members', title: longTitle, text: 't', withdrawn: false, authorRef: 'author-1' },
+        nativeIssueId: issue.id, pending: false, marker: 'm',
+      })]
+    );
+
+    const result = await h.performAction('org.task.trail', { issueId: issue.id }, c) as any;
+    expect(result.ok, JSON.stringify(result.error)).toBe(true);
+    const trail = parseTaskTrailResponse(result.data);
+    expect(trail.title.startsWith('Line one line two x')).toBe(true);
+    expect(trail.title.endsWith('…')).toBe(true);
+    expect(trail.doneWhen!.endsWith('…')).toBe(true);
+    expect(trail.nextStep).toBe('Ship it');
+    expect(trail.trail.steps[0]!.detail).toContain('(Drive sync, members)');
+  });
+
+  it('org.overview caps initiatives at 20 with sanitized titles the parser accepts', async () => {
+    const h = createHarness();
+    const c = ctxFor('company-many');
+    await h.performAction('org.setup', { name: 'Busy DAO', displayName: 'Founder Name' }, c);
+    for (let i = 0; i < 25; i++) {
+      await h.ctx.issues.create({ companyId: 'company-many', title: ` Initiative ${i}\n` + 'y'.repeat(3000) });
+    }
+    const result = await h.performAction('org.overview', {}, c) as any;
+    expect(result.ok).toBe(true);
+    const overview = parseOrgOverview(result.data);
+    expect(overview.initiatives).toHaveLength(20);
+    expect(overview.initiatives[0]!.title).toMatch(/^Initiative \d+ y+…$/);
+  });
 });

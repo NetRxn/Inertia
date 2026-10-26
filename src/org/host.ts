@@ -4,6 +4,7 @@ import { createOrgService } from './service.js';
 import { OrgError } from './contracts.js';
 import { buildTrail, objectiveTrailAdapter, parseTaskFields } from './trail.js';
 import { createIntakeStore } from '../intake/store.js';
+import { clean } from './text.js';
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: { kind: string; message?: string } };
 
@@ -77,13 +78,14 @@ export function registerOrgProfile(ctx: PluginContext): void {
       const issues = await ctx.issues.list({ companyId, limit: 50 });
       const initiatives = issues
         .filter(issue => !issue.parentId)
+        .slice(0, 20)
         .map(issue => {
           const openTasks = issues.filter(
             child => child.parentId === issue.id && child.status !== 'done' && child.status !== 'cancelled'
           ).length;
           return {
             issueId: issue.id,
-            title: issue.title,
+            title: clean(issue.title, 2000, 'Untitled'),
             openTasks,
           };
         });
@@ -190,6 +192,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
           readMapping: (key: string) => createIntakeStore(ctx.db).read(key),
           isHidden: (sourceKey: string) => store.isHidden(companyId, sourceKey),
           viewerRole: role,
+          companyId,
         }
       );
 
@@ -197,12 +200,20 @@ export function registerOrgProfile(ctx: PluginContext): void {
       const assignee = issue.assigneeUserId ?? issue.assigneeAgentId ?? null;
 
       return {
-        title: issue.title,
-        status: issue.status,
+        title: clean(issue.title, 2000, 'Untitled'),
+        status: clean(issue.status, 200, 'unknown'),
         assignee,
-        doneWhen,
-        nextStep,
-        trail,
+        doneWhen: clean(doneWhen, 2000, '') || null,
+        nextStep: clean(nextStep, 2000, '') || null,
+        trail: {
+          summary: clean(trail.summary, 2000, 'No recorded source'),
+          steps: trail.steps.map(step => ({
+            label: clean(step.label, 200, 'Step'),
+            detail: clean(step.detail, 2000, '-'),
+            available: step.available,
+          })),
+          alsoUsed: trail.alsoUsed.map(item => clean(item, 2000, '-')),
+        },
       };
     });
   });

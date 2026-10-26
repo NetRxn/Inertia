@@ -1,5 +1,6 @@
 import type { IntakeMapping } from '../intake/contracts.js';
 import type { OrgRole } from './contracts.js';
+import { clean } from './text.js';
 
 export interface TrailStep {
   label: string;
@@ -30,6 +31,7 @@ export interface TrailAdapter {
       readMapping(key: string): Promise<IntakeMapping | null>;
       isHidden(sourceKey: string): Promise<boolean>;
       viewerRole: OrgRole;
+      companyId: string;
     }
   ): Promise<TaskTrail | null>;
 }
@@ -50,6 +52,7 @@ export async function buildTrail(
     readMapping(key: string): Promise<IntakeMapping | null>;
     isHidden(sourceKey: string): Promise<boolean>;
     viewerRole: OrgRole;
+    companyId: string;
   }
 ): Promise<TaskTrail> {
   if (!issue.originKind) {
@@ -77,7 +80,7 @@ export const objectiveTrailAdapter: TrailAdapter = {
     }
 
     const mapping = await deps.readMapping(issue.originId);
-    if (!mapping) {
+    if (!mapping || mapping.companyId !== deps.companyId) {
       return null;
     }
 
@@ -95,12 +98,13 @@ export const objectiveTrailAdapter: TrailAdapter = {
     let step1Detail: string;
     let step1Available: boolean;
 
+    const title = clean(snapshot.title, 1000, 'Untitled source');
     if (canView) {
-      summary = `from ${snapshot.title} · uses ${sourceCount} ${sourcePlural}`;
+      summary = `from ${title} · uses ${sourceCount} ${sourcePlural}`;
       if (snapshot.authorRef === 'configured-roundtable-integration') {
-        step1Detail = `Meeting source (${snapshot.sourceId})`;
+        step1Detail = `Meeting source (${clean(snapshot.sourceId, 200, 'unknown')})`;
       } else {
-        step1Detail = `${snapshot.title} (${snapshot.sourceSystem}, ${snapshot.audience})`;
+        step1Detail = `${title} (${clean(snapshot.sourceSystem, 200, 'unknown')}, ${snapshot.audience})`;
       }
       if (hidden) {
         step1Detail += ' (hidden)';
@@ -120,7 +124,7 @@ export const objectiveTrailAdapter: TrailAdapter = {
       },
       {
         label: 'Intake',
-        detail: `Pulled into intake as "${snapshot.title}"`,
+        detail: canView ? `Pulled into intake as "${title}"` : 'Pulled into intake',
         available: true,
       },
       {
@@ -145,15 +149,15 @@ export function parseTaskFields(description: string | null): {
   let doneWhen: string | null = null;
   let nextStep: string | null = null;
 
-  const lines = description.split('\n');
+  const lines = description.split(/\r?\n/);
   for (const line of lines) {
-    const doneWhenMatch = line.match(/^Done when:\s*(.+)$/);
+    const doneWhenMatch = line.match(/^Done when:(.*)$/)?.[1]?.trim();
     if (doneWhenMatch) {
-      doneWhen = doneWhenMatch[1] ?? null;
+      doneWhen = doneWhenMatch;
     }
-    const nextStepMatch = line.match(/^Next step:\s*(.+)$/);
+    const nextStepMatch = line.match(/^Next step:(.*)$/)?.[1]?.trim();
     if (nextStepMatch) {
-      nextStep = nextStepMatch[1] ?? null;
+      nextStep = nextStepMatch;
     }
   }
 

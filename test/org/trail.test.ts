@@ -8,6 +8,7 @@ describe('buildTrail', () => {
     readMapping: async (_key: string) => null as IntakeMapping | null,
     isHidden: async (_sourceKey: string) => false,
     viewerRole: 'member' as OrgRole,
+    companyId: 'co-1',
   };
 
   it('returns No recorded source for issue with no originKind', async () => {
@@ -195,6 +196,8 @@ describe('buildTrail', () => {
     expect(result.summary).toBe('from a source not available to you · uses 1 source');
     expect(result.steps[0]!.available).toBe(false);
     expect(result.steps[0]!.detail).toBe('Source not available to you');
+    expect(result.steps[1]!.detail).toBe('Pulled into intake');
+    expect(JSON.stringify(result)).not.toContain('Implement feature X');
   });
 
   it('shows hidden source to moderator with (hidden) suffix', async () => {
@@ -280,6 +283,45 @@ describe('buildTrail', () => {
     const result = await buildTrail(issue, [objectiveTrailAdapter], deps);
     expect(result.steps[0]!.available).toBe(false);
     expect(result.steps[0]!.detail).toBe('Source not available to you');
+    expect(JSON.stringify(result)).not.toContain('Implement feature X');
+  });
+
+  it('returns No recorded source when the mapping belongs to another company', async () => {
+    const mapping: IntakeMapping = {
+      key: 'obj-123',
+      companyId: 'co-other',
+      version: 1,
+      snapshot: {
+        sourceSystem: 'github',
+        sourceId: 'issue-456',
+        organizationId: 'org-1',
+        revision: 'rev-1',
+        sourceHash: 'hash-1',
+        expectedPreviousHash: null,
+        authorRef: 'user-1',
+        audience: 'members',
+        title: 'Foreign objective',
+        text: 'Details here',
+        withdrawn: false,
+      },
+      nativeIssueId: 'task-1',
+      pending: false,
+      marker: 'marker-1',
+    };
+    const deps = {
+      ...mockDeps,
+      readMapping: async (key: string) => (key === 'obj-123' ? mapping : null),
+      viewerRole: 'founder' as OrgRole,
+    };
+    const issue = {
+      id: 'task-1',
+      title: 'Fix bug',
+      status: 'open',
+      originKind: 'plugin:netrxn.inertia:objective',
+      originId: 'obj-123',
+    };
+    const result = await buildTrail(issue, [objectiveTrailAdapter], deps);
+    expect(result).toEqual({ summary: 'No recorded source', steps: [], alsoUsed: [] });
   });
 
   it('shows restricted source to moderator with title in summary', async () => {
@@ -361,5 +403,11 @@ More text`;
     const result = parseTaskFields('Next step: Start implementation');
     expect(result.doneWhen).toBe(null);
     expect(result.nextStep).toBe('Start implementation');
+  });
+
+  it('trims CRLF line endings and surrounding spaces', () => {
+    const result = parseTaskFields('Intro\r\nDone when:  All tests pass  \r\nNext step: Review\t\r\n');
+    expect(result.doneWhen).toBe('All tests pass');
+    expect(result.nextStep).toBe('Review');
   });
 });
