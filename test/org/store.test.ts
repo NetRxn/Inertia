@@ -36,16 +36,38 @@ it('createProfile twice for one company: first true, second false, one founder r
   expect(members[0]).toMatchObject({ userId: 'alice', role: 'founder' });
 });
 
-it('concurrent createProfile x8 yields exactly one true', async () => {
+it('founder exists if and only if createProfile returned true', async () => {
+  const store = createOrgStore(db);
+  const profile1 = { companyId: 'co1a', name: 'First Inc', createdBy: 'alice', createdAt: new Date().toISOString() };
+  const founder1 = { companyId: 'co1a', userId: 'alice', displayName: 'Alice', role: 'founder' as const, status: 'active' as const, joinedAt: new Date().toISOString() };
+
+  const result1 = await store.createProfile(profile1, founder1);
+  expect(result1).toBe(true);
+  expect(await store.readProfile('co1a')).not.toBeNull();
+  expect(await store.readMember('co1a', 'alice')).toMatchObject({ role: 'founder' });
+
+  const result2 = await store.createProfile(profile1, founder1);
+  expect(result2).toBe(false);
+  const members = await store.listMembers('co1a');
+  expect(members).toHaveLength(1);
+});
+
+it('concurrent createProfile x8 yields exactly one true, one profile, one founder', async () => {
   const store = createOrgStore(db);
   const profile = { companyId: 'co2', name: 'Beta Corp', createdBy: 'bob', createdAt: new Date().toISOString() };
   const founder = { companyId: 'co2', userId: 'bob', displayName: 'Bob', role: 'founder' as const, status: 'active' as const, joinedAt: new Date().toISOString() };
 
   const results = await Promise.all(Array.from({ length: 8 }, () => store.createProfile(profile, founder)));
-  expect(results.filter(r => r === true)).toHaveLength(1);
+  const trueCount = results.filter(r => r === true).length;
+  expect(trueCount).toBe(1);
+
+  const storedProfile = await store.readProfile('co2');
+  expect(storedProfile).not.toBeNull();
+  expect(storedProfile?.name).toBe('Beta Corp');
 
   const members = await store.listMembers('co2');
   expect(members).toHaveLength(1);
+  expect(members[0]).toMatchObject({ userId: 'bob', role: 'founder' });
 });
 
 it('setHidden on objective:abc with no row creates it; isHidden true; setHidden null → false', async () => {

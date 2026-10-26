@@ -68,19 +68,17 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
 
     async createProfile(profile: OrgProfile, founder: OrgMember): Promise<boolean> {
       const count = await execute(
-        `INSERT INTO ${profileTable} (company_id, name, created_by, created_at)
-         SELECT $1, $2, $3, $4::timestamptz WHERE NOT EXISTS (SELECT 1 FROM ${profileTable} WHERE company_id=$1)`,
-        [profile.companyId, profile.name, profile.createdBy, profile.createdAt]
+        `WITH new_profile AS (
+           INSERT INTO ${profileTable} (company_id, name, created_by, created_at)
+           VALUES ($1, $2, $3, $4::timestamptz)
+           ON CONFLICT (company_id) DO NOTHING
+           RETURNING company_id
+         )
+         INSERT INTO ${membersTable} (company_id, user_id, display_name, role, status, joined_at)
+         SELECT $1, $5, $6, $7, $8, $9::timestamptz FROM new_profile`,
+        [profile.companyId, profile.name, profile.createdBy, profile.createdAt, founder.userId, founder.displayName, founder.role, founder.status, founder.joinedAt]
       );
-      if (count === 1) {
-        await execute(
-          `INSERT INTO ${membersTable} (company_id, user_id, display_name, role, status, joined_at)
-           VALUES ($1, $2, $3, $4, $5, $6::timestamptz)`,
-          [founder.companyId, founder.userId, founder.displayName, founder.role, founder.status, founder.joinedAt]
-        );
-        return true;
-      }
-      return false;
+      return count === 1;
     },
 
     async readMember(companyId: string, userId: string): Promise<OrgMember | null> {
