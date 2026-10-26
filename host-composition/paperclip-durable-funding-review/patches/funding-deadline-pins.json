@@ -1,0 +1,48 @@
+{
+  "version": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch": "paperclip-2026.1012.0-funding-deadline.patch",
+  "patch_sha256": "ba60e5fff67a4275513360d7f2a7b84173d64bb3efbf5fc43d04162f91ed1d58",
+  "files": {
+    "@paperclipai/adapter-codex-local/dist/server/codex-home.js": {
+      "base_sha256": "847bda3dcf61a39532a862d205846e198de138e6d364120732998dad3e62bf1d",
+      "candidate_sha256": "9426de18ab6d2dcafc760e509adb92dec9529445744c4b35db22cc71c5e8d756"
+    },
+    "@paperclipai/server/dist/routes/tool-gateway.js": {
+      "base_sha256": "6d9f5b48468c33f7f77864650b9dc456110aae3ecdbd93e1dc90cd5818e9ca23",
+      "candidate_sha256": "832251086cdb3f0953fbeb77f4200c6e92bee5d0451e18ff3584ab4c8d457317"
+    },
+    "@paperclipai/server/dist/services/heartbeat.js": {
+      "base_sha256": "b15b823e013f3420dbdef7a9f8a9f6395f872cb74cf3261ca427ce8b987902e0",
+      "candidate_sha256": "ad6e660711d39b1430d949b070bc5733656a919cb90b9ef3d00e85dba2cd0c5d"
+    },
+    "@paperclipai/server/dist/services/native-runtime/funding-execution-policy.js": {
+      "base_sha256": null,
+      "candidate_sha256": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57"
+    },
+    "@paperclipai/server/dist/services/plugin-tool-dispatcher.js": {
+      "base_sha256": "99e5e1cba172e401f2b23d4bb93059e3d9126d95d0c4e06b39a78c803896aa06",
+      "candidate_sha256": "bcb70d108d9e4e3d279676d40c735800c9cae3eb4af3bbc1528f13ba0f0876e3"
+    },
+    "@paperclipai/server/dist/services/plugin-tool-registry.js": {
+      "base_sha256": "184e62b726075b94189e70eef99a51fbc662956e19550e36ca1c39882f9946b8",
+      "candidate_sha256": "5e01de6dacc298563ce8f184d43f02695b1a2e47d2dc4959a31abb1e52d49acf"
+    },
+    "@paperclipai/server/dist/services/tool-gateway.js": {
+      "base_sha256": "3cbf18e06ba7a063243e38ab752acb880181031acb58fd455b40628c135ec80a",
+      "candidate_sha256": "e482b6946590e58f901d8ae7e0588627a4f5b38e9983f3e9de67f4de40fbf0e0"
+    }
+  },
+  "unchangedGuards": {
+    "@paperclipai/server/dist/services/native-runtime/funding-tool-preapproval.js": "c51b799fd85f4addb2a1679b4f738e2b9d676d6ba9a172f9f25f9717f11b5cdf",
+    "@paperclipai/server/dist/services/native-runtime/assigned-mcp-tools.js": "bb81c48238c91b37651615ae80fe9febf2fbfefb90df19d2863a6e66feae4149",
+    "@paperclipai/server/dist/services/native-runtime/runtime-context.js": "f2cacc07d4556cb4650f83835c3f1f044b2e3fb5c3421e2f26afba2862df31c0",
+    "@paperclipai/server/dist/services/plugin-worker-manager.js": "ba27a96d902c7e9498225892147861437391f794a6889f92683b5a4f08003ec4",
+    "@paperclipai/plugin-sdk/dist/worker-rpc-host.js": "a1079eb8978a5efb3580a21e26a72b6ce1daa9196602119d3e47f74599355663",
+    "@paperclipai/adapter-codex-local/dist/server/codex-args.js": "89f0360e73e6fd2c8cb642b2e438db8d63e7e34131b9392a1caf477610c9690b",
+    "@paperclipai/adapter-codex-local/dist/server/execute.js": "452472908613160cf95f7e3a683ef6583ef87efa9c4cfa09581b688c733f9c40",
+    "@paperclipai/server/dist/services/ai-connection-runtime.js": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874",
+    "@paperclipai/server/dist/services/plugin-manifest-validator.js": "7982729d2465b166e80a0cf75b10a11b9619bf8e340d5fe13d4749c4dac3457a",
+    "@paperclipai/server/dist/services/tool-access-policy.js": "edef6d7d18aabde311e12a061a5d3f553d9a81af9f51a52a67664950b77f7d94"
+  }
+}

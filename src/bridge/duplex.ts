@@ -5,6 +5,8 @@ import { isAbsolute } from "node:path";
 import type { DiscoveryProcessConfig } from "../discovery/stdio.js";
 export interface BoundedProcessConfig extends DiscoveryProcessConfig { configurationPath: string }
 export interface ContextCallbacks<C> {
+  /** Trusted caller deadline, never serialized into private/model parameters. */
+  operationDeadlineAt?: number;
   context(signal?:AbortSignal):Promise<C>;
   review?(request:Record<string,unknown>,signal?:AbortSignal):Promise<{state:"pending";request_id:string}>;
 }
@@ -23,23 +25,39 @@ export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig
      !Number.isInteger(c.timeoutMs) || c.timeoutMs<100 || c.timeoutMs>120_000 || !Number.isInteger(c.maxOutputBytes) || c.maxOutputBytes<1024 || c.maxOutputBytes>4*1024*1024)
     throw Error("Invalid DFW drafting process configuration");
   return { async call(op,params,callbacks) {
-    const deadline=Date.now()+c.timeoutMs;
+    if(callbacks.operationDeadlineAt!==undefined && (!Number.isSafeInteger(callbacks.operationDeadlineAt) || callbacks.operationDeadlineAt<=0))
+      throw Error("DFW drafting invalid operation deadline");
+    const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity);
+    const checkDeadline=()=>{if(Date.now()>=deadline)throw Error("DFW drafting deadline exhausted");};
+    checkDeadline();
     const input=JSON.stringify({version,op,params})+"\n";
     if(Buffer.byteLength(input)>128*1024) throw Error("DFW drafting request too large");
     for(const pin of c.pins) {
+      checkDeadline();
       const metadata=await stat(pin.path);
+      checkDeadline();
       if(!metadata.isFile()) throw Error("DFW drafting pins must be regular files");
       if(metadata.size>16*1024*1024) throw Error("DFW drafting pinned input too large");
       if(createHash("sha256").update(await readFile(pin.path)).digest("hex")!==pin.sha256) throw Error("DFW drafting pin mismatch");
+      checkDeadline();
     }
     const remaining=deadline-Date.now();
     if(remaining<=0) throw Error("DFW drafting deadline exhausted");
     return new Promise((resolve,reject)=>{
-      const child=spawn(c.executable,c.args,{cwd:c.cwd,shell:false,stdio:["pipe","pipe","pipe"]});
+      const child=spawn(c.executable,c.args,{cwd:c.cwd,shell:false,detached:process.platform!=="win32",stdio:["pipe","pipe","pipe"]});
       const controller=new AbortController();
       let settled=false,closing=false,childClosed=false,busy=false,resultSeen=false,contextCount=0,sequence=0,bytes=0,diagnostics=0;
       let buffer=Buffer.alloc(0), result:unknown;
       let failure:Error|undefined;
+      let groupTerminated=false;
+      const terminate=()=>{
+        if(groupTerminated)return;
+        groupTerminated=true;
+        // POSIX detached children own a private process group. Kill descendants
+        // as well as the leader; Node's close event reaps the direct child.
+        if(process.platform!=="win32" && child.pid)try{process.kill(-child.pid,"SIGKILL");}catch{}
+        child.kill("SIGKILL");
+      };
       const finish=()=>{
         // Child termination does not prove an already-started host RPC has stopped.
         // Keep the caller's durable owner until that callback settles too.
@@ -49,7 +67,7 @@ export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig
       };
       const fail=(message:string)=>{
         if(closing)return;
-        failure=Error(message);closing=true;controller.abort();child.stdin.destroy();child.kill("SIGKILL");
+        failure=Error(message);closing=true;controller.abort();child.stdin.destroy();terminate();
         // Wait for close before releasing the caller's durable owner.
       };
       const timer=setTimeout(()=>fail("DFW drafting timed out; outcome unconfirmed"),remaining);
@@ -103,6 +121,7 @@ export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig
       child.stderr.on("data",(chunk:Buffer)=>{diagnostics+=chunk.length;if(diagnostics>64*1024)fail("DFW drafting diagnostic limit exceeded; outcome unconfirmed");});
       child.on("close",code=>{
         childClosed=true;
+        terminate();
         if(!failure && (code!==0 || !resultSeen || buffer.length || busy))failure=Error("DFW drafting process incomplete; outcome unconfirmed");
         finish();
       });

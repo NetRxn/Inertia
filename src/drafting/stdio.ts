@@ -6,6 +6,8 @@ export interface DraftingContext {
   principal_id: string; run_id: string; role: "producer"|"reviewer";
 }
 export interface DraftingCallbacks {
+  /** Absolute host operation deadline; absent retains the configured transport timeout. */
+  operationDeadlineAt?: number;
   context(signal?: AbortSignal): Promise<DraftingContext>;
   review(request: Record<string,unknown>,signal?: AbortSignal): Promise<{state:"pending";request_id:string;kind?:"gap_plan"}>;
 }
@@ -16,6 +18,7 @@ export interface PublicDraftingBridge {
 export function createPublicDraftingBridge(configuration:DraftingProcessConfig):PublicDraftingBridge {
   const bridge=createBoundedContextBridge<DraftingContext>(configuration,"dfw-public-drafting-v1");
   return {call:(operation,params,callbacks)=>bridge.call(operation,params,{
+    ...(callbacks.operationDeadlineAt===undefined?{}:{operationDeadlineAt:callbacks.operationDeadlineAt}),
     context:callbacks.context,
     review:async(request,signal)=>{
       const gap=request.kind==="gap_plan";

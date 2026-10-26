@@ -1,0 +1,14 @@
+import fs from 'node:fs/promises';import path from 'node:path';import{fileURLToPath}from'node:url';import{createHash}from'node:crypto';import{spawnSync}from'node:child_process';
+const root=await fs.realpath(fileURLToPath(new URL('../',import.meta.url))),native=path.join(root,'node_modules'),pins=JSON.parse(await fs.readFile(path.join(root,'patches/funding-deadline-pins.json'))),sha=b=>createHash('sha256').update(b).digest('hex');
+if(await fs.realpath(native)!==native)throw Error('External native modules refused');
+for(const pkg of['server','adapter-codex-local','plugin-sdk']){const d=path.join(native,'@paperclipai',pkg);if((await fs.lstat(d)).isSymbolicLink()||(await fs.realpath(d))!==d||JSON.parse(await fs.readFile(path.join(d,'package.json'))).version!==pins.version)throw Error('Unqualified native package');}
+if(JSON.parse(await fs.readFile(path.join(native,'@paperclipai/server/dist/build-info.json'))).commit!==pins.buildCommit)throw Error('Unqualified native build');
+async function hash(rel,allowMissing=false){const target=path.join(native,rel);const stat=await fs.lstat(target).catch(e=>{if(e.code==='ENOENT'&&allowMissing)return null;throw e;});if(!stat){if((await fs.realpath(path.dirname(target)))!==path.dirname(target))throw Error('External parent');return null;}if(!stat.isFile()||stat.isSymbolicLink()||(await fs.realpath(target))!==target)throw Error('Unsafe pinned target');return sha(await fs.readFile(target));}
+for(const[rel,pin]of Object.entries(pins.unchangedGuards))if(await hash(rel)!==pin)throw Error('Required unchanged security/dependency guard differs');
+const states=[];for(const[rel,pin]of Object.entries(pins.files)){const actual=await hash(rel,pin.base_sha256===null);states.push(actual===pin.candidate_sha256?'patched':actual===pin.base_sha256?'base':'drift');}
+if(states.includes('drift')||new Set(states).size!==1)throw Error('Unqualified/partial funding deadline overlay; no changes made');
+const patch=path.join(root,'patches',pins.patch);if(sha(await fs.readFile(patch))!==pins.patch_sha256)throw Error('Funding deadline patch integrity mismatch');
+if(states[0]==='base')for(const dry of[true,false]){const p=spawnSync('patch',[...(dry?['--dry-run']:[]),'--batch','--forward','--fuzz=0','-p1','-d',native,'-i',patch],{stdio:'inherit'});if(p.error||p.status!==0)throw Error('Funding deadline patch failed; do not start host');}
+for(const[rel,pin]of Object.entries(pins.files))if(await hash(rel)!==pin.candidate_sha256)throw Error('Funding deadline verification failed');
+for(const[rel,pin]of Object.entries(pins.unchangedGuards))if(await hash(rel)!==pin)throw Error('Security/dependency guard changed');
+console.log('Exact scoped funding deadline overlay verified. No credentials, grants, configuration or inference changed.');
