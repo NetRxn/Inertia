@@ -36,6 +36,8 @@
     "apply-native-reconciliation": "node scripts/apply-native-reconciliation.mjs",
     "test:native-reconciliation": "node --test tests/native-reconciliation-cancel.test.mjs tests/native-reconciliation-installer.test.mjs",
     "apply-agent-tool-use-restrictions": "node scripts/apply-agent-tool-use-restrictions.mjs",
-    "test:agent-tool-use-restrictions": "node --test tests/agent-tool-use-restrictions*.test.mjs tests/funding-role-catalog.test.mjs"
+    "test:agent-tool-use-restrictions": "node --test tests/agent-tool-use-restrictions*.test.mjs tests/funding-role-catalog.test.mjs",
+    "apply-native-recovery-handback": "node scripts/apply-native-recovery-handback.mjs",
+    "test:native-recovery-handback": "node --test tests/native-recovery-handback*.test.mjs"
   }
 }
