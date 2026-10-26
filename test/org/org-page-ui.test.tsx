@@ -336,4 +336,96 @@ describe('OrgPage', () => {
       parseOrgOverview({ profile: { companyId: 'c1', name: 'DAO', createdBy: 'u1', createdAt: '2026-01-01T00:00:00Z' }, role: 'member', memberCount: 5, feed: [], keyDocuments: [], initiatives: [], extraKey: 'unexpected' });
     }).toThrow();
   });
+
+  describe('share box params', () => {
+    const overview = async () => ({
+      ok: true,
+      data: {
+        profile: { companyId: 'company-1', name: 'Test DAO', createdBy: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
+        role: 'member',
+        memberCount: 1,
+        feed: [],
+        keyDocuments: [],
+        initiatives: [],
+      },
+    });
+
+    async function type(input: HTMLInputElement, value: string) {
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(dom!.window.HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+        input.dispatchEvent(new dom!.window.Event('input', { bubbles: true }));
+      });
+    }
+
+    async function submit(form: HTMLFormElement) {
+      await act(async () => {
+        form.dispatchEvent(new dom!.window.Event('submit', { bubbles: true, cancelable: true }));
+      });
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+
+    function parts(el: HTMLElement) {
+      const form = el.querySelector('form[aria-label="Share with the DAO"]') as HTMLFormElement;
+      const [content, title] = Array.from(form.querySelectorAll('input[type="text"]')) as HTMLInputElement[];
+      const file = form.querySelector('input[type="file"]') as HTMLInputElement;
+      return { form, content: content!, title: title!, file };
+    }
+
+    it('sends {kind:"link",title,url} and {kind:"note",title,text}', async () => {
+      const calls: unknown[] = [];
+      const el = await mount({
+        'org.overview': overview,
+        'org.source.share': async params => { calls.push(params); return { ok: true, data: null }; },
+      });
+
+      let p = parts(el);
+      await type(p.content, 'https://example.com/doc');
+      await type(p.title, 'Budget');
+      await submit(p.form);
+
+      p = parts(el);
+      await type(p.content, 'Remember the vote');
+      await type(p.title, 'Reminder');
+      await submit(p.form);
+
+      expect(calls).toEqual([
+        { kind: 'link', title: 'Budget', url: 'https://example.com/doc' },
+        { kind: 'note', title: 'Reminder', text: 'Remember the vote' },
+      ]);
+    });
+
+    it('requires a title for links and notes', async () => {
+      const calls: unknown[] = [];
+      const el = await mount({
+        'org.overview': overview,
+        'org.source.share': async params => { calls.push(params); return { ok: true, data: null }; },
+      });
+      const p = parts(el);
+      await type(p.content, 'https://example.com/doc');
+      await submit(p.form);
+      expect(calls).toEqual([]);
+      expect(el.textContent).toContain('Title is required');
+    });
+
+    it('sends {kind:"file",title,mediaType,base64} with the title defaulting to the file name', async () => {
+      const calls: unknown[] = [];
+      const el = await mount({
+        'org.overview': overview,
+        'org.source.share': async params => { calls.push(params); return { ok: true, data: null }; },
+      });
+      vi.stubGlobal('FileReader', dom!.window.FileReader);
+      const p = parts(el);
+      const file = new dom!.window.File(['hello file'], 'notes.txt', { type: 'text/plain' });
+      Object.defineProperty(p.file, 'files', { value: [file], configurable: true });
+      await act(async () => {
+        p.file.dispatchEvent(new dom!.window.Event('change', { bubbles: true }));
+      });
+      await submit(p.form);
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(calls).toEqual([
+        { kind: 'file', title: 'notes.txt', mediaType: 'text/plain', base64: Buffer.from('hello file').toString('base64') },
+      ]);
+    });
+  });
 });

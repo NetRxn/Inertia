@@ -11,6 +11,28 @@ function forbidden(): ActionResult<never> {
   return { ok: false, error: { kind: 'forbidden', message: 'Access denied.' } };
 }
 
+const base64Pattern = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+const maxBase64Length = Math.ceil(1048576 / 3) * 4;
+
+function decodeShare(params: unknown): unknown {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    throw new OrgError('invalid', 'Invalid share input.');
+  }
+  const input = params as Record<string, unknown>;
+  if (input.kind !== 'file') {
+    return input;
+  }
+  if (typeof input.base64 !== 'string' || input.base64.length > maxBase64Length || !base64Pattern.test(input.base64)) {
+    throw new OrgError('invalid', 'File data must be valid base64 of at most 1 MiB.');
+  }
+  return {
+    kind: 'file',
+    title: input.title,
+    mediaType: input.mediaType,
+    bytes: new Uint8Array(Buffer.from(input.base64, 'base64')),
+  };
+}
+
 function unavailable(): ActionResult<never> {
   return { ok: false, error: { kind: 'unavailable', message: 'Operation unavailable.' } };
 }
@@ -112,7 +134,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.source.share', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      return service.share(companyId, userId, params);
+      return service.share(companyId, userId, decodeShare(params));
     });
   });
 

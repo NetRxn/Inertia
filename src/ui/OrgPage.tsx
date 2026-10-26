@@ -163,6 +163,7 @@ export function OrgPage({ context }: PluginPageProps) {
 
   async function handleShare(event: FormEvent) {
     event.preventDefault();
+    const form = event.currentTarget as HTMLFormElement;
     setMessage('');
 
     const hasLink = shareLink.trim().length > 0;
@@ -174,25 +175,31 @@ export function OrgPage({ context }: PluginPageProps) {
       return;
     }
 
+    if (hasFile && (hasLink || hasNote)) {
+      setMessage('Share either a link or note, or a file, one at a time.');
+      return;
+    }
+
     if (hasFile && shareFile!.size > 1024 * 1024) {
       setMessage('File size must be under 1 MiB.');
       return;
     }
 
+    const title = shareTitle.trim() || (hasFile ? shareFile!.name.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 200) : '');
+    if (!title) {
+      setMessage('Title is required for links and notes.');
+      return;
+    }
+
     try {
-      let fileData: { name: string; mediaType: string; base64: string } | undefined;
+      let params: { kind: 'link'; title: string; url: string } | { kind: 'note'; title: string; text: string } | { kind: 'file'; title: string; mediaType: string; base64: string };
       if (hasFile) {
         const reader = new FileReader();
         const base64 = await new Promise<string>((resolve, reject) => {
           reader.onload = () => {
             const result = reader.result as string;
-            const prefix = 'data:';
-            if (!result.startsWith(prefix)) {
-              reject(new Error('Invalid file data'));
-              return;
-            }
             const commaIndex = result.indexOf(',');
-            if (commaIndex === -1) {
+            if (!result.startsWith('data:') || commaIndex === -1) {
               reject(new Error('Invalid file data'));
               return;
             }
@@ -201,19 +208,12 @@ export function OrgPage({ context }: PluginPageProps) {
           reader.onerror = () => reject(reader.error);
           reader.readAsDataURL(shareFile!);
         });
-
-        fileData = {
-          name: shareFile!.name,
-          mediaType: shareFile!.type || 'application/octet-stream',
-          base64,
-        };
+        params = { kind: 'file', title, mediaType: shareFile!.type || 'application/octet-stream', base64 };
+      } else if (hasLink) {
+        params = { kind: 'link', title, url: shareLink.trim() };
+      } else {
+        params = { kind: 'note', title, text: shareNote.trim() };
       }
-
-      const params: any = {};
-      if (hasLink) params.link = shareLink.trim();
-      if (hasNote) params.note = shareNote.trim();
-      if (shareTitle.trim()) params.title = shareTitle.trim();
-      if (fileData) params.file = fileData;
 
       const result = (await shareAction(params)) as ActionResult<unknown>;
       if (result.ok) {
@@ -221,6 +221,7 @@ export function OrgPage({ context }: PluginPageProps) {
         setShareNote('');
         setShareTitle('');
         setShareFile(null);
+        form.reset();
         await loadOverview();
       } else {
         setMessage(result.error.message || 'Could not share.');
@@ -457,7 +458,7 @@ export function OrgPage({ context }: PluginPageProps) {
                 />
               </label>
               <label style={{ display: 'grid', gap: 4 }}>
-                Title (optional)
+                Title (optional for files)
                 <input
                   style={control}
                   type="text"

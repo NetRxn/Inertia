@@ -2,6 +2,7 @@ import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseTaskTrailResponse } from '../../src/ui/org-client.js';
 import { manifest } from '../../src/manifest.js';
 import { BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
@@ -219,5 +220,46 @@ describe('org-client contract', () => {
     expect(trail.trail).toHaveProperty('alsoUsed');
     expect(Array.isArray(trail.trail.steps)).toBe(true);
     expect(Array.isArray(trail.trail.alsoUsed)).toBe(true);
+  });
+
+  function ctxFor(companyId: string, userId = 'founder-1') {
+    return { actor: { type: 'user' as const, userId, agentId: null, runId: null, companyId }, companyId };
+  }
+
+  it('org.source.share accepts the exact link, note and file params the UI sends', async () => {
+    const h = createHarness();
+    const c = ctxFor('company-share');
+    await h.performAction('org.setup', { name: 'Share DAO', displayName: 'Founder Name' }, c);
+
+    const bytes = new TextEncoder().encode('hello file');
+    const base64 = Buffer.from(bytes).toString('base64');
+    const uiParams = [
+      { kind: 'link', title: 'A link', url: 'https://example.com/a' },
+      { kind: 'note', title: 'A note', text: 'Some note text' },
+      { kind: 'file', title: 'notes.txt', mediaType: 'text/plain', base64 },
+    ];
+    for (const params of uiParams) {
+      const result = await h.performAction('org.source.share', params, c) as { ok: boolean; error?: unknown };
+      expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
+    }
+
+    const listed = await h.performAction('org.sources', { hidden: false }, c) as { ok: boolean; data?: unknown };
+    const sources = parseOrgSources(listed.data);
+    const file = sources.find(s => s.kind === 'file')!;
+    expect(file).toMatchObject({ title: 'notes.txt', mediaType: 'text/plain', byteLength: bytes.length });
+    expect(file.sha256).toBe(createHash('sha256').update(bytes).digest('hex'));
+    expect(sources.find(s => s.kind === 'link')!.url).toBe('https://example.com/a');
+    expect(sources.find(s => s.kind === 'note')!.title).toBe('A note');
+  });
+
+  it('org.source.share rejects malformed base64 as invalid', async () => {
+    const h = createHarness();
+    const c = ctxFor('company-share-bad');
+    await h.performAction('org.setup', { name: 'Share DAO', displayName: 'Founder Name' }, c);
+    for (const base64 of ['not base64!', 'abc', 'ab=c', 12]) {
+      const result = await h.performAction('org.source.share', { kind: 'file', title: 'x', mediaType: 'text/plain', base64 }, c) as any;
+      expect(result.ok).toBe(false);
+      expect(result.error.kind).toBe('invalid');
+    }
   });
 });

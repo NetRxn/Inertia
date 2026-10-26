@@ -90,6 +90,18 @@ describe('sources', () => {
       }
     });
 
+    it('rejects media type over 200 chars or without type/subtype form', () => {
+      const bytes = new Uint8Array(1);
+      expect(() => validateShare({ kind: 'file', title: 'F', mediaType: 'text/' + 'x'.repeat(200), bytes })).toThrow(OrgError);
+      expect(() => validateShare({ kind: 'file', title: 'F', mediaType: 'not a type', bytes })).toThrow(OrgError);
+      expect(validateShare({ kind: 'file', title: 'F', mediaType: 'application/vnd.ms-excel', bytes }).kind).toBe('file');
+    });
+
+    it('rejects URL over 2048 characters', () => {
+      const url = 'https://example.com/' + 'a'.repeat(2048);
+      expect(() => validateShare({ kind: 'link', title: 'Long', url })).toThrow(OrgError);
+    });
+
     it('accepts note with text under 20k chars', () => {
       const text = 'x'.repeat(19999);
       const result = validateShare({ kind: 'note', title: 'Note', text });

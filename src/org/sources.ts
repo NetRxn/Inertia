@@ -25,6 +25,10 @@ export function validateShare(input: unknown): ShareLinkInput | ShareNoteInput |
       throw new OrgError('invalid', 'URL is required for link shares.');
     }
 
+    if (new TextEncoder().encode(obj.url).length > 2048 || obj.url.trim() !== obj.url || /[\x00-\x1F\x7F]/.test(obj.url)) {
+      throw new OrgError('invalid', 'URL must be at most 2048 characters without spaces at either end.');
+    }
+
     let parsed: URL;
     try {
       parsed = new URL(obj.url);
@@ -52,8 +56,8 @@ export function validateShare(input: unknown): ShareLinkInput | ShareNoteInput |
   }
 
   if (obj.kind === 'file') {
-    if (typeof obj.mediaType !== 'string') {
-      throw new OrgError('invalid', 'Media type is required for file shares.');
+    if (typeof obj.mediaType !== 'string' || obj.mediaType.length > 200 || !/^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/.test(obj.mediaType)) {
+      throw new OrgError('invalid', 'Media type must be a type/subtype of at most 200 characters.');
     }
 
     if (!(obj.bytes instanceof Uint8Array)) {
