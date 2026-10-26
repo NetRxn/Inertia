@@ -1,0 +1,191 @@
+--- a/@paperclipai/server/dist/routes/issues.js
++++ b/@paperclipai/server/dist/routes/issues.js
+@@ -9,7 +9,7 @@
+ import { issueRecoveryActionReadModel } from "../services/issue-recovery-actions.js";
+ import { getExecutionBlocker } from "../services/execution-blocker.js";
+ import { requiresExecutionReconciliation } from "@paperclipai/shared";
+-import { validateExecutionReconciliation, markExecutionReconciliation, } from "../services/execution-recovery-resolution.js";
++import { validateExecutionReconciliation, markExecutionReconciliation, withdrawPendingExecutionReconciliation, } from "../services/execution-recovery-resolution.js";
+ import { storedSteeringAcknowledgement, reconcileSteeredIdentity, reserveSteeredIdentity, acceptSteeredIdentity, rejectSteeredIdentity, } from "../services/run-identity.js";
+ import { createHash, randomUUID } from "node:crypto";
+ import { Router } from "express";
+@@ -6263,7 +6263,7 @@
+             if (!(await assertCrossIssueInfluenceWithinRunCap(req, res, existing, "update")))
+                 return;
+         }
+-        const { actionId, outcome, sourceIssueStatus, resolutionNote, executionReconciliation, } = req.body;
++        const { actionId, outcome, sourceIssueStatus, resolutionNote, executionReconciliation, withdrawPendingDelivery, } = req.body;
+         if (outcome === "false_positive" || outcome === "cancelled") {
+             assertBoard(req);
+         }
+@@ -6281,6 +6281,16 @@
+             if (!lockedIssue)
+                 throw notFound("Issue not found");
+             let activeRecoveryAction = await recoveryActionsSvc.getActiveForIssue(lockedIssue.companyId, lockedIssue.id, tx);
++            if (withdrawPendingDelivery === true) {
++                const [sourceAction] = await tx.select().from(issueRecoveryActions)
++                    .where(and(eq(issueRecoveryActions.id, actionId), eq(issueRecoveryActions.companyId, lockedIssue.companyId), eq(issueRecoveryActions.sourceIssueId, lockedIssue.id)));
++                if (!sourceAction)
++                    throw notFound("Source recovery action not found");
++                await requireRecoveryActionAuthority(req, lockedIssue, issueRecoveryActionReadModel(sourceAction), { source: "recovery_action_resolution" });
++                const withdrawn = await withdrawPendingExecutionReconciliation(tx, { companyId: lockedIssue.companyId, issueId: lockedIssue.id,
++                    actionId, actorId: actor.actorId, sourceIssueStatus, resolutionNote });
++                return { issue: lockedIssue, ...withdrawn, withdrawnPendingDelivery: true, activeRecoveryAction };
++            }
+             if (actionId &&
+                 (!activeRecoveryAction || activeRecoveryAction.id !== actionId)) {
+                 const [settled] = await tx
+@@ -6543,16 +6553,18 @@
+         });
+         if (result.replayed) {
+             res.json({
+-                issue: result.issue,
++                issue: result.withdrawnPendingDelivery ? { ...result.issue, activeRecoveryAction: result.activeRecoveryAction } : result.issue,
+                 recoveryAction: result.recoveryAction,
++                ...(result.withdrawnPendingDelivery ? { replayed: true } : {}),
+             });
+             return;
+         }
+         for (const publication of postCommitActivityPublications)
+             publishActivity(publication);
+         await flushIssuePostCommitActions(postCommitIssueActions);
+-        await routinesSvc.syncRunStatusForIssue(result.issue.id);
+-        if (sourceIssueStatus && existing.status !== result.issue.status) {
++        if (!result.withdrawnPendingDelivery)
++            await routinesSvc.syncRunStatusForIssue(result.issue.id);
++        if (!result.withdrawnPendingDelivery && sourceIssueStatus && existing.status !== result.issue.status) {
+             await logActivity(db, {
+                 companyId: result.issue.companyId,
+                 actorType: actor.actorType,
+@@ -6603,7 +6615,7 @@
+                 logger.warn({ retryActionId: result.chatRetry.actionId }, "chat recovery retry dispatch deferred to durable worker");
+             }
+         }
+-        else if (!executionReconciliation &&
++        else if (!result.withdrawnPendingDelivery && !executionReconciliation &&
+             sourceIssueStatus === "todo" &&
+             result.issue.assigneeAgentId &&
+             (existing.status !== result.issue.status ||
+@@ -6640,9 +6652,10 @@
+         res.json({
+             issue: {
+                 ...result.issue,
+-                activeRecoveryAction: null,
++                activeRecoveryAction: result.withdrawnPendingDelivery ? result.activeRecoveryAction : null,
+             },
+             recoveryAction: result.recoveryAction,
++            ...(result.withdrawnPendingDelivery ? { replayed: false } : {}),
+         });
+     });
+     router.get("/issues/:id/work-products", async (req, res) => {
+@@ -13607,4 +13620,4 @@
+     });
+     return router;
+ }
+-//# sourceMappingURL=issues.js.map
+\ No newline at end of file
++//# sourceMappingURL=issues.js.map
+--- a/@paperclipai/server/dist/services/execution-recovery-resolution.js
++++ b/@paperclipai/server/dist/services/execution-recovery-resolution.js
+@@ -5,7 +5,7 @@
+ import { appendHeartbeatRunEvent } from "./heartbeat-run-events.js";
+ import { logger } from "../middleware/logger.js";
+ import { and, eq, inArray, isNull, not, or, sql } from "drizzle-orm";
+-import { chatActions, environmentLeases, heartbeatRuns, issueRecoveryActions, issues, nativeRunFinalizations, } from "@paperclipai/db";
++import { agentWakeupRequests, chatActions, environmentLeases, heartbeatRuns, issueRecoveryActions, issues, nativeRunFinalizations, } from "@paperclipai/db";
+ import { conflict } from "../errors.js";
+ import { buildExecutionContinuation } from "./execution-continuation.js";
+ import { EXECUTION_RECONCILIATION_CAUSES, } from "@paperclipai/shared";
+@@ -83,6 +83,55 @@
+     });
+     return run;
+ }
++/** Board-only route locks the source issue before this action/delivery check.
++ * Withdraw only an intent that never acquired a continuation; never reinterpret
++ * execution outcomes or clear an automatic no-replay hold. */
++export async function withdrawPendingExecutionReconciliation(tx, input) {
++    const { companyId, issueId, actionId, actorId, sourceIssueStatus, resolutionNote } = input;
++    if (typeof actorId !== "string" || !actorId.trim() || typeof resolutionNote !== "string" || resolutionNote.trim().length < 20)
++        throw conflict("Record the board actor and a meaningful withdrawal reason.");
++    const [task] = await tx.select().from(issues)
++        .where(and(eq(issues.companyId, companyId), eq(issues.id, issueId))).for("update");
++    if (!task || task.status !== sourceIssueStatus)
++        throw conflict("Withdrawing pending delivery must preserve the current source issue status.");
++    const [action] = await tx.select().from(issueRecoveryActions)
++        .where(and(eq(issueRecoveryActions.companyId, companyId), eq(issueRecoveryActions.sourceIssueId, issueId), eq(issueRecoveryActions.id, actionId))).for("update");
++    if (!action)
++        throw conflict("The source-scoped recovery action is no longer available.");
++    const evidence = action.evidence;
++    if (action.kind !== "active_run_watchdog" || !EXECUTION_RECONCILIATION_CAUSES.includes(action.cause) ||
++        !evidence || typeof evidence.executionReconciliation !== "object" || evidence.executionReconciliation === null || Array.isArray(evidence.executionReconciliation) ||
++        evidence.automaticRecovery?.replay === "blocked")
++        throw conflict("Only a settled execution reconciliation without an uncertain no-replay hold can withdraw its undelivered intent.");
++    const priorWithdrawal = evidence.continuationDeliveryWithdrawal;
++    const replayed = action.status === "cancelled" && action.outcome === "cancelled" && evidence.continuationDelivery === "cancelled" &&
++        priorWithdrawal?.version === 1 && priorWithdrawal.actionId === actionId && priorWithdrawal.companyId === companyId && priorWithdrawal.issueId === issueId;
++    if (!replayed && (action.status !== "resolved" || evidence.continuationDelivery !== "pending" || priorWithdrawal !== undefined))
++        throw conflict("This recovery action does not have an undelivered settled continuation to withdraw.");
++    // Match the exact native delivery key within the authoritative company,
++    // regardless of wake/actor/task status.
++    // A skipped wake with a linked run is still delivered or uncertain evidence.
++    const wakes = await tx.select({ id: agentWakeupRequests.id }).from(agentWakeupRequests)
++        .where(and(eq(agentWakeupRequests.companyId, companyId), eq(agentWakeupRequests.idempotencyKey, `execution-reconciliation:${actionId}`),
++            or(not(eq(agentWakeupRequests.status, "skipped")), not(isNull(agentWakeupRequests.runId))))).limit(1).for("update");
++    const runs = await tx.select({ id: heartbeatRuns.id }).from(heartbeatRuns)
++        .where(and(eq(heartbeatRuns.companyId, companyId), sql `${heartbeatRuns.contextSnapshot}->>'recoveryActionId' = ${actionId}`)).limit(1).for("update");
++    if (wakes.length || runs.length)
++        throw conflict("Continuation delivery already exists or is uncertain; reconcile the bound wake or run instead of withdrawing it.");
++    if (replayed)
++        return { recoveryAction: action, replayed: true };
++    const now = new Date();
++    const withdrawal = {
++        version: 1, companyId, issueId, actionId, actorId, resolutionNote: resolutionNote.trim(), recordedAt: now.toISOString(),
++        prior: { status: action.status, outcome: action.outcome, resolutionNote: action.resolutionNote,
++            resolvedAt: action.resolvedAt?.toISOString() ?? null, evidence },
++    };
++    const [cancelled] = await tx.update(issueRecoveryActions).set({
++        status: "cancelled", outcome: "cancelled", resolutionNote: resolutionNote.trim(), resolvedAt: now, updatedAt: now,
++        evidence: { ...evidence, continuationDelivery: "cancelled", continuationDeliveryWithdrawal: withdrawal },
++    }).where(and(eq(issueRecoveryActions.companyId, companyId), eq(issueRecoveryActions.sourceIssueId, issueId), eq(issueRecoveryActions.id, actionId))).returning();
++    return { recoveryAction: cancelled, replayed: false };
++}
+ /** Durable delivery marker lives on the existing source-scoped recovery action. */
+ export async function markExecutionReconciliation(db, action, decision, actorId, deliveryOwner) {
+     if (deliveryOwner) {
+@@ -398,4 +447,4 @@
+         }
+     }
+ }
+-//# sourceMappingURL=execution-recovery-resolution.js.map
+\ No newline at end of file
++//# sourceMappingURL=execution-recovery-resolution.js.map
+--- a/@paperclipai/shared/dist/validators/issue.js
++++ b/@paperclipai/shared/dist/validators/issue.js
+@@ -489,12 +489,20 @@
+         .strict()
+         .optional(),
+     actionId: z.string().guid().optional(),
++    withdrawPendingDelivery: z.literal(true).optional(),
+     outcome: z.enum(RESOLVE_ISSUE_RECOVERY_ACTION_OUTCOMES),
+     sourceIssueStatus: z.enum(["todo", "done", "in_review", "blocked"]),
+     resolutionNote: multilineTextSchema.optional().nullable(),
+ })
+     .strict()
+     .superRefine((value, ctx) => {
++    if (value.withdrawPendingDelivery === true) {
++        if (!value.actionId || value.outcome !== "cancelled" || value.executionReconciliation !== undefined ||
++            typeof value.resolutionNote !== "string" || value.resolutionNote.trim().length < 20) {
++            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Withdrawing pending delivery requires actionId, cancelled outcome, a meaningful resolutionNote and no executionReconciliation", path: ["withdrawPendingDelivery"] });
++        }
++        return;
++    }
+     if (value.outcome === "restored") {
+         if (value.sourceIssueStatus !== "todo" &&
+             value.sourceIssueStatus !== "done" &&
+@@ -1892,4 +1900,4 @@
+     baseRevisionId: z.string().guid().nullable().optional(),
+ });
+ export const restoreIssueDocumentRevisionSchema = z.object({});
+-//# sourceMappingURL=issue.js.map
+\ No newline at end of file
++//# sourceMappingURL=issue.js.map
