@@ -292,6 +292,11 @@ describe('sources', () => {
         await expect(service.hide(companyId, moderatorId, { sourceKey: 'share:nonexistent', reason: 'spam' }))
           .rejects.toThrow(OrgError);
       });
+
+      it('throws invalid for restore of non-existent share: key', async () => {
+        await expect(service.restore(companyId, moderatorId, { sourceKey: 'share:nonexistent', reason: 'oops' }))
+          .rejects.toThrow(OrgError);
+      });
     });
 
     describe('overview', () => {

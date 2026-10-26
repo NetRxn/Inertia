@@ -22,6 +22,7 @@ export interface OrgStore {
   readSource(companyId: string, sourceKey: string): Promise<OrgSource | null>;
   listSources(companyId: string, opts: { includeHidden: boolean; kind?: SourceKind; limit: number }): Promise<OrgSource[]>;
   listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]>;
+  listHidden(companyId: string): Promise<Map<string, OrgSource['hidden']>>;
   setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean>;
   isHidden(companyId: string, sourceKey: string): Promise<boolean>;
   addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean>;
@@ -316,6 +317,15 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
         sourceSystem: row.source_system,
         nativeIssueId: row.native_issue_id
       }));
+    },
+
+    async listHidden(companyId: string): Promise<Map<string, OrgSource['hidden']>> {
+      const rows = await query<{ source_key: string; hidden: OrgSource['hidden'] }>(
+        `SELECT source_key, hidden FROM ${sourcesTable} WHERE company_id=$1 AND hidden IS NOT NULL`,
+        [companyId]
+      );
+
+      return new Map(rows.map(row => [row.source_key, row.hidden]));
     },
 
     async addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean> {

@@ -291,13 +291,8 @@ export function createOrgService(
         ? await store.listObjectiveSources(companyId, 1000)
         : [];
 
-      const hiddenKeys = new Set<string>();
-      for (const objSource of objectiveSources) {
-        const key = `objective:${objSource.key}`;
-        if (await store.isHidden(companyId, key)) {
-          hiddenKeys.add(key);
-        }
-      }
+      const hiddenMap = await store.listHidden(companyId);
+      const hiddenKeys = new Set(hiddenMap.keys());
 
       const allSources: Array<OrgSource & { feeds: { tasks: number } }> = [
         ...sharedSources.map(s => ({ ...s, feeds: { tasks: 0 } })),
@@ -366,7 +361,11 @@ export function createOrgService(
 
       const reason = validateText(input.reason, 'reason');
 
-      await store.setHidden(companyId, input.sourceKey, null);
+      const updated = await store.setHidden(companyId, input.sourceKey, null);
+
+      if (!updated) {
+        throw new OrgError('invalid', 'Source not found.');
+      }
 
       await store.appendLog({
         companyId,
@@ -407,21 +406,10 @@ export function createOrgService(
 
       const allLog = await store.listLog(companyId, 50);
 
-      const hiddenKeys = new Set<string>();
-      const allSources = await store.listSources(companyId, { includeHidden: true, limit: 1000 });
-      for (const source of allSources) {
-        if (source.hidden) {
-          hiddenKeys.add(source.sourceKey);
-        }
-      }
+      const hiddenMap = await store.listHidden(companyId);
+      const hiddenKeys = new Set(hiddenMap.keys());
 
-      const objectiveSources = await store.listObjectiveSources(companyId, 1000);
-      for (const obj of objectiveSources) {
-        const key = `objective:${obj.key}`;
-        if (await store.isHidden(companyId, key)) {
-          hiddenKeys.add(key);
-        }
-      }
+      const allSources = await store.listSources(companyId, { includeHidden: true, limit: 1000 });
 
       const isModerator = role === 'founder' || role === 'moderator';
       const feed = allLog.filter(entry => {
