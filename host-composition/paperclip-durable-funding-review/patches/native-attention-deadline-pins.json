@@ -22,8 +22,8 @@
       "candidate_sha256": "77cc7c6e604b5c7349ed020355b6bf8906d9b1be6fa4c8c3f809edb33ca76041"
     },
     "dist/services/native-runtime/native-session-executor.js": {
-      "base_sha256": "2f127e9a420ed78734e8e2ad765e10990b240a7dd44df257b84b276f5457d32a",
-      "candidate_sha256": "f226de12173dafb263689e82b68e72cd274b8d5a816e04ea34515481b2f6f053"
+      "base_sha256": "2b6af377a34412ea7d268c6d9281a891ad41bd1ffe1435a938a860b15784b757",
+      "candidate_sha256": "fbde08ace2610c7b577f8c99c9151535bbbcafbb9548361d03a62243accc63d6"
     }
   },
   "newFiles": {}

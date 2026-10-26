@@ -102,6 +102,15 @@
      if (input.execution.provider.nativeCoordinatorPolicy && (input.useRunnerd !== true || input.backend !== undefined || input.runnerExecutionTarget?.kind === "remote" || input.managedGitHub || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
      const runId = input.execution.binding.runId;
      if (nativeSessionStartups.has(runId)) {
+@@ -8117,7 +8118,7 @@
+     // Remote Codex already sends dynamic tool calls over authenticated PRP. Keep
+     // the assigned gateway on the control plane instead of asking the sandbox to
+     // reach the host's HTTP origin (which may be private or loopback-only).
+-    const relayAssignedMcp = remoteTarget !== null && input.execution.provider.kind === "codex";
++    const relayAssignedMcp = (remoteTarget !== null || input.execution.provider.nativeFundingPolicy?.role === "producer") && input.execution.provider.kind === "codex";
+     const assignedMcpUrl = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_URL;
+     const assignedMcpToken = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_TOKEN;
+     const assignedMcpName = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_NAME;
 @@ -8140,9 +8141,12 @@
          })
          : undefined;

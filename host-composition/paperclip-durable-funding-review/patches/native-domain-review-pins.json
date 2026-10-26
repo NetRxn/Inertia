@@ -11,7 +11,7 @@
     "dist/services/native-runtime/funding-execution-policy.js": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57",
     "dist/services/native-runtime/funding-tool-preapproval.js": "265e28f725185e4190e351d194f8ad790afb0c59d127e5b34174c3bc4db855df",
     "dist/services/native-runtime/assigned-mcp-tools.js": "77cc7c6e604b5c7349ed020355b6bf8906d9b1be6fa4c8c3f809edb33ca76041",
-    "dist/services/native-runtime/native-session-executor.js": "f226de12173dafb263689e82b68e72cd274b8d5a816e04ea34515481b2f6f053"
+    "dist/services/native-runtime/native-session-executor.js": "fbde08ace2610c7b577f8c99c9151535bbbcafbb9548361d03a62243accc63d6"
   },
   "patch": "native-domain-review.patch",
   "patch_sha256": "94246a96d96c0ea2903cafad76a0e0c1123374c6d7a9e488aa110d378483a883",
