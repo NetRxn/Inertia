@@ -6,6 +6,7 @@ import {
   registerRoundtableJobs,
   type RoundtableStatus,
 } from "./roundtable/host.js";
+import { registerOrgProfile } from "./org/host.js";
 import {
   definePlugin,
   runWorker,
@@ -69,6 +70,7 @@ export function createPlugin() {
       await registerConfiguredTrustedCentral(ctx);
       roundtableStatus = registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
+      registerOrgProfile(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
           const config = await ctx.config.get(company.id);

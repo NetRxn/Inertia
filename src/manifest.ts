@@ -18,6 +18,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   minimumHostVersion: "2026.1012.0",
   capabilities: [
     ...fundingDiscoveryManifest.capabilities,
+    "ui.page.register",
     "ui.detailTab.register",
     ...objectiveIntakeCapabilities,
     ...publicDraftingCapabilities,
@@ -39,7 +40,13 @@ export const manifest: PaperclipPluginManifestV1 = {
     "secrets.read-ref",
   ],
   entrypoints: { worker: "dist/src/worker.js", ui: "dist/ui" },
-  ui: { slots: [{ type: "detailTab", id: "member-packet", displayName: "Packet", exportName: "MemberPacketTab", entityTypes: ["issue"] }] },
+  ui: {
+    slots: [
+      { type: "page", id: "dao", displayName: "DAO", exportName: "OrgPage" },
+      { type: "detailTab", id: "task-trail", displayName: "Why this exists", exportName: "TaskTrailTab", entityTypes: ["issue"] },
+      { type: "detailTab", id: "member-packet", displayName: "Packet", exportName: "MemberPacketTab", entityTypes: ["issue"] }
+    ]
+  },
   database: { migrationsDir: "migrations" },
   tools: [...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
   jobs: [
