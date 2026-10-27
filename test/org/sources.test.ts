@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import { type PluginDatabaseClient } from '@paperclipai/plugin-sdk';
 import { createOrgStore } from '../../src/org/store.js';
 import { createOrgService } from '../../src/org/service.js';
 import { OrgError } from '../../src/org/contracts.js';
 import type { OrgProfile, OrgMember } from '../../src/org/contracts.js';
 import { validateShare, significance } from '../../src/org/sources.js';
-import { readFile } from 'node:fs/promises';
+import { createHostDb } from '../support/paperclip-host-db.js';
+
+const rid = () => crypto.randomUUID();
 
 describe('sources', () => {
   let db: PGlite;
@@ -14,29 +16,9 @@ describe('sources', () => {
   let idCounter = 0;
 
   beforeEach(async () => {
-    db = new PGlite();
-    hostDb = {
-      namespace: 'plugin_netrxn_inertia_e936d62b87',
-      query: async <T>(sql: string, params?: unknown[]) => {
-        const res = await db.query<T>(sql, params);
-        return res.rows;
-      },
-      execute: async (sql: string, params?: unknown[]) => {
-        const res = await db.query(sql, params);
-        return { rowCount: res.affectedRows ?? 0 };
-      }
-    };
-
-    await db.exec('CREATE SCHEMA plugin_netrxn_inertia_e936d62b87');
-
-    const migrations = [
-      await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf-8'),
-      await readFile(new URL('../../migrations/009_org_profile.sql', import.meta.url), 'utf-8')
-    ];
-
-    for (const migration of migrations) {
-      await db.exec(migration);
-    }
+    const host = await createHostDb();
+    db = host.pg;
+    hostDb = host.db;
 
     idCounter = 0;
   });
@@ -139,14 +121,14 @@ describe('sources', () => {
       service = createOrgService(store, clock, newId);
 
       await service.setup(companyId, founderId, { name: 'Test Org', displayName: 'Founder' });
-      await service.addMember(companyId, founderId, { userId: memberId, displayName: 'Member', reason: 'test' });
-      await service.addMember(companyId, founderId, { userId: moderatorId, displayName: 'Moderator', reason: 'test' });
-      await service.setModerator(companyId, founderId, { userId: moderatorId, moderator: true, reason: 'test' });
+      await service.addMember(companyId, founderId, { requestId: rid(), userId: memberId, displayName: 'Member', reason: 'test' });
+      await service.addMember(companyId, founderId, { requestId: rid(), userId: moderatorId, displayName: 'Moderator', reason: 'test' });
+      await service.setModerator(companyId, founderId, { requestId: rid(), userId: moderatorId, moderator: true, reason: 'test' });
     });
 
     describe('share', () => {
       it('stores link and logs source.share', async () => {
-        const result = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const result = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
         expect(result.kind).toBe('link');
         expect(result.title).toBe('Example');
@@ -161,7 +143,7 @@ describe('sources', () => {
       });
 
       it('appears in overview feed', async () => {
-        await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
         const overview = await service.overview(companyId, memberId);
         expect(overview).not.toBeNull();
@@ -171,12 +153,12 @@ describe('sources', () => {
       });
 
       it('rejects javascript: URL', async () => {
-        await expect(service.share(companyId, founderId, { kind: 'link', title: 'Bad', url: 'javascript:alert(1)' }))
+        await expect(service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Bad', url: 'javascript:alert(1)' }))
           .rejects.toThrow(OrgError);
       });
 
       it('rejects member without share permission', async () => {
-        await expect(service.share(companyId, 'nonmember', { kind: 'link', title: 'Test', url: 'https://example.com' }))
+        await expect(service.share(companyId, 'nonmember', { requestId: rid(), kind: 'link', title: 'Test', url: 'https://example.com' }))
           .rejects.toThrow(OrgError);
       });
     });
@@ -188,7 +170,7 @@ describe('sources', () => {
       });
 
       it('allows moderator to call sources()', async () => {
-        await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
         const sources = await service.sources(companyId, moderatorId, { hidden: false });
         expect(sources.length).toBe(1);
@@ -222,7 +204,7 @@ describe('sources', () => {
       });
 
       it('shows feeds.tasks = 0 for shared items', async () => {
-        await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
         const sources = await service.sources(companyId, moderatorId, { hidden: false });
         const linkSource = sources.find(s => s.kind === 'link');
@@ -234,9 +216,9 @@ describe('sources', () => {
 
     describe('hide and restore', () => {
       it('hides shared source and excludes from member feed', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'spam' });
 
         const overview = await service.overview(companyId, memberId);
         expect(overview!.feed.every(e => e.subject !== shared.sourceKey)).toBe(true);
@@ -244,9 +226,9 @@ describe('sources', () => {
       });
 
       it('shows hidden source in sources({hidden:true})', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'spam' });
 
         const sources = await service.sources(companyId, moderatorId, { hidden: true });
         const hiddenSource = sources.find(s => s.sourceKey === shared.sourceKey);
@@ -258,9 +240,9 @@ describe('sources', () => {
       });
 
       it('moderator sees hide entries in feed', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'spam' });
 
         const overview = await service.overview(companyId, moderatorId);
         const hideEntry = overview!.feed.find(e => e.action === 'source.hide');
@@ -270,10 +252,10 @@ describe('sources', () => {
       });
 
       it('restores source and logs source.restore', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
-        await service.restore(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'false alarm' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'spam' });
+        await service.restore(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'false alarm' });
 
         const sources = await service.sources(companyId, moderatorId, { hidden: false });
         const restoredSource = sources.find(s => s.sourceKey === shared.sourceKey);
@@ -294,7 +276,7 @@ describe('sources', () => {
           VALUES ('${OBJ3}', '{"key":"${OBJ3}","companyId":"${companyId}","version":1,"snapshot":{"sourceSystem":"test","sourceId":"s3","organizationId":"org1","revision":"r1","sourceHash":"h3","expectedPreviousHash":null,"authorRef":"a1","audience":"public","title":"Test Objective","text":"body","withdrawn":false},"nativeIssueId":"issue3","pending":false,"marker":"m3"}'::jsonb)
         `);
 
-        await service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ3}`, reason: 'spam' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: `objective:${OBJ3}`, reason: 'spam' });
 
         const hidden = await store.isHidden(companyId, `objective:${OBJ3}`);
         expect(hidden).toBe(true);
@@ -304,12 +286,12 @@ describe('sources', () => {
       });
 
       it('throws invalid for hide of non-existent share: key', async () => {
-        await expect(service.hide(companyId, moderatorId, { sourceKey: 'share:nonexistent', reason: 'spam' }))
+        await expect(service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: 'share:nonexistent', reason: 'spam' }))
           .rejects.toThrow(OrgError);
       });
 
       it('throws invalid for restore of non-existent share: key', async () => {
-        await expect(service.restore(companyId, moderatorId, { sourceKey: 'share:nonexistent', reason: 'oops' }))
+        await expect(service.restore(companyId, moderatorId, { requestId: rid(), sourceKey: 'share:nonexistent', reason: 'oops' }))
           .rejects.toThrow(OrgError);
       });
     });
@@ -327,7 +309,7 @@ describe('sources', () => {
       });
 
       it('returns profile, role, feed, keyDocuments, initiatives', async () => {
-        await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
         const overview = await service.overview(companyId, memberId);
 
@@ -340,15 +322,15 @@ describe('sources', () => {
       });
 
       it('orders keyDocuments by significance (citations*2 + pins)', async () => {
-        const s1 = await service.share(companyId, founderId, { kind: 'link', title: 'Low', url: 'https://low.com' });
-        const s2 = await service.share(companyId, founderId, { kind: 'link', title: 'High', url: 'https://high.com' });
-        const s3 = await service.share(companyId, founderId, { kind: 'link', title: 'Medium', url: 'https://medium.com' });
+        const s1 = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Low', url: 'https://low.com' });
+        const s2 = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'High', url: 'https://high.com' });
+        const s3 = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Medium', url: 'https://medium.com' });
 
-        await service.pin(companyId, founderId, { sourceKey: s2.sourceKey });
-        await service.pin(companyId, memberId, { sourceKey: s2.sourceKey });
-        await service.pin(companyId, moderatorId, { sourceKey: s2.sourceKey });
+        await service.pin(companyId, founderId, { requestId: rid(), sourceKey: s2.sourceKey });
+        await service.pin(companyId, memberId, { requestId: rid(), sourceKey: s2.sourceKey });
+        await service.pin(companyId, moderatorId, { requestId: rid(), sourceKey: s2.sourceKey });
 
-        await service.pin(companyId, founderId, { sourceKey: s3.sourceKey });
+        await service.pin(companyId, founderId, { requestId: rid(), sourceKey: s3.sourceKey });
 
         const overview = await service.overview(companyId, memberId);
 
@@ -359,7 +341,7 @@ describe('sources', () => {
 
       it('limits keyDocuments to top 5', async () => {
         for (let i = 0; i < 10; i++) {
-          await service.share(companyId, founderId, { kind: 'link', title: `Doc ${i}`, url: `https://doc${i}.com` });
+          await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: `Doc ${i}`, url: `https://doc${i}.com` });
         }
 
         const overview = await service.overview(companyId, memberId);
@@ -368,7 +350,7 @@ describe('sources', () => {
 
       it('limits feed to 50 entries', async () => {
         for (let i = 0; i < 60; i++) {
-          await service.share(companyId, founderId, { kind: 'link', title: `Link ${i}`, url: `https://link${i}.com` });
+          await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: `Link ${i}`, url: `https://link${i}.com` });
         }
 
         const overview = await service.overview(companyId, memberId);
@@ -378,9 +360,9 @@ describe('sources', () => {
 
     describe('pin', () => {
       it('adds pin and increases count', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        await service.pin(companyId, memberId, { sourceKey: shared.sourceKey });
+        await service.pin(companyId, memberId, { requestId: rid(), sourceKey: shared.sourceKey });
 
         const sources = await service.sources(companyId, moderatorId, { hidden: false });
         const pinned = sources.find(s => s.sourceKey === shared.sourceKey);
@@ -389,9 +371,9 @@ describe('sources', () => {
       });
 
       it('logs source.pin', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        await service.pin(companyId, memberId, { sourceKey: shared.sourceKey });
+        await service.pin(companyId, memberId, { requestId: rid(), sourceKey: shared.sourceKey });
 
         const log = await store.listLog(companyId, 20);
         const pinEntry = log.find(e => e.action === 'source.pin');
@@ -412,7 +394,7 @@ describe('sources', () => {
 
     describe('objective sources', () => {
       it('sources({kind:"objective"}) returns only objective rows', async () => {
-        await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
         await insertObjective(OBJ1);
         const sources = await service.sources(companyId, moderatorId, { kind: 'objective', hidden: true });
         expect(sources.map(s => s.kind)).toEqual(['objective']);
@@ -421,7 +403,7 @@ describe('sources', () => {
       it('maps sharedBy, createdAt, audience and the stored hidden marker honestly', async () => {
         await insertObjective(OBJ1, { audience: 'restricted' });
         await insertObjective(OBJ2, { audience: 'members' });
-        await service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ1}`, reason: 'spam' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: `objective:${OBJ1}`, reason: 'spam' });
 
         const sources = await service.sources(companyId, moderatorId, { kind: 'objective', hidden: true });
         const restricted = sources.find(s => s.sourceKey === `objective:${OBJ1}`)!;
@@ -435,7 +417,7 @@ describe('sources', () => {
       });
 
       it('refuses to hide an objective key with no intake row, creating no stub', async () => {
-        await expect(service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ2}`, reason: 'spam' }))
+        await expect(service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: `objective:${OBJ2}`, reason: 'spam' }))
           .rejects.toMatchObject({ kind: 'invalid' });
         expect(await store.isHidden(companyId, `objective:${OBJ2}`)).toBe(false);
       });
@@ -443,14 +425,14 @@ describe('sources', () => {
       it('refuses to hide an objective that belongs to another company', async () => {
         const record = { key: OBJ2, companyId: 'other-co', version: 1, snapshot: { title: 'Foreign', audience: 'public', sourceSystem: 'x' }, nativeIssueId: null, pending: false, marker: 'm' };
         await db.query('INSERT INTO plugin_netrxn_inertia_e936d62b87.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)', [OBJ2, JSON.stringify(record)]);
-        await expect(service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ2}`, reason: 'spam' }))
+        await expect(service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: `objective:${OBJ2}`, reason: 'spam' }))
           .rejects.toMatchObject({ kind: 'invalid' });
       });
 
       it('after hide and restore of an objective, no stub shows as a shared item or key document', async () => {
         await insertObjective(OBJ1);
-        await service.hide(companyId, moderatorId, { sourceKey: `objective:${OBJ1}`, reason: 'spam' });
-        await service.restore(companyId, moderatorId, { sourceKey: `objective:${OBJ1}`, reason: 'ok' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: `objective:${OBJ1}`, reason: 'spam' });
+        await service.restore(companyId, moderatorId, { requestId: rid(), sourceKey: `objective:${OBJ1}`, reason: 'ok' });
 
         const overview = await service.overview(companyId, memberId);
         expect(overview!.keyDocuments).toEqual([]);
@@ -462,55 +444,55 @@ describe('sources', () => {
 
       it('rejects malformed source keys in hide, restore and pin', async () => {
         for (const sourceKey of ['share:nope', 'objective:abc', 'other:1', '']) {
-          await expect(service.hide(companyId, moderatorId, { sourceKey, reason: 'spam' })).rejects.toMatchObject({ kind: 'invalid' });
-          await expect(service.restore(companyId, moderatorId, { sourceKey, reason: 'ok' })).rejects.toMatchObject({ kind: 'invalid' });
-          await expect(service.pin(companyId, memberId, { sourceKey })).rejects.toMatchObject({ kind: 'invalid' });
+          await expect(service.hide(companyId, moderatorId, { requestId: rid(), sourceKey, reason: 'spam' })).rejects.toMatchObject({ kind: 'invalid' });
+          await expect(service.restore(companyId, moderatorId, { requestId: rid(), sourceKey, reason: 'ok' })).rejects.toMatchObject({ kind: 'invalid' });
+          await expect(service.pin(companyId, memberId, { requestId: rid(), sourceKey })).rejects.toMatchObject({ kind: 'invalid' });
         }
       });
     });
 
     describe('pin rules', () => {
       it('refuses a well-formed key for a source that does not exist and logs nothing', async () => {
-        await expect(service.pin(companyId, memberId, { sourceKey: 'share:00000000-0000-4000-8000-999999999999' }))
+        await expect(service.pin(companyId, memberId, { requestId: rid(), sourceKey: 'share:00000000-0000-4000-8000-999999999999' }))
           .rejects.toMatchObject({ kind: 'invalid' });
         expect((await store.listLog(companyId, 50)).some(e => e.action === 'source.pin')).toBe(false);
       });
 
       it('refuses a member pinning a hidden source; a moderator may', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
-        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
-        await expect(service.pin(companyId, memberId, { sourceKey: shared.sourceKey })).rejects.toMatchObject({ kind: 'invalid' });
-        await service.pin(companyId, moderatorId, { sourceKey: shared.sourceKey });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'spam' });
+        await expect(service.pin(companyId, memberId, { requestId: rid(), sourceKey: shared.sourceKey })).rejects.toMatchObject({ kind: 'invalid' });
+        await service.pin(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey });
       });
 
       it('lets a member pin a visible objective but not a restricted one', async () => {
         await insertObjective(OBJ1);
         await insertObjective(OBJ2, { audience: 'restricted' });
-        await service.pin(companyId, memberId, { sourceKey: `objective:${OBJ1}` });
-        await expect(service.pin(companyId, memberId, { sourceKey: `objective:${OBJ2}` })).rejects.toMatchObject({ kind: 'invalid' });
+        await service.pin(companyId, memberId, { requestId: rid(), sourceKey: `objective:${OBJ1}` });
+        await expect(service.pin(companyId, memberId, { requestId: rid(), sourceKey: `objective:${OBJ2}` })).rejects.toMatchObject({ kind: 'invalid' });
         const sources = await service.sources(companyId, moderatorId, { kind: 'objective', hidden: false });
         expect(sources.find(s => s.sourceKey === `objective:${OBJ1}`)!.pins).toBe(1);
       });
 
       it('logs source.pin only once when the same user pins twice', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
-        await service.pin(companyId, memberId, { sourceKey: shared.sourceKey });
-        await service.pin(companyId, memberId, { sourceKey: shared.sourceKey });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.pin(companyId, memberId, { requestId: rid(), sourceKey: shared.sourceKey });
+        await service.pin(companyId, memberId, { requestId: rid(), sourceKey: shared.sourceKey });
         expect((await store.listLog(companyId, 50)).filter(e => e.action === 'source.pin')).toHaveLength(1);
       });
     });
 
     describe('isHidden', () => {
       it('returns true for hidden source', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
-        await service.hide(companyId, moderatorId, { sourceKey: shared.sourceKey, reason: 'spam' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
+        await service.hide(companyId, moderatorId, { requestId: rid(), sourceKey: shared.sourceKey, reason: 'spam' });
 
         const hidden = await service.isHidden(companyId, shared.sourceKey);
         expect(hidden).toBe(true);
       });
 
       it('returns false for visible source', async () => {
-        const shared = await service.share(companyId, founderId, { kind: 'link', title: 'Example', url: 'https://example.com' });
+        const shared = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
         const hidden = await service.isHidden(companyId, shared.sourceKey);
         expect(hidden).toBe(false);

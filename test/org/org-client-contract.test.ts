@@ -1,35 +1,28 @@
 import { describe, it, expect, afterAll, beforeAll } from 'vitest';
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
-import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseTaskTrailResponse } from '../../src/ui/org-client.js';
+import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseOrgSourceOpen, parseTaskTrailResponse } from '../../src/ui/org-client.js';
 import { manifest } from '../../src/manifest.js';
 import { BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
 import { registerOrgProfile } from '../../src/org/host.js';
+import { createHostDb, type HostDb } from '../support/paperclip-host-db.js';
 
 describe('org-client contract', () => {
+  let host: HostDb;
   let pg: PGlite;
 
   beforeAll(async () => {
-    pg = new PGlite();
-    await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`);
-    await pg.exec(await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf8'));
-    await pg.exec(await readFile(new URL('../../migrations/009_org_profile.sql', import.meta.url), 'utf8'));
+    host = await createHostDb();
+    pg = host.pg;
   }, 60000);
 
-  afterAll(async () => pg.close());
+  afterAll(async () => host.close());
 
   function createHarness() {
     const h = createTestHarness({ manifest });
 
-    Object.assign(h.ctx.db, {
-      namespace: BRIDGE_NAMESPACE,
-      query: async (q: string, p: unknown[]) => (await pg.query(q, p)).rows,
-      execute: async (q: string, p: unknown[]) => ({
-        rowCount: (await pg.query(q, p)).affectedRows ?? 0,
-      }),
-    });
+    Object.assign(h.ctx.db, { namespace: host.db.namespace, query: host.db.query, execute: host.db.execute });
 
     registerOrgProfile(h.ctx);
 
@@ -115,6 +108,7 @@ describe('org-client contract', () => {
     }, actorContext);
 
     const result = await h.performAction('org.source.share', {
+      requestId: crypto.randomUUID(),
       kind: 'link',
       url: 'https://example.com/doc',
       title: 'Shared Document',
@@ -139,6 +133,7 @@ describe('org-client contract', () => {
     }, actorContext);
 
     await h.performAction('org.source.share', {
+      requestId: crypto.randomUUID(),
       kind: 'link',
       url: 'https://example.com/doc',
       title: 'Shared Document',
@@ -234,9 +229,9 @@ describe('org-client contract', () => {
     const bytes = new TextEncoder().encode('hello file');
     const base64 = Buffer.from(bytes).toString('base64');
     const uiParams = [
-      { kind: 'link', title: 'A link', url: 'https://example.com/a' },
-      { kind: 'note', title: 'A note', text: 'Some note text' },
-      { kind: 'file', title: 'notes.txt', mediaType: 'text/plain', base64 },
+      { requestId: crypto.randomUUID(), kind: 'link', title: 'A link', url: 'https://example.com/a' },
+      { requestId: crypto.randomUUID(), kind: 'note', title: 'A note', text: 'Some note text' },
+      { requestId: crypto.randomUUID(), kind: 'file', title: 'notes.txt', mediaType: 'text/plain', base64 },
     ];
     for (const params of uiParams) {
       const result = await h.performAction('org.source.share', params, c) as { ok: boolean; error?: unknown };
@@ -257,7 +252,7 @@ describe('org-client contract', () => {
     const c = ctxFor('company-share-bad');
     await h.performAction('org.setup', { name: 'Share DAO', displayName: 'Founder Name' }, c);
     for (const base64 of ['not base64!', 'abc', 'ab=c', 12]) {
-      const result = await h.performAction('org.source.share', { kind: 'file', title: 'x', mediaType: 'text/plain', base64 }, c) as any;
+      const result = await h.performAction('org.source.share', { requestId: crypto.randomUUID(), kind: 'file', title: 'x', mediaType: 'text/plain', base64 }, c) as any;
       expect(result.ok).toBe(false);
       expect(result.error.kind).toBe('invalid');
     }
@@ -313,7 +308,7 @@ describe('org-client contract', () => {
     const h = createHarness();
     const c = ctxFor('company-obj');
     await h.performAction('org.setup', { name: 'Objective DAO', displayName: 'Founder Name' }, c);
-    await h.performAction('org.source.share', { kind: 'link', title: 'A link', url: 'https://example.com/a' }, c);
+    await h.performAction('org.source.share', { requestId: crypto.randomUUID(), kind: 'link', title: 'A link', url: 'https://example.com/a' }, c);
     const keys = ['c'.repeat(64), 'd'.repeat(64), 'e'.repeat(64)];
     const audiences = ['members', 'restricted', 'public'];
     for (const [i, key] of keys.entries()) {
@@ -327,9 +322,9 @@ describe('org-client contract', () => {
       );
     }
     for (const params of [
-      ['org.source.hide', { sourceKey: `objective:${keys[0]}`, reason: 'spam' }],
-      ['org.source.restore', { sourceKey: `objective:${keys[0]}`, reason: 'false alarm' }],
-      ['org.source.hide', { sourceKey: `objective:${keys[1]}`, reason: 'spam' }],
+      ['org.source.hide', { requestId: crypto.randomUUID(), sourceKey: `objective:${keys[0]}`, reason: 'spam' }],
+      ['org.source.restore', { requestId: crypto.randomUUID(), sourceKey: `objective:${keys[0]}`, reason: 'false alarm' }],
+      ['org.source.hide', { requestId: crypto.randomUUID(), sourceKey: `objective:${keys[1]}`, reason: 'spam' }],
     ] as const) {
       const result = await h.performAction(params[0], params[1], c) as any;
       expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
@@ -348,5 +343,53 @@ describe('org-client contract', () => {
 
     const overview = await h.performAction('org.overview', {}, c) as any;
     expect(parseOrgOverview(overview.data).keyDocuments.map(d => d.title)).toEqual(['A link']);
+  });
+
+  it('org.source.open returns link, note and file shapes parseOrgSourceOpen accepts, byte-exact over the wire', async () => {
+    const h = createHarness();
+    const founder = ctxFor('company-open');
+    const member = ctxFor('company-open', 'member-1');
+    await h.performAction('org.setup', { name: 'Open DAO', displayName: 'Founder Name' }, founder);
+    await h.performAction('org.member.add', { requestId: crypto.randomUUID(), userId: 'member-1', displayName: 'Member One', reason: 'joins' }, founder);
+
+    const bytes = new Uint8Array(256).map((_, i) => i);
+    const base64 = Buffer.from(bytes).toString('base64');
+    const text = 'Two lines\nwith émoji 🎉';
+    const keys: string[] = [];
+    for (const params of [
+      { kind: 'link', title: 'A link', url: 'https://example.com/a' },
+      { kind: 'note', title: 'A note', text },
+      { kind: 'file', title: 'all.bin', mediaType: 'application/octet-stream', base64 },
+    ]) {
+      const requestId = crypto.randomUUID();
+      const result = await h.performAction('org.source.share', { requestId, ...params }, founder) as any;
+      expect(result, JSON.stringify(result)).toMatchObject({ ok: true, data: { sourceKey: `share:${requestId}` } });
+      keys.push(result.data.sourceKey);
+    }
+
+    const open = async (sourceKey: string, c = member) => h.performAction('org.source.open', { sourceKey }, c) as Promise<any>;
+    const link = await open(keys[0]!);
+    expect(parseOrgSourceOpen(link.data)).toEqual({ kind: 'link', title: 'A link', url: 'https://example.com/a' });
+    const note = await open(keys[1]!);
+    expect(parseOrgSourceOpen(note.data)).toEqual({ kind: 'note', title: 'A note', text });
+    const file = parseOrgSourceOpen((await open(keys[2]!)).data);
+    expect(file).toMatchObject({ kind: 'file', title: 'all.bin', mediaType: 'application/octet-stream' });
+    expect(Buffer.from((file as { base64: string }).base64, 'base64').equals(Buffer.from(bytes))).toBe(true);
+
+    await h.performAction('org.source.hide', { requestId: crypto.randomUUID(), sourceKey: keys[0], reason: 'spam' }, founder);
+    expect(await open(keys[0]!)).toEqual({ ok: false, error: { kind: 'invalid', message: 'Source not found.' } });
+    expect(await open(`share:${crypto.randomUUID()}`)).toEqual({ ok: false, error: { kind: 'invalid', message: 'Source not found.' } });
+    expect(parseOrgSourceOpen((await open(keys[0]!, founder)).data)).toMatchObject({ kind: 'link' });
+
+    const overview = parseOrgOverview(((await h.performAction('org.overview', {}, member)) as any).data);
+    expect(overview.labels).toMatchObject({ 'founder-1': 'Founder Name', 'member-1': 'Member One', [keys[1]!]: 'A note', [keys[2]!]: 'all.bin' });
+    expect(overview.labels[keys[0]!]).toBeUndefined();
+  });
+
+  it('parseOrgSourceOpen refuses non-http links, extra keys and bad base64', () => {
+    expect(() => parseOrgSourceOpen({ kind: 'link', title: 't', url: 'javascript:alert(1)' })).toThrow();
+    expect(() => parseOrgSourceOpen({ kind: 'link', title: 't', url: 'https://x.example', extra: 1 })).toThrow();
+    expect(() => parseOrgSourceOpen({ kind: 'file', title: 't', mediaType: 'text/plain', base64: 'abc' })).toThrow();
+    expect(() => parseOrgSourceOpen({ kind: 'objective', title: 't' })).toThrow();
   });
 });

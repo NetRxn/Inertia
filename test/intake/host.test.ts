@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
 import type { PluginIssueRunSummary, ToolRunContext } from '@paperclipai/plugin-sdk';
 import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
@@ -12,10 +12,12 @@ import { objectiveHash, objectiveKey } from '../../src/intake/service.js';
 import { createIntakeStore } from '../../src/intake/store.js';
 import { createOrgStore } from '../../src/org/store.js';
 import { fixture } from './support.js';
+import { createHostDb, type HostDb } from '../support/paperclip-host-db.js';
+let host: HostDb;
 let pg: PGlite;
 const directories: string[] = [];
-beforeAll(async () => { pg = new PGlite(); await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`); await pg.exec(await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf8')); await pg.exec(await readFile(new URL('../../migrations/009_org_profile.sql', import.meta.url), 'utf8')); }, 60000);
-afterAll(async () => pg.close());
+beforeAll(async () => { host = await createHostDb(); pg = host.pg; }, 60000);
+afterAll(async () => host.close());
 afterEach(async () => { await Promise.all(directories.splice(0).map(p => rm(p, { recursive: true, force: true }))); });
 let serial = 0;
 async function setup(enabled = true) {
@@ -26,7 +28,7 @@ async function setup(enabled = true) {
   const settings = { enabled, sourceMode: 'owner-file', organizationId: 'dao', projectId: 'project', intakeAgentId: 'ceo', sources: [{ sourceSystem: f.source.sourceSystem, sourceId: f.source.sourceId, path, allowedAgentIds: ['ceo', 'researcher'], allowedAudiences: ['members'] }] };
   const h = createTestHarness({ manifest: { ...manifest, capabilities: [...new Set([...manifest.capabilities, ...objectiveIntakeCapabilities])], jobs: [objectiveIntakeJobDeclaration], tools: [objectiveSourceContextToolDeclaration] }, config: { objectiveIntake: settings } });
   h.ctx.companies.list = async () => [{ id: 'co' }] as any;
-  Object.assign(h.ctx.db, { namespace: BRIDGE_NAMESPACE, query: async (q: string, p: unknown[]) => (await pg.query(q, p)).rows, execute: async (q: string, p: unknown[]) => ({ rowCount: (await pg.query(q, p)).affectedRows ?? 0 }) });
+  Object.assign(h.ctx.db, { namespace: host.db.namespace, query: host.db.query, execute: host.db.execute });
   const active: Record<string, PluginIssueRunSummary[]> = {};
   const agents: Record<string, any> = { ceo: { id: 'ceo', name: 'CEO', role: 'ceo', title: null, status: 'running' }, researcher: { id: 'researcher', name: 'Researcher', role: 'researcher', title: null, status: 'running' } };
   // SDK harness has no active-run seed API; keep its real issue/subtree/checkout behavior,
@@ -173,8 +175,8 @@ it('objective_source_context denies a source hidden as spam and allows it again 
   const f = await setup(); await f.job(); const issue = (await f.rows())[0]!, run = await f.activate(issue.id);
   const store = createOrgStore(f.h.ctx.db);
   const sourceKey = 'objective:' + objectiveKey('dao', f.f.ref);
-  await store.setHidden('co', sourceKey, { by: 'mod', at: new Date().toISOString(), reason: 'spam' });
+  await store.setHidden('co', sourceKey, { by: 'mod', at: new Date().toISOString(), reason: 'spam' }, crypto.randomUUID());
   await expect(f.call(run)).rejects.toThrow(/^Objective source unavailable or task access denied\.$/);
-  await store.setHidden('co', sourceKey, null);
+  await store.setHidden('co', sourceKey, null, crypto.randomUUID());
   expect((await f.call(run)).data.source).toEqual(f.f.source);
 });

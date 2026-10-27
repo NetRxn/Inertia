@@ -71,6 +71,7 @@ describe('OrgPage', () => {
           role: 'member',
           memberCount: 5,
           feed: [{ companyId: 'company-1', seq: 1, actor: 'user-2', action: 'source.share', subject: 'doc-1', reason: '', at: '2026-10-25T10:00:00Z' }],
+          labels: {},
           keyDocuments: [{ sourceKey: 'doc-1', title: 'Budget 2026', score: 1 }],
           initiatives: [{ issueId: 'issue-1', title: 'Q4 Planning', openTasks: 3 }],
         },
@@ -105,6 +106,7 @@ describe('OrgPage', () => {
           role: 'member',
           memberCount: 5,
           feed: [],
+          labels: {},
           keyDocuments: [],
           initiatives: [],
         },
@@ -143,6 +145,7 @@ describe('OrgPage', () => {
           role: 'moderator',
           memberCount: 5,
           feed: [],
+          labels: {},
           keyDocuments: [],
           initiatives: [],
         },
@@ -188,6 +191,7 @@ describe('OrgPage', () => {
           role: 'founder',
           memberCount: 2,
           feed: [],
+          labels: {},
           keyDocuments: [],
           initiatives: [],
         },
@@ -237,6 +241,7 @@ describe('OrgPage', () => {
           role: 'moderator',
           memberCount: 2,
           feed: [],
+          labels: {},
           keyDocuments: [],
           initiatives: [],
         },
@@ -333,7 +338,7 @@ describe('OrgPage', () => {
     const { parseOrgOverview } = await import('../../src/ui/org-client.js');
 
     expect(() => {
-      parseOrgOverview({ profile: { companyId: 'c1', name: 'DAO', createdBy: 'u1', createdAt: '2026-01-01T00:00:00Z' }, role: 'member', memberCount: 5, feed: [], keyDocuments: [], initiatives: [], extraKey: 'unexpected' });
+      parseOrgOverview({ profile: { companyId: 'c1', name: 'DAO', createdBy: 'u1', createdAt: '2026-01-01T00:00:00Z' }, role: 'member', memberCount: 5, feed: [], labels: {}, keyDocuments: [], initiatives: [], extraKey: 'unexpected' });
     }).toThrow();
   });
 
@@ -345,6 +350,7 @@ describe('OrgPage', () => {
         role: 'member',
         memberCount: 1,
         feed: [],
+        labels: {},
         keyDocuments: [],
         initiatives: [],
       },

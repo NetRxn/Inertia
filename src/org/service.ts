@@ -6,25 +6,44 @@ import { validateShare, significance } from './sources.js';
 import { clean } from './text.js';
 import { webcrypto } from 'node:crypto';
 
+/** Every audited mutation carries the caller's requestId; a retry with the same id completes, never repeats. */
+type Op = { requestId: string };
+
+export type OpenedSource =
+  | { kind: 'link'; title: string; url: string }
+  | { kind: 'note'; title: string; text: string }
+  | { kind: 'file'; title: string; mediaType: string; base64: string };
+
+export interface OrgOverviewData {
+  profile: OrgProfile;
+  role: OrgRole;
+  feed: OrgLogEntry[];
+  /** Readable names for feed actors and subjects the viewer may see; ids without one stay as they are. */
+  labels: Record<string, string>;
+  keyDocuments: Array<{ sourceKey: string; title: string; score: number }>;
+  initiatives: Array<{ issueId: string; title: string; openTasks: number }>;
+}
+
 export interface OrgService {
   actorRole(companyId: string, userId: string): Promise<OrgRole | null>;
   setup(companyId: string, userId: string, input: { name: string; displayName: string }): Promise<OrgProfile>;
   profile(companyId: string, userId: string): Promise<{ profile: OrgProfile; role: OrgRole; memberCount: number; syncSource: null }>;
   members(companyId: string, userId: string): Promise<OrgMember[]>;
-  addMember(companyId: string, userId: string, input: { userId: string; displayName: string; reason: string }): Promise<void>;
-  removeMember(companyId: string, userId: string, input: { userId: string; reason: string }): Promise<void>;
-  setModerator(companyId: string, userId: string, input: { userId: string; moderator: boolean; reason: string }): Promise<void>;
+  addMember(companyId: string, userId: string, input: Op & { userId: string; displayName: string; reason: string }): Promise<void>;
+  removeMember(companyId: string, userId: string, input: Op & { userId: string; reason: string }): Promise<void>;
+  setModerator(companyId: string, userId: string, input: Op & { userId: string; moderator: boolean; reason: string }): Promise<void>;
   share(companyId: string, userId: string, input: unknown): Promise<OrgSource>;
   sources(companyId: string, userId: string, opts: { kind?: 'link' | 'file' | 'note' | 'objective'; hidden: boolean }): Promise<Array<OrgSource & { feeds: { tasks: number } }>>;
-  hide(companyId: string, userId: string, input: { sourceKey: string; reason: string }): Promise<void>;
-  restore(companyId: string, userId: string, input: { sourceKey: string; reason: string }): Promise<void>;
-  pin(companyId: string, userId: string, input: { sourceKey: string }): Promise<void>;
-  overview(companyId: string, userId: string): Promise<null | { profile: OrgProfile; role: OrgRole; feed: OrgLogEntry[]; keyDocuments: Array<{ sourceKey: string; title: string; score: number }>; initiatives: Array<{ issueId: string; title: string; openTasks: number }> }>;
+  hide(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void>;
+  restore(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void>;
+  pin(companyId: string, userId: string, input: Op & { sourceKey: string }): Promise<void>;
+  open(companyId: string, userId: string, input: { sourceKey: string }): Promise<OpenedSource>;
+  overview(companyId: string, userId: string): Promise<null | OrgOverviewData>;
   isHidden(companyId: string, sourceKey: string): Promise<boolean>;
 }
 
 function validateText(value: string, fieldName: string): string {
-  const trimmed = value.trim();
+  const trimmed = typeof value === 'string' ? value.trim() : '';
   if (trimmed.length < 1 || trimmed.length > 200 || /[\x00-\x1F\x7F]/.test(trimmed)) {
     throw new OrgError('invalid', `${fieldName} must be 1-200 characters without control characters.`);
   }
@@ -34,6 +53,15 @@ function validateText(value: string, fieldName: string): string {
 function validateUserId(value: string): string {
   if (typeof value !== 'string' || value.length < 1 || value.length > 128 || /[\x00-\x1F\x7F]/.test(value)) {
     throw new OrgError('invalid', 'userId must be a non-empty string, at most 128 characters, without control characters.');
+  }
+  return value;
+}
+
+const requestIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function validateRequestId(value: unknown): string {
+  if (typeof value !== 'string' || !requestIdPattern.test(value)) {
+    throw new OrgError('invalid', 'requestId must be a lowercase UUID v4.');
   }
   return value;
 }
@@ -51,46 +79,98 @@ function objectiveAudience(audience: string): OrgSource['audience'] {
   return audience === 'public' || audience === 'members' ? 'members' : 'moderators';
 }
 
+async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const hashBuffer = await webcrypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+const setupOpKey = 'setup';
+
 export function createOrgService(
   store: OrgStore,
   clock: () => Date,
-  newId: () => string
+  _newId: () => string
 ): OrgService {
-  return {
+  const forbidden = () => new OrgError('forbidden', 'Access denied.');
+  const notFound = () => new OrgError('invalid', 'Source not found.');
+
+  /**
+   * Mutate, then audit. (a) An audited requestId is already done. (b) Otherwise apply — unless a row already
+   * carries this requestId, meaning an earlier attempt applied it and only its audit failed. Business rules run
+   * inside apply, so a replay never re-checks them. (c) Audit once per (company, requestId); a failure surfaces as
+   * unavailable and the same requestId completes it. apply returns false when there was nothing to record.
+   */
+  async function audited(
+    companyId: string,
+    opKey: string,
+    entry: Pick<OrgLogEntry, 'actor' | 'action' | 'subject' | 'reason'>,
+    apply: () => Promise<boolean>
+  ): Promise<void> {
+    if (await store.hasLog(companyId, opKey)) {
+      return;
+    }
+    if (!(await store.opApplied(companyId, opKey)) && !(await apply())) {
+      return;
+    }
+    await store.appendLog({ companyId, opKey, ...entry });
+  }
+
+  async function requireRole(companyId: string, userId: string, action: Parameters<typeof allowed>[1]): Promise<OrgRole> {
+    const role = await service.actorRole(companyId, userId);
+    if (!allowed(role, action)) {
+      throw forbidden();
+    }
+    return role!;
+  }
+
+  const service: OrgService = {
     async actorRole(companyId: string, userId: string): Promise<OrgRole | null> {
       const member = await store.readMember(companyId, userId);
-      if (!member || member.status === 'removed') return null;
+      if (!member) {
+        // Setup claims the profile before inserting the founder; complete a founder row a failed setup left out.
+        const profile = await store.readProfile(companyId);
+        if (profile && profile.createdBy === userId) {
+          await store.completeFounder(companyId, userId);
+          return 'founder';
+        }
+        return null;
+      }
+      if (member.status === 'removed') return null;
       return member.role;
     },
 
     async setup(companyId: string, userId: string, input: { name: string; displayName: string }): Promise<OrgProfile> {
-      const name = validateText(input.name, 'name');
-      const displayName = validateText(input.displayName, 'displayName');
+      const name = validateText(input?.name, 'name');
+      const displayName = validateText(input?.displayName, 'displayName');
 
-      const now = clock().toISOString();
-      const profile: OrgProfile = {
+      let profile: OrgProfile = {
         companyId,
         name,
         createdBy: userId,
-        createdAt: now
+        createdAt: clock().toISOString()
       };
 
-      const founder: OrgMember = {
-        companyId,
-        userId,
-        displayName,
-        role: 'founder',
-        status: 'active',
-        joinedAt: now
-      };
-
-      const created = await store.createProfile(profile, founder);
-      if (!created) {
-        throw new OrgError('conflict', 'Organization profile already exists.');
+      if (!(await store.createProfile(profile, displayName))) {
+        const existing = await store.readProfile(companyId);
+        if (!existing || existing.createdBy !== userId) {
+          throw new OrgError('conflict', 'Organization profile already exists.');
+        }
+        const founder = await store.readMember(companyId, userId);
+        if (founder && await store.hasLog(companyId, setupOpKey)) {
+          throw new OrgError('conflict', 'Organization profile already exists.');
+        }
+        // The creator retrying: finish the founder row and audit an earlier attempt left undone.
+        if (!founder) {
+          await store.completeFounder(companyId, userId);
+        }
+        profile = existing;
       }
 
       await store.appendLog({
         companyId,
+        opKey: setupOpKey,
         actor: userId,
         action: 'org.setup',
         subject: companyId,
@@ -106,9 +186,9 @@ export function createOrgService(
         throw new OrgError('unavailable', 'Organization profile not found.');
       }
 
-      const role = await this.actorRole(companyId, userId);
+      const role = await service.actorRole(companyId, userId);
       if (!role) {
-        throw new OrgError('forbidden', 'Access denied.');
+        throw forbidden();
       }
 
       const members = await store.listMembers(companyId);
@@ -123,156 +203,108 @@ export function createOrgService(
     },
 
     async members(companyId: string, userId: string): Promise<OrgMember[]> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'view')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
+      await requireRole(companyId, userId, 'view');
       return store.listMembers(companyId);
     },
 
-    async addMember(companyId: string, userId: string, input: { userId: string; displayName: string; reason: string }): Promise<void> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'members.edit')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
+    async addMember(companyId: string, userId: string, input: Op & { userId: string; displayName: string; reason: string }): Promise<void> {
+      const requestId = validateRequestId(input?.requestId);
       const targetUserId = validateUserId(input.userId);
       const displayName = validateText(input.displayName, 'displayName');
       const reason = validateText(input.reason, 'reason');
 
-      const existing = await store.readMember(companyId, targetUserId);
-      if (existing && existing.status === 'active') {
-        throw new OrgError('conflict', 'Already a member.');
-      }
+      await audited(companyId, requestId, { actor: userId, action: 'member.add', subject: targetUserId, reason }, async () => {
+        await requireRole(companyId, userId, 'members.edit');
 
-      const now = clock().toISOString();
-      const newMember: OrgMember = {
-        companyId,
-        userId: targetUserId,
-        displayName,
-        role: 'member',
-        status: 'active',
-        joinedAt: now
-      };
+        const existing = await store.readMember(companyId, targetUserId);
+        if (existing && existing.status === 'active') {
+          throw new OrgError('conflict', 'Already a member.');
+        }
 
-      await store.upsertMember(newMember);
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'member.add',
-        subject: targetUserId,
-        reason
+        await store.upsertMember({
+          companyId,
+          userId: targetUserId,
+          displayName,
+          role: 'member',
+          status: 'active',
+          joinedAt: clock().toISOString()
+        }, requestId);
+        return true;
       });
     },
 
-    async removeMember(companyId: string, userId: string, input: { userId: string; reason: string }): Promise<void> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'members.edit')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
+    async removeMember(companyId: string, userId: string, input: Op & { userId: string; reason: string }): Promise<void> {
+      const requestId = validateRequestId(input?.requestId);
       const targetUserId = validateUserId(input.userId);
       const reason = validateText(input.reason, 'reason');
 
-      const targetMember = await store.readMember(companyId, targetUserId);
-      if (!targetMember || targetMember.status === 'removed') {
-        throw new OrgError('invalid', 'Member not found.');
-      }
+      await audited(companyId, requestId, { actor: userId, action: 'member.remove', subject: targetUserId, reason }, async () => {
+        await requireRole(companyId, userId, 'members.edit');
 
-      if (targetMember.role === 'founder' || targetMember.role === 'moderator') {
-        const modCount = await store.countModerators(companyId);
-        if (modCount <= 1) {
-          throw new OrgError('conflict', 'Cannot remove the last moderator.');
+        const targetMember = await store.readMember(companyId, targetUserId);
+        if (!targetMember || targetMember.status === 'removed') {
+          throw new OrgError('invalid', 'Member not found.');
         }
-      }
 
-      const updated: OrgMember = {
-        ...targetMember,
-        status: 'removed'
-      };
+        if (targetMember.role === 'founder' || targetMember.role === 'moderator') {
+          const modCount = await store.countModerators(companyId);
+          if (modCount <= 1) {
+            throw new OrgError('conflict', 'Cannot remove the last moderator.');
+          }
+        }
 
-      await store.upsertMember(updated);
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'member.remove',
-        subject: targetUserId,
-        reason
+        await store.upsertMember({ ...targetMember, status: 'removed' }, requestId);
+        return true;
       });
     },
 
-    async setModerator(companyId: string, userId: string, input: { userId: string; moderator: boolean; reason: string }): Promise<void> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'moderators.edit')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
+    async setModerator(companyId: string, userId: string, input: Op & { userId: string; moderator: boolean; reason: string }): Promise<void> {
+      const requestId = validateRequestId(input?.requestId);
       const targetUserId = validateUserId(input.userId);
       const reason = validateText(input.reason, 'reason');
-
-      const targetMember = await store.readMember(companyId, targetUserId);
-      if (!targetMember || targetMember.status === 'removed') {
-        throw new OrgError('invalid', 'Member not found.');
+      if (typeof input.moderator !== 'boolean') {
+        throw new OrgError('invalid', 'moderator must be true or false.');
       }
 
-      if (targetMember.role === 'founder') {
-        throw new OrgError('conflict', 'Cannot change founder role.');
-      }
+      await audited(companyId, requestId, { actor: userId, action: 'moderator.set', subject: targetUserId, reason }, async () => {
+        await requireRole(companyId, userId, 'moderators.edit');
 
-      const targetRole: OrgRole = input.moderator ? 'moderator' : 'member';
-
-      if (!input.moderator && targetMember.role === 'moderator') {
-        const modCount = await store.countModerators(companyId);
-        if (modCount <= 1) {
-          throw new OrgError('conflict', 'Cannot demote the last moderator.');
+        const targetMember = await store.readMember(companyId, targetUserId);
+        if (!targetMember || targetMember.status === 'removed') {
+          throw new OrgError('invalid', 'Member not found.');
         }
-      }
 
-      // Concurrent demotions may race past the countModerators check; acceptable for v1.
+        if (targetMember.role === 'founder') {
+          throw new OrgError('conflict', 'Cannot change founder role.');
+        }
 
-      const updated: OrgMember = {
-        ...targetMember,
-        role: targetRole
-      };
+        if (!input.moderator && targetMember.role === 'moderator') {
+          const modCount = await store.countModerators(companyId);
+          if (modCount <= 1) {
+            throw new OrgError('conflict', 'Cannot demote the last moderator.');
+          }
+        }
 
-      await store.upsertMember(updated);
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'moderator.set',
-        subject: targetUserId,
-        reason
+        // Concurrent demotions may race past the countModerators check; acceptable for v1.
+        await store.upsertMember({ ...targetMember, role: input.moderator ? 'moderator' : 'member' }, requestId);
+        return true;
       });
     },
 
     async share(companyId: string, userId: string, input: unknown): Promise<OrgSource> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'share')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
+      const requestId = validateRequestId((input as { requestId?: unknown } | null)?.requestId);
       const validated = validateShare(input);
-      const now = clock().toISOString();
-      const sourceKey = `share:${newId()}`;
+      const sourceKey = `share:${requestId}`;
 
-      let content: Uint8Array | null = null;
+      let contentBase64: string | null = null;
       let byteLength: number | null = null;
       let sha256: string | null = null;
 
-      if (validated.kind === 'file') {
-        content = validated.bytes;
-        byteLength = validated.bytes.length;
-        const hashBuffer = await webcrypto.subtle.digest('SHA-256', validated.bytes);
-        sha256 = Array.from(new Uint8Array(hashBuffer))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
-      } else if (validated.kind === 'note') {
-        content = new TextEncoder().encode(validated.text);
-        byteLength = content.length;
-        const hashBuffer = await webcrypto.subtle.digest('SHA-256', content);
-        sha256 = Array.from(new Uint8Array(hashBuffer))
-          .map(b => b.toString(16).padStart(2, '0'))
-          .join('');
+      if (validated.kind === 'file' || validated.kind === 'note') {
+        const bytes = validated.kind === 'file' ? validated.bytes : new TextEncoder().encode(validated.text);
+        contentBase64 = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString('base64');
+        byteLength = bytes.length;
+        sha256 = await sha256Hex(bytes);
       }
 
       const source: OrgSource = {
@@ -288,26 +320,20 @@ export function createOrgService(
         audience: 'members',
         hidden: null,
         pins: 0,
-        createdAt: now
+        createdAt: clock().toISOString()
       };
 
-      await store.insertSource(source, content);
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'source.share',
-        subject: sourceKey,
-        reason: ''
+      await audited(companyId, requestId, { actor: userId, action: 'source.share', subject: sourceKey, reason: '' }, async () => {
+        await requireRole(companyId, userId, 'share');
+        await store.insertSource(source, contentBase64, requestId);
+        return true;
       });
 
-      return source;
+      return (await store.readSource(companyId, sourceKey)) ?? source;
     },
 
     async sources(companyId: string, userId: string, opts: { kind?: 'link' | 'file' | 'note' | 'objective'; hidden: boolean }): Promise<Array<OrgSource & { feeds: { tasks: number } }>> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'sources.view')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
+      await requireRole(companyId, userId, 'sources.view');
 
       const sharedSources = opts.kind === 'objective'
         ? []
@@ -346,115 +372,126 @@ export function createOrgService(
       return allSources;
     },
 
-    async hide(companyId: string, userId: string, input: { sourceKey: string; reason: string }): Promise<void> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'sources.moderate')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
-      const sourceKey = validateSourceKey(input.sourceKey);
-      const reason = validateText(input.reason, 'reason');
-      const now = clock().toISOString();
-
-      const updated = await store.setHidden(companyId, sourceKey, {
-        by: userId,
-        at: now,
-        reason
-      });
-
-      if (!updated) {
-        throw new OrgError('invalid', 'Source not found.');
-      }
-
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'source.hide',
-        subject: sourceKey,
-        reason
-      });
-    },
-
-    async restore(companyId: string, userId: string, input: { sourceKey: string; reason: string }): Promise<void> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'sources.moderate')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
+    async hide(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void> {
+      const requestId = validateRequestId(input?.requestId);
       const sourceKey = validateSourceKey(input.sourceKey);
       const reason = validateText(input.reason, 'reason');
 
-      const updated = await store.setHidden(companyId, sourceKey, null);
-
-      if (!updated) {
-        throw new OrgError('invalid', 'Source not found.');
-      }
-
-      await store.appendLog({
-        companyId,
-        actor: userId,
-        action: 'source.restore',
-        subject: sourceKey,
-        reason
+      await audited(companyId, requestId, { actor: userId, action: 'source.hide', subject: sourceKey, reason }, async () => {
+        await requireRole(companyId, userId, 'sources.moderate');
+        if (!(await store.setHidden(companyId, sourceKey, { by: userId, at: clock().toISOString(), reason }, requestId))) {
+          throw notFound();
+        }
+        return true;
       });
     },
 
-    async pin(companyId: string, userId: string, input: { sourceKey: string }): Promise<void> {
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'pin')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
-
+    async restore(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void> {
+      const requestId = validateRequestId(input?.requestId);
       const sourceKey = validateSourceKey(input.sourceKey);
-      const isModerator = role === 'founder' || role === 'moderator';
-      let visible: boolean;
+      const reason = validateText(input.reason, 'reason');
+
+      await audited(companyId, requestId, { actor: userId, action: 'source.restore', subject: sourceKey, reason }, async () => {
+        await requireRole(companyId, userId, 'sources.moderate');
+        if (!(await store.setHidden(companyId, sourceKey, null, requestId))) {
+          throw notFound();
+        }
+        return true;
+      });
+    },
+
+    async pin(companyId: string, userId: string, input: Op & { sourceKey: string }): Promise<void> {
+      const requestId = validateRequestId(input?.requestId);
+      const sourceKey = validateSourceKey(input.sourceKey);
+
+      await audited(companyId, requestId, { actor: userId, action: 'source.pin', subject: sourceKey, reason: '' }, async () => {
+        const role = await requireRole(companyId, userId, 'pin');
+        const isModerator = role === 'founder' || role === 'moderator';
+        let visible: boolean;
+        if (sourceKey.startsWith('objective:')) {
+          const objective = await store.readObjectiveSource(companyId, sourceKey.slice('objective:'.length));
+          visible = !!objective && (isModerator || (!objective.hidden && objectiveAudience(objective.audience) === 'members'));
+        } else {
+          const source = await store.readSource(companyId, sourceKey);
+          visible = !!source && (isModerator || !source.hidden);
+        }
+        if (!visible) {
+          throw notFound();
+        }
+        // A second pin by the same user changes nothing and records nothing.
+        return store.addPin(companyId, sourceKey, userId, requestId);
+      });
+    },
+
+    async open(companyId: string, userId: string, input: { sourceKey: string }): Promise<OpenedSource> {
+      const role = await requireRole(companyId, userId, 'view');
+      const sourceKey = validateSourceKey(input?.sourceKey);
       if (sourceKey.startsWith('objective:')) {
-        const objective = await store.readObjectiveSource(companyId, sourceKey.slice('objective:'.length));
-        visible = !!objective && (isModerator || (!objective.hidden && objectiveAudience(objective.audience) === 'members'));
-      } else {
-        const source = await store.readSource(companyId, sourceKey);
-        visible = !!source && (isModerator || !source.hidden);
-      }
-      if (!visible) {
-        throw new OrgError('invalid', 'Source not found.');
+        throw new OrgError('invalid', 'Open this source from its task.');
       }
 
-      if (await store.addPin(companyId, sourceKey, userId)) {
-        await store.appendLog({
-          companyId,
-          actor: userId,
-          action: 'source.pin',
-          subject: sourceKey,
-          reason: ''
-        });
+      const isModerator = role === 'founder' || role === 'moderator';
+      const source = await store.readSource(companyId, sourceKey);
+      // Hidden and missing read the same to a member, so a hidden item's existence never leaks.
+      if (!source || source.kind === 'objective' || (!isModerator && (source.hidden !== null || source.audience !== 'members'))) {
+        throw notFound();
       }
+
+      const title = clean(source.title, 1000, 'Untitled source');
+      if (source.kind === 'link') {
+        if (!source.url) throw notFound();
+        return { kind: 'link', title, url: source.url };
+      }
+
+      const content = await store.readContent(companyId, sourceKey);
+      if (!content) {
+        throw notFound();
+      }
+      if (source.kind === 'note') {
+        return { kind: 'note', title, text: Buffer.from(content.base64, 'base64').toString('utf8') };
+      }
+      return { kind: 'file', title, mediaType: content.mediaType ?? 'application/octet-stream', base64: content.base64 };
     },
 
-    async overview(companyId: string, userId: string): Promise<null | { profile: OrgProfile; role: OrgRole; feed: OrgLogEntry[]; keyDocuments: Array<{ sourceKey: string; title: string; score: number }>; initiatives: Array<{ issueId: string; title: string; openTasks: number }> }> {
+    async overview(companyId: string, userId: string): Promise<null | OrgOverviewData> {
       const profileData = await store.readProfile(companyId);
       if (!profileData) {
         return null;
       }
 
-      const role = await this.actorRole(companyId, userId);
-      if (!allowed(role, 'view')) {
-        throw new OrgError('forbidden', 'Access denied.');
-      }
+      const role = await requireRole(companyId, userId, 'view');
+      const isModerator = role === 'founder' || role === 'moderator';
 
       const allLog = await store.listLog(companyId, 50);
-
-      const hiddenMap = await store.listHidden(companyId);
-      const hiddenKeys = new Set(hiddenMap.keys());
-
+      const hiddenKeys = new Set((await store.listHidden(companyId)).keys());
       const allSources = await store.listSources(companyId, { includeHidden: true, limit: 1000 });
 
-      const isModerator = role === 'founder' || role === 'moderator';
-      const feed = allLog.filter(entry => {
-        if (isModerator) {
-          return true;
+      const feed = allLog.filter(entry => isModerator || !hiddenKeys.has(entry.subject));
+
+      // Names only for what this viewer may see: members never get hidden or moderator-only titles.
+      const names = new Map<string, string>();
+      for (const member of await store.listMembers(companyId)) {
+        names.set(member.userId, clean(member.displayName, 200, member.userId));
+      }
+      for (const source of allSources) {
+        if (isModerator || (!source.hidden && source.audience === 'members')) {
+          names.set(source.sourceKey, clean(source.title, 1000, 'Untitled source'));
         }
-        return !hiddenKeys.has(entry.subject);
-      });
+      }
+      if (feed.some(entry => entry.subject.startsWith('objective:'))) {
+        for (const objective of await store.listObjectiveSources(companyId, 1000)) {
+          if (isModerator || (!objective.hidden && objectiveAudience(objective.audience) === 'members')) {
+            names.set(`objective:${objective.key}`, clean(objective.title, 1000, 'Untitled source'));
+          }
+        }
+      }
+      const labels: Record<string, string> = {};
+      for (const entry of feed) {
+        for (const key of [entry.actor, entry.subject]) {
+          const name = names.get(key);
+          if (name !== undefined) labels[key] = name;
+        }
+      }
 
       const visibleSources = allSources.filter(s => !s.hidden);
       const sourcesWithScore = visibleSources.map(s => ({
@@ -470,13 +507,12 @@ export function createOrgService(
         return aSource.createdAt.localeCompare(bSource.createdAt);
       });
 
-      const keyDocuments = sourcesWithScore.slice(0, 5);
-
       return {
         profile: profileData,
-        role: role!,
+        role,
         feed,
-        keyDocuments,
+        labels,
+        keyDocuments: sourcesWithScore.slice(0, 5),
         initiatives: []
       };
     },
@@ -485,4 +521,6 @@ export function createOrgService(
       return store.isHidden(companyId, sourceKey);
     }
   };
+
+  return service;
 }

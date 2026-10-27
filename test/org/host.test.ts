@@ -1,34 +1,27 @@
 import { afterAll, beforeAll, expect, it } from 'vitest';
-import { PGlite } from '@electric-sql/pglite';
+import type { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
-import { readFile } from 'node:fs/promises';
 import { manifest } from '../../src/manifest.js';
 import { BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
 import { registerOrgProfile } from '../../src/org/host.js';
+import { createHostDb, type HostDb } from '../support/paperclip-host-db.js';
 
+let host: HostDb;
 let pg: PGlite;
 
 beforeAll(async () => {
-  pg = new PGlite();
-  await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`);
-  await pg.exec(await readFile(new URL('../../migrations/007_objective_intake.sql', import.meta.url), 'utf8'));
-  await pg.exec(await readFile(new URL('../../migrations/009_org_profile.sql', import.meta.url), 'utf8'));
+  host = await createHostDb();
+  pg = host.pg;
 }, 60000);
 
-afterAll(async () => pg.close());
+afterAll(async () => host.close());
 
 function createHarness() {
   const h = createTestHarness({
     manifest,
   });
 
-  Object.assign(h.ctx.db, {
-    namespace: BRIDGE_NAMESPACE,
-    query: async (q: string, p: unknown[]) => (await pg.query(q, p)).rows,
-    execute: async (q: string, p: unknown[]) => ({
-      rowCount: (await pg.query(q, p)).affectedRows ?? 0,
-    }),
-  });
+  Object.assign(h.ctx.db, { namespace: host.db.namespace, query: host.db.query, execute: host.db.execute });
 
   registerOrgProfile(h.ctx);
 
@@ -61,7 +54,7 @@ it('user not in org calling org.overview returns forbidden and response has no d
     companyId: 'co',
   });
 
-  await h.performAction('org.source.share', { kind: 'link', title: 'Secret Doc', url: 'https://example.com/secret' }, {
+  await h.performAction('org.source.share', { requestId: crypto.randomUUID(), kind: 'link', title: 'Secret Doc', url: 'https://example.com/secret' }, {
     actor: { type: 'user', userId: 'founder', agentId: null, runId: null, companyId: 'co' },
     companyId: 'co',
   });
@@ -210,21 +203,21 @@ it('org.member.add validates target userId', async () => {
     companyId: 'co-val',
   });
 
-  const emptyResult = await h.performAction('org.member.add', { userId: '', displayName: 'Test', reason: 'test' }, {
+  const emptyResult = await h.performAction('org.member.add', { requestId: crypto.randomUUID(), userId: '', displayName: 'Test', reason: 'test' }, {
     actor: { type: 'user', userId: 'founder-val', agentId: null, runId: null, companyId: 'co-val' },
     companyId: 'co-val',
   }) as any;
   expect(emptyResult.ok).toBe(false);
   expect(emptyResult.error.kind).toBe('invalid');
 
-  const tooLongResult = await h.performAction('org.member.add', { userId: 'x'.repeat(129), displayName: 'Test', reason: 'test' }, {
+  const tooLongResult = await h.performAction('org.member.add', { requestId: crypto.randomUUID(), userId: 'x'.repeat(129), displayName: 'Test', reason: 'test' }, {
     actor: { type: 'user', userId: 'founder-val', agentId: null, runId: null, companyId: 'co-val' },
     companyId: 'co-val',
   }) as any;
   expect(tooLongResult.ok).toBe(false);
   expect(tooLongResult.error.kind).toBe('invalid');
 
-  const controlCharResult = await h.performAction('org.member.add', { userId: 'user\x00id', displayName: 'Test', reason: 'test' }, {
+  const controlCharResult = await h.performAction('org.member.add', { requestId: crypto.randomUUID(), userId: 'user\x00id', displayName: 'Test', reason: 'test' }, {
     actor: { type: 'user', userId: 'founder-val', agentId: null, runId: null, companyId: 'co-val' },
     companyId: 'co-val',
   }) as any;

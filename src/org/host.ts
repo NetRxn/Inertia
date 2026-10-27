@@ -28,6 +28,7 @@ function decodeShare(params: unknown): unknown {
   }
   return {
     kind: 'file',
+    requestId: input.requestId,
     title: input.title,
     mediaType: input.mediaType,
     bytes: new Uint8Array(Buffer.from(input.base64, 'base64')),
@@ -112,7 +113,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.member.add', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      const input = params as { userId: string; displayName: string; reason: string };
+      const input = params as { requestId: string; userId: string; displayName: string; reason: string };
       await service.addMember(companyId, userId, input);
       return null;
     });
@@ -120,7 +121,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.member.remove', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      const input = params as { userId: string; reason: string };
+      const input = params as { requestId: string; userId: string; reason: string };
       await service.removeMember(companyId, userId, input);
       return null;
     });
@@ -128,7 +129,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.moderator.set', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      const input = params as { userId: string; moderator: boolean; reason: string };
+      const input = params as { requestId: string; userId: string; moderator: boolean; reason: string };
       await service.setModerator(companyId, userId, input);
       return null;
     });
@@ -149,7 +150,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.source.hide', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      const input = params as { sourceKey: string; reason: string };
+      const input = params as { requestId: string; sourceKey: string; reason: string };
       await service.hide(companyId, userId, input);
       return null;
     });
@@ -157,7 +158,7 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.source.restore', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      const input = params as { sourceKey: string; reason: string };
+      const input = params as { requestId: string; sourceKey: string; reason: string };
       await service.restore(companyId, userId, input);
       return null;
     });
@@ -165,9 +166,15 @@ export function registerOrgProfile(ctx: PluginContext): void {
 
   ctx.actions.register('org.source.pin', async (params, context) => {
     return withUser(context, async (userId, companyId) => {
-      const input = params as { sourceKey: string };
+      const input = params as { requestId: string; sourceKey: string };
       await service.pin(companyId, userId, input);
       return null;
+    });
+  });
+
+  ctx.actions.register('org.source.open', async (params, context) => {
+    return withUser(context, async (userId, companyId) => {
+      return service.open(companyId, userId, params as { sourceKey: string });
     });
   });
 

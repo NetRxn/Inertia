@@ -65,12 +65,14 @@ export interface OrgOverview {
   role: OrgRole;
   memberCount: number;
   feed: OrgLogEntry[];
+  /** Display names and source titles for feed ids; an id without one is shown as is. */
+  labels: Record<string, string>;
   keyDocuments: Array<{ sourceKey: string; title: string; score: number }>;
   initiatives: Array<{ issueId: string; title: string; openTasks: number }>;
 }
 
 export function parseOrgOverview(raw: unknown): OrgOverview {
-  const r = row(raw, ['profile', 'role', 'memberCount', 'feed', 'keyDocuments', 'initiatives']);
+  const r = row(raw, ['profile', 'role', 'memberCount', 'feed', 'labels', 'keyDocuments', 'initiatives']);
   check(Number.isSafeInteger(r.memberCount) && Number(r.memberCount) >= 0);
 
   const profile = row(r.profile, ['companyId', 'name', 'createdBy', 'createdAt']);
@@ -98,6 +100,14 @@ export function parseOrgOverview(raw: unknown): OrgOverview {
       at: timestamp(l.at),
     };
   });
+
+  check(r.labels && typeof r.labels === 'object' && !Array.isArray(r.labels));
+  const labelEntries = Object.entries(r.labels as Record<string, unknown>);
+  check(labelEntries.length <= 200);
+  const labels: Record<string, string> = Object.create(null);
+  for (const [key, value] of labelEntries) {
+    labels[text(key, 1000)] = text(value, 1000);
+  }
 
   const keyDocuments = list(r.keyDocuments, x => {
     const d = row(x, ['sourceKey', 'title', 'score']);
@@ -129,6 +139,7 @@ export function parseOrgOverview(raw: unknown): OrgOverview {
     role: role(r.role),
     memberCount: Number(r.memberCount),
     feed,
+    labels,
     keyDocuments,
     initiatives,
   };
@@ -188,6 +199,39 @@ export function parseOrgSources(raw: unknown): OrgSourceWithFeeds[] {
       feeds: { tasks: Number(feeds.tasks) },
     };
   }, 1000);
+}
+
+export type OrgSourceOpen =
+  | { kind: 'link'; title: string; url: string }
+  | { kind: 'note'; title: string; text: string }
+  | { kind: 'file'; title: string; mediaType: string; base64: string };
+
+const mediaTypePattern = /^[A-Za-z0-9!#$&^_.+-]+\/[A-Za-z0-9!#$&^_.+-]+$/;
+const base64Pattern = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+
+export function parseOrgSourceOpen(raw: unknown): OrgSourceOpen {
+  check(raw && typeof raw === 'object' && !Array.isArray(raw));
+  const kind = (raw as Record<string, unknown>).kind;
+  if (kind === 'link') {
+    const r = row(raw, ['kind', 'title', 'url']);
+    const url = text(r.url, 2048);
+    check(/^https?:\/\//i.test(url));
+    let parsed: URL | null = null;
+    try { parsed = new URL(url); } catch { parsed = null; }
+    check(parsed && (parsed.protocol === 'https:' || parsed.protocol === 'http:'));
+    return { kind, title: text(r.title, 1000), url };
+  }
+  if (kind === 'note') {
+    const r = row(raw, ['kind', 'title', 'text']);
+    check(typeof r.text === 'string' && r.text.length <= 20000);
+    return { kind, title: text(r.title, 1000), text: r.text as string };
+  }
+  check(kind === 'file');
+  const r = row(raw, ['kind', 'title', 'mediaType', 'base64']);
+  const mediaType = text(r.mediaType, 200);
+  check(mediaTypePattern.test(mediaType));
+  check(typeof r.base64 === 'string' && r.base64.length <= Math.ceil(1048576 / 3) * 4 && base64Pattern.test(r.base64));
+  return { kind: 'file', title: text(r.title, 1000), mediaType, base64: r.base64 as string };
 }
 
 export interface TrailStep {
