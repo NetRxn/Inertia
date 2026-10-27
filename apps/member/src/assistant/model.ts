@@ -47,3 +47,13 @@ export function getFastModel(env: Record<string, string | undefined> = process.e
   const fast = env.MEMBER_APP_FAST_MODEL?.trim();
   return getModel(fast ? { ...env, MEMBER_APP_MODEL: fast } : env);
 }
+
+/**
+ * Extra request settings for background calls. MEMBER_APP_MODEL_THINKING=off
+ * turns off step-by-step reasoning on providers that support it (Z.ai GLM),
+ * which keeps extraction quick and cheap. Opt-in, since other servers may reject the field.
+ */
+export function backgroundProviderOptions(env: Record<string, string | undefined> = process.env) {
+  if (env.MEMBER_APP_MODEL_PROVIDER?.trim() !== 'openai-compatible' || env.MEMBER_APP_MODEL_THINKING?.trim() !== 'off') return undefined;
+  return { 'member-app': { thinking: { type: 'disabled' } } };
+}
