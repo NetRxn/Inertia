@@ -1,0 +1,59 @@
+{
+  "scope": "Pinned native CLI against unauthenticated loopback fixture; no inference, credentials, search execution or container access",
+  "limits": "Darwin/ARM64 qualification; manually assembled app-server requests, empty dynamicTools, custom fixture provider; not actual Rust runner, deployed Linux, real account capability or OS-enforced whole-process network isolation",
+  "platform": "darwin",
+  "arch": "arm64",
+  "version": "codex-cli 0.156.1",
+  "binarySha256": "0196e89fe5a7598f816ee54232c3d7c26d75e502ab5cfe2c9240e81d90f7255a",
+  "securityModuleSha256": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e",
+  "requests": 4,
+  "inventories": [
+    {
+      "mode": "default",
+      "webTools": [
+        {
+          "type": "web_search",
+          "external_web_access": false,
+          "search_content_types": [
+            "text",
+            "image"
+          ]
+        }
+      ],
+      "commandTools": []
+    },
+    {
+      "mode": "disabled",
+      "webTools": [],
+      "commandTools": []
+    },
+    {
+      "mode": "cached",
+      "webTools": [
+        {
+          "type": "web_search",
+          "external_web_access": false,
+          "search_content_types": [
+            "text",
+            "image"
+          ]
+        }
+      ],
+      "commandTools": []
+    },
+    {
+      "mode": "live",
+      "webTools": [
+        {
+          "type": "web_search",
+          "external_web_access": true,
+          "search_content_types": [
+            "text",
+            "image"
+          ]
+        }
+      ],
+      "commandTools": []
+    }
+  ]
+}
