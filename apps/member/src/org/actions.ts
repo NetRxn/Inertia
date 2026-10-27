@@ -255,3 +255,15 @@ export async function readGithubRepos(input: string): Promise<ActionResult> {
     return fail(error, "Couldn't read GitHub just now.");
   }
 }
+
+/** Tests each integration with the current settings, for the Integrations page. */
+export async function checkIntegrations(): Promise<{ ok: true; results: import('../connectors/check').CheckResult[] } | { ok: false; error: string }> {
+  try {
+    await requireAdminMember();
+    const { checkConnections } = await import('../connectors/check');
+    return { ok: true, results: await checkConnections() };
+  } catch (error) {
+    if (error instanceof MemberError) return { ok: false, error: error.message };
+    return { ok: false, error: "Couldn't run the checks." };
+  }
+}

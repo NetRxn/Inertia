@@ -27,7 +27,8 @@ export type TelegramConfig = {
 export function telegramConfig(env: Record<string, string | undefined>): TelegramConfig | null {
   const token = env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return null;
-  return { token, chatIds: (env.TELEGRAM_CHAT_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean) };
+  const apiBase = env.TELEGRAM_API_BASE?.trim().replace(/\/+$/, '') || undefined;
+  return { token, chatIds: (env.TELEGRAM_CHAT_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean), ...(apiBase ? { apiBase } : {}) };
 }
 
 async function call<T>(config: TelegramConfig, method: string, params: Record<string, unknown>, fetchImpl: typeof fetch, timeoutMs = 15_000): Promise<T> {

@@ -4,6 +4,7 @@ import { useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   changeGovernance,
+  checkIntegrations,
   decideInitiative,
   draftProfile,
   findWorkIn,
@@ -15,6 +16,7 @@ import {
   type ActionResult,
 } from '../org/actions';
 import type { Role } from '../org/members';
+import type { CheckResult } from '../connectors/check';
 import styles from './OrgControls.module.css';
 
 function useAction() {
@@ -212,6 +214,36 @@ export function GovernanceToggle({ enabled }: { enabled: boolean }) {
       </label>
       <p className={styles.meta}>Off: admins keep initiatives directly. On: kept initiatives stay <em>proposed</em> in the work engine until marked adopted by vote (Robert&apos;s Rules).</p>
       <Notice message={message} />
+    </div>
+  );
+}
+
+const CHECK_CHIP: Record<CheckResult['status'], string> = { ok: 'in-chip--moss', warning: 'in-chip--pollen', 'not set': 'in-chip--tide', failed: 'in-chip--signal' };
+
+/** Tests every integration with the current settings and shows what to fix. */
+export function CheckConnections() {
+  const [pending, start] = useTransition();
+  const [results, setResults] = useState<CheckResult[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className={styles.stack}>
+      <button className="in-btn in-btn--secondary" disabled={pending} onClick={() => start(async () => {
+        setError(null);
+        const r = await checkIntegrations();
+        if (r.ok) setResults(r.results);
+        else setError(r.error);
+      })}>{pending ? 'Checking…' : 'Check connections'}</button>
+      {error && <p className={styles.notice} role="alert">{error}</p>}
+      {results && (
+        <ul className={styles.stack} style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {results.map((r) => (
+            <li key={r.name}>
+              <span className={`in-chip ${CHECK_CHIP[r.status]}`}>{r.status}</span> <strong>{r.name}</strong>
+              <p className={styles.meta}>{r.detail}</p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

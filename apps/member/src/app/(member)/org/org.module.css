@@ -30,3 +30,13 @@
     align-items: stretch;
   }
 }
+
+/* Five sections don't fit a phone: scroll sideways instead of cutting off. */
+.scrollTabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.scrollTabs > a {
+  flex: 0 0 auto;
+}

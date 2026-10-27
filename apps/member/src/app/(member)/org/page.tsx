@@ -11,6 +11,7 @@ import { sourcesSearchedForWork } from '../../../work/suggest';
 import type { Citation, ProfileLine } from '../../../org/profile-types';
 import {
   AddToInertia,
+  CheckConnections,
   FindWork,
   GovernanceToggle,
   InitiativeChoice,
@@ -177,13 +178,15 @@ async function DataTab({ admin }: { admin: boolean }) {
   );
 }
 
-async function IntegrationsTab() {
+async function IntegrationsTab({ admin }: { admin: boolean }) {
   const sources = await listSources(getDb());
   const cards = integrationCards(process.env, getAdapters(), {
     sources: sources.length,
     meetings: sources.filter((s) => s.kind === 'meeting').length,
     chatExports: sources.filter((s) => s.kind === 'chat-export').length,
     repositories: sources.filter((s) => s.origin?.startsWith('https://github.com/')).length,
+    buzzDigests: sources.filter((s) => s.kind === 'chat-export' && s.title.startsWith('Buzz:')).length,
+    telegramDigests: sources.filter((s) => s.kind === 'chat-export' && s.title.startsWith('Telegram')).length,
   });
   const groups: { status: 'connected' | 'available' | 'planned'; label: string }[] = [
     { status: 'connected', label: 'Connected' },
@@ -192,6 +195,12 @@ async function IntegrationsTab() {
   ];
   return (
     <div className={cardStyles.feed}>
+      {admin && (
+        <section className={`in-glass ${cardStyles.card}`}>
+          <h2 className={`in-label ${cardStyles.eyebrow}`}>Test the connections</h2>
+          <CheckConnections />
+        </section>
+      )}
       {groups.map((g) => {
         const items = cards.filter((c) => c.status === g.status);
         return items.length ? (
@@ -240,7 +249,7 @@ async function OrgContent({ tab }: { tab: Tab }) {
         <h1 className={workStyles.title}>{org?.name ?? 'Organization'}</h1>
         <p className={cardStyles.meta}>Who we are, who&apos;s here, what Inertia knows and what it&apos;s connected to.</p>
       </header>
-      <nav className={workStyles.tabs} aria-label="Organization sections">
+      <nav className={`${workStyles.tabs} ${styles.scrollTabs}`} aria-label="Organization sections">
         {TABS.filter((t) => admin || !t.adminOnly).map((t) => (
           <Link key={t.tab} href={t.tab === 'profile' ? '/org' : `/org?tab=${t.tab}`} aria-current={tab === t.tab ? 'page' : undefined} className={workStyles.tab}>{t.label}</Link>
         ))}
@@ -248,7 +257,7 @@ async function OrgContent({ tab }: { tab: Tab }) {
       {tab === 'profile' && <ProfileTab admin={admin} />}
       {tab === 'members' && <MembersTab admin={admin} selfId={member.id} />}
       {tab === 'data' && <DataTab admin={admin} />}
-      {tab === 'integrations' && <IntegrationsTab />}
+      {tab === 'integrations' && <IntegrationsTab admin={admin} />}
       {tab === 'settings' && admin && <SettingsTab />}
     </>
   );
