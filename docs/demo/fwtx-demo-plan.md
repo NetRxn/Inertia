@@ -46,6 +46,11 @@ For the plain-language "what is Inertia versus Paperclip, and why store notes" e
 - **Vote threshold:** not needed for the demo.
 - **On-screen member:** John.
 - **Data:** real recordings and/or transcripts and notes will be supplied for testing.
+- **Recordings:** available, in standard audio/video formats.
+- **Members can claim open human tasks.** The app should be *suggestive*: a visible pool of work up for grabs, not only assignments.
+- **Contributions:** no scoring yet, but every claim, answer and completion records **who did what, when, on which task**, so contribution tracking can be added later without backfilling.
+- **Transcription:** open source and low cost first, so local Whisper.
+- **LLM for the demo:** GLM (Z.ai / Zhipu). See section 1e.
 - **Note:** the member app design from earlier needs reworking to show initiatives → projects → tasks and agent versus human work (section 1b). Not started.
 
 ## 1b. Org model: initiatives → projects → tasks
@@ -112,7 +117,7 @@ flowchart LR
 | Stage | What happens | Exists? |
 |---|---|---|
 | 1. Intake | Accept a recording, transcript, notes or document. Store the raw original unchanged with SHA-256, meeting date, title and audience | Partly: `src/roundtable/source.ts` handles text sources and Drive metadata |
-| 2. Transcribe (recordings only) | Speech-to-text with speaker labels and timestamps. Output is marked *machine transcript, unreviewed*. Recommendation: use Gemini's Meet transcript when the meeting was on Meet; otherwise Whisper (local `whisper.cpp` keeps audio private; a hosted API is faster). Speaker names mapped by a person, never guessed | **No, new** |
+| 2. Transcribe (recordings only) | `ffmpeg` converts any mp3/m4a/mp4/wav/webm to 16 kHz mono. Local open-source Whisper then transcribes: `whisper.cpp` or `faster-whisper`, model `large-v3-turbo` (or `small` on CPU for speed). `pyannote` or WhisperX adds speaker turns, labelled `Speaker 1/2/...`. A person maps speakers to names; names are never guessed. Output is timestamped text marked *machine transcript, unreviewed*. Use Gemini's Meet transcript instead when one exists. No per-minute cost | **No, new** |
 | 3. Clean and split | Faithful transcript kept separate from notes. Notes-only input produces notes plus a "no transcript" flag, never an invented transcript | Yes: `src/roundtable/ingestion.ts` |
 | 4. Extract | Candidate facts, decisions, commitments and action items, each tied to exact lines and marked unverified. Add people and initiative/project mentions | Mostly: `src/roundtable/extraction.ts`, `knowledge.ts`; people/initiative links are new |
 | 5. Store and index | Save sources, passages (with line ranges), knowledge items and links in DAO PostgreSQL. Add full-text search and `pgvector` embeddings so agents can retrieve them | **No, new**: the schema and search index |
@@ -121,6 +126,47 @@ flowchart LR
 The same pipeline (stages 1, 4, 5, 6) takes the other sources. Telegram export, repo READMEs and issues, website pages and socials skip transcription and enter at "clean and split".
 
 Re-running the same file is a no-op (same hash). A corrected transcript creates a new revision; it never silently overwrites.
+
+## 1d. Sample initiatives (derived from the website repo)
+
+Drafted from `FWTX-DAO/website` (`src/pages/programs.astro`, `about.astro` and `components/*`). Adoption status is **unknown** unless we find a governance record, so the system shows these as *derived from public sources*, not adopted. Confirming them is itself a good governance task for the demo.
+
+| Initiative | Evidence on the website | Example projects |
+|---|---|---|
+| **HackFW 2026** | Flagship hackathon, virtual Oct 1–30, demo day Oct 30, hack.fwtx.city | Demo Day logistics; judging app (`hackfw-judging-app`); sponsor outreach; *Inertia's own submission* (meta, but real) |
+| **Community Roundtables & education** | Weekly Wednesdays 12pm at CreateFW; Web3, cybersecurity and AI workshops; study guides | Weekly Roundtable; meeting-mode; workshop series; cyber workforce curriculum |
+| **Innovation Lab (open civic tech)** | Texas Nova (county news map), 990 Graph (IRS 990 knowledge graph) | Texas Nova; 990 Graph; Inertia |
+| **Innovation Bounties** | innovate.fwtx.city, bounty submissions on dao-platform | Each open bounty becomes a project; bounty review |
+| **Fort Worth Talent Network** | talent.fwtx.city, member profiles and opportunities | Talent profiles; employer outreach |
+| **Partnerships & sponsorship** | Sponsor tiers $500–$15k; Fort Worth Innovation Forum (invite only) | Sponsor pipeline; Innovation Forum event |
+| **Governance & membership** | Public constitution, membership portal, Rob's Rules/Vocdoni voting | Membership onboarding; constitution/governance alignment |
+| **Pursue grant funding strategy** | Not on the website; **proposed, not yet voted** (decision 2026-10-27) | One project per grant from the grant finder |
+
+Org and team profile pages in `src/content/team/*.md` seed the people list. Blog posts (`src/content/blog/*`) are sources for org memory.
+
+## 1e. Claiming work and recording contributions
+
+- **Open to members:** unassigned tasks labelled `human`, ranked by fit for the viewer. Fit comes from topics they discussed, commitments they made, repos they touched and their stated interests. Every card says *why you* and shows the estimated minutes.
+- **Claim:** one click assigns the task to the member (`assigneeUserId`) and records `claimed_by`, `claimed_at` and the source of the suggestion. A claim can be released; releasing is recorded, not counted against anyone.
+- **Done:** completion records `completed_by`, `completed_at`, the evidence (comment, document, link) and which agent work it unblocked.
+- **Contribution ledger (record-only for now):** an append-only event list (`suggested`, `claimed`, `released`, `answered`, `completed`, `reviewed`) per member and task. No scoring until the DAO decides how credit works.
+- **Uncovering work is the priority.** Every ingest run should end by asking: *what can a person do here?* Results go to the open pool, never straight into someone's inbox without a claim or an explicit assignment.
+
+## 1f. LLM: GLM for the demo
+
+GLM can serve both kinds of LLM use:
+
+| Use | How GLM plugs in |
+|---|---|
+| **Paperclip agents** (CEO, researcher, drafter, critic) and agent chat | Z.ai offers an Anthropic-compatible endpoint, so the existing `claude_local` adapter can run on GLM. Set `ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic` and `ANTHROPIC_AUTH_TOKEN=<GLM key>` in the agent's environment, and pick the GLM model. `opencode_local` is a fallback (it supports Zhipu directly) |
+| **Inertia's own calls** (extraction, snapshot, matching) | OpenAI-compatible chat endpoint: `https://api.z.ai/api/paas/v4/` for international keys, or `https://open.bigmodel.cn/api/paas/v4/` for mainland China keys |
+| **Embeddings for search** | Local open-source model (e.g. `bge-small-en-v1.5`), so no extra cost and no dependency on GLM's embedding availability |
+
+Where the key goes:
+- **John's runtime (the demo):** into Paperclip's company secrets, bound to the agents' environments as `ANTHROPIC_AUTH_TOKEN`, and into Inertia's config as `GLM_API_KEY`. Never in git, issues or chat.
+- **Cloud dev sessions (testing here):** as an environment secret named `GLM_API_KEY` (plus `GLM_BASE_URL` if the key is a bigmodel.cn key). The environment's network policy must also allow `api.z.ai` (or `open.bigmodel.cn`); it is currently blocked.
+
+"Chat works in all demos" is a checklist item: one smoke test per surface, before each rehearsal. The surfaces are Paperclip agent chat, Buzz relay reply, member ask answer, and the Inertia extraction call.
 
 ## 2. The demo story (what the audience sees)
 
@@ -167,10 +213,12 @@ Ranked by how much of the story breaks without them. "Fake it honestly" means pr
 | G12 | **Member-facing views** | "View as a member" | Wednesday: native Paperclip inbox and label filters. After the demo: a plugin page with Initiatives, My asks and Open to members | 0.5 day (native) / 2+ days (plugin page) |
 | G13 | **Recording → transcript** (section 1c stage 2) | Real recordings are coming | `whisper.cpp` (or a hosted API) wrapper producing timestamped, speaker-labelled text. Speakers mapped by hand | 0.5 day |
 | G14 | **Org memory schema + search** (section 1c stage 5) | Without retrieval the agents don't really use the org context | DAO PostgreSQL tables for sources, passages, knowledge items and links; full-text search first, `pgvector` if time allows; a `context pack` function used by every agent task | 1–1.5 days |
+| G16 | **Open-to-members pool + claim + contribution events** (section 1e) | "Uncover things for people to do" is the headline | `human` label filter as the pool for Wednesday; a claim action that records the events in an append-only table; "why you" text from the matcher | 1 day |
+| G17 | **GLM wiring** (section 1f) | All LLM steps and chat depend on it | GLM key in Paperclip secrets on John's runtime; `claude_local` agents pointed at the Z.ai Anthropic endpoint; Inertia calls via the OpenAI-compatible endpoint; smoke test every chat surface | 0.5 day |
 | G15 | **Member app design rework** | Must show initiatives → projects → tasks and agent versus human work | Revisit the earlier design after the demo; for the demo, native Paperclip views (G12) | Post-demo |
 | G10 | **Buzz** | Nice, not essential | Optional: show the same ask arriving in Buzz. Drop if time is short | — |
 
-Critical path: **G1 → G11 → G13/G2 → G14 → G3 → G6**, with G5 and G7 in parallel. G2 (other sources) and G13 (transcription) both feed G14 (org memory). G9 and G10 are polish.
+Critical path: **G1 + G17 → G11 → G13/G2 → G14 → G3 → G16 → G6**, with G5 and G7 in parallel. G2 (other sources) and G13 (transcription) both feed G14 (org memory). G9 and G10 are polish.
 
 ## 4. Data to collect (Kyle / team), today
 
@@ -216,9 +264,10 @@ Won't claim: live Telegram/social bots, a real DAO vote, external submission, pr
 
 Answered 2026-10-27: runtime (John's), grant (TBD later), on-screen member (John), vote threshold (not needed), grant strategy (proposed, not voted). See section 0.
 
+Also answered: recordings exist; members can claim; local open-source transcription; GLM for the LLM; initiatives derived from the website (section 1d).
+
 Still open:
-1. Is the Wednesday Roundtable itself being recorded for use as a live source?
-2. What are the other current initiatives, so the Org Brief can place existing projects and repos under them?
-3. Can members claim unassigned human tasks themselves, or only receive them by assignment?
-4. Transcription: is local `whisper.cpp` acceptable (private, slower), or may recordings go to a hosted speech-to-text API?
-5. Does John's runtime have access to the DAO PostgreSQL database with `pgvector` available, or does org memory start in a separate demo database?
+1. Does John's runtime have access to the DAO PostgreSQL database with `pgvector` available, or does org memory start in a separate demo database?
+2. Was the GLM key issued by z.ai (international) or bigmodel.cn (China)? This picks the endpoint.
+3. Does John's runtime machine have a GPU? It decides the Whisper model size; CPU works, just slower.
+4. Confirm or correct the derived initiative list in section 1d.
