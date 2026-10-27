@@ -44,7 +44,7 @@ For the plain-language "what is Inertia versus Paperclip, and why store notes" e
 - **Grant:** chosen closer to the demo from the grant finder.
 - **Grant initiative:** *Pursue grant funding strategy* is a sample initiative, shown as **proposed, not yet voted**, with an open governance task. Grant projects still run under it for the demo, and the screen says so.
 - **Vote threshold:** not needed for the demo.
-- **On-screen member:** John.
+- **Presenters:** Kyle (DAO member, founder in the app) presents the app; John (DAO member, admin in the app) runs the grant walkthrough. See the [runbook](runbook-wednesday.md#demo-script-about-8-minutes-two-presenters).
 - **Data:** real recordings and/or transcripts and notes will be supplied for testing.
 - **Recordings:** available, in standard audio/video formats.
 - **Members can claim open human tasks.** The app should be *suggestive*: a visible pool of work up for grabs, not only assignments.
@@ -284,7 +284,7 @@ Won't claim: live Telegram/social bots, a real DAO vote, external submission, pr
 
 ## 7. Open questions
 
-Answered 2026-10-27: runtime (John's), grant (TBD later), on-screen member (John), vote threshold (not needed), grant strategy (proposed, not voted). See section 0.
+Answered 2026-10-27: runtime (John's), grant (TBD later), presenters (Kyle presents the app, John runs the grant walkthrough), vote threshold (not needed), grant strategy (proposed, not voted). See section 0.
 
 Also answered: recordings exist; members can claim; local open-source transcription; GLM for the LLM; initiatives derived from the website (section 1d).
 

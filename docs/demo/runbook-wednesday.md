@@ -88,16 +88,24 @@ npx tsx scripts/setup-org.ts --name "FWTX DAO" --website https://fwtx.city \
 
 Then sign in as the founder and finish the review in `/setup`.
 
-## Demo script (8 minutes)
+## Demo script (about 8 minutes, two presenters)
 
-1. **Empty org → setup conversation** (2 min). Name, website, a sentence, drop in two meeting notes. "That's everything" → the profile appears with sources.
+Both Kyle and John are DAO members. **Kyle presents the app; John runs the grant walkthrough.** Each signs in as themselves in their own browser window. Kyle is the founder (`MEMBER_APP_FOUNDER_EMAIL`); John is added as an admin, because pursuing a grant is an admin action.
+
+**Part 1: the app (Kyle, about 4 minutes)**
+
+1. **Empty org → setup conversation.** Name, website, a sentence, drop in two meeting notes. "That's everything" → the profile appears with sources.
 2. **Keep initiatives**; add *Pursue grant funding strategy* (shows as proposed, awaiting a vote).
-3. **Org tab**: Members (add John), Data (everything Inertia knows, who added it; Read GitHub), Integrations ("anything can plug in").
-3b. **Find work**: on a meeting's notes in Data, **Find work in this** → judges, volunteers and decisions appear as open tasks under their initiatives, each quoting the line it came from.
-4. **A grant arrives** (Funding) → **Pursue this** → agent tasks and two prepared asks appear.
-5. **Work → Status**: recap, then People and Agents lanes side by side for the grant initiative.
-6. **Switch to John**: Home says something's waiting; Work → Needs you → **I'll take it** → answer → done.
-7. **Chat**: "What's waiting for me and why?" → cited answer.
+3. **Org tab**: Members (add **John as admin**), Data (everything Inertia knows, who added it; Read GitHub), Integrations ("anything can plug in").
+4. **Find work**: on a meeting's notes in Data, **Find work in this** → judges, volunteers and decisions appear as open tasks under their initiatives, each quoting the line it came from.
+5. **Chat**: "Who runs the DAO and when do roundtables meet?" → cited answer. Hand over to John.
+
+**Part 2: the grant walkthrough (John, about 4 minutes)**
+
+6. **A grant arrives** (Funding) → **Pursue this** → a project under *Pursue grant funding strategy*, with agent tasks and prepared asks for people.
+7. **Work → Status**: the recap, then People and Agents lanes side by side for the grant initiative. With Paperclip connected, open an agent task to show it there.
+8. **Work → Needs you**: **I'll take it** on the partner-letter ask → write the answer → **Done**. The People lane shows it done; the answer is in Paperclip for the agents and in Data.
+9. **Chat**: "What's left on the grant, and who's doing what?" → cited answer covering both people and agents.
 
 ## Known limits (say them, don't hide them)
 
@@ -116,5 +124,5 @@ Then sign in as the founder and finish the review in `/setup`.
 - [ ] Two real FWTX meeting notes or transcripts ready to upload (one with clear action items for Find work)
 - [ ] Grant finder export file in place; Funding shows the opportunity
 - [ ] Paperclip connected (or knowingly demo on the in-memory engine)
-- [ ] John's account added, and his Paperclip user id linked
+- [ ] John's account added as **admin**, and both Kyle's and John's Paperclip user ids linked
 - [ ] Full run once, timed; backup screen recording
