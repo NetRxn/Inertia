@@ -1,0 +1,33 @@
+{
+  "asOf": "2026-10-27T18:21:24.484011+00:00",
+  "scope": "isolated installed source; real native PostgreSQL, gateway and runner; synthetic plugin worker and deterministic fake app-server; no live search/inference or runtime state",
+  "image": "sha256:7dfcc8c7b63d0dd2ea7021a5677e66a239bb7e1d53b92598233be366fa5710e1",
+  "platform": "Linux ARM64",
+  "isolation": {
+    "user": "1000:1000",
+    "network": "none",
+    "rootFilesystem": "read-only",
+    "capabilities": "all dropped",
+    "credentials": "none",
+    "liveMounts": "none",
+    "scratch": "bounded tmpfs; /tmp executable for trusted fake app-server"
+  },
+  "checks": {
+    "installerIntegrity": 5,
+    "policyProjectionMaterializer": 17,
+    "existingFundingRegressions": 8,
+    "nativeIntegration": 7,
+    "total": 37,
+    "failures": 0
+  },
+  "patchSha256": "f6d24024401988f220a686b9eb5eef1a0eec30348f1d5a9eed0c91689e37e104",
+  "pinsSha256": "fe22ff6e137250a92a9aad9c852d5fecf1f8790aefaeb830f531b67d51fbfd51",
+  "localLogSha256": "f4453be48206ed2baaa0c377c7dcccea6d973200ecdba48bff291329be898245",
+  "limits": [
+    "executor coverage is its actual assignment-construction seam with the workspace gate stubbed",
+    "runner coverage uses fake app-server, not real hosted web execution",
+    "SQL worker outputs and capture references are synthetic, not DFW captures",
+    "not a full native attention-review lifecycle or production qualification"
+  ],
+  "independentReview": "static product review and qualification-test review; recovery/adoption bypass fixed and regression verified; fixture company scope corrected"
+}
