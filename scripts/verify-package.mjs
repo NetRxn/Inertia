@@ -121,9 +121,10 @@ try {
   assert.equal(manifest.id, "netrxn.inertia");
   assert.equal(manifest.entrypoints.ui, "dist/ui");
   assert(manifest.capabilities.includes("ui.detailTab.register"));
-  assert.deepEqual(manifest.ui.slots, [{type:"detailTab",id:"member-packet",displayName:"Packet",exportName:"MemberPacketTab",entityTypes:["issue"]}]);
+  assert.deepEqual(manifest.ui.slots, [{type:"detailTab",id:"member-packet",displayName:"Packet",exportName:"MemberPacketTab",entityTypes:["issue"]},{type:"companySettingsPage",id:"integrations",displayName:"Integrations",exportName:"IntegrationsSettingsPage",routePath:"integrations"}]);
   const uiBundle = await readFile(resolve(installed, manifest.entrypoints.ui, "index.js"), "utf8");
   assert(uiBundle.includes("MemberPacketTab"));
+  assert(uiBundle.includes("IntegrationsSettingsPage"));
   assert(uiBundle.includes('from "react"') || uiBundle.includes("from 'react'"));
   assert(!uiBundle.includes("node:crypto") && !uiBundle.includes("react.production.js"));
   assert.equal(typeof worker.definition.setup, "function");

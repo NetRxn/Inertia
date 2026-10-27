@@ -57,6 +57,8 @@ For the plain-language "what is Inertia versus Paperclip, and why store notes" e
 
 Product direction: Inertia starts empty, and admins connect sources in **Settings → Sources**. See [concept.md](concept.md#product-shape-a-blank-slate-shell-with-connectors-direction-2026-10-27) for the connector contract.
 
+**Simplified 2026-10-27:** no connector framework. A read-only **Integrations** tab in company settings lists the existing apps and integrations and how each connects (G18). The table below is what actually works behind that list.
+
 **Scope for Friday: show the shape, build only what the story needs.** A general connector framework plus a full rewrite toward a "streamlined repo" won't land safely by Oct 30. Instead:
 
 | Connector | Friday state | How |
@@ -234,7 +236,7 @@ Ranked by how much of the story breaks without them. "Fake it honestly" means pr
 | G14 | **Org memory schema + search** (section 1c stage 5) | Without retrieval the agents don't really use the org context | DAO PostgreSQL tables for sources, passages, knowledge items and links; full-text search first, `pgvector` if time allows; a `context pack` function used by every agent task | 1–1.5 days |
 | G16 | **Open-to-members pool + claim + contribution events** (section 1e) | "Uncover things for people to do" is the headline | `human` label filter as the pool for Wednesday; a claim action that records the events in an append-only table; "why you" text from the matcher | 1 day |
 | G17 | **GLM wiring** (section 1f) | All LLM steps and chat depend on it | GLM key in Paperclip secrets on John's runtime; `claude_local` agents pointed at the Z.ai Anthropic endpoint; Inertia calls via the OpenAI-compatible endpoint; smoke test every chat surface | 0.5 day |
-| G18 | **Settings → Sources page + connector contract** (section 1a) | Shows the blank-slate shell | Plugin settings page listing connectors with health; a small `SourceConnector` interface; wrap the 4–5 working adapters | 1–1.5 days |
+| G18 | **Integrations tab in company settings** (section 1a) | Shows the blank-slate shell and that any integration can plug in | **Done (source):** `Company settings → Integrations` lists every current integration with status (in use / setup needed / planned), what it reads or writes, and how it connects (`src/ui/integrations.ts`). A read-only catalog, not live health; edit that file to change it. Needs installing on the runtime and a browser check | Done |
 | G15 | **Member app design rework** | Must show initiatives → projects → tasks and agent versus human work | Revisit the earlier design after the demo; for the demo, native Paperclip views (G12) | Post-demo |
 | G10 | **Buzz** | Nice, not essential | Optional: show the same ask arriving in Buzz. Drop if time is short | — |
 
