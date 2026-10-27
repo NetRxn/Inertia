@@ -1,7 +1,7 @@
 import type { Db } from '../db/client';
 import type { MemberDirectory, DirectoryMember } from '../adapters/types';
-import { members } from '../db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { members, loginTokens } from '../db/schema';
+import { and, eq, isNull } from 'drizzle-orm';
 
 export interface SyncResult {
   added: number;
@@ -29,16 +29,16 @@ export async function syncMembers(
     directoryMap.set(dm.externalId, dm);
   }
 
-  // Fetch existing members from the database
-  const existingMembers = await db.select().from(members);
-  const existingMap = new Map(existingMembers.map(m => [m.externalId, m]));
-
   let added = 0;
   let updated = 0;
   let deactivated = 0;
 
   // Execute all operations in a transaction
   await db.transaction(async (tx) => {
+    // Use current, locked identity state, not a pre-transaction snapshot.
+    // Stable lock ordering also serializes competing directory syncs.
+    const existingMembers = await tx.select().from(members).orderBy(members.id).for('update');
+    const existingMap = new Map(existingMembers.map(m => [m.externalId, m]));
     // Process directory members (add or update)
     for (const dm of directoryMembers) {
       const existing = existingMap.get(dm.externalId);
@@ -66,6 +66,12 @@ export async function syncMembers(
           existing.status !== status;
 
         if (needsUpdate) {
+          if (existing.email !== lowercaseEmail || existing.status !== status) {
+            // Keep issuance history for rate limiting, but revoke outstanding
+            // links permanently (including a later change back/reactivation).
+            await tx.update(loginTokens).set({ usedAt: now })
+              .where(and(eq(loginTokens.memberId, existing.id), isNull(loginTokens.usedAt)));
+          }
           await tx
             .update(members)
             .set({
@@ -83,6 +89,8 @@ export async function syncMembers(
     // Deactivate members missing from directory
     for (const existing of existingMembers) {
       if (!directoryMap.has(existing.externalId) && existing.status === 'active') {
+        await tx.update(loginTokens).set({ usedAt: now })
+          .where(and(eq(loginTokens.memberId, existing.id), isNull(loginTokens.usedAt)));
         await tx
           .update(members)
           .set({
