@@ -182,3 +182,15 @@ per-agent mounts. This is source preparation, not a launcher repair or deploymen
 private state/credential-retention approval, validated pre-teardown snapshot,
 effective mounts, complete API inventory and recreation checks remain required.
 
+
+
+### Public scout attachment isolation
+
+The closed public-scout projection bypasses generic private attachment/chat
+staging after native session ownership has been reserved. The inner execution
+path still rechecks admission and native review authority. This avoids the native
+empty attachment scaffold conflicting with the unchanged fresh-workspace guard.
+Ordinary and diligence runs retain their attachment handling. Verify the actual
+native workspace binding; a legacy adapter cwd value alone does not select it.
+Focused entry-boundary fixtures are synthetic source checks, not hosted-search
+or business acceptance proof.

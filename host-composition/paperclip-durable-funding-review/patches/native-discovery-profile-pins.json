@@ -7,7 +7,7 @@
       "base_sha256": "9c2b0e7b62e9ca81ca07c6ef945798d5bc144f2ec17d7233a2a5c0f7b5d4b2ec"
     },
     "dist/services/native-runtime/native-session-executor.js": {
-      "candidate_sha256": "4392b58a2d74c965a98d0bdac86f3d2e2a207e771e0afe58831bf0f2fc25f8ad",
+      "candidate_sha256": "ed17fb53b3b17b1853fe8e2fac84c8576eedcdd7972a7841ef2e875f0219faac",
       "base_sha256": "3b4b6f44259e49aa112760e75918565dc25fca4eb3d02fb4747959c0c1649f42"
     },
     "dist/vendor/paperclip-runner/live/runnerd-codex-transport.js": {
@@ -27,7 +27,7 @@
       "candidate_sha256": "4f8ad9736ca74ba9d357d3a6833969c8c3f4684ce3fbcf57fbc17c84b2c914dc"
     }
   },
-  "patch_sha256": "e146a2a75c534f7dee3fdf57929e0ae953e74c9c333247959623891171231f5f",
+  "patch_sha256": "58ac094c0134f493d8809cf9f93cd723f05d843bf8b777bb0cafd74b2661198d",
   "patch": "native-discovery-profile.patch",
   "unchangedAuthGuard": {
     "file": "dist/services/ai-connection-runtime.js",
