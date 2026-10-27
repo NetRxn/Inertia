@@ -1,3 +1,4 @@
+import {packetBinding,packetReceipt,packetSubject} from './native-packet-review.mjs';
 /** Domain prerequisite only. Native owns locks, participant authorization and lifecycle.
  * Construct from trusted immutable owning-host scope, never model/request JSON.
  * Wiring must call this under the shared native confirmation lock, after the
@@ -30,7 +31,7 @@ export function nativeDomainReviewAssignment(scope,{issue,interaction,actor,assi
 export function createNativeDomainReviewGuard({scopes,readCandidate,readAdmission}={}) {
   if(!Array.isArray(scopes)||scopes.length<1||scopes.length>16||typeof readCandidate!=='function'||typeof readAdmission!=='function')fail('native_domain_review_configuration_invalid');
   const pinned=scopes.map(s=>{
-    if(!exact(s,scopeKeys)||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
+    if(!(exact(s,scopeKeys)||exact(s,[...scopeKeys,'wholePacketReview'])&&s.wholePacketReview===true)||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
     return Object.freeze({...s});
   });
   if(new Set(pinned.map(s=>s.companyId+'\0'+s.issueId)).size!==pinned.length)fail('native_domain_review_configuration_invalid');
@@ -44,6 +45,15 @@ export function createNativeDomainReviewGuard({scopes,readCandidate,readAdmissio
     const facts=nativeDomainReviewAssignment(scope,{issue,interaction,actor,assignment});
     const source=assignment.sourceRun;
     const candidate=await readCandidate(Object.freeze({...scope,producerRunId:source.id}));
+    if(scope.wholePacketReview===true){
+      if(!candidate||candidate.review_kind!=='packet'||candidate.producer_principal_id!==scope.producerPrincipalId||candidate.producer_run_id!==source.id)fail('native_packet_review_admission_required');
+      const binding=Object.freeze({...facts,review_kind:'packet',manifest_hash:candidate.manifest_hash,packet_id:candidate.packet_id,packet_version:candidate.packet_version});
+      if(!packetBinding(binding)||!packetSubject(candidate,binding))fail('native_packet_review_binding_invalid');
+      const receipt=await readAdmission(binding);
+      if(!packetReceipt(receipt)||Object.keys(binding).some(k=>receipt.binding[k]!==binding[k]))fail('native_packet_review_receipt_mismatch');
+      if(receipt.state!=='supported')fail('native_packet_review_verdict_conflict');
+      return Object.freeze({required:true,reviewKind:'packet',packetId:binding.packet_id,packetVersion:binding.packet_version,manifestHash:binding.manifest_hash,domainReviewId:receipt.review_id,artifactHash:receipt.artifact_hash,nativeInteractionId:interaction.id,nativeDecisionId:facts.decision_id});
+    }
     if(!hash(candidate?.candidate_hash)||candidate.producer_principal_id!==scope.producerPrincipalId||candidate.producer_run_id!==source.id)fail('native_domain_review_admission_required');
     const binding=Object.freeze({...facts,candidate_hash:candidate.candidate_hash});
     const receipt=await readAdmission(binding);

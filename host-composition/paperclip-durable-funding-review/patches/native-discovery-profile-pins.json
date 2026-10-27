@@ -3,8 +3,8 @@
   "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
   "files": {
     "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
-      "candidate_sha256": "fbe2ff10d7b81dfc3bebfcc5e1c0736ed106f79a8978dba35a134e8ff38107c1",
-      "base_sha256": "5fe49708d73679320d6e0edd76e8ba4bed764c27542cffeac760de47a7083638"
+      "candidate_sha256": "86b2a3bbaedbda1737a301617d246e3b972b75d8a691b536d7a83e74dceba470",
+      "base_sha256": "9c2b0e7b62e9ca81ca07c6ef945798d5bc144f2ec17d7233a2a5c0f7b5d4b2ec"
     },
     "dist/services/native-runtime/native-session-executor.js": {
       "candidate_sha256": "4392b58a2d74c965a98d0bdac86f3d2e2a207e771e0afe58831bf0f2fc25f8ad",

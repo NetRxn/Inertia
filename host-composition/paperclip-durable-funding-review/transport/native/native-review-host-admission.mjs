@@ -45,12 +45,12 @@ function validDrafting(c,s){
  * Native participant authorization is a separate mandatory runtime check.
  */
 export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting}={}){
-  if(!id(expectedPluginId)||!keys(scope,scopeKeys)||scopeKeys.some(k=>!id(scope[k]))||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
+  if(!id(expectedPluginId)||!(keys(scope,[...scopeKeys,'wholePacketReview'],scopeKeys)&&(scope.wholePacketReview===undefined||scope.wholePacketReview===true))||scopeKeys.some(k=>!id(scope[k]))||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
   const pinned=Object.freeze({...scope});
   if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(publicDrafting,pinned)||publicDrafting.applicantSlug!==applicantSlug||publicDrafting.matchId!==matchId)invalid();
   const initial=fingerprint(publicDrafting);
   return (rows,requestedScope,input)=>{
-    if(!keys(requestedScope,scopeKeys)||scopeKeys.some(k=>requestedScope[k]!==pinned[k])
+    if(!keys(requestedScope,[...scopeKeys,'wholePacketReview'],scopeKeys)||(requestedScope.wholePacketReview===true)!==(pinned.wholePacketReview===true)||requestedScope.wholePacketReview!==undefined&&requestedScope.wholePacketReview!==true||scopeKeys.some(k=>requestedScope[k]!==pinned[k])
       ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==pinned.issueId||input.issue.projectId!==pinned.projectId
       ||input.actor?.agentId!==pinned.reviewerAgentId||!id(input.actor.runId)||!Array.isArray(rows)||rows.length!==1)return false;
     const row=rows[0];

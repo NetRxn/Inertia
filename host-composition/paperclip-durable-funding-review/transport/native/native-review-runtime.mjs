@@ -16,7 +16,7 @@ export async function createNativeReviewRuntime({bindings,native,stdioFactory}={
   const entries=[];
   for(const b of bindings){
     const scope=b?.scope,policy=b?.reviewerPolicy;
-    if(!scope||Object.keys(scope).length!==scopeKeys.length||scopeKeys.some(k=>!nonempty(scope[k]))
+    if(!scope||(Object.keys(scope).length!==scopeKeys.length+(scope.wholePacketReview===true?1:0)||Object.keys(scope).some(k=>!scopeKeys.includes(k)&&k!=='wholePacketReview')||scope.wholePacketReview!==undefined&&scope.wholePacketReview!==true)||scopeKeys.some(k=>!nonempty(scope[k]))
       ||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId
       ||!policy||Object.keys(policy).sort().join()!=='issueIds,projectIds,role,version'
       ||policy.version!==1||policy.role!=='reviewer'||!same(policy.projectIds,[scope.projectId])||!same(policy.issueIds,[scope.issueId]))fail('native_domain_review_runtime_configuration_invalid');
@@ -29,11 +29,12 @@ export async function createNativeReviewRuntime({bindings,native,stdioFactory}={
       config=JSON.parse(bytes.toString('utf8'));
       const ns=config.native_scope;
       for(const [key,value] of Object.entries({company_id:scope.companyId,project_id:scope.projectId,issue_id:scope.issueId,producer_agent_id:scope.producerAgentId,producer_principal_id:scope.producerPrincipalId,reviewer_agent_id:scope.reviewerAgentId,reviewer_principal_id:scope.reviewerPrincipalId}))if(ns?.[key]!==value)throw Error();
+      if((config.whole_packet_review===true)!==(scope.wholePacketReview===true))throw Error();
       if(config.company_id!==scope.companyId||!nonempty(config.applicant_slug)||!nonempty(config.match_id)||ns.target_type!=='sponsor_answer'||!nonempty(ns.target_key))throw Error();
     }catch{fail('native_domain_review_runtime_configuration_invalid');}
     entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
   }
-  function entry(scope){const e=entries.find(e=>scopeKeys.every(k=>e.scope[k]===scope?.[k]));if(!e)fail('native_domain_review_scope_unavailable');return e;}
+  function entry(scope){const e=entries.find(e=>scopeKeys.every(k=>e.scope[k]===scope?.[k])&&(e.scope.wholePacketReview===true)===(scope?.wholePacketReview===true));if(!e)fail('native_domain_review_scope_unavailable');return e;}
   async function hostAdmission(e,input){
     // The owning dispatcher must read current plugin/company enablement and the
     // exact enabled native-attention publicDrafting configuration fingerprint.
