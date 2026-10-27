@@ -1,0 +1,111 @@
+<h2>Work tab + floating Share</h2>
+<p class="subtitle">Left: the Work tab, showing things that need a person, with a floating Share button. Right: what opens when you tap Share. You can click Share in the left phone too. Sample content only.</p>
+
+<style>
+  .wrap { display:flex; gap: 26px; flex-wrap: wrap; justify-content:center; align-items:flex-start; }
+  .phone { position: relative; width: 290px; height: 600px; border: 3px solid #222; border-radius: 36px; overflow: hidden; background: #f3f4f7; font-size: 12.5px; line-height: 1.4; color: #1b1d22; }
+  .scroll { height: 100%; overflow-y: auto; padding: 0 12px 130px; box-sizing: border-box; }
+  .float { position: sticky; top: 10px; z-index: 5; margin: 10px auto 12px; width: fit-content; display:flex; gap: 14px; padding: 8px 16px; border-radius: 999px; background: rgba(255,255,255,.72); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 4px 18px rgba(0,0,0,.12); font-size: 17px; }
+  .float span { opacity:.45; } .float span.on { opacity: 1; }
+  .ttl { font-size: 19px; font-weight: 700; margin: 2px 2px 10px; }
+  .seg { display:flex; gap:6px; margin-bottom: 10px; } .seg span { padding: 4px 10px; border-radius: 999px; background:#e6e8ee; font-size: 11.5px; } .seg span.on { background:#1b1d22; color:#fff; }
+  .card2 { background: #fff; border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .card2 .k { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .55; margin-bottom: 5px; }
+  .card2 h4 { margin: 0 0 4px; font-size: 14px; }
+  .meta { font-size: 11px; opacity: .65; }
+  .take { display:inline-block; margin-top: 7px; padding: 4px 10px; border-radius: 999px; background:#4a6cf7; color:#fff; font-size: 11.5px; }
+  .tag { display:inline-block; padding: 1px 7px; border-radius: 9px; font-size: 10.5px; background:#fff4e0; color:#8a5a00; margin-right: 4px; }
+  .tag.c { background:#eef1ff; color:#3346a8; } .tag.g { background:#e6f4ea; color:#1e6b34; }
+  .fab { position:absolute; right: 16px; bottom: 74px; z-index: 6; background:#1b1d22; color:#fff; border-radius: 999px; padding: 12px 16px; font-weight: 700; box-shadow: 0 8px 22px rgba(0,0,0,.25); cursor:pointer; }
+  .chatbar { position: absolute; left: 10px; right: 10px; bottom: 14px; z-index: 6; background: #fff; border-radius: 999px; padding: 11px 16px; box-shadow: 0 6px 22px rgba(0,0,0,.18); display:flex; justify-content: space-between; }
+  .compose { position:absolute; inset: 0; background: #fff; z-index: 8; padding: 16px 14px; box-sizing: border-box; display:flex; flex-direction: column; gap: 10px; }
+  .phone.interactive .compose { display:none; } .phone.interactive.open .compose { display:flex; }
+  .chead { display:flex; justify-content: space-between; align-items:center; font-weight:700; font-size: 15px; }
+  .chead .x { font-weight: 400; opacity:.6; cursor:pointer; } .chead .post { background:#4a6cf7; color:#fff; padding: 5px 12px; border-radius: 999px; font-size: 12px; }
+  .kinds { display:flex; gap:6px; flex-wrap: wrap; } .kinds span { padding: 4px 10px; border-radius: 999px; border: 1px solid #ccd; font-size: 11.5px; } .kinds span.on { background:#1b1d22; color:#fff; border-color:#1b1d22; }
+  .canvas { flex: 1; border: 1.5px dashed #c8ccd6; border-radius: 14px; padding: 12px; display:flex; flex-direction: column; gap: 10px; }
+  .linkprev { display:flex; gap: 8px; border:1px solid #e1e3e9; border-radius: 10px; padding: 6px; }
+  .linkprev .img { width: 52px; height: 52px; border-radius: 8px; background: linear-gradient(135deg,#9bd3a8,#4a8f6a); }
+  .addrow { display:flex; gap: 8px; } .addrow span { flex:1; text-align:center; padding: 9px 0; border-radius: 10px; background:#f3f4f7; font-size: 12px; }
+  .desc { opacity: .85; }
+  .hint { font-size: 11px; opacity: .6; }
+  .side { max-width: 280px; font-size: 13px; } .side li { margin-bottom: 6px; }
+</style>
+
+<div class="wrap">
+
+  <!-- Work tab -->
+  <div class="phone interactive" id="wk">
+    <div class="scroll">
+      <div class="float"><span>🏠</span><span>🗳</span><span class="on">🎯</span><span>📅</span><span>📄</span><span>👤</span></div>
+      <div class="ttl">Work</div>
+      <div class="seg"><span class="on">Needs a person</span><span>Initiatives</span><span>Ideas</span></div>
+
+      <div class="card2">
+        <div class="k">Garden grant</div>
+        <h4>Pick the lead community story</h4>
+        <span class="tag">creative</span><span class="meta">~10 min · due Fri · 3 options drafted</span><br>
+        <span class="take">I'll take it</span>
+      </div>
+
+      <div class="card2">
+        <div class="k">Youth coding nights</div>
+        <h4>Ask the library about a venue</h4>
+        <span class="tag c">outreach</span><span class="meta">~30 min · email drafted for you</span><br>
+        <span class="take">I'll take it</span>
+      </div>
+
+      <div class="card2">
+        <div class="k">Treasury policy v2</div>
+        <h4>Sanity-check the spending limits</h4>
+        <span class="tag g">review</span><span class="meta">~15 min · comparison table ready</span><br>
+        <span class="take">I'll take it</span>
+      </div>
+
+      <div class="card2">
+        <div class="k">Garden grant</div>
+        <h4>Photos from the site visit</h4>
+        <span class="tag">real-world</span><span class="meta">anytime this week</span><br>
+        <span class="take">I'll take it</span>
+      </div>
+    </div>
+    <div class="fab" onclick="document.getElementById('wk').classList.add('open')">＋ Share</div>
+    <div class="chatbar"><span style="opacity:.6">Ask the DAO anything…</span><span>🎙 ↑</span></div>
+
+    <div class="compose">
+      <div class="chead"><span class="x" onclick="document.getElementById('wk').classList.remove('open')">✕</span><span>Share</span><span class="post">Post</span></div>
+      <div class="kinds"><span class="on">💡 New idea</span><span>🔗 Resource</span><span>📅 Event</span><span>📣 Update</span></div>
+      <div class="canvas">
+        <div class="linkprev"><div class="img"></div><div><b>City micro-grants for urban farms</b><div class="hint">cityofexample.gov · link preview</div></div></div>
+        <div class="desc">This could fund the garden expansion next spring. Deadline is in January. Worth a look?</div>
+        <div class="addrow"><span>🔗 Link</span><span>🖼 Image</span><span>📎 File</span></div>
+      </div>
+      <div class="hint">Shared with all members. The assistant will tag it, link it to related initiatives, and summarize replies.</div>
+    </div>
+  </div>
+
+  <!-- Share composer, always open -->
+  <div class="phone">
+    <div class="compose" style="display:flex">
+      <div class="chead"><span class="x">✕</span><span>Share</span><span class="post">Post</span></div>
+      <div class="kinds"><span class="on">💡 New idea</span><span>🔗 Resource</span><span>📅 Event</span><span>📣 Update</span></div>
+      <div class="canvas">
+        <div class="hint">Paste a link, add a photo, or just write. Anything goes.</div>
+        <div class="linkprev"><div class="img"></div><div><b>City micro-grants for urban farms</b><div class="hint">cityofexample.gov · link preview</div></div></div>
+        <div class="desc">This could fund the garden expansion next spring. Deadline is in January. Worth a look?</div>
+        <div class="addrow"><span>🔗 Link</span><span>🖼 Image</span><span>📎 File</span></div>
+      </div>
+      <div class="hint">Shared with all members. The assistant will tag it, link it to related initiatives, and summarize replies.</div>
+    </div>
+  </div>
+
+  <div class="side">
+    <p><b>How I read it (correct me):</b></p>
+    <ul>
+      <li><b>Work tab</b> (🎯) lists things that need a person, each prepared with context, a rough time, and what's already drafted, plus an "I'll take it" button. Initiatives and Ideas are views on the same tab.</li>
+      <li><b>＋ Share floats</b> above the chat bar on the Work tab. Maybe on every tab? Your call.</li>
+      <li><b>Share is a blank canvas:</b> a link (with preview), image or file, plus a description. A quick label (idea, resource, event, update) is my guess, so it lands in the right place.</li>
+      <li>Shared posts show up in Ideas and in the home feed. The assistant tags them and connects them to related initiatives.</li>
+    </ul>
+  </div>
+</div>
