@@ -37,7 +37,7 @@ Minimum `.env.local` for FWTX:
 MEMBER_APP_ADAPTERS=live
 MEMBER_APP_FOUNDER_EMAIL=kyle@...              # first admin
 MEMBER_APP_BASE_URL=https://<host>             # used in login links
-DATABASE_URL=postgresql://...                  # or leave unset for local PGlite
+DATABASE_URL=postgresql://...                  # use Postgres for the demo; PGlite is for quick local tries
 
 MEMBER_APP_MODEL_PROVIDER=openai-compatible
 MEMBER_APP_MODEL_BASE_URL=https://api.z.ai/api/coding/paas/v4   # Coding Plan key; paas/v4 for pay-as-you-go
@@ -58,9 +58,11 @@ Login links: until a real mailer is wired, the development mailer writes each li
 
 ## Connect Paperclip (Wednesday, with John)
 
-1. In Paperclip, create a **board API key** for the FWTX company and note the company id.
+Full steps for Paperclip, Telegram and Buzz: [integrations-setup.md](integrations-setup.md). Short version:
+
+1. In Paperclip, create a **board API key** (not an agent key) for the FWTX company and note the company id. Keys expire after 30 days by default.
 2. Set `PAPERCLIP_URL`, `PAPERCLIP_API_KEY` and `PAPERCLIP_COMPANY_ID`, then restart. Org → Integrations shows Paperclip as connected.
-3. In Org → Members, paste each member's **Paperclip user id**, so a claim assigns the issue to them. Without it, the claim still works: the issue gets a "Claimed in Inertia by …" comment and moves to in progress.
+3. In Org → Members, paste each member's **Paperclip user id**, so a claim assigns the issue to them and moves it to in progress. Without it, the claim still works: the issue gets a "Claimed in Inertia by …" comment and Inertia keeps the claim exclusive.
 4. Re-accept initiatives (or pursue the grant again on a fresh org) so the goals exist in Paperclip. Goals are initiatives; `planned` means proposed.
 5. Tell the CEO agent: issues for a person get the **`human`** label (Inertia creates it). Agents read member answers from the issue comments.
 
