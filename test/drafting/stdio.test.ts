@@ -14,6 +14,28 @@ function fixture(script:string,timeoutMs=500){
 const setup=`const rl=require('node:readline').createInterface({input:process.stdin});let n=0;rl.on('line',line=>{const q=JSON.parse(line);n++;`;
 const safeReviewDetails={issues:[{finding_index:0,field:"excerpt",code:"excerpt_not_in_bound_evidence",evidence_ids:["OPP-1"]}],truncated:false};
 const rejectedAfterContext=(frame:unknown)=>setup+`if(n===1)console.log(JSON.stringify({type:'context',id:1}));else{console.log(JSON.stringify(${JSON.stringify(frame)}));rl.close();}});`;
+it("returns authenticated producer validation field feedback without leaking proposal values",async()=>{
+ const details={issues:[{proposal_index:0,field:"confidence",code:"required"},{proposal_index:0,field:"rationale",code:"required"},{proposal_index:0,field:"claim_support",code:"required"}],truncated:false};
+ const frame={type:"result",ok:false,error:"proposal_validation_failed",details};
+ const error=await fixture(rejectedAfterContext(frame)).bridge.call("save",{}, {context:async()=>context,review:async()=>{throw Error("No dispatch");}}).catch(e=>e);
+ if(!(error instanceof Error))throw Error("Expected rejected producer validation");
+ expect(error).toBeInstanceOf(Error);expect(error.message).toContain('"code":"proposal_validation_failed"');
+ expect(error.message).toContain('"field":"confidence"');expect(error.message).toContain('"field":"claim_support"');
+});
+it("keeps producer validation details generic for wrong operation, unauthenticated or malformed frames",async()=>{
+ const detail={proposal_index:0,field:"confidence",code:"required"};
+ const base={type:"result",ok:false,error:"proposal_validation_failed",details:{issues:[detail],truncated:false}};
+ for(const frame of [{...base,extra:"PRIVATE-SECRET"},{...base,details:{...base.details,issues:[{...detail,field:"PRIVATE-SECRET"}]}},{...base,details:{...base.details,issues:[{...detail,code:"PRIVATE-SECRET"}]}},{...base,details:{...base.details,issues:[{...detail,proposal_index:100}]}},{...base,details:{...base.details,issues:[{...detail,value:"PRIVATE-SECRET"}]}},{...base,details:{...base.details,issues:[detail,detail]}}]){
+  const error=await fixture(rejectedAfterContext(frame)).bridge.call("save",{}, {context:async()=>context,review:async()=>{throw Error();}}).catch(e=>e);
+  if(!(error instanceof Error))throw Error("Expected rejected validation frame");
+  expect(error.message).toBe("DFW drafting rejected request");
+ }
+ for(const [script,op] of [[`console.log(JSON.stringify(${JSON.stringify(base)}));`,"save"],[rejectedAfterContext(base),"workspace"]] as const){
+  const error=await fixture(script).bridge.call(op,{}, {context:async()=>context,review:async()=>{throw Error();}}).catch(e=>e);
+  if(!(error instanceof Error))throw Error("Expected rejected validation frame");
+  expect(error.message).toBe("DFW drafting rejected request");
+ }
+});
 it("returns only authenticated bounded review validation indices and bound evidence ids without replay",async()=>{
  const frame={type:"result",ok:false,error:"review_validation_failed",details:safeReviewDetails},f=fixture(rejectedAfterContext(frame));let contexts=0;
  const error=await f.bridge.call("review",{}, {context:async()=>{contexts++;return {...context,role:"reviewer"};},review:async()=>{throw Error("No dispatch allowed");}}).catch(e=>e);
