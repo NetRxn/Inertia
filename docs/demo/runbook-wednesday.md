@@ -66,6 +66,18 @@ Login links: until a real mailer is wired, the development mailer writes each li
 
 Mapping: initiative = company goal; grant = project under the goal; human task = issue labelled `human`; agent task = any other issue; claim = assign + comment; answer = comment + done.
 
+## Telegram bot hookup (for Kyle)
+
+Set `MEMBER_APP_INGEST_TOKEN` on the app. The bot batches messages (for example one digest per chat per day) and posts:
+
+```sh
+curl -X POST https://<host>/api/org/ingest \
+  -H "Authorization: Bearer $MEMBER_APP_INGEST_TOKEN" -H "Content-Type: application/json" \
+  -d '{"kind":"chat-export","title":"Telegram: FWTX DAO, 2026-10-28","text":"[12:30] Rob: I can host the workshop\n[12:41] Ana: ...","origin":"telegram:<chat id>"}'
+```
+
+The digest shows up in Org → Data, the assistant can search it, and **Find work in this** reads it for tasks. The same endpoint works for any other integration.
+
 ## Seed FWTX without clicking (optional)
 
 ```sh
