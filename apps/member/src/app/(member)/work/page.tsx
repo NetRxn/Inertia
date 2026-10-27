@@ -7,6 +7,9 @@ import { listShares } from '../../../shares/shares';
 import { byPriority } from '../../../work/initiatives';
 import { ShareComposer } from '../../../components/ShareComposer';
 import { WorkList } from '../../../components/WorkList';
+import { WorkStatusView } from '../../../components/WorkStatusView';
+import { buildWorkStatus } from '../../../work/status';
+import { members } from '../../../db/schema';
 import { PrioritiesCard } from '../../../components/cards/PrioritiesCard';
 import { RecentlySharedCard } from '../../../components/cards/RecentlySharedCard';
 import cardStyles from '../../../components/cards/cards.module.css';
@@ -15,7 +18,7 @@ import styles from './work.module.css';
 // Allow blocking route for searchParams access
 export const instant = false;
 
-type Segment = 'needs-person' | 'initiatives' | 'ideas';
+type Segment = 'status' | 'needs-person' | 'initiatives' | 'ideas';
 
 async function WorkContent({ segment }: { segment: Segment }) {
   const member = await requireMember();
@@ -32,14 +35,23 @@ async function WorkContent({ segment }: { segment: Segment }) {
   }
 
   const adapters = getAdapters();
+  if (segment === 'status') {
+    const [status, people] = await Promise.all([
+      buildWorkStatus(adapters, now),
+      getDb().select({ externalId: members.externalId, displayName: members.displayName }).from(members),
+    ]);
+    const nameOf = Object.fromEntries(people.map((p) => [p.externalId, p.displayName]));
+    return <WorkStatusView status={status} nameOf={nameOf} memberExternalId={member.externalId} />;
+  }
   const [initiatives, allTasks] = await Promise.all([
     adapters.work.listInitiatives(),
     adapters.work.listHumanTasks(),
   ]);
 
   // Sort initiatives by priority
+  // Proposed initiatives (awaiting a vote) still have work people can do.
   const sortedInitiatives = initiatives
-    .filter((i) => i.status === 'active')
+    .filter((i) => i.status !== 'done')
     .sort(byPriority);
 
   if (segment === 'initiatives') {
@@ -63,20 +75,27 @@ export default function WorkPage({
 }) {
   // Read the segment from search params (awaiting the promise per Next.js conventions)
   const params = use(searchParams);
-  const segment: Segment = (params.tab === 'initiatives' || params.tab === 'ideas')
+  const segment: Segment = (params.tab === 'initiatives' || params.tab === 'ideas' || params.tab === 'needs-person')
     ? params.tab
-    : 'needs-person';
+    : 'status';
 
   return (
     <>
       <header className={styles.header}>
         <h1 className={styles.title}>Work</h1>
-        <p className={cardStyles.meta}>Tasks and initiatives across the DAO.</p>
+        <p className={cardStyles.meta}>What people and agents are doing, side by side.</p>
       </header>
 
       <nav className={styles.tabs} aria-label="Work sections">
         <Link
           href="/work"
+          aria-current={segment === 'status' ? 'page' : undefined}
+          className={styles.tab}
+        >
+          Status
+        </Link>
+        <Link
+          href="/work?tab=needs-person"
           aria-current={segment === 'needs-person' ? 'page' : undefined}
           className={styles.tab}
         >
