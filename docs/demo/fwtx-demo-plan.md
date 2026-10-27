@@ -36,6 +36,18 @@ Most of the process already exists in `develop`:
 
 So the gap is not the process. The gaps are **(a) real FWTX data in, (b) a visible "state of the org" view, (c) actually running the agents once on a real grant, (d) a member logged in seeing it.**
 
+For the plain-language "what is Inertia versus Paperclip, and why store notes" explainer, see [concept.md](concept.md).
+
+## 0. Decisions so far (2026-10-27)
+
+- **Runtime:** John's shared runtime (G1 uses it; local Docker is only the fallback).
+- **Grant:** chosen closer to the demo from the grant finder.
+- **Grant initiative:** *Pursue grant funding strategy* is a sample initiative, shown as **proposed, not yet voted**, with an open governance task. Grant projects still run under it for the demo, and the screen says so.
+- **Vote threshold:** not needed for the demo.
+- **On-screen member:** John.
+- **Data:** real recordings and/or transcripts and notes will be supplied for testing.
+- **Note:** the member app design from earlier needs reworking to show initiatives → projects → tasks and agent versus human work (section 1b). Not started.
+
 ## 1b. Org model: initiatives → projects → tasks
 
 New direction (2026-10-27). This has to hold everywhere in the member app, not only in the grant demo.
@@ -49,7 +61,7 @@ New direction (2026-10-27). This has to hold everywhere in the member app, not o
 The rules Inertia enforces (the deterministic part, not the LLM):
 
 1. **An initiative becomes `active` only with a governance receipt.** That means a recorded decision or vote reference, through the same path as `src/grants/governance.ts`. An agent may draft a proposed initiative (`planned`) but can never activate one.
-2. **A project needs an active initiative.** A project under a `planned` or `cancelled` initiative is refused. That is what makes "the grant is a project under the grant strategy" mean something: agents can open a new grant project without a fresh vote because the strategy is already adopted. A per-initiative rule can still require a vote for a single project, e.g. requests above $X or a funder requiring a DAO resolution.
+2. **A project needs an active initiative, or an explicit "pending governance" flag.** A project under a proposed initiative is allowed only when marked pending governance and shown that way; under a `cancelled` initiative it is refused. The demo uses the pending-governance path for the grant strategy. That is what makes "the grant is a project under the grant strategy" mean something: agents can open a new grant project without a fresh vote because the strategy is already adopted. A per-initiative rule can still require a vote for a single project, e.g. requests above $X or a funder requiring a DAO resolution.
 3. **Every task has a project, a reason, acceptance criteria and a source link** (the existing follow-up rule, applied to everything).
 4. **Each task has exactly one kind of owner:** an agent (`assigneeAgentId`) or a member (`assigneeUserId`). Paperclip already keeps these separate.
 
@@ -81,6 +93,34 @@ Paperclip's inbox and issue lists already filter by assignee and label. The Pack
 - **Human tasks:** pick the lead community story; confirm budget numbers; get a partner letter (outreach).
 - **Sign-off:** a member confirms the exact packet version (Packet tab).
 - **Governance task:** only if the per-initiative rule or the funder requires it.
+
+## 1c. Ingesting recordings, transcripts and notes
+
+None of this needs a live bot. Drop files in a folder (or a Drive folder later) and run one command.
+
+```mermaid
+flowchart LR
+  A["Recording<br/>mp3, m4a, mp4"] --> T["Transcribe<br/>speaker labels + timestamps<br/>marked machine, unreviewed"]
+  B["Transcript<br/>Gemini, txt, vtt"] --> C
+  N["Notes only<br/>Gemini notes, docs"] --> C
+  T --> C["Clean + split<br/>faithful transcript<br/>separate notes"]
+  C --> X["Extract<br/>facts, decisions,<br/>commitments, people,<br/>initiative mentions<br/>each cited to lines"]
+  X --> DB[("DAO PostgreSQL<br/>sources, passages,<br/>knowledge, links")]
+  DB --> P["Proposed tasks<br/>+ snapshot refresh"]
+```
+
+| Stage | What happens | Exists? |
+|---|---|---|
+| 1. Intake | Accept a recording, transcript, notes or document. Store the raw original unchanged with SHA-256, meeting date, title and audience | Partly: `src/roundtable/source.ts` handles text sources and Drive metadata |
+| 2. Transcribe (recordings only) | Speech-to-text with speaker labels and timestamps. Output is marked *machine transcript, unreviewed*. Recommendation: use Gemini's Meet transcript when the meeting was on Meet; otherwise Whisper (local `whisper.cpp` keeps audio private; a hosted API is faster). Speaker names mapped by a person, never guessed | **No, new** |
+| 3. Clean and split | Faithful transcript kept separate from notes. Notes-only input produces notes plus a "no transcript" flag, never an invented transcript | Yes: `src/roundtable/ingestion.ts` |
+| 4. Extract | Candidate facts, decisions, commitments and action items, each tied to exact lines and marked unverified. Add people and initiative/project mentions | Mostly: `src/roundtable/extraction.ts`, `knowledge.ts`; people/initiative links are new |
+| 5. Store and index | Save sources, passages (with line ranges), knowledge items and links in DAO PostgreSQL. Add full-text search and `pgvector` embeddings so agents can retrieve them | **No, new**: the schema and search index |
+| 6. Act | Propose follow-up tasks (existing follow-up rule) and refresh the affected initiative's snapshot | Follow-up exists in `src/roundtable/native.ts`; snapshot is new |
+
+The same pipeline (stages 1, 4, 5, 6) takes the other sources. Telegram export, repo READMEs and issues, website pages and socials skip transcription and enter at "clean and split".
+
+Re-running the same file is a no-op (same hash). A corrected transcript creates a new revision; it never silently overwrites.
 
 ## 2. The demo story (what the audience sees)
 
@@ -125,9 +165,12 @@ Ranked by how much of the story breaks without them. "Fake it honestly" means pr
 | G9 | **Governance branch** | Shows when the DAO vote matters | Use the fixture verifier and say so. Prepare one rule: e.g. requests above $X or funder-required DAO resolution → vote task. Do not run a real Vocdoni vote | 2 hours |
 | G11 | **Initiative → project → task model** (section 1b) | Must be consistent across the member app | Seed initiatives as company goals with adoption state; create the grant as a project under *Pursue grant funding strategy*. Add the guards in Inertia: no `active` initiative without a governance receipt, and no project under an inactive initiative. Add `agent` / `human` / `governance` labels plus a triage step in the CEO agent's instructions | 1 day |
 | G12 | **Member-facing views** | "View as a member" | Wednesday: native Paperclip inbox and label filters. After the demo: a plugin page with Initiatives, My asks and Open to members | 0.5 day (native) / 2+ days (plugin page) |
+| G13 | **Recording → transcript** (section 1c stage 2) | Real recordings are coming | `whisper.cpp` (or a hosted API) wrapper producing timestamped, speaker-labelled text. Speakers mapped by hand | 0.5 day |
+| G14 | **Org memory schema + search** (section 1c stage 5) | Without retrieval the agents don't really use the org context | DAO PostgreSQL tables for sources, passages, knowledge items and links; full-text search first, `pgvector` if time allows; a `context pack` function used by every agent task | 1–1.5 days |
+| G15 | **Member app design rework** | Must show initiatives → projects → tasks and agent versus human work | Revisit the earlier design after the demo; for the demo, native Paperclip views (G12) | Post-demo |
 | G10 | **Buzz** | Nice, not essential | Optional: show the same ask arriving in Buzz. Drop if time is short | — |
 
-Critical path: **G1 → G11 → G2 → G3 → G6**, with G5 and G7 in parallel. G9 and G10 are polish.
+Critical path: **G1 → G11 → G13/G2 → G14 → G3 → G6**, with G5 and G7 in parallel. G2 (other sources) and G13 (transcription) both feed G14 (org memory). G9 and G10 are polish.
 
 ## 4. Data to collect (Kyle / team), today
 
@@ -169,13 +212,13 @@ Will claim: sources ingested with provenance; org state built from them; tasks t
 
 Won't claim: live Telegram/social bots, a real DAO vote, external submission, production membership ACL, or untrusted member-owned agents. Show those as "next" on the last slide. The repo's existing honesty rules (spec, `Needed-from-team.md`) still apply: fixture values are labelled, unknowns stay unknown.
 
-## 7. Open questions for you
+## 7. Open questions
 
-1. Shared runtime from John by Wednesday, or do we demo from local Docker?
-2. Which grant, and which initiative should it match?
-3. Is the Wednesday Roundtable itself being recorded for use as a live source?
-4. Who is the on-screen member?
-5. Is there a real vote threshold rule, or do we state an illustrative one?
-6. Has the DAO actually adopted a grant strategy (a vote or recorded decision we can cite)? If not, the demo shows it as a proposed initiative with a governance task.
-7. What are the other current initiatives, so the Org Brief can place existing projects and repos under them?
-8. Can members claim unassigned human tasks themselves, or only receive them by assignment?
+Answered 2026-10-27: runtime (John's), grant (TBD later), on-screen member (John), vote threshold (not needed), grant strategy (proposed, not voted). See section 0.
+
+Still open:
+1. Is the Wednesday Roundtable itself being recorded for use as a live source?
+2. What are the other current initiatives, so the Org Brief can place existing projects and repos under them?
+3. Can members claim unassigned human tasks themselves, or only receive them by assignment?
+4. Transcription: is local `whisper.cpp` acceptable (private, slower), or may recordings go to a hosted speech-to-text API?
+5. Does John's runtime have access to the DAO PostgreSQL database with `pgvector` available, or does org memory start in a separate demo database?
