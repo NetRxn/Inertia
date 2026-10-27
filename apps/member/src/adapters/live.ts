@@ -1,7 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { orgSources } from '../db/schema';
-import type { Adapters, FundingApplication, FundingOpportunity, Meeting, WorkSource } from './types';
+import type { Adapters, ChatThread, FundingApplication, FundingOpportunity, Meeting, WorkSource } from './types';
 import { readFileSync } from 'fs';
 
 /** A meeting as Inertia knows it: an uploaded transcript or notes. */
@@ -17,6 +17,25 @@ function toMeeting(row: { id: string; title: string; summary: string | null; con
     transcriptUrl: null,
   };
 }
+
+const LINE = /^\[(?:(\d{4}-\d{2}-\d{2}) )?(\d{2}:\d{2})\] ([^:]{1,80}): (.*)$/;
+
+/**
+ * A chat digest from a connector or an uploaded export, as a thread:
+ * "[12:30] Rob: text" lines, dated from the digest title when it has one.
+ */
+export function toThread(row: { id: string; title: string; content: string; createdAt: Date }): ChatThread {
+  const day = row.title.match(/(\d{4}-\d{2}-\d{2})\s*$/)?.[1] ?? row.createdAt.toISOString().slice(0, 10);
+  const channel = row.title.includes(':') ? row.title.split(':')[0].trim() : 'Chat';
+  const messages = row.content.split('\n').flatMap((line, i) => {
+    const m = line.match(LINE);
+    return m ? [{ id: `${row.id}:${i}`, author: m[3], text: m[4], at: new Date(`${m[1] ?? day}T${m[2]}:00Z`).toISOString() }] : [];
+  });
+  return { id: row.id, channel, title: row.title, summary: null, messages };
+}
+
+const chatColumns = { id: orgSources.id, title: orgSources.title, content: orgSources.content, createdAt: orgSources.createdAt };
+const visibleChats = and(eq(orgSources.kind, 'chat-export'), eq(orgSources.status, 'active'));
 
 const meetingColumns = { id: orgSources.id, title: orgSources.title, summary: orgSources.summary, content: orgSources.content, createdAt: orgSources.createdAt };
 const visibleMeetings = and(eq(orgSources.kind, 'meeting'), eq(orgSources.status, 'active'));
@@ -47,7 +66,24 @@ export function createLiveAdapters(work: WorkSource, env: Record<string, string 
     directory: { async listMembers() { return []; } },
     proposals: { async listProposals() { return []; } },
     events: { async listUpcoming() { return []; } },
-    chat: { async listRecentThreads() { return []; }, async search() { return []; } },
+    // Chat comes from digests the connectors (Telegram, Buzz) deliver, and from uploaded exports.
+    chat: {
+      async listRecentThreads(since) {
+        const rows = await getDb().select(chatColumns).from(orgSources).where(and(visibleChats, sql`${orgSources.createdAt} >= ${since.toISOString()}`)).orderBy(desc(orgSources.createdAt)).limit(20);
+        return rows.map(toThread).filter((t) => t.messages.length);
+      },
+      async search(query) {
+        const q = query.trim();
+        if (!q) return [];
+        const rows = await getDb()
+          .select(chatColumns)
+          .from(orgSources)
+          .where(and(visibleChats, sql`(${orgSources.title} ilike ${`%${q}%`} or to_tsvector('english', ${orgSources.content}) @@ websearch_to_tsquery('english', ${q}))`))
+          .orderBy(desc(orgSources.createdAt))
+          .limit(8);
+        return rows.map(toThread);
+      },
+    },
     work,
     meetings: {
       async listMeetings(limit) {

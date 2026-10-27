@@ -116,3 +116,21 @@ describe('connector runner', () => {
     expect(() => runnerConfig({ MEMBER_APP_BASE_URL: 'x', MEMBER_APP_INGEST_TOKEN: 'y' })).toThrow(/Nothing to connect/);
   });
 });
+
+describe('chat digests as threads', () => {
+  it('reads digest lines back as dated messages', async () => {
+    const { toThread } = await import('../src/adapters/live');
+    const thread = toThread({ id: 's1', title: 'Telegram: FWTX DAO · 2026-10-27', content: '[12:30] Rob Chen: I can host\n[12:41] Ana: Great: Wednesday', createdAt: new Date('2026-10-28T00:00:00Z') });
+    expect(thread).toMatchObject({ channel: 'Telegram', title: 'Telegram: FWTX DAO · 2026-10-27' });
+    expect(thread.messages).toEqual([
+      { id: 's1:0', author: 'Rob Chen', text: 'I can host', at: '2026-10-27T12:30:00.000Z' },
+      { id: 's1:1', author: 'Ana', text: 'Great: Wednesday', at: '2026-10-27T12:41:00.000Z' },
+    ]);
+  });
+
+  it('also reads uploaded Telegram exports, which carry the date on each line', async () => {
+    const { toThread } = await import('../src/adapters/live');
+    const thread = toThread({ id: 's2', title: 'Telegram: FWTX DAO', content: '[2026-10-20 12:30] Rob: I can host', createdAt: new Date('2026-10-28T00:00:00Z') });
+    expect(thread.messages[0]).toMatchObject({ author: 'Rob', text: 'I can host', at: '2026-10-20T12:30:00.000Z' });
+  });
+});
