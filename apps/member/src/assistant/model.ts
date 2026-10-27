@@ -55,5 +55,5 @@ export function getFastModel(env: Record<string, string | undefined> = process.e
  */
 export function backgroundProviderOptions(env: Record<string, string | undefined> = process.env) {
   if (env.MEMBER_APP_MODEL_PROVIDER?.trim() !== 'openai-compatible' || env.MEMBER_APP_MODEL_THINKING?.trim() !== 'off') return undefined;
-  return { 'member-app': { thinking: { type: 'disabled' } } };
+  return { memberApp: { thinking: { type: 'disabled' } } };
 }
