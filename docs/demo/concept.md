@@ -42,6 +42,29 @@ Concrete example: the grant finder reports a digital-literacy grant for Tarrant 
 
 The database isn't for the LLM to "learn". It makes the right 1% of the organization's history findable at the moment a task needs it, and keeps every claim traceable.
 
+## How the organization's context gets built inside the app
+
+Nothing counts as "known" until it is **saved in org memory** (DAO PostgreSQL). What a developer or an AI assistant reads while building is not org context. It only becomes context once it goes through the pipeline below.
+
+```
+Upload / connect          Save                     Understand                  Use
+──────────────────        ──────────────────       ──────────────────          ──────────────────
+audio or transcript  ─┐   source record            passages (chunks)           Org Brief / snapshot
+notes, docs           ├─▶ (raw file, hash,    ─▶   facts, decisions,     ─▶    context pack per task
+Telegram export       │    author, date,           commitments, people,        "why you" matching
+repo, website, social │    audience)               initiative/project links    proposed tasks
+chat (Buzz, comments) ┘                            search index                open-to-members pool
+```
+
+1. **Every input becomes a source record.** It holds the original, unchanged, plus who, when, where it came from and who may see it. Audio is transcribed first, offline and not in real time; uploading a transcript skips that step.
+2. **Sources are split and understood.** The LLM extracts candidate facts, decisions, commitments, people and mentions of initiatives and projects. Each one points to the exact passage and is marked unverified.
+3. **Links make it an organization, not a pile of documents.** Each item is linked to an initiative, a project or a person. This is what lets the app answer "what's happening in HackFW" or "what has this member offered to do".
+4. **People confirm.** A member can confirm or correct an item (e.g. "yes, that was a decision"). Confirmed items carry more weight; corrections are kept as new revisions.
+5. **It is used everywhere:** the snapshot is regenerated from memory, agent tasks get a context pack from memory, and the open pool is built from memory.
+6. **Chat feeds back in.** Buzz messages, task comments and member answers to asks are sources too, so the context keeps growing from normal use, not only from uploads.
+
+Example: the initiative list drafted in the demo plan (section 1d) was read from the website repo during planning. It is **not** in the app yet. In the app, the website repo would be ingested as a source, and the system would *propose* those initiatives with citations to the website pages. A member or governance step would then confirm them.
+
 ## Real-time snapshot
 
 "Real time" here means **minutes after a source arrives**, not live streaming. Each new source triggers ingest → extract → refresh of the affected initiative's snapshot:

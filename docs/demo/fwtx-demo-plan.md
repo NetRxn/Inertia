@@ -49,7 +49,7 @@ For the plain-language "what is Inertia versus Paperclip, and why store notes" e
 - **Recordings:** available, in standard audio/video formats.
 - **Members can claim open human tasks.** The app should be *suggestive*: a visible pool of work up for grabs, not only assignments.
 - **Contributions:** no scoring yet, but every claim, answer and completion records **who did what, when, on which task**, so contribution tracking can be added later without backfilling.
-- **Transcription:** open source and low cost first, so local Whisper.
+- **Transcription:** open source and low cost first, so local Whisper. **Not live in the demo.** Explain the audio-upload path on one slide; ingest a pre-transcribed meeting or an uploaded transcript live.
 - **LLM for the demo:** GLM (Z.ai / Zhipu). See section 1e.
 - **Note:** the member app design from earlier needs reworking to show initiatives → projects → tasks and agent versus human work (section 1b). Not started.
 
