@@ -1028,3 +1028,98 @@
 +  nativeDomainReviewComposition.install(runtime);
 +  nativeDomainReviewComposition.assertReady();
 +}
+--- a/dist/routes/agents.js
++++ b/dist/routes/agents.js
+@@ -1,3 +1,4 @@
++import { getNativeReviewRetryState } from "../services/native-runtime/native-review-retry.mjs";
+ import { aiConnectionRouterService, poolMemberRuntimeConfig } from "../services/ai-connection-router.js";
+ import { connectionIntentService } from "../services/connection-intents.js";
+ import { completeConnectionIntentSchema } from "@paperclipai/shared";
+@@ -5062,6 +5063,7 @@
+                     code: "native_session_cleanup_quarantined",
+                 });
+             }
++            const nativeReviewRetry = await getNativeReviewRetryState(db, failedRun);
+             if (!(await canRetryStoppedRun(db, failedRun))) {
+                 throw conflict("Only a failed run or a verified eligible cancellation can start a new attempt.");
+             }
+@@ -5090,9 +5092,10 @@
+                 });
+                 if (!decision.allowed)
+                     throw forbidden(decision.explanation, authorizationDeniedDetails(decision));
++                if (nativeReviewRetry?.kind === "replay") { res.status(202).json(nativeReviewRetry.run); return; }
+                 const savedReviewContext = readNativeReviewAssignmentContext(failedContext);
+-                if (failedRun.runtimeMode === "native" && failedRun.status === "failed" &&
+-                    failedRun.errorCode === "native_provider_model_rejected" &&
++                if (((failedRun.runtimeMode === "native" && failedRun.status === "failed" &&
++                    failedRun.errorCode === "native_provider_model_rejected") || nativeReviewRetry?.kind === "eligible") &&
+                     failedRun.nativeIssueId === issue.id && savedReviewContext) {
+                     const review = await getNativeReviewAssignment(db, {
+                         companyId: agent.companyId, issueId: issue.id, agentId: agent.id,
+--- a/dist/services/heartbeat.js
++++ b/dist/services/heartbeat.js
+@@ -1,3 +1,4 @@
++import { getNativeReviewRetryState } from "./native-runtime/native-review-retry.mjs";
+ import { retryIdempotentDatabaseOperation } from "../database-retry.js";
+ import { prepareConnectionInstructionDelivery } from "./connection-instructions.js";
+ import { resolveAssignedConnectionInstructionsForRun, resolveAssignedPluginToolsForRun } from "./native-runtime/assigned-mcp-tools.js";
+@@ -20458,6 +20459,12 @@
+                     const [previousRetry] = await tx.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.companyId, issue.companyId), eq(heartbeatRuns.agentId, agentId), eq(heartbeatRuns.retryOfRunId, opts.failedRunId), sql `${heartbeatRuns.contextSnapshot}->>'wakeReason' = 'retry_failed_run'`)).orderBy(desc(heartbeatRuns.createdAt)).limit(1);
+                     if (previousRetry)
+                         return { kind: "replayed", run: previousRetry };
++                    const selectedReviewRun = await tx.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id, opts.failedRunId),eq(heartbeatRuns.companyId, issue.companyId),eq(heartbeatRuns.agentId, agentId))).limit(1).then(rows=>rows[0]??null);
++                    if(selectedReviewRun?.status === "succeeded") {
++                        const retry = await getNativeReviewRetryState(tx, selectedReviewRun);
++                        if(retry?.kind === "replay")return {kind:"replayed",run:retry.run};
++                        if(retry?.kind !== "eligible" || enrichedContextSnapshot.nativeReviewInteractionId !== retry.context.nativeReviewInteractionId || enrichedContextSnapshot.nativeReviewDecisionId !== retry.context.nativeReviewDecisionId)throw conflict("The selected pending review is no longer eligible for retry.");
++                    }
+                 }
+                 let reconciledSourceRunId = null;
+                 let reconciledRestoreRetryCount = null;
+--- a/dist/services/cancelled-native-startup.js
++++ b/dist/services/cancelled-native-startup.js
+@@ -1,3 +1,4 @@
++import { getNativeReviewRetryState } from "./native-runtime/native-review-retry.mjs";
+ import { isPreDispatchReviewWait } from "./pre-dispatch-review-wait.js";
+ import { and, eq, inArray, isNotNull, or } from "drizzle-orm";
+ import { environmentLeases, heartbeatRunEvents, nativeRunFinalizations } from "@paperclipai/db";
+@@ -10,6 +11,7 @@
+ export async function canRetryStoppedRun(db, run) {
+     if (run.errorCode === "native_session_cleanup_quarantined")
+         return false;
++    if (run.status === "succeeded") return (await getNativeReviewRetryState(db, run)) !== null;
+     if (["failed", "timed_out"].includes(run.status) || canContinueCancelledRun(run))
+         return true;
+     if (run.status !== "cancelled" || !run.finishedAt || run.processPid || run.processGroupId ||
+--- /dev/null
++++ b/dist/services/native-runtime/native-review-retry.mjs
+@@ -0,0 +1,29 @@
++/** Read-only eligibility for the existing board exact-run retry path. No dispatch or writes. */
++import {agents,agentWakeupRequests,environmentLeases,heartbeatRuns,issues,nativeRunFinalizations,statusDecisions} from '@paperclipai/db';
++import {and,eq,ne,gte,inArray,sql} from 'drizzle-orm';
++import {normalizeNativeFundingPolicy} from './native-funding-policy.js';
++import {getNativeReviewAssignment,readNativeReviewAssignmentContext} from './native-review-participant.js';
++export async function getNativeReviewRetryState(db,selected){
++ if(selected?.runtimeMode!=='native'||selected.status!=='succeeded'||!selected.finishedAt||!selected.nativeIssueId||!readNativeReviewAssignmentContext(selected.contextSnapshot))return null;
++ const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,selected.id),eq(heartbeatRuns.companyId,selected.companyId),eq(heartbeatRuns.agentId,selected.agentId))).limit(1);
++ if(!run||run.runtimeMode!=='native'||run.status!=='succeeded'||!run.finishedAt||run.nativeIssueId!==selected.nativeIssueId||run.errorCode)return null;
++ const context=readNativeReviewAssignmentContext(run.contextSnapshot);if(!context||run.contextSnapshot?.issueId!==run.nativeIssueId)return null;
++ const [agent]=await db.select().from(agents).where(and(eq(agents.id,run.agentId),eq(agents.companyId,run.companyId))).limit(1);let policy;
++ try{policy=normalizeNativeFundingPolicy(agent?.adapterConfig);}catch{return null;}
++ if(!agent||agent.adapterType!=='paperclip_runner'||!['idle','running'].includes(agent.status)||policy?.role!=='reviewer'||!policy.issueIds.includes(run.nativeIssueId))return null;
++ const [finalized]=await db.select({phase:nativeRunFinalizations.phase,leaseOwner:nativeRunFinalizations.leaseOwner,leaseExpiresAt:nativeRunFinalizations.leaseExpiresAt,failureCode:nativeRunFinalizations.failureCode,decisionId:statusDecisions.id,reason:statusDecisions.reasonCode,applied:statusDecisions.applicationState}).from(nativeRunFinalizations).innerJoin(statusDecisions,and(eq(statusDecisions.id,nativeRunFinalizations.decisionId),eq(statusDecisions.companyId,nativeRunFinalizations.companyId),eq(statusDecisions.issueId,nativeRunFinalizations.issueId),eq(statusDecisions.runId,nativeRunFinalizations.runId))).where(and(eq(nativeRunFinalizations.runId,run.id),eq(nativeRunFinalizations.companyId,run.companyId),eq(nativeRunFinalizations.issueId,run.nativeIssueId))).limit(1);
++ if(!finalized||finalized.phase!=='committed'||finalized.leaseOwner||(finalized.leaseExpiresAt&&finalized.leaseExpiresAt>new Date())||finalized.failureCode||finalized.reason!=='native_review_unresolved'||finalized.applied!=='applied')return null;
++ const related=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.companyId,run.companyId),eq(heartbeatRuns.agentId,run.agentId),ne(heartbeatRuns.id,run.id),gte(heartbeatRuns.createdAt,run.createdAt),sql`${heartbeatRuns.contextSnapshot}->>'nativeReviewInteractionId' = ${context.nativeReviewInteractionId}`));
++ const successors=related.filter(r=>r.retryOfRunId===run.id&&(r.nativeIssueId===null||r.nativeIssueId===run.nativeIssueId)&&r.contextSnapshot?.issueId===run.nativeIssueId&&r.contextSnapshot?.wakeReason==='retry_failed_run'&&r.contextSnapshot?.nativeReviewDecisionId===context.nativeReviewDecisionId);
++ if(successors.length===1)return{kind:'replay',run:successors[0],context};
++ if(related.length)return null;
++ const [issue]=await db.select().from(issues).where(and(eq(issues.id,run.nativeIssueId),eq(issues.companyId,run.companyId))).limit(1);
++ if(!issue||issue.status!=='in_review'||issue.executionRunId||issue.checkoutRunId||!policy.projectIds.includes(issue.projectId))return null;
++ const pending=await db.select({id:agentWakeupRequests.id}).from(agentWakeupRequests).where(and(eq(agentWakeupRequests.companyId,run.companyId),eq(agentWakeupRequests.agentId,run.agentId),inArray(agentWakeupRequests.status,['queued','claimed','deferred_issue_execution']),sql`${agentWakeupRequests.payload}->'_paperclipWakeContext'->>'nativeReviewInteractionId' = ${context.nativeReviewInteractionId}`)).limit(1);
++ if(pending.length)return null;
++ const leases=await db.select({releasedAt:environmentLeases.releasedAt,status:environmentLeases.status,cleanupStatus:environmentLeases.cleanupStatus}).from(environmentLeases).where(and(eq(environmentLeases.companyId,run.companyId),eq(environmentLeases.heartbeatRunId,run.id)));
++ if(leases.some(l=>!l.releasedAt||l.status==='pending_cleanup'||l.cleanupStatus==='failed'))return null;
++ const assignment=await getNativeReviewAssignment(db,{companyId:run.companyId,issueId:run.nativeIssueId,agentId:run.agentId,contextSnapshot:context});
++ if(!assignment||assignment.interaction.status!=='pending'||(run.contextSnapshot.sourceRunId!==undefined&&run.contextSnapshot.sourceRunId!==assignment.sourceRun.id)||(run.contextSnapshot.revisionId!==undefined&&run.contextSnapshot.revisionId!==assignment.sourceDecision.id))return null;
++ return{kind:'eligible',context};
++}

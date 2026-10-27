@@ -14,7 +14,7 @@
     "dist/services/native-runtime/native-session-executor.js": "3b4b6f44259e49aa112760e75918565dc25fca4eb3d02fb4747959c0c1649f42"
   },
   "patch": "native-domain-review.patch",
-  "patch_sha256": "94246a96d96c0ea2903cafad76a0e0c1123374c6d7a9e488aa110d378483a883",
+  "patch_sha256": "d44b99a22a0130c71b32addf911eb76daa50629557553423f25d964c4313841d",
   "files": {
     "dist/index.js": {
       "base_sha256": "90928e20b30eda53de08a1a320917c08aa5fe77f3dd0022333ba6102fa54e6a4",
@@ -31,6 +31,18 @@
     "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
       "base_sha256": "8d04770e1a28eb613c79dc8cceb643fa1116345a371a9702fd291095d99be31f",
       "candidate_sha256": "5fe49708d73679320d6e0edd76e8ba4bed764c27542cffeac760de47a7083638"
+    },
+    "dist/routes/agents.js": {
+      "base_sha256": "f224b60eb1685ee3e12987ec0fa6a1d8b574bbce9f5caaf0e96a22ba550e3455",
+      "candidate_sha256": "d0d0a5833fa90cb20e96857a45cfc486d204f771d97c71723c797c96c13314bc"
+    },
+    "dist/services/heartbeat.js": {
+      "base_sha256": "742a01f7f576a7e42038e973609f176ddf68e617770284ce60781fd2b8fe7f17",
+      "candidate_sha256": "9245f0c999f65846e4668d3d8c343f9416559db3e75911947f2a00cabd3388a6"
+    },
+    "dist/services/cancelled-native-startup.js": {
+      "base_sha256": "9fe9655d4a9021f4730c44564ddf24f88838d0e1079a2ed55f24258b08f2f219",
+      "candidate_sha256": "ede963a1a417acba13c403eb036cb191cec4c2b0d8d44711fa64c4443cd008e0"
     }
   },
   "newFiles": {
@@ -54,6 +66,9 @@
     },
     "dist/services/native-runtime/native-review-application.mjs": {
       "candidate_sha256": "4deaa1ca82cddb8e54ec650ba9126a9c8104ea1653e0bc24a10059d2baa34df4"
+    },
+    "dist/services/native-runtime/native-review-retry.mjs": {
+      "candidate_sha256": "4bfcc297d4264f61829c21fad984e27e548a35cb181836fd58a624d60d5a8711"
     }
   }
 }
