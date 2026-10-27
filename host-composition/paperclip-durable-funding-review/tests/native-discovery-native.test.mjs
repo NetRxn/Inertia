@@ -1,6 +1,8 @@
 /** Actual native SQL/authority/gateway tests; synthetic identities and plugin worker only. */
 import test,{before,after}from'node:test';import assert from'node:assert/strict';import fs from'node:fs/promises';import path from'node:path';import{randomUUID}from'node:crypto';import{pathToFileURL}from'node:url';
-if(process.env.QUALIFY_DISPOSABLE!=='1')throw Error('Disposable qualification required');
+if(process.env.QUALIFY_DISPOSABLE!=='1'){
+ test('native SQL/runner qualification requires an explicit disposable environment',{skip:'Set QUALIFY_DISPOSABLE=1 only in the documented offline fixture'},()=>{});
+}else{
 const root=process.env.QUALIFICATION_NATIVE_ROOT,host=path.join(root,'@paperclipai/server');
 const load=rel=>import(pathToFileURL(path.join(root,rel)).href),server=rel=>load('@paperclipai/server/dist/'+rel);
 const schema=await load('@paperclipai/db/dist/schema/index.js');const{and,eq}=await load('drizzle-orm/index.js');
@@ -86,3 +88,5 @@ test('actual native runner uses closed public projection and scout-only live mat
   await assert.rejects(()=>bundle.transport.request('thread/resume',{threadId:'private-prior-thread'}),/public_scout_continuity_unqualified/);await assert.rejects(()=>bundle.transport.request('turn/steer',{input:[{type:'text',text:'SECRET_STEER'}]}),/public_scout_continuity_unqualified/);
  }catch(error){console.error('RUNNER_PRIMARY_FAILURE',error);throw error;}finally{try{await bundle.transport.close();}finally{await fs.rm(work,{recursive:true,force:true});}}
 });
+
+}
