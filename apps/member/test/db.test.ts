@@ -17,7 +17,7 @@ describe('Database', () => {
 
     const tableNames = result.rows.map(row => row.table_name);
 
-    // Expect exactly these 8 tables
+    // Expect exactly these 12 tables
     expect(tableNames).toEqual([
       'conversations',
       'documents',
@@ -25,8 +25,12 @@ describe('Database', () => {
       'loginTokens',
       'members',
       'messages',
+      'org_passages',
+      'org_sources',
+      'organization',
       'sessions',
       'shares',
+      'work_events',
     ]);
   });
 

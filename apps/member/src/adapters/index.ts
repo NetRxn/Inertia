@@ -1,6 +1,9 @@
 import type { Adapters } from './types';
 import { createFixtureAdapters } from './fixtures/adapters';
 import { defaultFixture, FIXTURE_NOW } from './fixtures/dao';
+import { createLiveAdapters } from './live';
+import { createMemoryWorkSource } from './memory-work';
+import { createPaperclipWorkSource, paperclipConfig } from './paperclip';
 
 // Export types
 export type * from './types';
@@ -34,6 +37,15 @@ export function getAdapters(): Adapters {
     }
     const data = defaultFixture(globalThis.__memberAppAdaptersStartTime);
     globalThis.__memberAppAdapters = createFixtureAdapters(data);
+    return globalThis.__memberAppAdapters;
+  }
+
+  if (mode === 'live') {
+    // A real organization. Work runs in Paperclip when it is configured,
+    // otherwise in a process-memory engine until one is connected.
+    const paperclip = paperclipConfig(process.env);
+    const work = paperclip ? createPaperclipWorkSource(paperclip) : createMemoryWorkSource();
+    globalThis.__memberAppAdapters = createLiveAdapters(work);
     return globalThis.__memberAppAdapters;
   }
 

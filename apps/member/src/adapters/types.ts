@@ -78,11 +78,43 @@ export type ClaimResult =
   | { ok: true }
   | { ok: false; reason: 'already-claimed' | 'not-found' | 'unavailable' };
 
+/** Work an agent is doing in the work engine, shown beside human work for parity. */
+export interface AgentTask {
+  id: string;
+  initiativeId: string | null;
+  title: string;
+  agentName: string | null;
+  status: 'queued' | 'running' | 'blocked' | 'done';
+  updatedAt: string;
+  url: string | null;
+}
+
+export type NewTask = {
+  initiativeId: string;
+  projectId?: string | null;
+  title: string;
+  description: string;
+  /** Who should do it: a member, or an agent in the engine. */
+  lane: 'human' | 'agent';
+  kind?: TaskKind;
+  estimateMinutes?: number | null;
+};
+
 export interface WorkSource {
   listInitiatives(): Promise<Initiative[]>;
   listHumanTasks(): Promise<HumanTask[]>;
   completionsBetween(from: Date, to: Date): Promise<{ memberExternalId: string; count: number }[]>;
   claim(taskId: string, memberExternalId: string): Promise<ClaimResult>;
+  // The rest is optional: an engine that can't do these simply leaves them out.
+  listAgentTasks?(): Promise<AgentTask[]>;
+  /** Agent tasks finished in the period, for the recap. */
+  agentCompletionsBetween?(from: Date, to: Date): Promise<number>;
+  createInitiative?(input: { title: string; summary: string; adopted: boolean }): Promise<{ id: string }>;
+  createProject?(input: { initiativeId: string; title: string; description: string }): Promise<{ id: string }>;
+  createTask?(input: NewTask): Promise<{ id: string }>;
+  release?(taskId: string, memberExternalId: string): Promise<ClaimResult>;
+  /** The engine's name and where to open it, for Integrations and links. */
+  engine?: { name: string; url: string | null };
 }
 
 // Meetings

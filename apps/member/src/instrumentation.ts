@@ -10,6 +10,7 @@ export async function register() {
     const { runMigrations } = await import('./db/migrate');
     const { getAdapters } = await import('./adapters/index');
     const { syncMembers } = await import('./identity/sync');
+    const { ensureFounder } = await import('./org/members');
 
     // Guard against multiple invocations
     if (globalThis.__memberAppSyncIntervalStarted) {
@@ -23,6 +24,8 @@ export async function register() {
       try {
         const db = getDb();
         await runMigrations(db);
+        // A fresh install: the founder becomes the first admin and can sign in.
+        if (await ensureFounder(db, process.env.MEMBER_APP_FOUNDER_EMAIL)) console.log('[setup] Founder added as the first admin.');
         const adapters = getAdapters();
         const result = await syncMembers(db, adapters.directory);
         console.log(`[sync] Member sync complete: ${result.added} added, ${result.updated} updated, ${result.deactivated} deactivated`);

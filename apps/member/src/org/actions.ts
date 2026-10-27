@@ -1,0 +1,202 @@
+'use server';
+
+import { randomUUID } from 'crypto';
+import { revalidatePath } from 'next/cache';
+import { getAdapters } from '../adapters';
+import { backgroundProviderOptions, getFastModel } from '../assistant/model';
+import { getDb } from '../db/client';
+import { requireMember } from '../identity/session';
+import { addSource, hideSource, IngestError, restoreSource } from './ingest';
+import { createAskJson } from './llm';
+import { addMember, isAdmin, MemberError, removeMember, setRole, setWorkUser, type Role } from './members';
+import { completeSetup, getOrganization, saveBasics, saveProfile, setGovernance, updateInitiative } from './organization';
+import { regenerateProfile } from './profile';
+import { readWebsite } from './website';
+
+export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
+
+function fail(error: unknown, fallback: string): ActionResult {
+  if (error instanceof MemberError || error instanceof IngestError) return { ok: false, error: error.message };
+  console.error('[org]', error);
+  return { ok: false, error: fallback };
+}
+
+async function requireAdminMember() {
+  const member = await requireMember();
+  if (!isAdmin(member)) throw new MemberError('forbidden', 'Only admins can do that.');
+  return member;
+}
+
+function refresh() {
+  for (const path of ['/', '/org', '/org/data', '/org/members', '/work', '/setup']) revalidatePath(path);
+}
+
+/** Saves the name, website and description from setup or the Profile page. */
+export async function saveOrganizationBasics(input: { name?: string; website?: string; description?: string }): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const db = getDb();
+    const before = await getOrganization(db);
+    const org = await saveBasics(db, input);
+    if (input.description?.trim() && input.description.trim() !== before?.description) {
+      await addSource(db, { kind: 'note', title: `About ${org.name}`, content: input.description, addedBy: member.id });
+    }
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't save that. Try again?");
+  }
+}
+
+/** Reads a website's pages into org memory. */
+export async function readOrganizationWebsite(website: string): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const url = new URL(/^https?:\/\//i.test(website.trim()) ? website.trim() : `https://${website.trim()}`);
+    const db = getDb();
+    await saveBasics(db, { website: url.toString() });
+    const pages = await readWebsite(url.toString());
+    let added = 0;
+    for (const page of pages) {
+      const { duplicate } = await addSource(db, { kind: 'website', title: page.title, origin: page.url, content: page.text, addedBy: member.id });
+      if (!duplicate) added++;
+    }
+    refresh();
+    return pages.length
+      ? { ok: true, message: `Read ${pages.length} page${pages.length === 1 ? '' : 's'}${added < pages.length ? ` (${pages.length - added} already known)` : ''}.` }
+      : { ok: false, error: "Couldn't read that website. You can paste some text about it instead." };
+  } catch (error) {
+    return fail(error, "Couldn't read that website. Check the address?");
+  }
+}
+
+/** Adds a pasted note to org memory. Anyone signed in can share. */
+export async function addNote(input: { title: string; text: string; kind?: 'note' | 'meeting' }): Promise<ActionResult> {
+  try {
+    const member = await requireMember();
+    const { duplicate } = await addSource(getDb(), { kind: input.kind ?? 'note', title: input.title || 'Note', content: input.text, addedBy: member.id });
+    refresh();
+    return { ok: true, message: duplicate ? 'Inertia already had that.' : 'Added.' };
+  } catch (error) {
+    return fail(error, "Couldn't add that. Try again?");
+  }
+}
+
+export async function draftProfile(): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    const profile = await regenerateProfile(getDb(), createAskJson(getFastModel(), backgroundProviderOptions()));
+    refresh();
+    return { ok: true, message: `Drafted ${profile.initiatives.length} initiatives.` };
+  } catch (error) {
+    if (error instanceof Error && /Share something/.test(error.message)) return { ok: false, error: error.message };
+    return fail(error, 'Inertia could not draft the profile just now. Try again in a moment?');
+  }
+}
+
+/**
+ * Accepting an initiative creates it in the work engine. With governance on,
+ * it stays proposed there until the organization adopts it.
+ */
+export async function decideInitiative(id: string, decision: 'accept' | 'dismiss' | 'adopt' | 'reopen'): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    const db = getDb();
+    const org = await getOrganization(db);
+    const initiative = org?.profile?.initiatives.find((i) => i.id === id);
+    if (!org || !initiative) return { ok: false, error: 'That initiative is gone. Refresh?' };
+    if (decision === 'dismiss') await updateInitiative(db, id, { status: 'dismissed' });
+    else if (decision === 'reopen') await updateInitiative(db, id, { status: 'proposed' });
+    else {
+      const adopted = decision === 'adopt' || !org.governanceEnabled || initiative.adopted;
+      let workId = initiative.workId;
+      const work = getAdapters().work;
+      if (!workId && work.createInitiative) workId = (await work.createInitiative({ title: initiative.title, summary: initiative.summary, adopted })).id;
+      await updateInitiative(db, id, { status: 'accepted', workId, adopted });
+    }
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't update that initiative. Try again?");
+  }
+}
+
+/** An initiative the profile didn't find, such as a strategy that hasn't been voted on yet. */
+export async function addInitiative(input: { title: string; summary: string }): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    const db = getDb();
+    const org = await getOrganization(db);
+    if (!org) return { ok: false, error: 'Set up the organization first.' };
+    const title = input.title.trim().slice(0, 120);
+    if (!title) return { ok: false, error: 'Give it a name.' };
+    const profile = org.profile ?? { mission: null, programs: [], people: [], recent: [], initiatives: [] };
+    await saveProfile(db, {
+      ...profile,
+      initiatives: [...profile.initiatives, { id: randomUUID(), title, summary: input.summary.trim().slice(0, 600), citations: [], status: 'proposed', workId: null, adopted: false }],
+    }, org.profileGeneratedAt ?? new Date());
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't add that initiative.");
+  }
+}
+
+export async function finishSetup(): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    await completeSetup(getDb());
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't finish setup. Try again?");
+  }
+}
+
+export async function changeGovernance(enabled: boolean): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    await setGovernance(getDb(), enabled);
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't change governance.");
+  }
+}
+
+export async function setSourceVisibility(id: string, visible: boolean, reason = ''): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    if (visible) await restoreSource(getDb(), id);
+    else await hideSource(getDb(), id, member.id, reason);
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't change that source.");
+  }
+}
+
+export async function inviteMember(input: { email: string; displayName: string; role: Role }): Promise<ActionResult> {
+  try {
+    const member = await requireMember();
+    const added = await addMember(getDb(), member, input);
+    refresh();
+    return { ok: true, message: `${added.displayName} can now sign in with ${added.email}.` };
+  } catch (error) {
+    return fail(error, "Couldn't add that member.");
+  }
+}
+
+export async function updateMember(memberId: string, change: { role?: Role; workUserId?: string | null; remove?: boolean }): Promise<ActionResult> {
+  try {
+    const member = await requireMember();
+    const db = getDb();
+    if (change.remove) await removeMember(db, member, memberId);
+    if (change.role) await setRole(db, member, memberId, change.role);
+    if (change.workUserId !== undefined) await setWorkUser(db, member, memberId, change.workUserId);
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return fail(error, "Couldn't update that member.");
+  }
+}
