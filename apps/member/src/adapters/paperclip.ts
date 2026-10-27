@@ -285,7 +285,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
           title: input.title,
           description,
           status: 'todo',
-          goalId: input.initiativeId,
+          ...(input.initiativeId ? { goalId: input.initiativeId } : {}),
           ...(input.projectId ? { projectId: input.projectId } : {}),
           ...(human ? { labelIds: [await ensureHumanLabel()] } : config.defaultAgentId ? { assigneeAgentId: config.defaultAgentId } : {}),
         },

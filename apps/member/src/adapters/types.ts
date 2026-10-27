@@ -91,6 +91,7 @@ export interface AgentTask {
 }
 
 export type NewTask = {
+  /** Empty when the work fits no initiative yet. */
   initiativeId: string;
   projectId?: string | null;
   title: string;

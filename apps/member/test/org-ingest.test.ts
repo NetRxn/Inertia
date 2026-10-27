@@ -90,6 +90,7 @@ describe('org memory', () => {
     await hideSource(db, first.source.id, admin.id, 'Wrong meeting');
     expect(await searchPassages(db, 'library grant')).toHaveLength(0);
     expect(await listSources(db)).toHaveLength(0);
+    expect((await listSources(db, { includeHidden: true }))[0].passages).toBe(1);
     expect((await listSources(db, { includeHidden: true }))[0]).toMatchObject({ status: 'hidden', hiddenReason: 'Wrong meeting' });
     await restoreSource(db, first.source.id);
     expect(await searchPassages(db, 'library grant')).toHaveLength(1);
@@ -109,6 +110,11 @@ describe('members', () => {
   it('makes the founder the first admin only once', async () => {
     expect(await ensureFounder(db, 'Kyle@Example.org', 'Kyle')).toBe(true);
     expect(await ensureFounder(db, 'someone@example.org')).toBe(false);
+    await db.delete(members);
+    await ensureFounder(db, 'kyle.d@example.org');
+    expect((await listMembers(db))[0].displayName).toBe('Kyle');
+    await db.delete(members);
+    await ensureFounder(db, 'Kyle@Example.org', 'Kyle');
     const rows = await listMembers(db);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ email: 'kyle@example.org', role: 'admin', origin: 'local' });

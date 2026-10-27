@@ -188,10 +188,12 @@ export async function listSources(db: Db, opts: { includeHidden?: boolean } = {}
       addedBy: orgSources.addedBy,
       createdAt: orgSources.createdAt,
       characters: sql<number>`length(${orgSources.content})`,
-      passages: sql<number>`(select count(*) from ${orgPassages} where ${orgPassages.sourceId} = ${orgSources.id})`,
+      passages: sql<number>`count(${orgPassages.id})`,
     })
     .from(orgSources)
+    .leftJoin(orgPassages, eq(orgPassages.sourceId, orgSources.id))
     .where(opts.includeHidden ? undefined : eq(orgSources.status, 'active'))
+    .groupBy(orgSources.id)
     .orderBy(desc(orgSources.createdAt));
   return rows.map((row) => ({ ...row, characters: Number(row.characters), passages: Number(row.passages) }));
 }

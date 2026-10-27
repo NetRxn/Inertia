@@ -32,9 +32,12 @@ export function requireAdmin(member: Pick<Member, 'role'>): void {
  * Makes sure the founder can sign in on a fresh install: if no admin exists,
  * the given email becomes the first admin. Does nothing once any admin exists.
  */
-export async function ensureFounder(db: Db, email: string | undefined, displayName = 'Founder'): Promise<boolean> {
+export async function ensureFounder(db: Db, email: string | undefined, displayName?: string): Promise<boolean> {
   if (!email?.trim()) return false;
   const normalized = normalizeEmail(email);
+  // Until they change it, the founder is called by their email name: kyle@… → Kyle.
+  const local = normalized.split('@')[0].split(/[._+-]/)[0];
+  const name = displayName?.trim() || local.charAt(0).toUpperCase() + local.slice(1);
   return db.transaction(async (tx) => {
     const admins = await tx.select({ id: members.id }).from(members).where(eq(members.role, 'admin')).limit(1);
     if (admins.length) return false;
@@ -42,7 +45,7 @@ export async function ensureFounder(db: Db, email: string | undefined, displayNa
     if (existing) {
       await tx.update(members).set({ role: 'admin', status: 'active' }).where(eq(members.id, existing.id));
     } else {
-      await tx.insert(members).values({ externalId: `local:${randomUUID()}`, email: normalized, displayName, role: 'admin', origin: 'local' });
+      await tx.insert(members).values({ externalId: `local:${randomUUID()}`, email: normalized, displayName: name, role: 'admin', origin: 'local' });
     }
     return true;
   });

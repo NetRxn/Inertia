@@ -33,18 +33,19 @@ describe('finding work in a source', () => {
     const askJson = (async ({ prompt, schema }) => {
       prompts.push(prompt);
       return schema.parse({ items: [
-        { title: 'Recruit two demo day judges', lane: 'human', kind: 'outreach', estimateMinutes: 30, initiative: 'HackFW 2026', quote: 'We still need two more judges for demo day.' },
-        { title: 'Invented task', lane: 'human', initiative: 'HackFW 2026', quote: 'We agreed to buy a boat.' },
-        { title: 'Lab item', lane: 'agent', initiative: 'Innovation Lab', quote: 'I can ask the Fort Worth Club about a venue.' },
-        { title: 'Draft judge invite', lane: 'agent', initiative: 'hackfw 2026', quote: '“We still need two more judges for demo day.”' },
+        { title: 'Recruit two demo day judges', lane: 'human', kind: 'outreach', estimateMinutes: 30, initiative: 1, quote: 'We still need two more judges for demo day.' },
+        { title: 'Invented task', lane: 'human', initiative: 1, quote: 'We agreed to buy a boat.' },
+        { title: 'Ask about a venue', lane: 'human', initiative: null, quote: 'I can ask the Fort Worth Club about a venue.' },
+        { title: 'Draft judge invite', lane: 'agent', initiative: 'HackFW demo day', quote: '“We still need two more judges for demo day.”' },
       ] });
     }) as AskJson;
 
     const result = await suggestWorkFromSource(db, { work }, askJson, source.id, kyle.id);
-    expect(result).toEqual({ created: 2, skipped: 2, people: 1, already: false });
-    expect(prompts[0]).toContain('- HackFW 2026: Hackathon');
+    expect(result).toEqual({ created: 3, skipped: 1, people: 2, already: false });
+    expect(prompts[0]).toContain('1. HackFW 2026: Hackathon');
     expect(prompts[0]).not.toContain('Innovation Lab');
-    const [human] = await work.listHumanTasks();
+    const [human, loose] = await work.listHumanTasks();
+    expect(loose).toMatchObject({ title: 'Ask about a venue', initiativeId: '' });
     expect(human).toMatchObject({ title: 'Recruit two demo day judges', initiativeId: hackId, kind: 'outreach', estimateMinutes: 30, status: 'open' });
     expect(human.prepared).toContain('From October roundtable: “We still need two more judges for demo day.”');
     expect(await work.listAgentTasks!()).toHaveLength(1);
