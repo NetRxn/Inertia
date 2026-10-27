@@ -231,7 +231,7 @@ export async function searchPassages(db: Db, query: string, limit = 8): Promise<
     .where(and(eq(orgSources.status, 'active'), sql`to_tsvector('english', ${orgPassages.text}) @@ websearch_to_tsquery('english', ${q})`))
     .orderBy(sql`5 desc`)
     .limit(limit);
-  if (rows.length) return rows.map(({ rank: _rank, ...hit }) => hit);
+  if (rows.length) return rows.map((row) => ({ passageId: row.passageId, sourceId: row.sourceId, title: row.title, kind: row.kind, location: row.location, text: row.text }));
   // No exact match: fall back to any word, so short or loose questions still find something.
   const words = q.split(/\s+/).filter((w) => w.length > 2).slice(0, 8).join(' or ');
   if (!words || words === q) return [];
