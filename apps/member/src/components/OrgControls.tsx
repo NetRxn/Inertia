@@ -9,6 +9,7 @@ import {
   findWorkIn,
   inviteMember,
   readOrganizationWebsite,
+  readGithubRepos,
   setSourceVisibility,
   updateMember,
   type ActionResult,
@@ -140,6 +141,18 @@ export function FindWork({ id, done }: { id: string; done: boolean }) {
       </button>
       <Notice message={message} />
     </div>
+  );
+}
+
+export function ReadGithub() {
+  const { pending, message, run } = useAction();
+  const [input, setInput] = useState('');
+  return (
+    <form className={styles.row} onSubmit={(e) => { e.preventDefault(); run(() => readGithubRepos(input)); }}>
+      <input className={styles.input} aria-label="GitHub" value={input} onChange={(e) => setInput(e.target.value)} placeholder="GitHub org or owner/repo, e.g. FWTX-DAO" />
+      <button className="in-btn in-btn--secondary" disabled={pending || !input.trim()}>{pending ? 'Reading…' : 'Read GitHub'}</button>
+      <Notice message={message} />
+    </form>
   );
 }
 

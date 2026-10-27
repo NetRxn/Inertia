@@ -235,3 +235,23 @@ export async function findWorkIn(sourceId: string): Promise<ActionResult> {
     return fail(error, 'Inertia could not read this for work just now. Try again in a moment?');
   }
 }
+
+/** Reads an organization's public GitHub repositories (or named ones) into what Inertia knows. */
+export async function readGithubRepos(input: string): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const { readGithub } = await import('./github');
+    const pages = await readGithub(input);
+    if (!pages.length) return { ok: false, error: "Couldn't read any repositories there. Try owner/repo for each one?" };
+    const db = getDb();
+    let added = 0;
+    for (const page of pages) {
+      const { duplicate } = await addSource(db, { kind: 'document', title: page.title, origin: page.url, content: page.text, addedBy: member.id });
+      if (!duplicate) added++;
+    }
+    refresh();
+    return { ok: true, message: `Read ${pages.length} repositor${pages.length === 1 ? 'y' : 'ies'}${added < pages.length ? ` (${pages.length - added} already known)` : ''}.` };
+  } catch (error) {
+    return fail(error, "Couldn't read GitHub just now.");
+  }
+}

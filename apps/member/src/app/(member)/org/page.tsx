@@ -16,6 +16,7 @@ import {
   InitiativeChoice,
   InviteMember,
   MemberControls,
+  ReadGithub,
   ReadWebsite,
   RedraftProfile,
   SourceVisibility,
@@ -148,6 +149,7 @@ async function DataTab({ admin }: { admin: boolean }) {
         <h2 className={`in-label ${cardStyles.eyebrow}`}>Add to Inertia</h2>
         <AddToInertia />
         {admin && <ReadWebsite current={org?.website ?? null} />}
+        {admin && <ReadGithub />}
       </section>
       <section className={`in-glass ${cardStyles.card}`}>
         <h2 className={`in-label ${cardStyles.eyebrow}`}>What Inertia knows · {sources.filter((s) => s.status === 'active').length}</h2>
@@ -181,6 +183,7 @@ async function IntegrationsTab() {
     sources: sources.length,
     meetings: sources.filter((s) => s.kind === 'meeting').length,
     chatExports: sources.filter((s) => s.kind === 'chat-export').length,
+    repositories: sources.filter((s) => s.origin?.startsWith('https://github.com/')).length,
   });
   const groups: { status: 'connected' | 'available' | 'planned'; label: string }[] = [
     { status: 'connected', label: 'Connected' },

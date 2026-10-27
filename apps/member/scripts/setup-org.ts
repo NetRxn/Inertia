@@ -4,7 +4,7 @@
  * "Tell me about your organization" conversation, for seeding and rehearsals.
  *
  *   npx tsx scripts/setup-org.ts --name "FWTX DAO" --website https://fwtx.city \
- *     --description "..." --founder kyle@example.org [--file notes.md ...] [--no-profile]
+ *     --description "..." --founder kyle@example.org [--github FWTX-DAO] [--file notes.md ...] [--no-profile]
  */
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -17,9 +17,10 @@ import { ensureFounder } from '../src/org/members';
 import { saveBasics } from '../src/org/organization';
 import { regenerateProfile } from '../src/org/profile';
 import { readWebsite } from '../src/org/website';
+import { readGithub } from '../src/org/github';
 
 function args(argv: string[]) {
-  const out: { name?: string; website?: string; description?: string; founder?: string; files: string[]; profile: boolean } = { files: [], profile: true };
+  const out: { name?: string; website?: string; description?: string; founder?: string; files: string[]; github?: string; profile: boolean } = { files: [], profile: true };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     const value = argv[i + 1];
@@ -28,6 +29,7 @@ function args(argv: string[]) {
     else if (flag === '--description') out.description = value;
     else if (flag === '--founder') out.founder = value;
     else if (flag === '--file') out.files.push(value);
+    else if (flag === '--github') out.github = value;
     else if (flag === '--no-profile') { out.profile = false; continue; }
     else continue;
     i++;
@@ -50,6 +52,12 @@ async function main() {
     const pages = await readWebsite(opts.website);
     for (const page of pages) {
       const { duplicate } = await addSource(db, { kind: 'website', title: page.title, origin: page.url, content: page.text });
+      console.log(`  ${duplicate ? '=' : '+'} ${page.url}`);
+    }
+  }
+  if (opts.github) {
+    for (const page of await readGithub(opts.github)) {
+      const { duplicate } = await addSource(db, { kind: 'document', title: page.title, origin: page.url, content: page.text });
       console.log(`  ${duplicate ? '=' : '+'} ${page.url}`);
     }
   }
