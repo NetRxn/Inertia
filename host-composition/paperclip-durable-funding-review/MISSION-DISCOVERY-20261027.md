@@ -27,7 +27,7 @@ native gateway and its permissions, approvals and audit ledger.
 | Current task/actor | Exact plugin tools |
 | --- | --- |
 | Configured scout / producer | `funding-discovery-context`, `funding-discovery-submit` |
-| Configured independent diligence / reviewer | `funding-diligence-context`, `funding-diligence-submit`, `funding-source-validation-submit`, `funding-facts-submit` |
+| Configured independent diligence / reviewer | `funding-diligence-context`, `funding-diligence-submit`, `funding-source-validation-submit`, `funding-facts-submit`; native `list_documents`, `read_document` for current-task public capture work only |
 | Existing drafting task | Existing four drafting tools |
 | Existing native attention reviewer | Existing native review catalog |
 
@@ -131,3 +131,41 @@ public-source run. No identities/process policies are guessed here. Real hosted
 web-use evidence, source URLs/retrieval dates, native ownership, DFW persistence
 and readback must be recorded separately, distinguishing capture from admission,
 matching and ranking. This source lane performs no live rollout or provider call.
+
+## Diligence capture handoff correction
+
+The first overlay omitted the native reads needed to discover the existing host's
+immutable `funding-diligence-work-*` snapshots. The correction adds only
+`list_documents` and `read_document` to admitted independent diligence runs.
+The tool descriptions instruct Beta to list, read the returned key, then use the
+returned `binding` and each `captureId` with `funding-diligence-context`.
+No task-description edit, manual wake payload, extra grant or new queue is needed.
+
+Both reads use the existing native document service after fresh current actor,
+run, task, configuration and assigned business-tool permission checks. They
+reject all task overrides, and expose only matching-binding work
+snapshots whose key derives from their capture IDs. Returned bodies contain
+only binding, capture IDs, source hashes, HTTPS source URLs and static guidance.
+Saved instruction text, arbitrary documents, task descriptions and document
+author metadata are withheld. Scout and existing drafting/review scopes remain
+unchanged. These two native reads do not require plugin tool grants.
+
+The regression first failed on the missing catalog entry, then passed using real
+native PostgreSQL and the production immutable document writer. It persists a
+synthetic capture reference on the independently assigned reviewer task, reads
+it through actual authority, and submits its binding/capture ID through the real
+gateway/dispatcher. Private documents, wrong bindings, another task's key, task
+overrides, changed ownership and revoked permissions are denied. This is an
+actual persisted reference fixture, not a real DFW capture or hosted search.
+
+The corrected overlay replaces the prior pinned overlay in a fresh qualified
+image build. Its installer deliberately refuses an in-place old/partial overlay.
+Runtime deployment, policy admission and a real public-source capture/diligence
+run remain the runtime owner's work. Named-program source identity, canonical
+admission and Phase2 ranking are unchanged downstream prerequisites.
+
+Matching keys and JSON shape do not establish document authorship or capture
+validity. These are untrusted routing references, including when a same-task
+writer supplies a matching document. Existing `funding-diligence-context` and
+DFW exact-capture validation remain authoritative; reads confer no admission,
+source identity, approval or claim of public-source truth.
