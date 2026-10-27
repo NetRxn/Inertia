@@ -36,6 +36,52 @@ Most of the process already exists in `develop`:
 
 So the gap is not the process. The gaps are **(a) real FWTX data in, (b) a visible "state of the org" view, (c) actually running the agents once on a real grant, (d) a member logged in seeing it.**
 
+## 1b. Org model: initiatives → projects → tasks
+
+New direction (2026-10-27). This has to hold everywhere in the member app, not only in the grant demo.
+
+| Level | Meaning | Who creates / changes it | Paperclip object (already exists) | Example |
+|---|---|---|---|---|
+| **Initiative** | A direction the DAO has adopted | Proposed by anyone or an agent; **adopted only through governance** | `Goal`, `level: "company"`. `planned` = proposed, `active` = adopted, `achieved` / `cancelled` | *Pursue grant funding strategy* |
+| **Project** | A concrete effort that serves one initiative | Agents or members, inside an adopted initiative's mandate | `Project` with `goalId` = the initiative. Status `backlog → planned → in_progress → completed / cancelled` | *NSF CIVIC grant application* |
+| **Task** | One unit of work, done by an agent **or** a member | Agents decompose; members can add | `Issue` with `projectId`, `goalId`, `parentId`, `acceptanceCriteria` | *Draft budget narrative*; *Pick the lead community story* |
+
+The rules Inertia enforces (the deterministic part, not the LLM):
+
+1. **An initiative becomes `active` only with a governance receipt.** That means a recorded decision or vote reference, through the same path as `src/grants/governance.ts`. An agent may draft a proposed initiative (`planned`) but can never activate one.
+2. **A project needs an active initiative.** A project under a `planned` or `cancelled` initiative is refused. That is what makes "the grant is a project under the grant strategy" mean something: agents can open a new grant project without a fresh vote because the strategy is already adopted. A per-initiative rule can still require a vote for a single project, e.g. requests above $X or a funder requiring a DAO resolution.
+3. **Every task has a project, a reason, acceptance criteria and a source link** (the existing follow-up rule, applied to everything).
+4. **Each task has exactly one kind of owner:** an agent (`assigneeAgentId`) or a member (`assigneeUserId`). Paperclip already keeps these separate.
+
+### Agent tasks versus human tasks
+
+| Kind | How it is marked | What the assignee gets | Done when |
+|---|---|---|---|
+| **Agent task** | `assigneeAgentId`, label `agent` | Normal Paperclip agent run with checkout and budget | Agent run completes and meets acceptance criteria |
+| **Human task (prepared ask)** | `assigneeUserId`, label `human` | The ask, why them, attached context (brief, draft section, critique), expected minutes, deadline, definition of done, choices: accept / decline | Member answers; an agent incorporates it. Accepted, declined and no response are recorded separately; silence is never a decline |
+| **Agent work, human sign-off** | `assigneeAgentId` + an `executionPolicy` review stage whose participant is `type: "user"` | Agent does the work; the member sees an approval in their inbox | Member approves the exact version |
+| **Governance task** | label `governance`, linked to the initiative or a packet hash | Members vote or record a decision through the DAO's actual process | Final result recorded; the initiative or packet is unlocked |
+
+The labels are needed for **unassigned** tasks too: the CEO/triage agent decides "does this need a person?" when it decomposes a project. It applies `agent` or `human` before assignment so the human-ask queue is visible even before someone picks a task up. Typical human work: judgment, relationships, outreach, real-world events, choosing the story, confirming numbers, signing.
+
+### What the member sees in the app
+
+- **Initiatives:** adopted and proposed, each with its projects and its governance status.
+- **Projects:** progress, with agent work and human work shown as separate counts (e.g. "7 agent tasks done, 2 waiting on members").
+- **My asks:** human tasks assigned to me, plus approvals waiting on me, each with the context attached.
+- **Open to members:** unassigned `human` tasks any verified member can claim.
+
+Paperclip's inbox and issue lists already filter by assignee and label. The Packet tab covers the approval step for grant projects. The "Initiatives" and "Open to members" views are the new pieces.
+
+### Grant example under this model
+
+- **Initiative (adopted):** *Pursue grant funding strategy*. Seed it as `active` with its adoption evidence. If there is no real adoption record, show it as `planned` with a governance task, and say so.
+- **Project:** *<Grant name> application*, opened when the grant finder's brief matches the initiative.
+- **Agent tasks:** eligibility check, research gaps, draft narrative, draft budget, independent critique, incorporate member answers.
+- **Human tasks:** pick the lead community story; confirm budget numbers; get a partner letter (outreach).
+- **Sign-off:** a member confirms the exact packet version (Packet tab).
+- **Governance task:** only if the per-initiative rule or the funder requires it.
+
 ## 2. The demo story (what the audience sees)
 
 ```mermaid
@@ -77,9 +123,11 @@ Ranked by how much of the story breaks without them. "Fake it honestly" means pr
 | G7 | **Member login and access** | "View as a member" is the main goal | One verified test member account in Paperclip with access to the grant project. For the demo, the trusted membership check can be a fixture allow-list clearly labelled as such, since NTF02 (real DAO ACL) is not wired | 0.5 day |
 | G8 | **Packet tab live** | Member confirms exact version | Install the built plugin (`npm pack`) into the runtime; verify the Packet tab renders on the grant issue in a real browser | 0.5 day |
 | G9 | **Governance branch** | Shows when the DAO vote matters | Use the fixture verifier and say so. Prepare one rule: e.g. requests above $X or funder-required DAO resolution → vote task. Do not run a real Vocdoni vote | 2 hours |
+| G11 | **Initiative → project → task model** (section 1b) | Must be consistent across the member app | Seed initiatives as company goals with adoption state; create the grant as a project under *Pursue grant funding strategy*. Add the guards in Inertia: no `active` initiative without a governance receipt, and no project under an inactive initiative. Add `agent` / `human` / `governance` labels plus a triage step in the CEO agent's instructions | 1 day |
+| G12 | **Member-facing views** | "View as a member" | Wednesday: native Paperclip inbox and label filters. After the demo: a plugin page with Initiatives, My asks and Open to members | 0.5 day (native) / 2+ days (plugin page) |
 | G10 | **Buzz** | Nice, not essential | Optional: show the same ask arriving in Buzz. Drop if time is short | — |
 
-Critical path: **G1 → G2 → G3 → G6**, with G5 and G7 in parallel. G9 and G10 are polish.
+Critical path: **G1 → G11 → G2 → G3 → G6**, with G5 and G7 in parallel. G9 and G10 are polish.
 
 ## 4. Data to collect (Kyle / team), today
 
@@ -128,3 +176,6 @@ Won't claim: live Telegram/social bots, a real DAO vote, external submission, pr
 3. Is the Wednesday Roundtable itself being recorded for use as a live source?
 4. Who is the on-screen member?
 5. Is there a real vote threshold rule, or do we state an illustrative one?
+6. Has the DAO actually adopted a grant strategy (a vote or recorded decision we can cite)? If not, the demo shows it as a proposed initiative with a governance task.
+7. What are the other current initiatives, so the Org Brief can place existing projects and repos under them?
+8. Can members claim unassigned human tasks themselves, or only receive them by assignment?
