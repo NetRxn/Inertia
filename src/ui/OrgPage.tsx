@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo, type CSSProperties, type FormEvent } from 'react';
+import React, { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import type { PluginPageProps } from '@paperclipai/plugin-sdk/ui';
 import { usePluginAction } from '@paperclipai/plugin-sdk/ui';
-import { parseOrgOverview, parseOrgMembers, parseOrgSources, type OrgOverview, type OrgSourceWithFeeds } from './org-client.js';
+import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseOrgSourceOpen, type OrgOverview, type OrgSourceWithFeeds } from './org-client.js';
 import type { OrgMember, SourceKind } from '../org/contracts.js';
 
 const control: CSSProperties = {
@@ -24,6 +24,64 @@ const section: CSSProperties = {
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: { kind: string; message?: string } };
 
 type Tab = 'overview' | 'members' | 'sources';
+
+const small: CSSProperties = { ...control, fontSize: '0.85em', padding: '0.25rem 0.5rem' };
+
+/**
+ * One requestId per submitted operation: created on submit, reused while the user retries the same inputs after
+ * an unavailable error (the host may have applied it), and dropped after success, any other error, or new inputs.
+ */
+function useOperation() {
+  const pending = useRef<{ inputs: string; requestId: string } | null>(null);
+  return {
+    requestId(inputs: unknown): string {
+      const key = JSON.stringify(inputs);
+      if (pending.current?.inputs !== key) {
+        pending.current = { inputs: key, requestId: crypto.randomUUID() };
+      }
+      return pending.current.requestId;
+    },
+    settle(result: ActionResult<unknown> | 'thrown') {
+      if (result !== 'thrown' && (result.ok || result.error.kind !== 'unavailable')) {
+        pending.current = null;
+      }
+    },
+  };
+}
+
+function isWebUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+function openInNewTab(url: string) {
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.target = '_blank';
+  anchor.rel = 'noopener noreferrer';
+  anchor.click();
+}
+
+function downloadFile(title: string, mediaType: string, base64: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type: mediaType }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = title.replace(/[\\/]/g, '_');
+  anchor.rel = 'noopener noreferrer';
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+type Opened = { title: string } & ({ kind: 'note'; text: string } | { kind: 'link'; url: string });
+
+const openable = (sourceKey: string) => sourceKey.startsWith('share:');
 
 export function OrgPage({ context }: PluginPageProps) {
   if (!context.userId) return <p>Sign in to view this DAO.</p>;
@@ -59,6 +117,15 @@ export function OrgPage({ context }: PluginPageProps) {
   const [hidingSourceKey, setHidingSourceKey] = useState<string | null>(null);
   const [hideReason, setHideReason] = useState('');
 
+  const [opened, setOpened] = useState<Opened | null>(null);
+
+  const shareOp = useOperation();
+  const addMemberOp = useOperation();
+  const removeMemberOp = useOperation();
+  const moderatorOp = useOperation();
+  const hideOp = useOperation();
+  const restoreOp = useOperation();
+
   const overviewAction = usePluginAction('org.overview');
   const setupAction = usePluginAction('org.setup');
   const membersAction = usePluginAction('org.members');
@@ -69,6 +136,60 @@ export function OrgPage({ context }: PluginPageProps) {
   const sourcesAction = usePluginAction('org.sources');
   const hideAction = usePluginAction('org.source.hide');
   const restoreAction = usePluginAction('org.source.restore');
+  const openAction = usePluginAction('org.source.open');
+
+  /** Send a mutation with its operation's requestId, keeping that id only for a retry after unavailable. */
+  async function mutate<T>(
+    op: ReturnType<typeof useOperation>,
+    action: (params: Record<string, unknown>) => Promise<unknown>,
+    params: Record<string, unknown>
+  ): Promise<ActionResult<T>> {
+    const requestId = op.requestId(params);
+    try {
+      const result = (await action({ ...params, requestId })) as ActionResult<T>;
+      op.settle(result);
+      return result;
+    } catch (error) {
+      op.settle('thrown');
+      throw error;
+    }
+  }
+
+  async function handleOpen(sourceKey: string) {
+    setMessage('');
+    try {
+      const result = (await openAction({ sourceKey })) as ActionResult<unknown>;
+      if (!result.ok) {
+        setMessage(result.error.message || 'Could not open source.');
+        return;
+      }
+      const source = parseOrgSourceOpen(result.data);
+      if (source.kind === 'link') {
+        if (!isWebUrl(source.url)) {
+          setMessage('Only http and https links can be opened.');
+          return;
+        }
+        setOpened({ kind: 'link', title: source.title, url: source.url });
+        openInNewTab(source.url);
+      } else if (source.kind === 'note') {
+        setOpened({ kind: 'note', title: source.title, text: source.text });
+      } else {
+        downloadFile(source.title, source.mediaType, source.base64);
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Could not open source.');
+    }
+  }
+
+  function openButton(sourceKey: string, label: string) {
+    return (
+      <button type="button" style={small} aria-label={`Open ${label}`} onClick={() => void handleOpen(sourceKey)}>
+        Open
+      </button>
+    );
+  }
+
+  const nameOf = (id: string) => overview?.labels[id] ?? id;
 
   async function loadOverview() {
     setLoading(true);
@@ -215,7 +336,7 @@ export function OrgPage({ context }: PluginPageProps) {
         params = { kind: 'note', title, text: shareNote.trim() };
       }
 
-      const result = (await shareAction(params)) as ActionResult<unknown>;
+      const result = await mutate<unknown>(shareOp, shareAction, params);
       if (result.ok) {
         setShareLink('');
         setShareNote('');
@@ -237,11 +358,11 @@ export function OrgPage({ context }: PluginPageProps) {
 
     setMessage('');
     try {
-      const result = (await addMemberAction({
+      const result = await mutate<null>(addMemberOp, addMemberAction, {
         userId: addUserId.trim(),
         displayName: addDisplayName.trim(),
         reason: addReason.trim(),
-      })) as ActionResult<null>;
+      });
       if (result.ok) {
         setAddingMember(false);
         setAddUserId('');
@@ -262,10 +383,10 @@ export function OrgPage({ context }: PluginPageProps) {
 
     setMessage('');
     try {
-      const result = (await removeMemberAction({
+      const result = await mutate<null>(removeMemberOp, removeMemberAction, {
         userId: removingUserId,
         reason: removeReason.trim(),
-      })) as ActionResult<null>;
+      });
       if (result.ok) {
         setRemovingUserId(null);
         setRemoveReason('');
@@ -284,11 +405,11 @@ export function OrgPage({ context }: PluginPageProps) {
 
     setMessage('');
     try {
-      const result = (await setModeratorAction({
+      const result = await mutate<null>(moderatorOp, setModeratorAction, {
         userId: moderatorUserId,
         moderator: moderatorValue,
         reason: moderatorReason.trim(),
-      })) as ActionResult<null>;
+      });
       if (result.ok) {
         setModeratorUserId(null);
         setModeratorReason('');
@@ -307,10 +428,10 @@ export function OrgPage({ context }: PluginPageProps) {
 
     setMessage('');
     try {
-      const result = (await hideAction({
+      const result = await mutate<null>(hideOp, hideAction, {
         sourceKey: hidingSourceKey,
         reason: hideReason.trim(),
-      })) as ActionResult<null>;
+      });
       if (result.ok) {
         setHidingSourceKey(null);
         setHideReason('');
@@ -326,10 +447,10 @@ export function OrgPage({ context }: PluginPageProps) {
   async function handleRestoreSource(sourceKey: string) {
     setMessage('');
     try {
-      const result = (await restoreAction({
+      const result = await mutate<null>(restoreOp, restoreAction, {
         sourceKey,
         reason: 'Restored from UI',
-      })) as ActionResult<null>;
+      });
       if (result.ok) {
         await loadSources();
       } else {
@@ -404,6 +525,18 @@ export function OrgPage({ context }: PluginPageProps) {
 
       {message && <p role="alert">{message}</p>}
 
+      {opened && (
+        <section style={section} aria-label={opened.kind === 'note' ? 'Opened note' : 'Opened link'}>
+          <h3 style={{ margin: 0 }}>{opened.title}</h3>
+          {opened.kind === 'note' ? (
+            <pre style={{ margin: 0, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', font: 'inherit' }}>{opened.text}</pre>
+          ) : (
+            <a href={opened.url} target="_blank" rel="noopener noreferrer" style={{ overflowWrap: 'anywhere' }}>{opened.url}</a>
+          )}
+          <button type="button" style={{ ...small, justifySelf: 'start' }} onClick={() => setOpened(null)}>Close</button>
+        </section>
+      )}
+
       <div role="tablist" style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border, #d4d4d8)' }}>
         {availableTabs.map(t => (
           <button
@@ -477,18 +610,25 @@ export function OrgPage({ context }: PluginPageProps) {
               {overview.feed.length === 0 ? (
                 <p>No activity yet</p>
               ) : (
-                overview.feed.slice().reverse().map(entry => (
-                  <article key={entry.seq} style={{ fontSize: '0.9em' }}>
-                    {entry.action === 'source.share' && `${entry.actor} shared "${entry.subject}"`}
-                    {entry.action === 'member.add' && `${entry.actor} added ${entry.subject}`}
-                    {entry.action === 'member.remove' && `${entry.actor} removed ${entry.subject}`}
-                    {entry.action === 'moderator.set' && `${entry.actor} changed moderator status for ${entry.subject}`}
-                    {entry.action === 'source.hide' && `${entry.actor} hid ${entry.subject}`}
-                    {entry.action === 'source.restore' && `${entry.actor} restored ${entry.subject}`}
-                    {entry.action === 'source.pin' && `${entry.actor} pinned ${entry.subject}`}
-                    {entry.action === 'org.setup' && `${entry.actor} set up the DAO`}
-                  </article>
-                ))
+                overview.feed.slice().reverse().map(entry => {
+                  const actor = nameOf(entry.actor);
+                  const subject = nameOf(entry.subject);
+                  return (
+                    <article key={entry.seq} style={{ fontSize: '0.9em', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span>
+                        {entry.action === 'source.share' && `${actor} shared "${subject}"`}
+                        {entry.action === 'member.add' && `${actor} added ${subject}`}
+                        {entry.action === 'member.remove' && `${actor} removed ${subject}`}
+                        {entry.action === 'moderator.set' && `${actor} changed moderator status for ${subject}`}
+                        {entry.action === 'source.hide' && `${actor} hid ${subject}`}
+                        {entry.action === 'source.restore' && `${actor} restored ${subject}`}
+                        {entry.action === 'source.pin' && `${actor} pinned ${subject}`}
+                        {entry.action === 'org.setup' && `${actor} set up the DAO`}
+                      </span>
+                      {entry.action.startsWith('source.') && openable(entry.subject) && openButton(entry.subject, subject)}
+                    </article>
+                  );
+                })
               )}
             </section>
           </div>
@@ -513,8 +653,9 @@ export function OrgPage({ context }: PluginPageProps) {
                 <p style={{ fontSize: '0.9em' }}>None</p>
               ) : (
                 overview.keyDocuments.map(doc => (
-                  <div key={doc.sourceKey} style={{ fontSize: '0.9em' }}>
-                    {doc.title}
+                  <div key={doc.sourceKey} style={{ fontSize: '0.9em', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <span>{doc.title}</span>
+                    {openable(doc.sourceKey) && openButton(doc.sourceKey, doc.title)}
                   </div>
                 ))
               )}
@@ -600,13 +741,13 @@ export function OrgPage({ context }: PluginPageProps) {
                         {member.status === 'active' && member.role !== 'founder' && (
                           <>
                             <button
-                              style={{ ...control, fontSize: '0.85em', padding: '0.25rem 0.5rem' }}
+                              style={small}
                               onClick={() => setRemovingUserId(member.userId)}
                             >
                               Remove
                             </button>
                             <button
-                              style={{ ...control, fontSize: '0.85em', padding: '0.25rem 0.5rem' }}
+                              style={small}
                               onClick={() => {
                                 setModeratorUserId(member.userId);
                                 setModeratorValue(member.role !== 'moderator');
@@ -715,16 +856,17 @@ export function OrgPage({ context }: PluginPageProps) {
                     <td style={{ padding: '0.5rem' }}>{source.audience}</td>
                     <td style={{ padding: '0.5rem' }}>{source.feeds.tasks > 0 ? `${source.feeds.tasks} ${source.feeds.tasks === 1 ? 'task' : 'tasks'}` : '—'}</td>
                     <td style={{ padding: '0.5rem', display: 'flex', gap: '0.5rem' }}>
+                      {source.kind !== 'objective' && openable(source.sourceKey) && openButton(source.sourceKey, source.title || source.sourceKey)}
                       {!source.hidden ? (
                         <button
-                          style={{ ...control, fontSize: '0.85em', padding: '0.25rem 0.5rem' }}
+                          style={small}
                           onClick={() => setHidingSourceKey(source.sourceKey)}
                         >
                           Hide as spam
                         </button>
                       ) : (
                         <button
-                          style={{ ...control, fontSize: '0.85em', padding: '0.25rem 0.5rem' }}
+                          style={small}
                           onClick={() => handleRestoreSource(source.sourceKey)}
                         >
                           Restore
