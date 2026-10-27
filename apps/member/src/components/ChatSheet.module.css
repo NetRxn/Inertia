@@ -157,3 +157,27 @@ a.chip:hover {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
+
+/* An assistant reply: paragraphs and lists from its light Markdown. */
+.rich {
+  display: grid;
+  gap: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.rich p,
+.rich ul,
+.rich ol {
+  margin: 0;
+}
+
+.rich ul,
+.rich ol {
+  padding-left: var(--space-6);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.rich code {
+  font: var(--text-mono);
+}

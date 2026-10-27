@@ -5,6 +5,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import type { SourceRef } from '../adapters/types';
 import type { ChatMetadata } from '../assistant/chat-handler';
+import { ChatText } from './ChatText';
 import styles from './ChatSheet.module.css';
 
 type ChatMessage = UIMessage<ChatMetadata>;
@@ -200,7 +201,7 @@ export function ChatSheet({
                 className={message.role === 'user' ? styles.mine : styles.theirs}
                 data-role={message.role}
               >
-                <p className={styles.text}>{text}</p>
+                {message.role === 'assistant' ? <ChatText text={text} className={styles.rich} /> : <p className={styles.text}>{text}</p>}
                 {message.role === 'assistant' ? <SourceChips sources={message.metadata?.sources ?? []} /> : null}
               </div>
             );
