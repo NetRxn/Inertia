@@ -90,6 +90,10 @@ Accepting an initiative in the app creates the goal. Paperclip agents propose hu
 5. John signs in. **Home** says one thing is waiting for him. **Work → People**: he claims *Pick the lead community story*, sees what agents prepared, answers, and the draft updates. **Agents** shows the drafting task running.
 6. The recap shows both sides moving.
 
+## Status (2026-10-27)
+
+Built and verified end to end with live GLM in `apps/member`; see the [Wednesday runbook](runbook-wednesday.md). The Paperclip adapter is tested against a fake Paperclip and connects live on Wednesday.
+
 ## What we need to decide or get
 - **Base branch:** the member app isn't in `develop` yet (PRs #70 → #74 → #75, stacked, clean). Merge them into `develop`, or work on a branch on top of them.
 - **PR #105** (org panel inside Paperclip): fold its members/moderation/source ideas into the app; keep its "why this task exists" tab in Paperclip.
