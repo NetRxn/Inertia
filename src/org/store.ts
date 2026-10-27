@@ -14,6 +14,19 @@ export interface ObjectiveSource {
   pins: number;
 }
 
+export interface OrgOp {
+  companyId: string;
+  opKey: string;
+  /** bigint as text: the host returns int8 as a string. */
+  seq: string;
+  actor: string;
+  action: OrgLogEntry['action'];
+  subject: string;
+  reason: string;
+  inputHash: string;
+  status: 'pending' | 'applied' | 'superseded';
+}
+
 export interface OrgStore {
   readProfile(companyId: string): Promise<OrgProfile | null>;
   /** Claim the company's profile; true only for the caller whose insert won. Then completes the founder row. */
@@ -22,25 +35,28 @@ export interface OrgStore {
   completeFounder(companyId: string, userId: string): Promise<void>;
   readMember(companyId: string, userId: string): Promise<OrgMember | null>;
   listMembers(companyId: string): Promise<OrgMember[]>;
-  upsertMember(member: OrgMember, opKey: string): Promise<void>;
+  upsertMember(member: OrgMember): Promise<void>;
   countModerators(companyId: string): Promise<number>;
   /** Insert once; a retry with the same source key changes nothing. Content travels as base64 text. */
-  insertSource(source: OrgSource, contentBase64: string | null, opKey: string): Promise<void>;
+  insertSource(source: OrgSource, contentBase64: string | null): Promise<void>;
   readSource(companyId: string, sourceKey: string): Promise<OrgSource | null>;
   readContent(companyId: string, sourceKey: string): Promise<{ base64: string; mediaType: string | null } | null>;
   listSources(companyId: string, opts: { includeHidden: boolean; kind?: SourceKind; limit: number }): Promise<OrgSource[]>;
   listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]>;
   readObjectiveSource(companyId: string, mappingKey: string): Promise<ObjectiveSource | null>;
   listHidden(companyId: string): Promise<Map<string, OrgSource['hidden']>>;
-  setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden'], opKey: string): Promise<boolean>;
+  setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean>;
   isHidden(companyId: string, sourceKey: string): Promise<boolean>;
-  addPin(companyId: string, sourceKey: string, userId: string, opKey: string): Promise<boolean>;
-  /** True when org_log already holds this operation. */
-  hasLog(companyId: string, opKey: string): Promise<boolean>;
-  /** True when a member, source or pin row was last written by this operation. */
-  opApplied(companyId: string, opKey: string): Promise<boolean>;
-  /** One audit row per (company, opKey); a repeat is a no-op. */
-  appendLog(entry: Omit<OrgLogEntry, 'seq' | 'at'> & { opKey: string }): Promise<void>;
+  hasPin(companyId: string, sourceKey: string, userId: string): Promise<boolean>;
+  addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean>;
+  readOp(companyId: string, opKey: string): Promise<OrgOp | null>;
+  /** Record an operation's intent (or, for setup, its outcome); false when op_key is already recorded. */
+  insertOp(op: Omit<OrgOp, 'seq'>): Promise<boolean>;
+  /** True when a pending or applied op on the same subject was recorded after seq. */
+  hasNewerOp(companyId: string, subject: string, seq: string): Promise<boolean>;
+  /** Move a pending op to applied or superseded; false when it was not pending. */
+  settleOp(companyId: string, opKey: string, status: 'applied' | 'superseded'): Promise<boolean>;
+  /** Applied operations only, newest first. */
   listLog(companyId: string, limit: number): Promise<OrgLogEntry[]>;
 }
 
@@ -188,13 +204,13 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       }));
     },
 
-    async upsertMember(member: OrgMember, opKey: string): Promise<void> {
+    async upsertMember(member: OrgMember): Promise<void> {
       await execute(
-        `INSERT INTO ${membersTable} (company_id, user_id, display_name, role, status, joined_at, last_op_key)
-         VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7)
+        `INSERT INTO ${membersTable} (company_id, user_id, display_name, role, status, joined_at)
+         VALUES ($1, $2, $3, $4, $5, $6::timestamptz)
          ON CONFLICT (company_id, user_id) DO UPDATE
-         SET display_name=$3, role=$4, status=$5, last_op_key=$7`,
-        [member.companyId, member.userId, member.displayName, member.role, member.status, member.joinedAt, opKey]
+         SET display_name=$3, role=$4, status=$5`,
+        [member.companyId, member.userId, member.displayName, member.role, member.status, member.joinedAt]
       );
     },
 
@@ -206,10 +222,10 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       return Number(rows[0]?.count ?? 0);
     },
 
-    async insertSource(source: OrgSource, contentBase64: string | null, opKey: string): Promise<void> {
+    async insertSource(source: OrgSource, contentBase64: string | null): Promise<void> {
       await execute(
-        `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, content, created_at, last_op_key)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, decode($12::text, 'base64'), $13::timestamptz, $14)
+        `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, content, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, decode($12::text, 'base64'), $13::timestamptz)
          ON CONFLICT (company_id, source_key) DO NOTHING`,
         [
           source.companyId,
@@ -224,8 +240,7 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
           source.audience,
           source.hidden ? JSON.stringify(source.hidden) : null,
           contentBase64,
-          source.createdAt,
-          opKey
+          source.createdAt
         ]
       );
     },
@@ -339,15 +354,15 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       }));
     },
 
-    async setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden'], opKey: string): Promise<boolean> {
+    async setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean> {
       if (sourceKey.startsWith('objective:')) {
         const count = await execute(
-          `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, created_at, last_op_key)
-           SELECT $1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, now(), $5
+          `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, created_at)
+           SELECT $1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, now()
            WHERE EXISTS (SELECT 1 FROM ${intakeTable} WHERE mapping_key=$4 AND record->>'companyId'=$1)
            ON CONFLICT (company_id, source_key) DO UPDATE
-           SET hidden=$3::jsonb, last_op_key=$5`,
-          [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null, sourceKey.slice('objective:'.length), opKey]
+           SET hidden=$3::jsonb`,
+          [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null, sourceKey.slice('objective:'.length)]
         );
         return count > 0;
       }
@@ -358,8 +373,8 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       }
 
       const count = await execute(
-        `UPDATE ${sourcesTable} SET hidden=$3::jsonb, last_op_key=$4 WHERE company_id=$1 AND source_key=$2`,
-        [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null, opKey]
+        `UPDATE ${sourcesTable} SET hidden=$3::jsonb WHERE company_id=$1 AND source_key=$2`,
+        [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null]
       );
       return count > 0;
     },
@@ -389,42 +404,70 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       return new Map(rows.map(row => [row.source_key, row.hidden]));
     },
 
-    async addPin(companyId: string, sourceKey: string, userId: string, opKey: string): Promise<boolean> {
+    async hasPin(companyId: string, sourceKey: string, userId: string): Promise<boolean> {
+      const rows = await query<{ found: number }>(
+        `SELECT 1 as found FROM ${pinsTable} WHERE company_id=$1 AND source_key=$2 AND user_id=$3`,
+        [companyId, sourceKey, userId]
+      );
+      return rows.length > 0;
+    },
+
+    async addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean> {
       const count = await execute(
-        `INSERT INTO ${pinsTable} (company_id, source_key, user_id, last_op_key)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO ${pinsTable} (company_id, source_key, user_id)
+         VALUES ($1, $2, $3)
          ON CONFLICT DO NOTHING`,
-        [companyId, sourceKey, userId, opKey]
+        [companyId, sourceKey, userId]
       );
       return count === 1;
     },
 
-    async hasLog(companyId: string, opKey: string): Promise<boolean> {
-      const rows = await query<{ found: number }>(
-        `SELECT 1 as found FROM ${logTable} WHERE company_id=$1 AND op_key=$2`,
+    async readOp(companyId: string, opKey: string): Promise<OrgOp | null> {
+      const rows = await query<{ seq: string | number; actor: string; action: string; subject: string; reason: string; input_hash: string; status: string }>(
+        `SELECT seq::text as seq, actor, action, subject, reason, input_hash, status FROM ${logTable} WHERE company_id=$1 AND op_key=$2`,
         [companyId, opKey]
       );
-      return rows.length > 0;
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        companyId,
+        opKey,
+        seq: String(row.seq),
+        actor: row.actor,
+        action: row.action as OrgOp['action'],
+        subject: row.subject,
+        reason: row.reason,
+        inputHash: row.input_hash,
+        status: row.status as OrgOp['status']
+      };
     },
 
-    async opApplied(companyId: string, opKey: string): Promise<boolean> {
-      const rows = await query<{ found: number }>(
-        `SELECT 1 as found FROM ${membersTable} WHERE company_id=$1 AND last_op_key=$2
-         UNION ALL SELECT 1 FROM ${sourcesTable} WHERE company_id=$1 AND last_op_key=$2
-         UNION ALL SELECT 1 FROM ${pinsTable} WHERE company_id=$1 AND last_op_key=$2
-         LIMIT 1`,
-        [companyId, opKey]
-      );
-      return rows.length > 0;
-    },
-
-    async appendLog(entry: Omit<OrgLogEntry, 'seq' | 'at'> & { opKey: string }): Promise<void> {
-      await execute(
-        `INSERT INTO ${logTable} (company_id, op_key, actor, action, subject, reason, at)
-         VALUES ($1, $2, $3, $4, $5, $6, now())
+    async insertOp(op: Omit<OrgOp, 'seq'>): Promise<boolean> {
+      const count = await execute(
+        `INSERT INTO ${logTable} (company_id, op_key, actor, action, subject, reason, input_hash, status, at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
          ON CONFLICT (company_id, op_key) DO NOTHING`,
-        [entry.companyId, entry.opKey, entry.actor, entry.action, entry.subject, entry.reason]
+        [op.companyId, op.opKey, op.actor, op.action, op.subject, op.reason, op.inputHash, op.status]
       );
+      return count === 1;
+    },
+
+    async hasNewerOp(companyId: string, subject: string, seq: string): Promise<boolean> {
+      const rows = await query<{ found: number }>(
+        `SELECT 1 as found FROM ${logTable}
+         WHERE company_id=$1 AND subject=$2 AND seq > $3::bigint AND status IN ('pending', 'applied')
+         LIMIT 1`,
+        [companyId, subject, seq]
+      );
+      return rows.length > 0;
+    },
+
+    async settleOp(companyId: string, opKey: string, status: 'applied' | 'superseded'): Promise<boolean> {
+      const count = await execute(
+        `UPDATE ${logTable} SET status=$3 WHERE company_id=$1 AND op_key=$2 AND status='pending'`,
+        [companyId, opKey, status]
+      );
+      return count === 1;
     },
 
     async listLog(companyId: string, limit: number): Promise<OrgLogEntry[]> {
@@ -437,7 +480,7 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
         reason: string;
         at: string;
       }>(
-        `SELECT company_id, seq, actor, action, subject, reason, at::text FROM ${logTable} WHERE company_id=$1 ORDER BY seq DESC LIMIT $2`,
+        `SELECT company_id, seq, actor, action, subject, reason, at::text FROM ${logTable} WHERE company_id=$1 AND status='applied' ORDER BY seq DESC LIMIT $2`,
         [companyId, limit]
       );
 

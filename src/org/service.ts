@@ -4,10 +4,17 @@ import { OrgError } from './contracts.js';
 import { allowed } from './policy.js';
 import { validateShare, significance } from './sources.js';
 import { clean } from './text.js';
-import { webcrypto } from 'node:crypto';
+import { createHash, webcrypto } from 'node:crypto';
 
-/** Every audited mutation carries the caller's requestId; a retry with the same id completes, never repeats. */
+/** Every audited mutation carries the caller's requestId; a retry with the same id resumes that operation, never repeats it. */
 type Op = { requestId: string };
+
+/** What a share returns: only what open() would also show the caller. */
+export interface SharedSource {
+  sourceKey: string;
+  kind: 'link' | 'file' | 'note';
+  title: string;
+}
 
 export type OpenedSource =
   | { kind: 'link'; title: string; url: string }
@@ -32,7 +39,7 @@ export interface OrgService {
   addMember(companyId: string, userId: string, input: Op & { userId: string; displayName: string; reason: string }): Promise<void>;
   removeMember(companyId: string, userId: string, input: Op & { userId: string; reason: string }): Promise<void>;
   setModerator(companyId: string, userId: string, input: Op & { userId: string; moderator: boolean; reason: string }): Promise<void>;
-  share(companyId: string, userId: string, input: unknown): Promise<OrgSource>;
+  share(companyId: string, userId: string, input: unknown): Promise<SharedSource>;
   sources(companyId: string, userId: string, opts: { kind?: 'link' | 'file' | 'note' | 'objective'; hidden: boolean }): Promise<Array<OrgSource & { feeds: { tasks: number } }>>;
   hide(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void>;
   restore(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void>;
@@ -88,6 +95,23 @@ async function sha256Hex(bytes: Uint8Array): Promise<string> {
 
 const setupOpKey = 'setup';
 
+/** sha256 of canonical JSON (sorted keys) of an operation's validated input. */
+function inputHash(input: Record<string, string | number | boolean | null>): string {
+  const canonical = JSON.stringify(Object.keys(input).sort().map(key => [key, input[key]]));
+  return createHash('sha256').update(canonical).digest('hex');
+}
+
+type Step = 'apply' | 'done';
+
+interface Operation {
+  opKey: string;
+  action: Exclude<OrgLogEntry['action'], 'org.setup'>;
+  subject: string;
+  reason: string;
+  /** Validated input beyond action, subject and reason, hashed to bind a retry to the same request. */
+  input: Record<string, string | number | boolean | null>;
+}
+
 export function createOrgService(
   store: OrgStore,
   clock: () => Date,
@@ -96,25 +120,97 @@ export function createOrgService(
   const forbidden = () => new OrgError('forbidden', 'Access denied.');
   const notFound = () => new OrgError('invalid', 'Source not found.');
 
+  const unavailable = () => new OrgError('unavailable', 'Organization data unavailable.');
+  const superseded = () => new OrgError('conflict', 'Superseded by a newer change.');
+
   /**
-   * Mutate, then audit. (a) An audited requestId is already done. (b) Otherwise apply — unless a row already
-   * carries this requestId, meaning an earlier attempt applied it and only its audit failed. Business rules run
-   * inside apply, so a replay never re-checks them. (c) Audit once per (company, requestId); a failure surfaces as
-   * unavailable and the same requestId completes it. apply returns false when there was nothing to record.
+   * Intent-first operation. Callers check the CURRENT role before anything else, replays included. A requestId
+   * already recorded must match this actor, action and input. Applied → done; superseded → conflict. A new
+   * request runs its business rules, then records intent as 'pending'. A pending op that a newer pending or
+   * applied op on the same subject has overtaken is marked superseded and never applied. Otherwise the target
+   * state is applied idempotently (plan re-checks the rules against current state; already-at-target is done)
+   * and the op is marked applied. Any failure is unavailable; the same requestId resumes from the lookup.
+   *
+   * plan(role, fresh) throws on a broken rule and says whether a change is still needed. A fresh request
+   * whose target already holds (a repeat pin) records nothing.
    */
-  async function audited(
+  async function operate(
     companyId: string,
-    opKey: string,
-    entry: Pick<OrgLogEntry, 'actor' | 'action' | 'subject' | 'reason'>,
-    apply: () => Promise<boolean>
+    userId: string,
+    role: OrgRole,
+    op: Operation,
+    plan: (role: OrgRole, fresh: boolean) => Promise<Step>,
+    apply: (role: OrgRole) => Promise<void>
   ): Promise<void> {
-    if (await store.hasLog(companyId, opKey)) {
+    const hash = inputHash({ ...op.input, action: op.action, subject: op.subject, reason: op.reason });
+
+    let record = await store.readOp(companyId, op.opKey);
+    if (!record) {
+      if ((await plan(role, true)) === 'done') {
+        return;
+      }
+      await store.insertOp({
+        companyId,
+        opKey: op.opKey,
+        actor: userId,
+        action: op.action,
+        subject: op.subject,
+        reason: op.reason,
+        inputHash: hash,
+        status: 'pending'
+      });
+      record = await store.readOp(companyId, op.opKey);
+      if (!record) {
+        throw unavailable();
+      }
+    }
+
+    if (record.actor !== userId || record.action !== op.action || record.inputHash !== hash) {
+      throw new OrgError('conflict', 'This request id was already used for a different request.');
+    }
+    if (record.status === 'applied') {
       return;
     }
-    if (!(await store.opApplied(companyId, opKey)) && !(await apply())) {
-      return;
+    if (record.status === 'superseded') {
+      throw superseded();
     }
-    await store.appendLog({ companyId, opKey, ...entry });
+
+    if (await store.hasNewerOp(companyId, op.subject, record.seq)) {
+      await store.settleOp(companyId, op.opKey, 'superseded');
+      throw superseded();
+    }
+
+    if ((await plan(role, false)) === 'apply') {
+      await apply(role);
+    }
+
+    if (!(await store.settleOp(companyId, op.opKey, 'applied'))) {
+      const settled = await store.readOp(companyId, op.opKey);
+      if (settled?.status === 'applied') return;
+      if (settled?.status === 'superseded') throw superseded();
+      throw unavailable();
+    }
+  }
+
+  /** A source as the caller may see it: members never see hidden or moderator-only items. */
+  async function visibleShare(companyId: string, role: OrgRole, sourceKey: string): Promise<OrgSource> {
+    const isModerator = role === 'founder' || role === 'moderator';
+    const source = await store.readSource(companyId, sourceKey);
+    // Hidden and missing read the same to a member, so a hidden item's existence never leaks.
+    if (!source || source.kind === 'objective' || (!isModerator && (source.hidden !== null || source.audience !== 'members'))) {
+      throw notFound();
+    }
+    return source;
+  }
+
+  /** Whether a source exists for this company and whether it is hidden; objective keys need an intake row. */
+  async function sourceState(companyId: string, sourceKey: string): Promise<{ hidden: boolean } | null> {
+    if (sourceKey.startsWith('objective:')) {
+      const objective = await store.readObjectiveSource(companyId, sourceKey.slice('objective:'.length));
+      return objective ? { hidden: !!objective.hidden } : null;
+    }
+    const source = await store.readSource(companyId, sourceKey);
+    return source ? { hidden: source.hidden !== null } : null;
   }
 
   async function requireRole(companyId: string, userId: string, action: Parameters<typeof allowed>[1]): Promise<OrgRole> {
@@ -158,7 +254,7 @@ export function createOrgService(
           throw new OrgError('conflict', 'Organization profile already exists.');
         }
         const founder = await store.readMember(companyId, userId);
-        if (founder && await store.hasLog(companyId, setupOpKey)) {
+        if (founder && await store.readOp(companyId, setupOpKey)) {
           throw new OrgError('conflict', 'Organization profile already exists.');
         }
         // The creator retrying: finish the founder row and audit an earlier attempt left undone.
@@ -168,13 +264,15 @@ export function createOrgService(
         profile = existing;
       }
 
-      await store.appendLog({
+      await store.insertOp({
         companyId,
         opKey: setupOpKey,
         actor: userId,
         action: 'org.setup',
         subject: companyId,
-        reason: ''
+        reason: '',
+        inputHash: '',
+        status: 'applied'
       });
 
       return profile;
@@ -208,90 +306,100 @@ export function createOrgService(
     },
 
     async addMember(companyId: string, userId: string, input: Op & { userId: string; displayName: string; reason: string }): Promise<void> {
+      const role = await requireRole(companyId, userId, 'members.edit');
       const requestId = validateRequestId(input?.requestId);
       const targetUserId = validateUserId(input.userId);
       const displayName = validateText(input.displayName, 'displayName');
       const reason = validateText(input.reason, 'reason');
 
-      await audited(companyId, requestId, { actor: userId, action: 'member.add', subject: targetUserId, reason }, async () => {
-        await requireRole(companyId, userId, 'members.edit');
-
-        const existing = await store.readMember(companyId, targetUserId);
-        if (existing && existing.status === 'active') {
-          throw new OrgError('conflict', 'Already a member.');
-        }
-
-        await store.upsertMember({
-          companyId,
-          userId: targetUserId,
-          displayName,
-          role: 'member',
-          status: 'active',
-          joinedAt: clock().toISOString()
-        }, requestId);
-        return true;
-      });
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'member.add', subject: targetUserId, reason, input: { displayName } },
+        async (_role, fresh) => {
+          const existing = await store.readMember(companyId, targetUserId);
+          if (existing && existing.status === 'active') {
+            if (fresh) throw new OrgError('conflict', 'Already a member.');
+            return 'done';
+          }
+          return 'apply';
+        },
+        async () => {
+          await store.upsertMember({
+            companyId,
+            userId: targetUserId,
+            displayName,
+            role: 'member',
+            status: 'active',
+            joinedAt: clock().toISOString()
+          });
+        });
     },
 
     async removeMember(companyId: string, userId: string, input: Op & { userId: string; reason: string }): Promise<void> {
+      const role = await requireRole(companyId, userId, 'members.edit');
       const requestId = validateRequestId(input?.requestId);
       const targetUserId = validateUserId(input.userId);
       const reason = validateText(input.reason, 'reason');
+      let target: OrgMember | null = null;
 
-      await audited(companyId, requestId, { actor: userId, action: 'member.remove', subject: targetUserId, reason }, async () => {
-        await requireRole(companyId, userId, 'members.edit');
-
-        const targetMember = await store.readMember(companyId, targetUserId);
-        if (!targetMember || targetMember.status === 'removed') {
-          throw new OrgError('invalid', 'Member not found.');
-        }
-
-        if (targetMember.role === 'founder' || targetMember.role === 'moderator') {
-          const modCount = await store.countModerators(companyId);
-          if (modCount <= 1) {
-            throw new OrgError('conflict', 'Cannot remove the last moderator.');
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'member.remove', subject: targetUserId, reason, input: {} },
+        async (_role, fresh) => {
+          target = await store.readMember(companyId, targetUserId);
+          if (!target || target.status === 'removed') {
+            if (fresh || !target) throw new OrgError('invalid', 'Member not found.');
+            return 'done';
           }
-        }
-
-        await store.upsertMember({ ...targetMember, status: 'removed' }, requestId);
-        return true;
-      });
+          if (target.role === 'founder' || target.role === 'moderator') {
+            if ((await store.countModerators(companyId)) <= 1) {
+              throw new OrgError('conflict', 'Cannot remove the last moderator.');
+            }
+          }
+          return 'apply';
+        },
+        async () => {
+          await store.upsertMember({ ...target!, status: 'removed' });
+        });
     },
 
     async setModerator(companyId: string, userId: string, input: Op & { userId: string; moderator: boolean; reason: string }): Promise<void> {
+      const role = await requireRole(companyId, userId, 'moderators.edit');
       const requestId = validateRequestId(input?.requestId);
       const targetUserId = validateUserId(input.userId);
       const reason = validateText(input.reason, 'reason');
       if (typeof input.moderator !== 'boolean') {
         throw new OrgError('invalid', 'moderator must be true or false.');
       }
+      const targetRole: OrgRole = input.moderator ? 'moderator' : 'member';
+      let target: OrgMember | null = null;
 
-      await audited(companyId, requestId, { actor: userId, action: 'moderator.set', subject: targetUserId, reason }, async () => {
-        await requireRole(companyId, userId, 'moderators.edit');
-
-        const targetMember = await store.readMember(companyId, targetUserId);
-        if (!targetMember || targetMember.status === 'removed') {
-          throw new OrgError('invalid', 'Member not found.');
-        }
-
-        if (targetMember.role === 'founder') {
-          throw new OrgError('conflict', 'Cannot change founder role.');
-        }
-
-        if (!input.moderator && targetMember.role === 'moderator') {
-          const modCount = await store.countModerators(companyId);
-          if (modCount <= 1) {
-            throw new OrgError('conflict', 'Cannot demote the last moderator.');
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'moderator.set', subject: targetUserId, reason, input: { moderator: input.moderator } },
+        async (_role, fresh) => {
+          target = await store.readMember(companyId, targetUserId);
+          if (!target || target.status === 'removed') {
+            throw new OrgError('invalid', 'Member not found.');
           }
-        }
-
-        // Concurrent demotions may race past the countModerators check; acceptable for v1.
-        await store.upsertMember({ ...targetMember, role: input.moderator ? 'moderator' : 'member' }, requestId);
-        return true;
-      });
+          if (target.role === 'founder') {
+            throw new OrgError('conflict', 'Cannot change founder role.');
+          }
+          if (!fresh && target.role === targetRole) {
+            return 'done';
+          }
+          if (targetRole === 'member' && target.role === 'moderator') {
+            if ((await store.countModerators(companyId)) <= 1) {
+              throw new OrgError('conflict', 'Cannot demote the last moderator.');
+            }
+          }
+          // Concurrent demotions may race past the countModerators check; acceptable for v1.
+          return 'apply';
+        },
+        async () => {
+          await store.upsertMember({ ...target!, role: targetRole });
+        });
     },
 
-    async share(companyId: string, userId: string, input: unknown): Promise<OrgSource> {
+    async share(companyId: string, userId: string, input: unknown): Promise<SharedSource> {
+      const role = await requireRole(companyId, userId, 'share');
       const requestId = validateRequestId((input as { requestId?: unknown } | null)?.requestId);
       const validated = validateShare(input);
       const sourceKey = `share:${requestId}`;
@@ -323,13 +431,15 @@ export function createOrgService(
         createdAt: clock().toISOString()
       };
 
-      await audited(companyId, requestId, { actor: userId, action: 'source.share', subject: sourceKey, reason: '' }, async () => {
-        await requireRole(companyId, userId, 'share');
-        await store.insertSource(source, contentBase64, requestId);
-        return true;
-      });
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'source.share', subject: sourceKey, reason: '', input: { kind: source.kind, title: source.title, url: source.url, mediaType: source.mediaType, sha256 } },
+        async (_role, fresh) => (!fresh && await store.readSource(companyId, sourceKey) ? 'done' : 'apply'),
+        async () => {
+          await store.insertSource(source, contentBase64);
+        });
 
-      return (await store.readSource(companyId, sourceKey)) ?? source;
+      const stored = await visibleShare(companyId, role, sourceKey);
+      return { sourceKey, kind: stored.kind as SharedSource['kind'], title: clean(stored.title, 1000, 'Untitled source') };
     },
 
     async sources(companyId: string, userId: string, opts: { kind?: 'link' | 'file' | 'note' | 'objective'; hidden: boolean }): Promise<Array<OrgSource & { feeds: { tasks: number } }>> {
@@ -373,54 +483,71 @@ export function createOrgService(
     },
 
     async hide(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void> {
+      const role = await requireRole(companyId, userId, 'sources.moderate');
       const requestId = validateRequestId(input?.requestId);
       const sourceKey = validateSourceKey(input.sourceKey);
       const reason = validateText(input.reason, 'reason');
 
-      await audited(companyId, requestId, { actor: userId, action: 'source.hide', subject: sourceKey, reason }, async () => {
-        await requireRole(companyId, userId, 'sources.moderate');
-        if (!(await store.setHidden(companyId, sourceKey, { by: userId, at: clock().toISOString(), reason }, requestId))) {
-          throw notFound();
-        }
-        return true;
-      });
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'source.hide', subject: sourceKey, reason, input: {} },
+        async (_role, fresh) => {
+          const state = await sourceState(companyId, sourceKey);
+          if (!state) throw notFound();
+          return !fresh && state.hidden ? 'done' : 'apply';
+        },
+        async () => {
+          if (!(await store.setHidden(companyId, sourceKey, { by: userId, at: clock().toISOString(), reason }))) {
+            throw notFound();
+          }
+        });
     },
 
     async restore(companyId: string, userId: string, input: Op & { sourceKey: string; reason: string }): Promise<void> {
+      const role = await requireRole(companyId, userId, 'sources.moderate');
       const requestId = validateRequestId(input?.requestId);
       const sourceKey = validateSourceKey(input.sourceKey);
       const reason = validateText(input.reason, 'reason');
 
-      await audited(companyId, requestId, { actor: userId, action: 'source.restore', subject: sourceKey, reason }, async () => {
-        await requireRole(companyId, userId, 'sources.moderate');
-        if (!(await store.setHidden(companyId, sourceKey, null, requestId))) {
-          throw notFound();
-        }
-        return true;
-      });
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'source.restore', subject: sourceKey, reason, input: {} },
+        async (_role, fresh) => {
+          const state = await sourceState(companyId, sourceKey);
+          if (!state) throw notFound();
+          return !fresh && !state.hidden ? 'done' : 'apply';
+        },
+        async () => {
+          if (!(await store.setHidden(companyId, sourceKey, null))) {
+            throw notFound();
+          }
+        });
     },
 
     async pin(companyId: string, userId: string, input: Op & { sourceKey: string }): Promise<void> {
+      const role = await requireRole(companyId, userId, 'pin');
       const requestId = validateRequestId(input?.requestId);
       const sourceKey = validateSourceKey(input.sourceKey);
 
-      await audited(companyId, requestId, { actor: userId, action: 'source.pin', subject: sourceKey, reason: '' }, async () => {
-        const role = await requireRole(companyId, userId, 'pin');
-        const isModerator = role === 'founder' || role === 'moderator';
-        let visible: boolean;
-        if (sourceKey.startsWith('objective:')) {
-          const objective = await store.readObjectiveSource(companyId, sourceKey.slice('objective:'.length));
-          visible = !!objective && (isModerator || (!objective.hidden && objectiveAudience(objective.audience) === 'members'));
-        } else {
-          const source = await store.readSource(companyId, sourceKey);
-          visible = !!source && (isModerator || !source.hidden);
-        }
-        if (!visible) {
-          throw notFound();
-        }
-        // A second pin by the same user changes nothing and records nothing.
-        return store.addPin(companyId, sourceKey, userId, requestId);
-      });
+      await operate(companyId, userId, role,
+        { opKey: requestId, action: 'source.pin', subject: sourceKey, reason: '', input: {} },
+        async role => {
+          const isModerator = role === 'founder' || role === 'moderator';
+          let visible: boolean;
+          if (sourceKey.startsWith('objective:')) {
+            const objective = await store.readObjectiveSource(companyId, sourceKey.slice('objective:'.length));
+            visible = !!objective && (isModerator || (!objective.hidden && objectiveAudience(objective.audience) === 'members'));
+          } else {
+            const source = await store.readSource(companyId, sourceKey);
+            visible = !!source && (isModerator || !source.hidden);
+          }
+          if (!visible) {
+            throw notFound();
+          }
+          // A second pin by the same user changes nothing and, as a new request, records nothing.
+          return (await store.hasPin(companyId, sourceKey, userId)) ? 'done' : 'apply';
+        },
+        async () => {
+          await store.addPin(companyId, sourceKey, userId);
+        });
     },
 
     async open(companyId: string, userId: string, input: { sourceKey: string }): Promise<OpenedSource> {
@@ -430,13 +557,7 @@ export function createOrgService(
         throw new OrgError('invalid', 'Open this source from its task.');
       }
 
-      const isModerator = role === 'founder' || role === 'moderator';
-      const source = await store.readSource(companyId, sourceKey);
-      // Hidden and missing read the same to a member, so a hidden item's existence never leaks.
-      if (!source || source.kind === 'objective' || (!isModerator && (source.hidden !== null || source.audience !== 'members'))) {
-        throw notFound();
-      }
-
+      const source = await visibleShare(companyId, role, sourceKey);
       const title = clean(source.title, 1000, 'Untitled source');
       if (source.kind === 'link') {
         if (!source.url) throw notFound();

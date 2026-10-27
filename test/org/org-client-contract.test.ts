@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
 import { createHash } from 'node:crypto';
-import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseOrgSourceOpen, parseTaskTrailResponse } from '../../src/ui/org-client.js';
+import { parseOrgOverview, parseOrgMembers, parseOrgSources, parseOrgSourceOpen, parseOrgShared, parseTaskTrailResponse } from '../../src/ui/org-client.js';
 import { manifest } from '../../src/manifest.js';
 import { BRIDGE_NAMESPACE } from '../../src/store/postgres.js';
 import { registerOrgProfile } from '../../src/org/host.js';
@@ -117,11 +117,31 @@ describe('org-client contract', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
-    // The share action returns OrgSource directly
-    expect(result.data).toHaveProperty('sourceKey');
-    expect(result.data).toHaveProperty('kind');
-    expect(result.data).toHaveProperty('title');
-    expect(result.data.title).toBe('Shared Document');
+    // The share action returns only the new item's key, kind and title.
+    expect(parseOrgShared(result.data)).toEqual({ sourceKey: result.data.sourceKey, kind: 'link', title: 'Shared Document' });
+    expect(Object.keys(result.data).sort()).toEqual(['kind', 'sourceKey', 'title']);
+  });
+
+  it('org.source.share replay by a removed member is forbidden; by a member after a hide it reveals nothing', async () => {
+    const h = createHarness();
+    const founder = ctxFor('company-replay');
+    const member = ctxFor('company-replay', 'member-1');
+    await h.performAction('org.setup', { name: 'Replay DAO', displayName: 'Founder Name' }, founder);
+    await h.performAction('org.member.add', { requestId: crypto.randomUUID(), userId: 'member-1', displayName: 'Member One', reason: 'joins' }, founder);
+    const share = { requestId: crypto.randomUUID(), kind: 'link', title: 'Soon hidden', url: 'https://hidden.example/x' };
+    const first = await h.performAction('org.source.share', share, member) as any;
+    expect(parseOrgShared(first.data)).toMatchObject({ kind: 'link', title: 'Soon hidden' });
+
+    await h.performAction('org.source.hide', { requestId: crypto.randomUUID(), sourceKey: first.data.sourceKey, reason: 'mod-only reason' }, founder);
+    const hidden = await h.performAction('org.source.share', share, member);
+    expect(hidden).toEqual({ ok: false, error: { kind: 'invalid', message: 'Source not found.' } });
+
+    await h.performAction('org.member.remove', { requestId: crypto.randomUUID(), userId: 'member-1', reason: 'left' }, founder);
+    const removed = await h.performAction('org.source.share', share, member);
+    expect(removed).toEqual({ ok: false, error: { kind: 'forbidden', message: 'Access denied.' } });
+
+    const reused = await h.performAction('org.source.share', share, founder);
+    expect(reused).toEqual({ ok: false, error: { kind: 'conflict', message: 'This request id was already used for a different request.' } });
   });
 
   it('org.sources returns shape that parseOrgSources accepts', async () => {
@@ -384,6 +404,11 @@ describe('org-client contract', () => {
     const overview = parseOrgOverview(((await h.performAction('org.overview', {}, member)) as any).data);
     expect(overview.labels).toMatchObject({ 'founder-1': 'Founder Name', 'member-1': 'Member One', [keys[1]!]: 'A note', [keys[2]!]: 'all.bin' });
     expect(overview.labels[keys[0]!]).toBeUndefined();
+  });
+
+  it('parseOrgShared refuses extra keys and non-share keys', () => {
+    expect(() => parseOrgShared({ sourceKey: 'share:x', kind: 'link', title: 't', url: 'https://x.example' })).toThrow();
+    expect(() => parseOrgShared({ sourceKey: 'objective:x', kind: 'link', title: 't' })).toThrow();
   });
 
   it('parseOrgSourceOpen refuses non-http links, extra keys and bad base64', () => {

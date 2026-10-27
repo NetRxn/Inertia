@@ -6,7 +6,11 @@ import { createHostDb, type HostDb } from '../support/paperclip-host-db.js';
 
 const rid = () => crypto.randomUUID();
 const founderStep = /INSERT INTO \S+org_members[\s\S]*FROM \S+org_profile/;
-const auditStep = /INSERT INTO \S+org_log/;
+const intentStep = /INSERT INTO \S+org_log/;
+const markStep = /UPDATE \S+org_log SET status/;
+const hideStep = /\S+org_sources SET hidden/;
+const reused = { kind: 'conflict', message: 'This request id was already used for a different request.' };
+const supersededError = { kind: 'conflict', message: 'Superseded by a newer change.' };
 
 let host: HostDb;
 let service: OrgService;
@@ -20,11 +24,19 @@ afterEach(async () => {
   await host.close();
 });
 
-async function logRows(companyId: string): Promise<Array<{ op_key: string; action: string; actor: string }>> {
-  return (await host.pg.query<{ op_key: string; action: string; actor: string }>(
-    `SELECT op_key, action, actor FROM ${BRIDGE_NAMESPACE}.org_log WHERE company_id=$1 ORDER BY seq`,
+/** Applied operations: what the feed shows. */
+async function logRows(companyId: string): Promise<Array<{ op_key: string; action: string; actor: string; subject: string }>> {
+  return (await host.pg.query<{ op_key: string; action: string; actor: string; subject: string }>(
+    `SELECT op_key, action, actor, subject FROM ${BRIDGE_NAMESPACE}.org_log WHERE company_id=$1 AND status='applied' ORDER BY seq`,
     [companyId]
   )).rows;
+}
+
+async function opStatus(companyId: string, opKey: string): Promise<string | undefined> {
+  return (await host.pg.query<{ status: string }>(
+    `SELECT status FROM ${BRIDGE_NAMESPACE}.org_log WHERE company_id=$1 AND op_key=$2`,
+    [companyId, opKey]
+  )).rows[0]?.status;
 }
 
 async function memberRows(companyId: string) {
@@ -73,7 +85,7 @@ describe('setup: claim then complete', () => {
   });
 
   it('a failed setup audit is completed by the creator\'s retry', async () => {
-    host.failWhen(auditStep);
+    host.failWhen(intentStep);
     await expect(service.setup('co', 'alice', { name: 'DAO', displayName: 'Alice' })).rejects.toMatchObject({ kind: 'unavailable' });
     expect(await logRows('co')).toEqual([]);
     await service.setup('co', 'alice', { name: 'DAO', displayName: 'Alice' });
@@ -129,7 +141,7 @@ describe('audited mutations are requestId-keyed and retry-safe', () => {
   ];
 
   for (const c of cases) {
-    it(`${c.name}: one audit row; a replay changes nothing and logs nothing more`, async () => {
+    it(`${c.name}: one applied row; a replay changes nothing and records nothing more`, async () => {
       const before = (await logRows(companyId)).length;
       const requestId = rid();
       await c.run(requestId);
@@ -143,21 +155,59 @@ describe('audited mutations are requestId-keyed and retry-safe', () => {
       expect(await c.state()).toEqual(state);
     });
 
-    it(`${c.name}: a failed audit is unavailable, applies once, and the same requestId completes it`, async () => {
+    it(`${c.name}: a failed intent record changes nothing; the retry applies once`, async () => {
+      const before = (await logRows(companyId)).length;
+      const state = await c.state();
+      const requestId = rid();
+      host.failWhen(intentStep);
+      await expect(c.run(requestId)).rejects.toMatchObject({ kind: 'unavailable' });
+      expect(await c.state()).toEqual(state);
+      await c.run(requestId);
+      expect((await logRows(companyId)).filter(r => r.op_key === requestId)).toHaveLength(1);
+      expect(await logRows(companyId)).toHaveLength(before + 1);
+    });
+
+    it(`${c.name}: a failed mark-applied is unavailable; the immediate retry completes it once`, async () => {
       const before = (await logRows(companyId)).length;
       const requestId = rid();
-      host.failWhen(auditStep);
+      host.failWhen(markStep);
       await expect(c.run(requestId)).rejects.toMatchObject({ kind: 'unavailable' });
       expect(await logRows(companyId)).toHaveLength(before);
+      expect(await opStatus(companyId, requestId)).toBe('pending');
       const applied = await c.state();
 
       await c.run(requestId);
       expect(await c.state()).toEqual(applied);
-      const after = await logRows(companyId);
-      expect(after).toHaveLength(before + 1);
-      expect(after.filter(r => r.op_key === requestId)).toHaveLength(1);
+      expect((await logRows(companyId)).filter(r => r.op_key === requestId)).toHaveLength(1);
+      expect(await logRows(companyId)).toHaveLength(before + 1);
     });
   }
+
+  it('add(A) whose mark-applied failed, then remove(B): retrying A is superseded and the member stays removed', async () => {
+    const a = rid();
+    host.failWhen(markStep);
+    await expect(service.addMember(companyId, 'alice', { requestId: a, userId: 'dave', displayName: 'Dave', reason: 'joins' })).rejects.toMatchObject({ kind: 'unavailable' });
+    await service.removeMember(companyId, 'alice', { requestId: rid(), userId: 'dave', reason: 'left' });
+
+    await expect(service.addMember(companyId, 'alice', { requestId: a, userId: 'dave', displayName: 'Dave', reason: 'joins' })).rejects.toMatchObject(supersededError);
+    expect((await memberRows(companyId)).find(m => m.user_id === 'dave')).toMatchObject({ status: 'removed' });
+    expect(await opStatus(companyId, a)).toBe('superseded');
+    expect((await logRows(companyId)).filter(r => r.subject === 'dave').map(r => r.action)).toEqual(['member.remove']);
+    await expect(service.addMember(companyId, 'alice', { requestId: a, userId: 'dave', displayName: 'Dave', reason: 'joins' })).rejects.toMatchObject(supersededError);
+  });
+
+  it('hide(A) that failed after its intent, then restore(B): retrying A is superseded and the source stays restored', async () => {
+    const a = rid();
+    host.failWhen(hideStep);
+    await expect(service.hide(companyId, 'alice', { requestId: a, sourceKey: shared, reason: 'spam' })).rejects.toMatchObject({ kind: 'unavailable' });
+    expect(await opStatus(companyId, a)).toBe('pending');
+    await service.restore(companyId, 'alice', { requestId: rid(), sourceKey: shared, reason: 'fine' });
+
+    await expect(service.hide(companyId, 'alice', { requestId: a, sourceKey: shared, reason: 'spam' })).rejects.toMatchObject(supersededError);
+    const row = await host.pg.query(`SELECT hidden FROM ${BRIDGE_NAMESPACE}.org_sources WHERE source_key=$1`, [shared]);
+    expect(row.rows).toEqual([{ hidden: null }]);
+    expect((await logRows(companyId)).filter(r => r.subject === shared).map(r => r.action)).toEqual(['source.share', 'source.restore']);
+  });
 
   it('a replayed member.add does not resurrect a member removed since', async () => {
     const add = rid();
@@ -167,34 +217,78 @@ describe('audited mutations are requestId-keyed and retry-safe', () => {
     expect((await memberRows(companyId)).find(m => m.user_id === 'dave')).toMatchObject({ status: 'removed' });
   });
 
-  it('member.add retried after a failed audit does not report "Already a member."', async () => {
+  it('member.add retried after a failed mark-applied does not report "Already a member."', async () => {
     const requestId = rid();
-    host.failWhen(auditStep);
+    host.failWhen(markStep);
     await expect(service.addMember(companyId, 'alice', { requestId, userId: 'dave', displayName: 'Dave', reason: 'joins' })).rejects.toMatchObject({ kind: 'unavailable' });
     await expect(service.addMember(companyId, 'alice', { requestId, userId: 'dave', displayName: 'Dave', reason: 'joins' })).resolves.toBeUndefined();
     await expect(service.addMember(companyId, 'alice', { requestId: rid(), userId: 'dave', displayName: 'Dave', reason: 'joins' })).rejects.toMatchObject({ kind: 'conflict', message: 'Already a member.' });
   });
 
-  it('a share retry yields one source keyed by the requestId', async () => {
+  it('a share retry yields one source keyed by the requestId and returns only key, kind and title', async () => {
     const requestId = rid();
-    host.failWhen(auditStep);
+    host.failWhen(markStep);
     await expect(service.share(companyId, 'carol', { requestId, kind: 'link', title: 'Once', url: 'https://once.example' })).rejects.toMatchObject({ kind: 'unavailable' });
     const first = await service.share(companyId, 'carol', { requestId, kind: 'link', title: 'Once', url: 'https://once.example' });
     const again = await service.share(companyId, 'carol', { requestId, kind: 'link', title: 'Once', url: 'https://once.example' });
-    expect(first.sourceKey).toBe(`share:${requestId}`);
+    expect(first).toEqual({ sourceKey: `share:${requestId}`, kind: 'link', title: 'Once' });
     expect(again).toEqual(first);
     const rows = await host.pg.query(`SELECT source_key FROM ${BRIDGE_NAMESPACE}.org_sources WHERE title='Once'`);
     expect(rows.rows).toEqual([{ source_key: `share:${requestId}` }]);
   });
 
-  it('business rules run only when applying: a forbidden caller is refused, an audited replay is not re-checked', async () => {
+  it('a removed user replaying a known share requestId is forbidden and gets no data', async () => {
     const requestId = rid();
-    await expect(service.addMember(companyId, 'bob', { requestId, userId: 'eve', displayName: 'Eve', reason: 'r' })).rejects.toMatchObject({ kind: 'forbidden' });
-    expect((await memberRows(companyId)).map(m => m.user_id)).not.toContain('eve');
+    const input = { requestId, kind: 'link', title: 'Carol doc', url: 'https://carol.example' };
+    await service.share(companyId, 'carol', input);
+    await service.removeMember(companyId, 'alice', { requestId: rid(), userId: 'carol', reason: 'left' });
+    const result = await service.share(companyId, 'carol', input).catch(e => e);
+    expect(result).toMatchObject({ kind: 'forbidden' });
+    expect(JSON.stringify(result)).not.toContain('carol.example');
+  });
 
+  it('a member replaying a share that was since hidden gets no hidden title, url or reason', async () => {
+    const requestId = rid();
+    const input = { requestId, kind: 'link', title: 'Soon hidden', url: 'https://hidden.example' };
+    await service.share(companyId, 'carol', input);
+    await service.hide(companyId, 'alice', { requestId: rid(), sourceKey: `share:${requestId}`, reason: 'secret moderation reason' });
+    const result = await service.share(companyId, 'carol', input).then(r => r, e => e);
+    expect(result).toMatchObject({ kind: 'invalid', message: 'Source not found.' });
+    const json = JSON.stringify({ ...result, message: (result as Error).message });
+    for (const leaked of ['Soon hidden', 'hidden.example', 'secret moderation reason']) {
+      expect(json).not.toContain(leaked);
+    }
+    expect((await logRows(companyId)).filter(r => r.op_key === requestId)).toHaveLength(1);
+  });
+
+  it('a requestId reused by another actor, for another action or with another payload is a conflict', async () => {
+    const requestId = rid();
+    await service.removeMember(companyId, 'alice', { requestId, userId: 'carol', reason: 'leaves' });
+    await service.setModerator(companyId, 'alice', { requestId: rid(), userId: 'bob', moderator: true, reason: 'trusted' });
+
+    await expect(service.removeMember(companyId, 'bob', { requestId, userId: 'carol', reason: 'leaves' })).rejects.toMatchObject(reused);
+    await expect(service.addMember(companyId, 'alice', { requestId, userId: 'carol', displayName: 'Carol', reason: 'leaves' })).rejects.toMatchObject(reused);
+    await expect(service.removeMember(companyId, 'alice', { requestId, userId: 'carol', reason: 'other reason' })).rejects.toMatchObject(reused);
+    await expect(service.removeMember(companyId, 'alice', { requestId, userId: 'bob', reason: 'leaves' })).rejects.toMatchObject(reused);
+
+    const share = rid();
+    await service.share(companyId, 'bob', { requestId: share, kind: 'link', title: 'T', url: 'https://a.example' });
+    await expect(service.share(companyId, 'bob', { requestId: share, kind: 'link', title: 'T', url: 'https://b.example' })).rejects.toMatchObject(reused);
+    await expect(service.share(companyId, 'alice', { requestId: share, kind: 'link', title: 'T', url: 'https://a.example' })).rejects.toMatchObject(reused);
+
+    expect((await memberRows(companyId)).find(m => m.user_id === 'carol')).toMatchObject({ status: 'removed' });
+    expect((await logRows(companyId)).filter(r => r.op_key === requestId)).toHaveLength(1);
+  });
+
+  it('every call checks the current role first, replays included', async () => {
+    await expect(service.addMember(companyId, 'bob', { requestId: rid(), userId: 'eve', displayName: 'Eve', reason: 'r' })).rejects.toMatchObject({ kind: 'forbidden' });
+
+    await service.setModerator(companyId, 'alice', { requestId: rid(), userId: 'bob', moderator: true, reason: 'trusted' });
     const done = rid();
-    await service.removeMember(companyId, 'alice', { requestId: done, userId: 'carol', reason: 'leaves' });
-    await expect(service.removeMember(companyId, 'alice', { requestId: done, userId: 'carol', reason: 'leaves' })).resolves.toBeUndefined();
+    await service.removeMember(companyId, 'bob', { requestId: done, userId: 'carol', reason: 'leaves' });
+    await expect(service.removeMember(companyId, 'bob', { requestId: done, userId: 'carol', reason: 'leaves' })).resolves.toBeUndefined();
+    await service.setModerator(companyId, 'alice', { requestId: rid(), userId: 'bob', moderator: false, reason: 'demoted' });
+    await expect(service.removeMember(companyId, 'bob', { requestId: done, userId: 'carol', reason: 'leaves' })).rejects.toMatchObject({ kind: 'forbidden' });
   });
 
   it('every mutation requires a UUID v4 requestId', async () => {

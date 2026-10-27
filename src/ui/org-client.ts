@@ -201,6 +201,21 @@ export function parseOrgSources(raw: unknown): OrgSourceWithFeeds[] {
   }, 1000);
 }
 
+export interface OrgShared {
+  sourceKey: string;
+  kind: 'link' | 'file' | 'note';
+  title: string;
+}
+
+/** What org.source.share returns: the new item's key, kind and title only. */
+export function parseOrgShared(raw: unknown): OrgShared {
+  const r = row(raw, ['sourceKey', 'kind', 'title']);
+  check(r.kind === 'link' || r.kind === 'file' || r.kind === 'note');
+  const sourceKey = id(r.sourceKey);
+  check(sourceKey.startsWith('share:'));
+  return { sourceKey, kind: r.kind as OrgShared['kind'], title: text(r.title, 1000) };
+}
+
 export type OrgSourceOpen =
   | { kind: 'link'; title: string; url: string }
   | { kind: 'note'; title: string; text: string }

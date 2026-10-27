@@ -34,13 +34,13 @@ describe('open', () => {
 
     expect(await service.open(co, 'bob', { sourceKey: link.sourceKey })).toEqual({ kind: 'link', title: 'Charter', url: 'https://example.com/charter' });
     expect(await service.open(co, 'bob', { sourceKey: note.sourceKey })).toEqual({ kind: 'note', title: 'Minutes', text });
-    expect(note.byteLength).toBe(new TextEncoder().encode(text).length);
+    expect((await host.pg.query<{ n: number }>(`SELECT byte_length as n FROM ${BRIDGE_NAMESPACE}.org_sources WHERE source_key=$1`, [note.sourceKey])).rows[0]!.n).toBe(new TextEncoder().encode(text).length);
 
     const opened = await service.open(co, 'bob', { sourceKey: file.sourceKey });
     expect(opened).toMatchObject({ kind: 'file', title: 'blob.bin', mediaType: 'application/octet-stream' });
     const back = Buffer.from((opened as { base64: string }).base64, 'base64');
     expect(back.equals(Buffer.from(bytes))).toBe(true);
-    expect(file.sha256).toBe(createHash('sha256').update(bytes).digest('hex'));
+    expect((await host.pg.query<{ h: string }>(`SELECT sha256 as h FROM ${BRIDGE_NAMESPACE}.org_sources WHERE source_key=$1`, [file.sourceKey])).rows[0]!.h).toBe(createHash('sha256').update(bytes).digest('hex'));
   });
 
   it('a hidden item reads as missing to a member, with the same message; moderators and the founder can open it', async () => {

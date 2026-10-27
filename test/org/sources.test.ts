@@ -130,11 +130,8 @@ describe('sources', () => {
       it('stores link and logs source.share', async () => {
         const result = await service.share(companyId, founderId, { requestId: rid(), kind: 'link', title: 'Example', url: 'https://example.com' });
 
-        expect(result.kind).toBe('link');
-        expect(result.title).toBe('Example');
-        expect(result.url).toBe('https://example.com');
-        expect(result.sharedBy).toBe(founderId);
-        expect(result.audience).toBe('members');
+        expect(result).toEqual({ sourceKey: result.sourceKey, kind: 'link', title: 'Example' });
+        expect(await store.readSource(companyId, result.sourceKey)).toMatchObject({ url: 'https://example.com', sharedBy: founderId, audience: 'members' });
 
         const log = await store.listLog(companyId, 10);
         const shareEntry = log.find(e => e.action === 'source.share');
