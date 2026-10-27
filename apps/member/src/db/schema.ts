@@ -1,4 +1,4 @@
-import { pgSchema, uuid, text, timestamp, check, jsonb, integer } from 'drizzle-orm/pg-core';
+import { pgSchema, uuid, text, timestamp, check, jsonb, integer, boolean, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import type { SourceRef } from '../adapters/types';
 
@@ -10,6 +10,11 @@ export const members = memberAppSchema.table('members', {
   email: text('email').notNull().unique(),
   displayName: text('display_name').notNull(),
   status: text('status', { enum: ['active', 'inactive'] }).notNull().default('active'),
+  role: text('role', { enum: ['admin', 'member'] }).notNull().default('member'),
+  // 'directory' rows follow the member directory; 'local' rows were added in the app and sync leaves them alone.
+  origin: text('origin', { enum: ['directory', 'local'] }).notNull().default('directory'),
+  // The member's user in the work engine, so a claim can assign the task to them.
+  workUserId: text('work_user_id'),
   lastSyncedAt: timestamp('last_synced_at').notNull().defaultNow(),
   lastSeenAt: timestamp('last_seen_at'),
 }, (table) => [
@@ -83,6 +88,60 @@ export const documents = memberAppSchema.table('documents', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+import type { OrgProfile } from '../org/profile-types';
+
+/** The one organization this app serves. Row id is always 1. */
+export const organization = memberAppSchema.table('organization', {
+  id: integer('id').primaryKey().default(1),
+  name: text('name').notNull(),
+  website: text('website'),
+  description: text('description').notNull().default(''),
+  profile: jsonb('profile').$type<OrgProfile>(),
+  profileGeneratedAt: timestamp('profile_generated_at'),
+  governanceEnabled: boolean('governance_enabled').notNull().default(false),
+  setupCompletedAt: timestamp('setup_completed_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+}, (table) => [check('organization_singleton', sql`${table.id} = 1`)]);
+
+/** Everything the organization has told Inertia: uploads, the website, notes, chat exports. */
+export const orgSources = memberAppSchema.table('org_sources', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  kind: text('kind', { enum: ['website', 'meeting', 'document', 'note', 'chat-export', 'link'] }).notNull(),
+  title: text('title').notNull(),
+  // Where it came from: a URL or the uploaded file name.
+  origin: text('origin'),
+  content: text('content').notNull(),
+  contentHash: text('content_hash').notNull().unique(),
+  summary: text('summary'),
+  addedBy: uuid('added_by').references(() => members.id),
+  status: text('status', { enum: ['active', 'hidden'] }).notNull().default('active'),
+  hiddenReason: text('hidden_reason'),
+  hiddenBy: uuid('hidden_by').references(() => members.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+/** Searchable pieces of a source, each with where it sits in the original. */
+export const orgPassages = memberAppSchema.table('org_passages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  sourceId: uuid('source_id').notNull().references(() => orgSources.id, { onDelete: 'cascade' }),
+  ordinal: integer('ordinal').notNull(),
+  location: text('location').notNull(),
+  text: text('text').notNull(),
+}, (table) => [
+  index('org_passages_search').using('gin', sql`to_tsvector('english', ${table.text})`),
+]);
+
+/** Who did what on which task, kept even when the work engine changes. */
+export const workEvents = memberAppSchema.table('work_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  memberId: uuid('member_id').references(() => members.id),
+  taskId: text('task_id').notNull(),
+  kind: text('kind', { enum: ['suggested', 'claimed', 'released', 'answered', 'completed', 'created'] }).notNull(),
+  detail: text('detail'),
+  at: timestamp('at').notNull().defaultNow(),
+});
+
 export const schema = {
   members,
   loginTokens,
@@ -92,4 +151,8 @@ export const schema = {
   conversations,
   messages,
   documents,
+  organization,
+  orgSources,
+  orgPassages,
+  workEvents,
 };

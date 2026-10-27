@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getModel, ModelNotConfiguredError } from '../src/assistant/model';
+import { getFastModel, getModel, ModelNotConfiguredError } from '../src/assistant/model';
 
 describe('getModel', () => {
   it('throws ModelNotConfiguredError when env is empty', () => {
@@ -41,5 +41,15 @@ describe('getModel', () => {
     expect(() => getModel({ MEMBER_APP_MODEL_PROVIDER: 'mock', NODE_ENV: 'production' })).toThrow(
       ModelNotConfiguredError,
     );
+  });
+
+  it('uses MEMBER_APP_FAST_MODEL for background work and falls back to the main model', () => {
+    const env = {
+      MEMBER_APP_MODEL_PROVIDER: 'openai-compatible',
+      MEMBER_APP_MODEL: 'glm-4.7',
+      MEMBER_APP_MODEL_BASE_URL: 'https://api.z.ai/api/paas/v4',
+    };
+    expect((getFastModel(env) as { modelId: string }).modelId).toBe('glm-4.7');
+    expect((getFastModel({ ...env, MEMBER_APP_FAST_MODEL: 'glm-4.7-flash' }) as { modelId: string }).modelId).toBe('glm-4.7-flash');
   });
 });

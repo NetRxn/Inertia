@@ -38,3 +38,12 @@ export function getModel(env: Record<string, string | undefined> = process.env):
       throw new ModelNotConfiguredError(`Unknown MEMBER_APP_MODEL_PROVIDER "${provider}".`);
   }
 }
+
+/**
+ * A cheaper model for background work such as reading uploads, set with
+ * MEMBER_APP_FAST_MODEL on the same provider. Falls back to MEMBER_APP_MODEL.
+ */
+export function getFastModel(env: Record<string, string | undefined> = process.env): LanguageModel {
+  const fast = env.MEMBER_APP_FAST_MODEL?.trim();
+  return getModel(fast ? { ...env, MEMBER_APP_MODEL: fast } : env);
+}

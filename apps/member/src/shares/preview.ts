@@ -224,10 +224,15 @@ function extractPreview(html: string, pageUrl: URL): LinkPreview | null {
   };
 }
 
-async function fetchPreview(
-  rawUrl: string,
-  deps: { fetchImpl?: typeof fetch; lookup: (host: string) => Promise<string[]>; maxBytes: number; signal: AbortSignal },
-): Promise<LinkPreview | null> {
+type FetchDeps = { fetchImpl?: typeof fetch; lookup: (host: string) => Promise<string[]>; maxBytes: number; signal: AbortSignal };
+
+async function fetchPreview(rawUrl: string, deps: FetchDeps): Promise<LinkPreview | null> {
+  const page = await fetchHtml(rawUrl, deps);
+  return page ? extractPreview(page.html, page.url) : null;
+}
+
+/** Fetches an HTML page under the same host, redirect, type and size rules as previews. */
+async function fetchHtml(rawUrl: string, deps: FetchDeps): Promise<{ html: string; url: URL } | null> {
   let current: URL;
   try {
     current = new URL(rawUrl);
@@ -286,7 +291,7 @@ async function fetchPreview(
     }
 
     const html = await readCapped(response.body, deps.maxBytes);
-    return extractPreview(html, current);
+    return { html, url: current };
   }
   return null;
 }
@@ -299,6 +304,22 @@ export async function fetchLinkPreview(
   url: string,
   opts: FetchLinkPreviewOptions = {},
 ): Promise<LinkPreview | null> {
+  return withDeadline(opts, (deps) => fetchPreview(url, deps));
+}
+
+/**
+ * Fetches a public HTML page's markup, best effort, under the same rules as
+ * link previews: null for anything unusual, never a private host.
+ */
+export async function fetchPublicPage(
+  url: string,
+  opts: FetchLinkPreviewOptions = {},
+): Promise<{ html: string; url: string } | null> {
+  const page = await withDeadline(opts, (deps) => fetchHtml(url, deps));
+  return page ? { html: page.html, url: page.url.toString() } : null;
+}
+
+async function withDeadline<T>(opts: FetchLinkPreviewOptions, run: (deps: FetchDeps) => Promise<T | null>): Promise<T | null> {
   const fetchImpl = opts.fetchImpl;
   const lookup = opts.lookup ?? defaultLookup;
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -316,9 +337,7 @@ export async function fetchLinkPreview(
   try {
     // Errors inside the fetch collapse to null; the deadline wins even over a
     // fetch implementation that ignores the abort signal.
-    const work = fetchPreview(url, { fetchImpl, lookup, maxBytes, signal: controller.signal }).catch(
-      () => null,
-    );
+    const work = run({ fetchImpl, lookup, maxBytes, signal: controller.signal }).catch(() => null);
     return await Promise.race([work, deadline]);
   } finally {
     clearTimeout(timer);

@@ -24,7 +24,7 @@ const sam: Member = {
   displayName: 'Sam Williams',
   status: 'active',
   lastSyncedAt: FIXTURE_NOW,
-  lastSeenAt: null,
+  lastSeenAt: null, role: 'member', origin: 'directory', workUserId: null,
 };
 
 describe('optional initiative and task fields', () => {

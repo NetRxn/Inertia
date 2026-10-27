@@ -13,7 +13,7 @@ function member(externalId: string): Member {
     displayName: 'X',
     status: 'active',
     lastSyncedAt: FIXTURE_NOW,
-    lastSeenAt: null,
+    lastSeenAt: null, role: 'member', origin: 'directory', workUserId: null,
   };
 }
 

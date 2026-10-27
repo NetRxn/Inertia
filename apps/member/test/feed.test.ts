@@ -14,7 +14,7 @@ function member(externalId: string, displayName: string): Member {
     displayName,
     status: 'active',
     lastSyncedAt: FIXTURE_NOW,
-    lastSeenAt: null,
+    lastSeenAt: null, role: 'member', origin: 'directory', workUserId: null,
   };
 }
 

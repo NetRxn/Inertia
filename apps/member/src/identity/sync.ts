@@ -12,7 +12,8 @@ export interface SyncResult {
 /**
  * Syncs members from the directory into the database.
  * Keys on externalId, lowercases email, sets status: 'inactive' for directory members
- * with active: false and for app members missing from the directory.
+ * with active: false and for directory members missing from the directory.
+ * Members added in the app (origin 'local') are left alone.
  * Never deletes rows.
  */
 export async function syncMembers(
@@ -88,7 +89,7 @@ export async function syncMembers(
 
     // Deactivate members missing from directory
     for (const existing of existingMembers) {
-      if (!directoryMap.has(existing.externalId) && existing.status === 'active') {
+      if (!directoryMap.has(existing.externalId) && existing.status === 'active' && existing.origin === 'directory') {
         await tx.update(loginTokens).set({ usedAt: now })
           .where(and(eq(loginTokens.memberId, existing.id), isNull(loginTokens.usedAt)));
         await tx
