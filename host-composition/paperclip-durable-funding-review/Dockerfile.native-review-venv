@@ -1,0 +1,41 @@
+# Apply only to a separately qualified, identity-checked local funding image.
+# The owning composition must pin the copied libpython path as well as the interpreter.
+ARG BASE_IMAGE
+ARG RUNTIME_BASE_IMAGE
+FROM ${BASE_IMAGE} AS original
+FROM original AS prepared
+RUN node --input-type=module <<'JS'
+import fs from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const seed='/opt/dfw-seed',venv=seed+'/dfw-runtime/.venv',payload='/tmp/native-review-venv';
+if(await fs.readlink(venv+'/bin/python')!=='/work/python/bin/python3.14')throw Error('Unexpected interpreter mapping');
+const files=[
+ [seed+'/python/bin/python3.14',payload+'/bin/python',0o755],
+ [seed+'/python/lib/libpython3.14.so.1.0',payload+'/lib/libpython3.14.so.1.0',0o644],
+];
+const sha=b=>createHash('sha256').update(b).digest('hex');
+for(const directory of [venv+'/bin',venv+'/lib'])if(await fs.realpath(directory)!==directory)throw Error('Unexpected venv directory mapping');
+for(const [source,target,mode]of files){
+ const stat=await fs.lstat(source);
+ if(!stat.isFile()||stat.size>16*1024*1024)throw Error('Base interpreter/runtime must be bounded regular files');
+ const digest=sha(await fs.readFile(source));
+ await fs.mkdir(target.slice(0,target.lastIndexOf('/')),{recursive:true,mode:0o700});
+ await fs.copyFile(source,target);await fs.chmod(target,mode);
+ const copied=await fs.lstat(target);
+ if(!copied.isFile()||copied.isSymbolicLink()||copied.size>16*1024*1024||sha(await fs.readFile(target))!==digest)throw Error('Copied runtime identity mismatch');
+}
+console.log('Native review venv payload verified; base image permissions and file limits unchanged.');
+JS
+FROM scratch AS code_payload
+# Fold every reviewed additive overlay in this fixed composition; no entire-root export.
+COPY --from=original /opt/inertia-reviewed/dist/src/bridge/duplex.js /payload/opt/inertia-reviewed/dist/src/bridge/duplex.js
+COPY --from=original /opt/dfw-seed/dfw-runtime/src/dfw_incentives/public_drafting_stdio.py /payload/opt/dfw-seed/dfw-runtime/src/dfw_incentives/public_drafting_stdio.py
+COPY --from=original /opt/host/node_modules/@paperclipai/server/dist/services/native-runtime/native-session-executor.js /payload/opt/host/node_modules/@paperclipai/server/dist/services/native-runtime/native-session-executor.js
+COPY --from=original /opt/host/node_modules/@paperclipai/server/dist/routes/agents.js /payload/opt/host/node_modules/@paperclipai/server/dist/routes/agents.js
+COPY --from=original /opt/host/node_modules/@paperclipai/server/dist/services/heartbeat.js /payload/opt/host/node_modules/@paperclipai/server/dist/services/heartbeat.js
+COPY --from=original /opt/host/node_modules/@paperclipai/server/dist/services/cancelled-native-startup.js /payload/opt/host/node_modules/@paperclipai/server/dist/services/cancelled-native-startup.js
+COPY --from=original /opt/host/node_modules/@paperclipai/server/dist/services/native-runtime/native-review-retry.mjs /payload/opt/host/node_modules/@paperclipai/server/dist/services/native-runtime/native-review-retry.mjs
+COPY --from=prepared /tmp/native-review-venv/ /payload/opt/dfw-seed/dfw-runtime/.venv/
+FROM ${RUNTIME_BASE_IMAGE}
+# One immutable layer: preserve base data/security configuration and do not follow its symlink.
+COPY --link --from=code_payload --chown=1000:1000 /payload/ /
