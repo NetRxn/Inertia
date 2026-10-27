@@ -1,5 +1,7 @@
 # Sprint: working app to show John on Wednesday Oct 28
 
+> **Superseded 2026-10-27 by [inertia-vision.md](inertia-vision.md):** the app is the member app (`apps/member`), not plugin pages inside Paperclip.
+
 Drafted 2026-10-27, branch `claude/demo-readiness-plan-a32n8v` (based on the latest `develop`, `a8c707f`). Wednesday night is for final hits; submission is Friday Oct 30, 11:00am CDT.
 
 ## Vision this sprint serves
