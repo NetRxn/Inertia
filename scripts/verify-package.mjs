@@ -121,7 +121,12 @@ try {
   assert.equal(manifest.id, "netrxn.inertia");
   assert.equal(manifest.entrypoints.ui, "dist/ui");
   assert(manifest.capabilities.includes("ui.detailTab.register"));
-  assert.deepEqual(manifest.ui.slots, [{type:"detailTab",id:"member-packet",displayName:"Packet",exportName:"MemberPacketTab",entityTypes:["issue"]},{type:"companySettingsPage",id:"integrations",displayName:"Integrations",exportName:"IntegrationsSettingsPage",routePath:"integrations"}]);
+  assert.deepEqual(manifest.ui.slots, [
+    {type:"page",id:"dao",displayName:"DAO",exportName:"OrgPage"},
+    {type:"detailTab",id:"task-trail",displayName:"Why this exists",exportName:"TaskTrailTab",entityTypes:["issue"]},
+    {type:"detailTab",id:"member-packet",displayName:"Packet",exportName:"MemberPacketTab",entityTypes:["issue"]},
+    {type:"companySettingsPage",id:"integrations",displayName:"Integrations",exportName:"IntegrationsSettingsPage",routePath:"integrations"}
+  ]);
   const uiBundle = await readFile(resolve(installed, manifest.entrypoints.ui, "index.js"), "utf8");
   assert(uiBundle.includes("MemberPacketTab"));
   assert(uiBundle.includes("IntegrationsSettingsPage"));
