@@ -2,6 +2,10 @@
 
 Drafted 2026-10-27, branch `claude/demo-readiness-plan-a32n8v` (based on the latest `develop`, `a8c707f`). Wednesday night is for final hits; submission is Friday Oct 30, 11:00am CDT.
 
+## Vision this sprint serves
+
+Inertia is an **organizational autopilot**, agnostic to the work engine, that brings **human tasks to parity with agent tasks**. See [concept.md](concept.md#vision-kyle-2026-10-27). For Wednesday it runs hosted in Paperclip, with Paperclip as the first engine.
+
 ## The decision: one app, inside Paperclip
 
 We are **not** building a separate app. The "organization app" (create org → describe it → profile → members → integrations → data) is **Paperclip plus the Inertia plugin**:
@@ -50,7 +54,9 @@ Owner: **C** Claude, **K** Kyle, **J** John. Order is the build order.
 | 11 | **Initiatives from profile:** "Adopt" creates a Paperclip goal (proposed or active); grant strategy left proposed | C | 8 FWTX initiatives visible as goals |
 | 12 | **Grant → project:** paste or import a grant-finder result; brief generated with org-memory citations; project + parent task *Pursue: grant* created under the grant initiative | C | Grant project visible with brief |
 | 13 | **Task suggestions:** model proposes tasks labelled `agent` or `human` (human ones in prepared-ask format); admin accepts and they become issues | C | 4–6 tasks on the grant project, both kinds |
-| 14 | **For you page:** open `human` tasks with why-you and minutes; **Claim** assigns to me and records who/when | C | John claims a task |
+| 13b | **Work-engine interface:** small `WorkEngine` interface (create task, assign, comment, status, list) with the Paperclip implementation; all new code calls it, not Paperclip directly | C | Interface + Paperclip adapter + fake engine in tests |
+| 14 | **For you page (human parity):** open `human` tasks with why-you, minutes, deadline and the **context pack** attached; **Claim** (exclusive, releasable); contribution events recorded; "waiting on a person" status visible on the project | C | John claims a task and sees everything needed to do it without asking |
+| 14b | **Nudge:** when a human task is suggested or assigned, post a short message to the member's channel (Buzz now; Telegram once Kyle's bot is up) | C/K | John gets a nudge with a link |
 | 15 | **Answer → draft:** member answers the ask in a comment; "Update draft" regenerates the draft section citing the answer | C | Draft v2 shows John's answer |
 | 16 | Integrations statuses match what is actually connected | C | No card overclaims |
 | 17 | Dry run on the runtime, end to end | K/C | Walkthrough completes without hand fixes |

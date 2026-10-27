@@ -2,6 +2,29 @@
 
 Drafted 2026-10-27. Working explainer for the FWTX demo, not a canonical artifact. Companion to [the demo plan](fwtx-demo-plan.md).
 
+## Vision (Kyle, 2026-10-27)
+
+**Inertia is an organizational autopilot.** It knows the organization (profile, members, data), keeps that knowledge current from any source, and keeps work moving. It is **agnostic to what executes the work**: Paperclip agents today, other engines later. Its distinctive job is to bring **human tasks to parity with agent tasks**.
+
+Existing pieces (Buzz bridge, meeting ingestion, grant discovery and packet review) are working parts inside that vision, not the product boundary.
+
+### Human–agent parity
+
+| What Paperclip gives an agent | Human equivalent Inertia provides |
+|---|---|
+| Work routed to it by role and capability | Work suggested by fit: *why you*, from what the member said, did and cares about |
+| Exclusive checkout | **Claim**: one person at a time, visible to everyone; release without penalty |
+| Prepared context (instructions, workspace) | **Context pack**: the ask, the brief, cited sources and related decisions, attached to the task |
+| Wakeups and heartbeats | **Nudges** in the member's channel (Buzz now, Telegram next), capped, never spammy |
+| Budget per run | **Time estimate** per task ("about 10 minutes") and a deadline |
+| Run log and audit | **Contribution record**: suggested, claimed, answered, completed, by whom and when |
+| Review stages and handoff | Member review and approval of exact versions; handoff back to agents when answered |
+| Status | Same task statuses, with "waiting on a person" visible as clearly as "agent running" |
+
+### Agnostic by design
+
+Inertia talks to the work engine through one small interface (create task, assign, comment, status, read). **Paperclip is the first implementation.** Members, profile, data, integrations and the human-task layer belong to Inertia, so swapping or adding an engine doesn't touch them.
+
 ## One paragraph
 
 **Paperclip is the DAO's workforce and task board. Inertia is the DAO's memory and chief of staff.** Paperclip runs work once someone tells it what the work is. It doesn't know what was said in Wednesday's meeting, what's happening in Telegram, which member offered a venue last month, or that a new grant matches an initiative. Inertia listens to all of that, remembers it with sources, keeps a current picture of the organization, and **finds work**. It turns that picture into initiatives, projects and tasks in Paperclip, and points each human task at the member most likely to want it.
