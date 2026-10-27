@@ -41,6 +41,18 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    href: '/org',
+    label: 'Organization',
+    glyph: (
+      <>
+        <circle cx="12" cy="7" r="2.5" />
+        <circle cx="6" cy="16" r="2.5" />
+        <circle cx="18" cy="16" r="2.5" />
+        <path d="M10.5 9 7.5 13.8M13.5 9l3 4.8M8.5 16h7" />
+      </>
+    ),
+  },
+  {
     href: '/funding',
     label: 'Funding',
     glyph: (
@@ -87,7 +99,7 @@ function isActive(pathname: string, href: string): boolean {
   return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** The sticky glass pill of the six sections, with the current one marked. */
+/** The sticky glass pill of the sections, with the current one marked. */
 export function FloatingMenu() {
   const pathname = usePathname();
 

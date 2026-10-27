@@ -97,7 +97,8 @@
 }
 
 .mission {
-  font: var(--text-title);
+  font: var(--text-heading);
+  line-height: 1.45;
 }
 
 .initiatives {
