@@ -1,0 +1,130 @@
+# FWTX DAO demo plan: from organizational context to a grant a member can act on
+
+Drafted 2026-10-27 against `develop` `a8c707f`. Working plan, not a canonical artifact. It does not change spec, plan, decisions or the NTF checklist.
+
+Dates: Roundtable rehearsal **Wednesday Oct 28**. HackFW submission closes **Friday Oct 30, 11:00am CDT**.
+
+## 1. The short answer: where does "organizational management" actually happen?
+
+It is **not the LLM alone**, and you do not need to invent a new process. There are three layers, and the demo should make each one visible:
+
+| Layer | What it is | What it does in the demo | Trust |
+|---|---|---|---|
+| **LLM (agents)** | Codex/Claude runs inside Paperclip | Reads sources, extracts decisions and action items, writes briefs, drafts application sections, critiques drafts | Untrusted. Everything it produces is a *candidate* |
+| **Inertia (the novel part)** | This repo: deterministic producers and adapters | Decides which candidates become real records and tasks, with source, hash, author, dedup key, parent goal, reason and acceptance criteria. Freezes exact packet versions. Checks whether a vote is needed | Deterministic code with rules and tests |
+| **Paperclip (the org's system of record)** | Native goals, projects, issues, agents, assignments, checkout, approvals, budgets, audit | Holds the **current state of the organization**. This is what the member sees moving | Authoritative state |
+
+The one-liner for the audience:
+
+> **The LLM proposes. Inertia's rules decide what becomes real work, with a receipt back to the source. Paperclip tracks it. Members decide.**
+
+That is what "organizational management" means here: every task on the board traces back to a meeting line, a repo issue, a chat message or a grant notice, and nothing becomes an approval or a submission without a verified member acting on an exact version.
+
+Most of the process already exists in `develop`:
+
+| Process step | Existing code | Status |
+|---|---|---|
+| Meeting → faithful transcript + notes → follow-up task | `src/roundtable/*` (extraction, ingestion, `native.ts`) | Merged, default-disabled, synthetic I/O qualified |
+| Member/bounty objective → native issue | `src/intake` / objective composition (`docs/development/objective-intake.md`) | Merged, owner-file intake |
+| Grant finder → preliminary brief → deadline/benefit facts | `src/discovery/*` (`preliminary.ts`, `funding-facts.ts`) + DFW-Gov-Fund | Merged, default-disabled |
+| Saved knowledge query → research → writeback → reuse | `src/partners/research.ts`, SQL named tools | Merged, local PostgreSQL qualified |
+| Draft + independent critique | `src/drafting/*`, `src/grants/native-review.ts` | Merged; zero real runs so far |
+| Exact-version packet + member confirmation | `src/grants/member-*`, `src/ui/MemberPacketTab.tsx` (Packet tab) | Merged source; not live |
+| "Does this need a vote?" + vote binding | `src/grants/governance.ts` | Merged, fixture verifier only |
+| Buzz chat ↔ native comments | `src/bridge/*` | Merged |
+| End-to-end synthetic walkthrough | `npm run demo:workflow` | **Runs today** (verified 2026-10-27) |
+
+So the gap is not the process. The gaps are **(a) real FWTX data in, (b) a visible "state of the org" view, (c) actually running the agents once on a real grant, (d) a member logged in seeing it.**
+
+## 2. The demo story (what the audience sees)
+
+```mermaid
+flowchart LR
+  S["Sources<br/>Meet transcripts, notes<br/>GitHub repos<br/>Telegram export<br/>Website + socials"] --> I["Ingest<br/>Inertia adapters<br/>source, time, author, hash"]
+  I --> K["Org memory<br/>DAO PostgreSQL"]
+  K --> O["Org state in Paperclip<br/>Goals, projects, people,<br/>open decisions, tasks"]
+  G["NetRxn grant finder<br/>(DFW-Gov-Fund)"] --> B["Opportunity brief<br/>matched to an initiative"]
+  K --> B
+  B --> T["Grant issue + subtasks<br/>research, draft, budget,<br/>critique, member ask"]
+  T --> V{"Vote required?<br/>governance.ts"}
+  V -- no --> M["Member confirms exact<br/>packet version (Packet tab)"]
+  V -- yes --> D["Governance task<br/>bound to packet hash"]
+  D --> M
+  M --> R["Mark ready / submitted<br/>(attestation only)"]
+```
+
+Run of show, about 8 minutes:
+
+1. **"Here's FWTX DAO."** (1 min) Show the source folder: 3–5 meeting transcripts, the GitHub org, Telegram export, website, X/LinkedIn. One sentence: *Inertia ingested all of this.*
+2. **"Here's what the org looks like now."** (2 min) Paperclip company *FWTX DAO*: goals, projects (from repos and dao-platform projects), agents (CEO/intake, researcher, drafter, critic), and an **Org Brief** document: active initiatives, who is working on what, open decisions, commitments made in meetings, each line with a source link. Click one citation → it opens the exact transcript line.
+3. **"A task comes from that context."** (1 min) Show a follow-up issue created from a meeting action item: title, parent goal, reason, acceptance criteria, link to the transcript line. Point out the model suggested it; Inertia's rules (parent + reason + acceptance + dedup key) made it a task. Re-ingesting the same meeting creates **no duplicate**.
+4. **"A grant comes in."** (2 min) Grant finder surfaces a new opportunity. Inertia matches it to an initiative already in org memory and posts a sourced brief: fit, deadline, award, eligibility unknowns. The CEO agent opens *Pursue: <grant>* with subtasks. Show the agent draft and the independent critique.
+5. **"A member picks it up."** (2 min) Log in as a member (not admin). Their inbox has one prepared ask: *pick the lead community story, A or B, about 10 minutes*, with the brief and critique attached. They answer in Paperclip or Buzz. Draft v2 incorporates it. The Packet tab shows the exact version; the member confirms it. The governance check reports either "no vote required, single verified member approval" or "vote required, here is the task bound to packet hash …".
+6. **Close.** (30 s) Show the receipt: elapsed time, human minutes, sources used, what is still pending. Honest gaps are a feature.
+
+## 3. Gaps and how to fill them
+
+Ranked by how much of the story breaks without them. "Fake it honestly" means pre-staged or fixture data, labelled as such on screen.
+
+| # | Gap | Why it matters | Minimal fill for Wed/Fri | Effort |
+|---|---|---|---|---|
+| G1 | **Paperclip running with an FWTX company** | Nothing to show without it | Use John's shared runtime if up by Wed; otherwise local Docker preproduction (already passes). Create company *FWTX DAO*, 4 agents, 3–5 goals, 3–6 projects | 0.5 day |
+| G2 | **Ingesting repos, Telegram, website, socials** | Only meetings, objectives and grants have adapters today | One **org-seed loader** script: reads a local `org-seed/` folder (transcripts `.md/.txt`, Telegram `result.json` export, website pages saved as Markdown, socials as CSV/JSON, GitHub READMEs/issues pulled via API) and writes knowledge records with `source, url, author, time, hash, audience`. No live bots; live Telegram is M2/later | 1 day |
+| G3 | **"State of the org" view** | This is the "present it back" moment | Agent run produces an **Org Brief** native document from org memory, every claim cited. Plus native goals/projects seeded from it. Paperclip's own UI is the view, no new dashboard | 0.5 day + 1 agent run |
+| G4 | **Meeting → task, live** | Proves tasks come from context | Enable the roundtable job manually on one real (or approved sanitized) transcript with the local source. Already built; needs config + one run | 0.5 day |
+| G5 | **Grant finder → Inertia** | The external trigger | Run the DFW-Gov-Fund grant finder demo against one real current opportunity; feed its brief through the discovery path. If live wiring isn't ready, replay the grant finder's JSON output into the same adapter. Pick the opportunity **before** Wednesday | 0.5–1 day |
+| G6 | **Actual agent runs** (zero so far) | The draft and critique must be system-generated, not hand-written | Run research → draft v1 → critique → draft v2 once end to end, the day before. Live demo shows the results plus one short live step (the member answer → v2) | 1 day incl. retries |
+| G7 | **Member login and access** | "View as a member" is the main goal | One verified test member account in Paperclip with access to the grant project. For the demo, the trusted membership check can be a fixture allow-list clearly labelled as such, since NTF02 (real DAO ACL) is not wired | 0.5 day |
+| G8 | **Packet tab live** | Member confirms exact version | Install the built plugin (`npm pack`) into the runtime; verify the Packet tab renders on the grant issue in a real browser | 0.5 day |
+| G9 | **Governance branch** | Shows when the DAO vote matters | Use the fixture verifier and say so. Prepare one rule: e.g. requests above $X or funder-required DAO resolution → vote task. Do not run a real Vocdoni vote | 2 hours |
+| G10 | **Buzz** | Nice, not essential | Optional: show the same ask arriving in Buzz. Drop if time is short | — |
+
+Critical path: **G1 → G2 → G3 → G6**, with G5 and G7 in parallel. G9 and G10 are polish.
+
+## 4. Data to collect (Kyle / team), today
+
+Put these in a protected location, not in this public repo:
+
+- [ ] 3–5 Wednesday meeting transcripts **with** Gemini notes, approved for demo use. At least one should contain a clear action item that relates to a fundable initiative
+- [ ] List of FWTX GitHub repos to include (public `FWTX-DAO/*`: website, dao-platform, meeting-mode, governance, constitution, hackfw-judging-app)
+- [ ] Telegram: desktop **Export chat history → JSON** for the main group, a recent window (e.g. 60 days), approved for demo
+- [ ] Website URL and social handles (X, LinkedIn, Luma, etc.)
+- [ ] The **target grant**: one real current opportunity from the grant finder, and a backup
+- [ ] Which initiative it should match (so we can check the system finds it on its own)
+- [ ] One member willing to be the on-screen member, plus their Paperclip login
+- [ ] Any rule for when a grant needs a DAO vote (threshold or funder requirement)
+
+## 5. Build order (proposed)
+
+**Tue Oct 27 (today)**
+- Confirm runtime target (shared vs local Docker) — G1
+- Collect sources (section 4); pick the grant — G5
+- Write the org-seed loader against a sample of each source type — G2
+
+**Wed Oct 28 (Roundtable)**
+- Seed FWTX company, goals, projects, agents — G1/G3
+- Ingest sources; generate Org Brief — G2/G3
+- Run meeting → task on one transcript — G4
+- Use the live Roundtable itself as a source if recording is approved; otherwise rehearse with an earlier meeting
+
+**Thu Oct 29**
+- Grant finder → brief → grant issue → research → draft v1 → critique — G5/G6
+- Member account, Packet tab, governance rule — G7/G8/G9
+- Full dry run, record the backup video, fix what breaks
+
+**Fri Oct 30, before 11:00am CDT**
+- Final recording + receipt; submit
+
+## 6. What we will and won't claim
+
+Will claim: sources ingested with provenance; org state built from them; tasks traced to sources with no duplicates on replay; a system-generated brief, draft and critique for a real grant; a member confirming an exact version; governance checked against a rule.
+
+Won't claim: live Telegram/social bots, a real DAO vote, external submission, production membership ACL, or untrusted member-owned agents. Show those as "next" on the last slide. The repo's existing honesty rules (spec, `Needed-from-team.md`) still apply: fixture values are labelled, unknowns stay unknown.
+
+## 7. Open questions for you
+
+1. Shared runtime from John by Wednesday, or do we demo from local Docker?
+2. Which grant, and which initiative should it match?
+3. Is the Wednesday Roundtable itself being recorded for use as a live source?
+4. Who is the on-screen member?
+5. Is there a real vote threshold rule, or do we state an illustrative one?
