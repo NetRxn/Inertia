@@ -1,0 +1,9 @@
+# Local preprod discovery tool grant operation
+
+This optional overlay adds only `POST /api/agents/:id/discovery-tool-use`. It is outside model tools and plugin grant administration. It requires the existing local-trusted board actor, current native company permission, active agent membership, existing finite tools:use row, exact idle assigned discovery task/native ceiling and enabled pinned discovery configuration. Human-only member routes and the subset-only restriction operation remain unchanged.
+
+The two-field request contains expectedGrantFingerprint and expectedDiscoveryFingerprint, both exact SHA256. Names are never request input: the existing installed discovery role determines the finite scout two or diligence four names. The operation preserves unrelated permission rows and grant identity, changes only its finite scope, and records transactional audit evidence.
+
+Concurrency uses strict current-grant CAS. A stale original request returns409. After lost acknowledgement, read native grant/configuration metadata, verify the exact intended union, then use the current fingerprint for a read-only no-op. This is explicit reconciliation, not identical-request replay. No automatic provider run, credentials, memberships or broader plugin capabilities are created.
+
+Install only after the separately qualified native discovery profile. Run `node scripts/apply-native-discovery-tool-grants.mjs` in the identity-checked native host composition. The installer pins source/build/auth/security and discovery-policy identities and rejects partial/drifted files. A current image must separately qualify its actual native HTTP/SQL boundary before application; generic source tests are not deployment evidence. This local-implicit operator boundary is preprod-only; generic session/admin enrollment remains unqualified.
