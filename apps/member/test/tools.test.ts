@@ -79,12 +79,14 @@ describe('createAssistantTools', () => {
     expect(chat.results.join('\n')).not.toMatch(/\bm-ana\b/);
   });
 
-  it('exposes exactly the eight tools', () => {
+  it('exposes exactly the ten tools', () => {
     const tools = createAssistantTools({ adapters: createFixtureAdapters(), db, memberId: ana.id }, () => {});
     expect(Object.keys(tools).sort()).toEqual(
       [
         'draftDocument',
         'getDocument',
+        'getOrganizationProfile',
+        'searchOrganization',
         'listFunding',
         'listProposals',
         'listWork',
@@ -232,5 +234,18 @@ describe('createAssistantTools', () => {
     const own = (await run(robTools, 'getDocument', { id: documentId })) as { results: string[] };
     expect(own.results[0]).toMatch(/^<source kind="document"/);
     expect(own.results[0]).toContain('secret-ish');
+  });
+});
+
+describe('organization tools', () => {
+  it('searches org memory and returns cited source blocks', async () => {
+    const { addSource } = await import('../src/org/ingest');
+    await addSource(db, { kind: 'meeting', title: 'October roundtable', content: 'Rob: The library can host our digital literacy workshops.' });
+    const refs: { kind: string; title: string }[] = [];
+    const tools = createAssistantTools({ adapters: createFixtureAdapters(), db, memberId: ana.id }, (r) => refs.push(...r));
+    const out = (await tools.searchOrganization.execute!({ query: 'library workshops' }, { toolCallId: 't', messages: [] })) as { results: string[] };
+    expect(out.results[0]).toContain('kind="source"');
+    expect(out.results[0]).toContain('digital literacy');
+    expect(refs).toEqual([expect.objectContaining({ kind: 'source', title: 'October roundtable' })]);
   });
 });

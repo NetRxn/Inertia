@@ -9,7 +9,8 @@ export type SourceRef = {
     | 'event'
     | 'document'
     | 'opportunity'
-    | 'application';
+    | 'application'
+    | 'source';
   id: string;
   title: string;
   url?: string;

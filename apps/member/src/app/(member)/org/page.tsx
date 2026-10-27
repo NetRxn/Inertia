@@ -148,7 +148,7 @@ async function DataTab({ admin }: { admin: boolean }) {
         <h2 className={`in-label ${cardStyles.eyebrow}`}>What Inertia knows · {sources.filter((s) => s.status === 'active').length}</h2>
         <ul className={cardStyles.rows}>
           {sources.map((s) => (
-            <li key={s.id} className={styles.member} data-status={s.status}>
+            <li key={s.id} id={`source-${s.id}`} className={styles.member} data-status={s.status}>
               <div>
                 <p className={cardStyles.itemTitle}><span className="in-chip in-chip--tide">{KIND_LABEL[s.kind] ?? s.kind}</span> {s.title}</p>
                 <p className={cardStyles.meta}>

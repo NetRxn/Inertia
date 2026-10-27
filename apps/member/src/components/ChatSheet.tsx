@@ -31,6 +31,8 @@ function sourceHref(ref: SourceRef): string | null {
       return `/funding#opportunity-${ref.id}`;
     case 'application':
       return `/funding#application-${ref.id}`;
+    case 'source':
+      return `/org?tab=data#source-${ref.id}`;
     case 'chat':
       return null;
   }

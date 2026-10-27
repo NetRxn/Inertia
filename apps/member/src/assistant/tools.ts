@@ -19,6 +19,8 @@ import { getDocument, saveDocument, type Document } from '../documents/documents
 import { listShares } from '../shares/shares';
 import { byPriority, taskKind } from '../work/initiatives';
 import { wrapSourceDataCapped } from './source-data';
+import { searchPassages } from '../org/ingest';
+import { getOrganization } from '../org/organization';
 
 /** At most this many blocks per tool call, each at most this long (tags included). */
 export const MAX_RESULTS = 8;
@@ -206,6 +208,37 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
   }
 
   return {
+    searchOrganization: tool({
+      description:
+        "Search everything the organization has shared with Inertia: its website, meeting transcripts and notes, documents, chat exports and notes. Use this first for questions about the organization, its people, programs and history.",
+      inputSchema: z.object({ query: z.string().min(1).max(200).describe('Words to look for') }),
+      execute: async ({ query }) => {
+        const hits = await searchPassages(ctx.db, query, MAX_RESULTS);
+        return results(hits.map((hit) => ({ ref: ref('source', hit.sourceId, hit.title), text: `(${hit.location})\n${hit.text}` })));
+      },
+    }),
+
+    getOrganizationProfile: tool({
+      description: "The organization's profile: mission, initiatives (and whether each is active or still proposed), programs, people and recent activity.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const org = await getOrganization(ctx.db);
+        const profile = org?.profile;
+        if (!org || !profile) return results([]);
+        const kept = profile.initiatives.filter((i) => i.status === 'accepted');
+        const text = [
+          `Name: ${org.name}`,
+          org.website ? `Website: ${org.website}` : null,
+          profile.mission ? `Mission: ${profile.mission.text}` : null,
+          ...lines('Initiatives', kept.map((i) => `${i.title}${i.adopted ? '' : ' (proposed, awaiting a vote)'}: ${i.summary}`)),
+          ...lines('Programs', profile.programs.map((l) => l.text)),
+          ...lines('People', profile.people.map((l) => l.text)),
+          ...lines('Recently', profile.recent.map((l) => l.text)),
+        ].filter((l): l is string => l !== null).join('\n');
+        return results([{ ref: ref('initiative', 'profile', `${org.name} profile`), text }]);
+      },
+    }),
+
     searchMeetings: tool({
       description:
         'Search meeting summaries, decisions, open questions and action items. Leave the query empty for the most recent meetings.',
