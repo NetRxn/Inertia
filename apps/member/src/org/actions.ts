@@ -200,3 +200,22 @@ export async function updateMember(memberId: string, change: { role?: Role; work
     return fail(error, "Couldn't update that member.");
   }
 }
+
+/** Starts pursuing a funding opportunity: a project under the grant initiative and its first tasks. */
+export async function pursueFunding(opportunityId: string): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const adapters = getAdapters();
+    const opportunity = (await adapters.funding.listOpportunities()).find((o) => o.id === opportunityId);
+    if (!opportunity) return { ok: false, error: 'That opportunity is gone. Refresh?' };
+    const { pursueOpportunity } = await import('../work/pursue');
+    const result = await pursueOpportunity(getDb(), adapters, createAskJson(getFastModel(), backgroundProviderOptions()), opportunity, member.id);
+    for (const path of ['/funding', '/work']) revalidatePath(path);
+    refresh();
+    if (result.already) return { ok: true, message: 'Already being pursued. See Work.' };
+    const people = result.plan.tasks.filter((t) => t.lane === 'human').length;
+    return { ok: true, message: `Started: ${result.created} tasks, ${people} for people. See Work.` };
+  } catch (error) {
+    return fail(error, 'Inertia could not plan this one just now. Try again in a moment?');
+  }
+}

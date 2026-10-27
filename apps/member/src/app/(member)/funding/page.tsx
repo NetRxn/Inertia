@@ -2,6 +2,10 @@ import { Suspense } from 'react';
 import { getAdapters } from '../../../adapters';
 import type { FundingApplication, FundingOpportunity } from '../../../adapters/types';
 import { requireMember } from '../../../identity/session';
+import { getDb } from '../../../db/client';
+import { isAdmin } from '../../../org/members';
+import { pursuedOpportunities } from '../../../work/pursue';
+import { PursueButton } from '../../../components/PursueButton';
 import { formatDay } from '../../../components/cards/format';
 import { ACTIONABLE_ROUTES, deadlineLabel, deadlineTime, ROUTE_LABELS, safeHttpUrl } from '../../../funding/funding';
 import cardStyles from '../../../components/cards/cards.module.css';
@@ -55,7 +59,7 @@ function ApplicationRow({ application, program }: { application: FundingApplicat
   );
 }
 
-function OpportunityRow({ opportunity, application }: { opportunity: FundingOpportunity; application?: FundingApplication }) {
+function OpportunityRow({ opportunity, application, canPursue, pursued }: { opportunity: FundingOpportunity; application?: FundingApplication; canPursue: boolean; pursued: boolean }) {
   const sourceUrl = safeHttpUrl(opportunity.sourceUrl);
   return (
     <li id={`opportunity-${opportunity.id}`} className={`${cardStyles.stack} ${styles.target}`}>
@@ -86,6 +90,7 @@ function OpportunityRow({ opportunity, application }: { opportunity: FundingOppo
           </a>
         ) : null}
       </p>
+      {canPursue && !application ? <PursueButton opportunityId={opportunity.id} pursued={pursued} /> : null}
     </li>
   );
 }
@@ -102,7 +107,9 @@ function Group({ id, label, empty, children }: { id: string; label: string; empt
 }
 
 async function FundingContent() {
-  await requireMember();
+  const member = await requireMember();
+  const canPursue = isAdmin(member);
+  const pursued = await pursuedOpportunities(getDb());
   // After the dynamic access above, so the page keeps a static shell.
   const now = new Date();
   const adapters = getAdapters();
@@ -127,7 +134,7 @@ async function FundingContent() {
   const applicationRows = (rows: FundingApplication[]) =>
     rows.map((a) => <ApplicationRow key={a.id} application={a} program={programs.get(a.opportunityId)} />);
   const opportunityRows = (rows: FundingOpportunity[]) =>
-    rows.map((o) => <OpportunityRow key={o.id} opportunity={o} application={applicationFor.get(o.id)} />);
+    rows.map((o) => <OpportunityRow key={o.id} opportunity={o} application={applicationFor.get(o.id)} canPursue={canPursue} pursued={pursued.has(o.id)} />);
 
   return (
     <div className={styles.sections}>
