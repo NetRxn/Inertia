@@ -118,3 +118,12 @@ describe('memory work engine', () => {
     expect(await work.listAgentTasks!()).toHaveLength(1);
   });
 });
+
+describe('memory work engine after a restart', () => {
+  it('reloads kept initiatives so new work lands under them', async () => {
+    const work = createMemoryWorkSource(undefined, async () => [{ id: 'ini-kept', title: 'HackFW 2026', adopted: false }]);
+    expect(await work.listInitiatives()).toEqual([{ id: 'ini-kept', title: 'HackFW 2026', status: 'paused', statusLabel: 'proposed' }]);
+    await work.createInitiative!({ title: 'Roundtables', summary: '', adopted: true });
+    expect((await work.listInitiatives()).map((i) => i.title)).toEqual(['HackFW 2026', 'Roundtables']);
+  });
+});

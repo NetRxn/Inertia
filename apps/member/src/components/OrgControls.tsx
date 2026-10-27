@@ -6,6 +6,7 @@ import {
   changeGovernance,
   decideInitiative,
   draftProfile,
+  findWorkIn,
   inviteMember,
   readOrganizationWebsite,
   setSourceVisibility,
@@ -126,6 +127,19 @@ export function ReadWebsite({ current }: { current: string | null }) {
       <button className="in-btn in-btn--secondary" disabled={pending || !url.trim()}>{pending ? 'Reading…' : 'Read website'}</button>
       <Notice message={message} />
     </form>
+  );
+}
+
+/** Read one source for work: action items and offers become open tasks. */
+export function FindWork({ id, done }: { id: string; done: boolean }) {
+  const { pending, message, run } = useAction();
+  return (
+    <div className={styles.stack}>
+      <button className="in-btn in-btn--secondary" disabled={pending || done} onClick={() => run(() => findWorkIn(id))}>
+        {pending ? 'Reading for work…' : done ? 'Read for work' : 'Find work in this'}
+      </button>
+      <Notice message={message} />
+    </div>
   );
 }
 

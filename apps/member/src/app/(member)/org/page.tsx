@@ -7,9 +7,11 @@ import { listSources } from '../../../org/ingest';
 import { integrationCards } from '../../../org/integrations';
 import { isAdmin, listMembers } from '../../../org/members';
 import { getOrganization } from '../../../org/organization';
+import { sourcesSearchedForWork } from '../../../work/suggest';
 import type { Citation, ProfileLine } from '../../../org/profile-types';
 import {
   AddToInertia,
+  FindWork,
   GovernanceToggle,
   InitiativeChoice,
   InviteMember,
@@ -138,7 +140,7 @@ const KIND_LABEL: Record<string, string> = { website: 'Website', meeting: 'Meeti
 
 async function DataTab({ admin }: { admin: boolean }) {
   const db = getDb();
-  const [sources, org, people] = await Promise.all([listSources(db, { includeHidden: admin }), getOrganization(db), listMembers(db)]);
+  const [sources, org, people, searched] = await Promise.all([listSources(db, { includeHidden: admin }), getOrganization(db), listMembers(db), sourcesSearchedForWork(db)]);
   const nameOf = new Map(people.map((p) => [p.id, p.displayName]));
   return (
     <div className={cardStyles.feed}>
@@ -159,7 +161,12 @@ async function DataTab({ admin }: { admin: boolean }) {
                   {s.status === 'hidden' && ` · Hidden: ${s.hiddenReason}`}
                 </p>
               </div>
-              {admin && <SourceVisibility id={s.id} hidden={s.status === 'hidden'} />}
+              {admin && (
+                <div>
+                  {s.status === 'active' && s.kind !== 'website' && <FindWork id={s.id} done={searched.has(s.id)} />}
+                  <SourceVisibility id={s.id} hidden={s.status === 'hidden'} />
+                </div>
+              )}
             </li>
           ))}
         </ul>

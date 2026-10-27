@@ -219,3 +219,19 @@ export async function pursueFunding(opportunityId: string): Promise<ActionResult
     return fail(error, 'Inertia could not plan this one just now. Try again in a moment?');
   }
 }
+
+/** Reads one shared source for work people or agents could pick up. */
+export async function findWorkIn(sourceId: string): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const { suggestWorkFromSource } = await import('../work/suggest');
+    const result = await suggestWorkFromSource(getDb(), getAdapters(), createAskJson(getFastModel(), backgroundProviderOptions()), sourceId, member.id);
+    refresh();
+    if (result.already) return { ok: true, message: 'Already read for work. See Work.' };
+    if (!result.created) return { ok: true, message: 'Nothing actionable found in this one.' };
+    return { ok: true, message: `Found ${result.created} item${result.created === 1 ? '' : 's'}, ${result.people} for people. See Work.` };
+  } catch (error) {
+    if (error instanceof Error && /Keep at least one initiative|not available/.test(error.message)) return { ok: false, error: error.message };
+    return fail(error, 'Inertia could not read this for work just now. Try again in a moment?');
+  }
+}

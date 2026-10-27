@@ -6,14 +6,28 @@ import type { AgentTask, ClaimResult, HumanTask, Initiative, NewTask, WorkSource
  * organization before a work engine like Paperclip is connected.
  * Everything here is lost on restart.
  */
-export function createMemoryWorkSource(now: () => Date = () => new Date()): WorkSource {
+export function createMemoryWorkSource(
+  now: () => Date = () => new Date(),
+  /** Initiatives that already exist, e.g. kept in the profile before a restart. */
+  loadInitiatives?: () => Promise<{ id: string; title: string; adopted: boolean }[]>,
+): WorkSource {
   const initiatives: Initiative[] = [];
+  let loaded: Promise<void> | null = null;
+  const ready = () => {
+    loaded ??= (async () => {
+      for (const i of (await loadInitiatives?.().catch(() => [])) ?? []) {
+        if (!initiatives.some((x) => x.id === i.id)) initiatives.push({ id: i.id, title: i.title, status: i.adopted ? 'active' : 'paused', statusLabel: i.adopted ? undefined : 'proposed' });
+      }
+    })();
+    return loaded;
+  };
   const humanTasks: HumanTask[] = [];
   const agentTasks: AgentTask[] = [];
 
   return {
     engine: { name: 'Inertia (in memory)', url: null },
     async listInitiatives() {
+      await ready();
       return [...initiatives];
     },
     async listHumanTasks() {
@@ -62,6 +76,7 @@ export function createMemoryWorkSource(now: () => Date = () => new Date()): Work
       return { ok: true };
     },
     async createInitiative({ title, adopted }) {
+      await ready();
       const id = `ini-${randomUUID()}`;
       initiatives.push({ id, title, status: adopted ? 'active' : 'paused', statusLabel: adopted ? undefined : 'proposed' });
       return { id };

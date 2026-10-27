@@ -44,7 +44,16 @@ export function getAdapters(): Adapters {
     // A real organization. Work runs in Paperclip when it is configured,
     // otherwise in a process-memory engine until one is connected.
     const paperclip = paperclipConfig(process.env);
-    const work = paperclip ? createPaperclipWorkSource(paperclip) : createMemoryWorkSource();
+    const work = paperclip
+      ? createPaperclipWorkSource(paperclip)
+      : createMemoryWorkSource(undefined, async () => {
+          const { getDb } = await import('../db/client');
+          const { getOrganization } = await import('../org/organization');
+          const profile = (await getOrganization(getDb()))?.profile;
+          return (profile?.initiatives ?? [])
+            .filter((i) => i.status === 'accepted' && i.workId)
+            .map((i) => ({ id: i.workId!, title: i.title, adopted: i.adopted }));
+        });
     globalThis.__memberAppAdapters = createLiveAdapters(work);
     return globalThis.__memberAppAdapters;
   }
