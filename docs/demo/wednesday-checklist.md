@@ -2,6 +2,8 @@
 
 Drafted 2026-10-27. Companion to the [demo plan](fwtx-demo-plan.md) and [concept](concept.md).
 
+> **Superseded 2026-10-27:** the app is the member app (`apps/member`), built per [inertia-vision.md](inertia-vision.md). The current state, setup and rehearsal checklist are in the [Wednesday runbook](runbook-wednesday.md).
+
 Two goals:
 1. **Member view of a set-up FWTX DAO org:** John logs in and sees initiatives, projects, the snapshot and work open to members.
 2. **Grant walkthrough:** a grant is found, becomes a project, gets split into agent and human tasks, and a member is asked a question whose answer goes into the draft.

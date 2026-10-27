@@ -91,3 +91,14 @@ For the Robert's Rules builder:
 
 5. How can Inertia read the member list, and should login verify the email itself or delegate to Robert's Rules?
 6. Is there a way to read proposals and vote tallies?
+
+## Running it for a real organization (live mode)
+
+Set `MEMBER_APP_ADAPTERS=live` and `MEMBER_APP_FOUNDER_EMAIL`, plus a model (`.env.example` shows Z.ai GLM). The founder signs in and gets the setup conversation ("Tell me about your organization"). From there:
+
+- **Organization** (`/org`): the cited profile and initiatives, members and roles, Data (anything anyone adds; Find work; Read GitHub), Integrations and Settings (governance).
+- **Work** (`/work`): a recap and the People and Agents lanes per initiative; **Needs you** to claim and answer.
+- **Funding** (`/funding`): **Pursue this** turns a grant finder opportunity into a project with agent and human tasks.
+- Work runs in **Paperclip** when `PAPERCLIP_URL`, `PAPERCLIP_API_KEY` and `PAPERCLIP_COMPANY_ID` are set, otherwise in process memory.
+
+`scripts/setup-org.ts` does the setup steps from the command line for seeding. The demo runbook is in `docs/demo/runbook-wednesday.md`.

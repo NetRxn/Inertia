@@ -16,8 +16,10 @@ Updated 2026-10-27. Branch `claude/demo-readiness-plan-a32n8v`. The app lives in
 | Governance switch (initiatives need a vote) | Org → Settings | Yes |
 | **Pursue** a grant: project under the grant initiative, GLM plans agent tasks and prepared human asks from org memory | Funding | Yes, 7 tasks (2 for people) in about 24 s |
 | Status tracker: recap plus People and Agents lanes per initiative | Work → Status | Yes |
-| Member claims a task ("I'll take it"), answers it, and the answer goes to the engine and org memory | Work → Needs you | Claim yes; answer covered by unit tests |
-| Chat answers from org memory with source chips | Chat bar | Yes, about 30 s |
+| Member claims a task ("I'll take it"), answers it, and the answer goes to the engine and org memory | Work → Needs you | Yes |
+| **Find work in this**: action items and offers in uploaded notes become open tasks under the right initiative, each quoting the source | Org → Data | Yes, 7 items from one set of notes in about 20 s |
+| Read GitHub repositories (an org or owner/repo) into org memory | Org → Data | Yes, 4 FWTX repos |
+| Chat answers from org memory with source chips and readable formatting | Chat bar | Yes, about 30 s |
 | Paperclip as the work engine | `PAPERCLIP_*` settings | Unit tests against a fake Paperclip; **live connection on Wednesday** |
 
 ## Run it (John's server or a laptop)
@@ -68,7 +70,8 @@ Mapping: initiative = company goal; grant = project under the goal; human task =
 
 ```sh
 npx tsx scripts/setup-org.ts --name "FWTX DAO" --website https://fwtx.city \
-  --founder kyle@... --description "..." --file notes.md --file transcript.vtt
+  --founder kyle@... --description "..." --github FWTX-DAO \
+  --file notes.md --file transcript.vtt
 ```
 
 Then sign in as the founder and finish the review in `/setup`.
@@ -77,7 +80,8 @@ Then sign in as the founder and finish the review in `/setup`.
 
 1. **Empty org → setup conversation** (2 min). Name, website, a sentence, drop in two meeting notes. "That's everything" → the profile appears with sources.
 2. **Keep initiatives**; add *Pursue grant funding strategy* (shows as proposed, awaiting a vote).
-3. **Org tab**: Members (add John), Data (everything Inertia knows, who added it), Integrations ("anything can plug in").
+3. **Org tab**: Members (add John), Data (everything Inertia knows, who added it; Read GitHub), Integrations ("anything can plug in").
+3b. **Find work**: on a meeting's notes in Data, **Find work in this** → judges, volunteers and decisions appear as open tasks under their initiatives, each quoting the line it came from.
 4. **A grant arrives** (Funding) → **Pursue this** → agent tasks and two prepared asks appear.
 5. **Work → Status**: recap, then People and Agents lanes side by side for the grant initiative.
 6. **Switch to John**: Home says something's waiting; Work → Needs you → **I'll take it** → answer → done.
@@ -88,7 +92,8 @@ Then sign in as the founder and finish the review in `/setup`.
 - Audio files aren't transcribed in the app yet; transcribe with local Whisper first (one slide).
 - Live Telegram bot: Kyle's piece; chat exports (.json) work today.
 - Funding comes from a grant finder export file until its live feed is connected.
-- Without Paperclip configured, work lives in process memory and is lost on restart.
+- Without Paperclip configured, work lives in process memory: tasks are lost on restart (kept initiatives come back).
+- Feeding the same notes in twice under a different file creates duplicate tasks; Find work runs once per source.
 - The in-memory and Paperclip engines don't regenerate the application draft themselves; Paperclip agents do that from the answers in issue comments.
 - Login email is a development mailer.
 
@@ -96,7 +101,7 @@ Then sign in as the founder and finish the review in `/setup`.
 
 - [ ] GLM key set; Org → Integrations shows the model as connected; ask the chat one question
 - [ ] Founder can sign in; `/setup` opens
-- [ ] Two real FWTX meeting notes or transcripts ready to upload
+- [ ] Two real FWTX meeting notes or transcripts ready to upload (one with clear action items for Find work)
 - [ ] Grant finder export file in place; Funding shows the opportunity
 - [ ] Paperclip connected (or knowingly demo on the in-memory engine)
 - [ ] John's account added, and his Paperclip user id linked
