@@ -175,8 +175,8 @@ it('objective_source_context denies a source hidden as spam and allows it again 
   const f = await setup(); await f.job(); const issue = (await f.rows())[0]!, run = await f.activate(issue.id);
   const store = createOrgStore(f.h.ctx.db);
   const sourceKey = 'objective:' + objectiveKey('dao', f.f.ref);
-  await store.setHidden('co', sourceKey, { by: 'mod', at: new Date().toISOString(), reason: 'spam' });
+  await store.setHidden('co', sourceKey, { by: 'mod', at: new Date().toISOString(), reason: 'spam' }, '1');
   await expect(f.call(run)).rejects.toThrow(/^Objective source unavailable or task access denied\.$/);
-  await store.setHidden('co', sourceKey, null);
+  await store.setHidden('co', sourceKey, null, '2');
   expect((await f.call(run)).data.source).toEqual(f.f.source);
 });

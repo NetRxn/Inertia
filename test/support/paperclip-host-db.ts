@@ -323,6 +323,11 @@ export interface HostDb {
   applyMigration(sql: string): Promise<void>;
   /** Make the next statement matching pattern fail as a host error would, `times` times. */
   failWhen(pattern: RegExp, times?: number): void;
+  /**
+   * Hold the next statement matching pattern just before it runs: `reached` resolves when it arrives, and it
+   * runs only after release(). A barrier for exact interleavings.
+   */
+  pauseBefore(pattern: RegExp): { reached: Promise<void>; release(): void };
   close(): Promise<void>;
 }
 
@@ -335,6 +340,7 @@ export async function createHostDb(migrations: URL[] = [migration007, migration0
   const pg = new PGlite({ parsers: { 20: (value: string) => value } });
   await pg.exec(`CREATE SCHEMA IF NOT EXISTS "${BRIDGE_NAMESPACE}"`);
   const failures: Array<{ pattern: RegExp; times: number }> = [];
+  const pauses: Array<{ pattern: RegExp; arrive(): void; gate: Promise<void> }> = [];
 
   function injected(sql: string): void {
     const failure = failures.find(f => f.times > 0 && f.pattern.test(sql));
@@ -346,6 +352,12 @@ export async function createHostDb(migrations: URL[] = [migration007, migration0
 
   async function run(sql: string, params: unknown[] | undefined) {
     const bound = bindSql(sql, overRpc(params));
+    const pause = pauses.findIndex(p => p.pattern.test(sql));
+    if (pause !== -1) {
+      const [held] = pauses.splice(pause, 1);
+      held!.arrive();
+      await held!.gate;
+    }
     injected(sql);
     return pg.query(bound.text, bound.values);
   }
@@ -381,6 +393,14 @@ export async function createHostDb(migrations: URL[] = [migration007, migration0
     applyMigration,
     failWhen(pattern: RegExp, times = 1) {
       failures.push({ pattern, times });
+    },
+    pauseBefore(pattern: RegExp) {
+      let arrive!: () => void;
+      let release!: () => void;
+      const reached = new Promise<void>(resolve => { arrive = resolve; });
+      const gate = new Promise<void>(resolve => { release = resolve; });
+      pauses.push({ pattern, arrive, gate });
+      return { reached, release };
     },
     close: () => pg.close()
   };

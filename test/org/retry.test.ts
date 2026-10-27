@@ -9,6 +9,7 @@ const founderStep = /INSERT INTO \S+org_members[\s\S]*FROM \S+org_profile/;
 const intentStep = /INSERT INTO \S+org_log/;
 const markStep = /UPDATE \S+org_log SET status/;
 const hideStep = /\S+org_sources SET hidden/;
+const memberWrite = /INSERT INTO \S+org_members AS m/;
 const reused = { kind: 'conflict', message: 'This request id was already used for a different request.' };
 const supersededError = { kind: 'conflict', message: 'Superseded by a newer change.' };
 
@@ -289,6 +290,86 @@ describe('audited mutations are requestId-keyed and retry-safe', () => {
     await expect(service.removeMember(companyId, 'bob', { requestId: done, userId: 'carol', reason: 'leaves' })).resolves.toBeUndefined();
     await service.setModerator(companyId, 'alice', { requestId: rid(), userId: 'bob', moderator: false, reason: 'demoted' });
     await expect(service.removeMember(companyId, 'bob', { requestId: done, userId: 'carol', reason: 'leaves' })).rejects.toMatchObject({ kind: 'forbidden' });
+  });
+
+  describe('ordering lives in the target write (barrier-controlled interleavings)', () => {
+    const hiddenOf = async (sourceKey: string) => (await host.pg.query<{ hidden: unknown }>(
+      `SELECT hidden FROM ${BRIDGE_NAMESPACE}.org_sources WHERE source_key=$1`, [sourceKey]
+    )).rows[0]!.hidden;
+
+    it('pending hide A paused before its write; newer restore B completes; A is superseded and the source stays restored', async () => {
+      const a = rid();
+      host.failWhen(hideStep);
+      await expect(service.hide(companyId, 'alice', { requestId: a, sourceKey: shared, reason: 'spam' })).rejects.toMatchObject({ kind: 'unavailable' });
+
+      const barrier = host.pauseBefore(hideStep);
+      const retry = service.hide(companyId, 'alice', { requestId: a, sourceKey: shared, reason: 'spam' }).then(() => 'ok', e => e);
+      await barrier.reached;
+      const b = rid();
+      await service.restore(companyId, 'alice', { requestId: b, sourceKey: shared, reason: 'fine' });
+      barrier.release();
+
+      expect(await retry).toMatchObject(supersededError);
+      expect(await hiddenOf(shared)).toBeNull();
+      expect(await opStatus(companyId, a)).toBe('superseded');
+      expect(await opStatus(companyId, b)).toBe('applied');
+    });
+
+    it('pending restore A paused before its write; newer hide B completes; the source stays hidden', async () => {
+      const a = rid();
+      host.failWhen(hideStep);
+      await expect(service.restore(companyId, 'alice', { requestId: a, sourceKey: hiddenKey, reason: 'fine' })).rejects.toMatchObject({ kind: 'unavailable' });
+
+      const barrier = host.pauseBefore(hideStep);
+      const retry = service.restore(companyId, 'alice', { requestId: a, sourceKey: hiddenKey, reason: 'fine' }).then(() => 'ok', e => e);
+      await barrier.reached;
+      const b = rid();
+      await service.hide(companyId, 'alice', { requestId: b, sourceKey: hiddenKey, reason: 'still spam' });
+      barrier.release();
+
+      expect(await retry).toMatchObject(supersededError);
+      expect(await hiddenOf(hiddenKey)).not.toBeNull();
+      expect(await opStatus(companyId, a)).toBe('superseded');
+      expect(await opStatus(companyId, b)).toBe('applied');
+    });
+
+    it('pending add A paused before its write; newer remove B completes; the member stays removed', async () => {
+      const a = rid();
+      const add = { requestId: a, userId: 'dave', displayName: 'Dave', reason: 'joins' };
+      host.failWhen(markStep);
+      await expect(service.addMember(companyId, 'alice', add)).rejects.toMatchObject({ kind: 'unavailable' });
+
+      const barrier = host.pauseBefore(memberWrite);
+      const retry = service.addMember(companyId, 'alice', add).then(() => 'ok', e => e);
+      await barrier.reached;
+      const b = rid();
+      await service.removeMember(companyId, 'alice', { requestId: b, userId: 'dave', reason: 'left' });
+      barrier.release();
+
+      expect(await retry).toMatchObject(supersededError);
+      expect((await memberRows(companyId)).find(m => m.user_id === 'dave')).toMatchObject({ status: 'removed' });
+      expect(await opStatus(companyId, a)).toBe('superseded');
+      expect(await opStatus(companyId, b)).toBe('applied');
+      expect((await logRows(companyId)).filter(r => r.subject === 'dave').map(r => r.action)).toEqual(['member.remove']);
+    });
+
+    it('two concurrent invocations of the same pending request both succeed and apply it once', async () => {
+      const a = rid();
+      const hide = { requestId: a, sourceKey: shared, reason: 'spam' };
+      host.failWhen(hideStep);
+      await expect(service.hide(companyId, 'alice', hide)).rejects.toMatchObject({ kind: 'unavailable' });
+
+      const barrier = host.pauseBefore(hideStep);
+      const first = service.hide(companyId, 'alice', hide).then(() => 'ok', e => e);
+      await barrier.reached;
+      const second = await service.hide(companyId, 'alice', hide).then(() => 'ok', e => e);
+      barrier.release();
+
+      expect([await first, second]).toEqual(['ok', 'ok']);
+      expect(await hiddenOf(shared)).toMatchObject({ by: 'alice', reason: 'spam' });
+      expect((await logRows(companyId)).filter(r => r.op_key === a)).toHaveLength(1);
+      expect(await opStatus(companyId, a)).toBe('applied');
+    });
   });
 
   it('every mutation requires a UUID v4 requestId', async () => {

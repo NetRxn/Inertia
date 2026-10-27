@@ -35,17 +35,19 @@ export interface OrgStore {
   completeFounder(companyId: string, userId: string): Promise<void>;
   readMember(companyId: string, userId: string): Promise<OrgMember | null>;
   listMembers(companyId: string): Promise<OrgMember[]>;
-  upsertMember(member: OrgMember): Promise<void>;
+  /** Write the member as op opSeq; false when a newer op already wrote this row (nothing changed). */
+  upsertMember(member: OrgMember, opSeq: string): Promise<boolean>;
   countModerators(companyId: string): Promise<number>;
   /** Insert once; a retry with the same source key changes nothing. Content travels as base64 text. */
-  insertSource(source: OrgSource, contentBase64: string | null): Promise<void>;
+  insertSource(source: OrgSource, contentBase64: string | null, opSeq: string): Promise<void>;
   readSource(companyId: string, sourceKey: string): Promise<OrgSource | null>;
   readContent(companyId: string, sourceKey: string): Promise<{ base64: string; mediaType: string | null } | null>;
   listSources(companyId: string, opts: { includeHidden: boolean; kind?: SourceKind; limit: number }): Promise<OrgSource[]>;
   listObjectiveSources(companyId: string, limit: number): Promise<ObjectiveSource[]>;
   readObjectiveSource(companyId: string, mappingKey: string): Promise<ObjectiveSource | null>;
   listHidden(companyId: string): Promise<Map<string, OrgSource['hidden']>>;
-  setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean>;
+  /** Set the hidden marker as op opSeq: stale when a newer op already wrote this source, missing when there is none. */
+  setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden'], opSeq: string): Promise<'applied' | 'stale' | 'missing'>;
   isHidden(companyId: string, sourceKey: string): Promise<boolean>;
   hasPin(companyId: string, sourceKey: string, userId: string): Promise<boolean>;
   addPin(companyId: string, sourceKey: string, userId: string): Promise<boolean>;
@@ -204,14 +206,16 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       }));
     },
 
-    async upsertMember(member: OrgMember): Promise<void> {
-      await execute(
-        `INSERT INTO ${membersTable} (company_id, user_id, display_name, role, status, joined_at)
-         VALUES ($1, $2, $3, $4, $5, $6::timestamptz)
+    async upsertMember(member: OrgMember, opSeq: string): Promise<boolean> {
+      const count = await execute(
+        `INSERT INTO ${membersTable} AS m (company_id, user_id, display_name, role, status, joined_at, applied_seq)
+         VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::bigint)
          ON CONFLICT (company_id, user_id) DO UPDATE
-         SET display_name=$3, role=$4, status=$5`,
-        [member.companyId, member.userId, member.displayName, member.role, member.status, member.joinedAt]
+         SET display_name=EXCLUDED.display_name, role=EXCLUDED.role, status=EXCLUDED.status, applied_seq=EXCLUDED.applied_seq
+         WHERE m.applied_seq IS NULL OR m.applied_seq <= EXCLUDED.applied_seq`,
+        [member.companyId, member.userId, member.displayName, member.role, member.status, member.joinedAt, opSeq]
       );
+      return count === 1;
     },
 
     async countModerators(companyId: string): Promise<number> {
@@ -222,10 +226,10 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       return Number(rows[0]?.count ?? 0);
     },
 
-    async insertSource(source: OrgSource, contentBase64: string | null): Promise<void> {
+    async insertSource(source: OrgSource, contentBase64: string | null, opSeq: string): Promise<void> {
       await execute(
-        `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, content, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, decode($12::text, 'base64'), $13::timestamptz)
+        `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, content, created_at, applied_seq)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, decode($12::text, 'base64'), $13::timestamptz, $14::bigint)
          ON CONFLICT (company_id, source_key) DO NOTHING`,
         [
           source.companyId,
@@ -240,7 +244,8 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
           source.audience,
           source.hidden ? JSON.stringify(source.hidden) : null,
           contentBase64,
-          source.createdAt
+          source.createdAt,
+          opSeq
         ]
       );
     },
@@ -354,29 +359,30 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       }));
     },
 
-    async setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden']): Promise<boolean> {
+    async setHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden'], opSeq: string): Promise<'applied' | 'stale' | 'missing'> {
+      const marker = hidden ? JSON.stringify(hidden) : null;
       if (sourceKey.startsWith('objective:')) {
+        const mappingKey = sourceKey.slice('objective:'.length);
         const count = await execute(
-          `INSERT INTO ${sourcesTable} (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, created_at)
-           SELECT $1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, now()
+          `INSERT INTO ${sourcesTable} AS s (company_id, source_key, kind, title, url, media_type, byte_length, sha256, shared_by, audience, hidden, created_at, applied_seq)
+           SELECT $1, $2, 'objective', '', NULL, NULL, NULL, NULL, '', 'members', $3::jsonb, now(), $5::bigint
            WHERE EXISTS (SELECT 1 FROM ${intakeTable} WHERE mapping_key=$4 AND record->>'companyId'=$1)
            ON CONFLICT (company_id, source_key) DO UPDATE
-           SET hidden=$3::jsonb`,
-          [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null, sourceKey.slice('objective:'.length)]
+           SET hidden=EXCLUDED.hidden, applied_seq=EXCLUDED.applied_seq
+           WHERE s.applied_seq IS NULL OR s.applied_seq <= EXCLUDED.applied_seq`,
+          [companyId, sourceKey, marker, mappingKey, opSeq]
         );
-        return count > 0;
-      }
-
-      const existing = await this.readSource(companyId, sourceKey);
-      if (!existing) {
-        return false;
+        if (count > 0) return 'applied';
+        return (await readObjectives(companyId, mappingKey, 1)).length > 0 ? 'stale' : 'missing';
       }
 
       const count = await execute(
-        `UPDATE ${sourcesTable} SET hidden=$3::jsonb WHERE company_id=$1 AND source_key=$2`,
-        [companyId, sourceKey, hidden ? JSON.stringify(hidden) : null]
+        `UPDATE ${sourcesTable} SET hidden=$3::jsonb, applied_seq=$4::bigint
+         WHERE company_id=$1 AND source_key=$2 AND kind <> 'objective' AND (applied_seq IS NULL OR applied_seq <= $4::bigint)`,
+        [companyId, sourceKey, marker, opSeq]
       );
-      return count > 0;
+      if (count > 0) return 'applied';
+      return (await this.readSource(companyId, sourceKey)) ? 'stale' : 'missing';
     },
 
     async isHidden(companyId: string, sourceKey: string): Promise<boolean> {

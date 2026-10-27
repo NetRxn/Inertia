@@ -13,6 +13,7 @@ CREATE TABLE plugin_netrxn_inertia_e936d62b87.org_members (
   role text NOT NULL CHECK (role IN ('founder', 'moderator', 'member')),
   status text NOT NULL CHECK (status IN ('active', 'removed')),
   joined_at timestamptz NOT NULL DEFAULT now(),
+  applied_seq bigint,
   PRIMARY KEY (company_id, user_id)
 );
 
@@ -30,6 +31,7 @@ CREATE TABLE plugin_netrxn_inertia_e936d62b87.org_sources (
   hidden jsonb,
   content bytea,
   created_at timestamptz NOT NULL DEFAULT now(),
+  applied_seq bigint,
   PRIMARY KEY (company_id, source_key)
 );
 
@@ -44,6 +46,9 @@ CREATE TABLE plugin_netrxn_inertia_e936d62b87.org_source_pins (
 -- op_key is the request id of the caller (setup for org.setup), and input_hash binds a retry to the
 -- same actor, action and input. A pending op that a newer op on its subject has overtaken is never
 -- applied: it becomes superseded. The feed shows only applied rows.
+-- Members and sources carry applied_seq, the org_log seq of the op that last wrote them. Every
+-- target write is conditional on applied_seq being NULL or not newer than its own op, so an older
+-- op can never overwrite a newer decision, however the calls interleave.
 -- (No quote characters in these comments: the host keyword scan strips strings before comments.)
 CREATE TABLE plugin_netrxn_inertia_e936d62b87.org_log (
   company_id text NOT NULL,

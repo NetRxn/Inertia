@@ -76,16 +76,36 @@ it('setHidden on an objective key needs an intake row for that company; never li
 
   const key = 'a'.repeat(64);
   const hidden = { by: 'charlie', at: new Date().toISOString(), reason: 'spam' };
-  expect(await store.setHidden('co3', `objective:${key}`, hidden)).toBe(false);
+  expect(await store.setHidden('co3', `objective:${key}`, hidden, '1')).toBe('missing');
   expect(await store.isHidden('co3', `objective:${key}`)).toBe(false);
 
   await pg.query(`INSERT INTO ${BRIDGE_NAMESPACE}.objective_intake (mapping_key, record) VALUES ($1, $2::jsonb)`, [key, JSON.stringify({ companyId: 'co3', snapshot: { title: 'T', audience: 'members', sourceSystem: 's' } })]);
-  expect(await store.setHidden('co4', `objective:${key}`, hidden)).toBe(false);
-  expect(await store.setHidden('co3', `objective:${key}`, hidden)).toBe(true);
+  expect(await store.setHidden('co4', `objective:${key}`, hidden, '1')).toBe('missing');
+  expect(await store.setHidden('co3', `objective:${key}`, hidden, '1')).toBe('applied');
   expect(await store.isHidden('co3', `objective:${key}`)).toBe(true);
-  expect(await store.setHidden('co3', `objective:${key}`, null)).toBe(true);
+  expect(await store.setHidden('co3', `objective:${key}`, null, '2')).toBe('applied');
+  expect(await store.isHidden('co3', `objective:${key}`)).toBe(false);
+  // An older op cannot overwrite a newer one, on the objective stub as on shares.
+  expect(await store.setHidden('co3', `objective:${key}`, hidden, '1')).toBe('stale');
   expect(await store.isHidden('co3', `objective:${key}`)).toBe(false);
   expect(await store.listSources('co3', { includeHidden: true, limit: 10 })).toEqual([]);
+});
+
+it('upsertMember and setHidden are guarded by applied_seq: an older op never overwrites a newer one', async () => {
+  const store = createOrgStore(db);
+  const member = { companyId: 'co8', userId: 'u', displayName: 'U', role: 'member' as const, status: 'active' as const, joinedAt: new Date().toISOString() };
+  expect(await store.upsertMember(member, '5')).toBe(true);
+  expect(await store.upsertMember({ ...member, status: 'removed' }, '7')).toBe(true);
+  expect(await store.upsertMember({ ...member, status: 'active' }, '6')).toBe(false);
+  expect(await store.readMember('co8', 'u')).toMatchObject({ status: 'removed' });
+  expect(await store.upsertMember({ ...member, status: 'removed' }, '7')).toBe(true);
+
+  const source = { companyId: 'co8', sourceKey: 'share:g', kind: 'link' as const, title: 'G', url: 'https://g.example', mediaType: null, byteLength: null, sha256: null, sharedBy: 'u', audience: 'members' as const, hidden: null, pins: 0, createdAt: new Date().toISOString() };
+  await store.insertSource(source, null, '5');
+  expect(await store.setHidden('co8', 'share:g', { by: 'u', at: new Date().toISOString(), reason: 'r' }, '9')).toBe('applied');
+  expect(await store.setHidden('co8', 'share:g', null, '8')).toBe('stale');
+  expect(await store.isHidden('co8', 'share:g')).toBe(true);
+  expect(await store.setHidden('co8', 'share:none', null, '8')).toBe('missing');
 });
 
 it('countModerators returns a number', async () => {
@@ -104,8 +124,8 @@ it('listSources includeHidden:false omits hidden rows', async () => {
   const source1 = { companyId: 'co4', sourceKey: 'share:s1', kind: 'link' as const, title: 'Visible Link', url: 'https://example.com', mediaType: null, byteLength: null, sha256: null, sharedBy: 'dave', audience: 'members' as const, hidden: null, pins: 0, createdAt: new Date().toISOString() };
   const source2 = { companyId: 'co4', sourceKey: 'share:s2', kind: 'note' as const, title: 'Hidden Note', url: null, mediaType: null, byteLength: null, sha256: null, sharedBy: 'dave', audience: 'members' as const, hidden: { by: 'dave', at: new Date().toISOString(), reason: 'duplicate' }, pins: 0, createdAt: new Date().toISOString() };
 
-  await store.insertSource(source1, null);
-  await store.insertSource(source2, null);
+  await store.insertSource(source1, null, '1');
+  await store.insertSource(source2, null, '1');
 
   const visible = await store.listSources('co4', { includeHidden: false, limit: 10 });
   const all = await store.listSources('co4', { includeHidden: true, limit: 10 });
@@ -122,7 +142,7 @@ it('addPin same user twice → second false, pins === 1', async () => {
   await store.createProfile(profile, founder.displayName);
 
   const source = { companyId: 'co5', sourceKey: 'share:s3', kind: 'file' as const, title: 'Document', url: null, mediaType: 'application/pdf', byteLength: 1024, sha256: 'abcd', sharedBy: 'eve', audience: 'members' as const, hidden: null, pins: 0, createdAt: new Date().toISOString() };
-  await store.insertSource(source, Buffer.from([1, 2, 3]).toString('base64'));
+  await store.insertSource(source, Buffer.from([1, 2, 3]).toString('base64'), '1');
 
   expect(await store.addPin('co5', 'share:s3', 'eve')).toBe(true);
   expect(await store.addPin('co5', 'share:s3', 'eve')).toBe(false);
@@ -166,7 +186,7 @@ it('file bytes round-trip byte-exact through the host as base64 text (all 256 va
   const bytes = new Uint8Array(512).map((_, i) => i % 256);
   const base64 = Buffer.from(bytes).toString('base64');
   const source = { companyId: 'co7', sourceKey: 'share:bytes', kind: 'file' as const, title: 'All bytes', url: null, mediaType: 'application/octet-stream', byteLength: bytes.length, sha256: null, sharedBy: 'u', audience: 'members' as const, hidden: null, pins: 0, createdAt: new Date().toISOString() };
-  await store.insertSource(source, base64);
+  await store.insertSource(source, base64, '1');
 
   const content = await store.readContent('co7', 'share:bytes');
   expect(content).toEqual({ base64, mediaType: 'application/octet-stream' });
@@ -177,6 +197,6 @@ it('file bytes round-trip byte-exact through the host as base64 text (all 256 va
 it('a link has no content to read', async () => {
   const store = createOrgStore(db);
   const source = { companyId: 'co7', sourceKey: 'share:link', kind: 'link' as const, title: 'Link', url: 'https://example.com', mediaType: null, byteLength: null, sha256: null, sharedBy: 'u', audience: 'members' as const, hidden: null, pins: 0, createdAt: new Date().toISOString() };
-  await store.insertSource(source, null);
+  await store.insertSource(source, null, '1');
   expect(await store.readContent('co7', 'share:link')).toBeNull();
 });
