@@ -10,6 +10,8 @@ const intentStep = /INSERT INTO \S+org_log/;
 const markStep = /UPDATE \S+org_log SET status/;
 const hideStep = /\S+org_sources SET hidden/;
 const memberWrite = /INSERT INTO \S+org_members AS m/;
+const removeWrite = /UPDATE \S+org_members SET status='removed'/;
+const roleWrite = /UPDATE \S+org_members SET role=/;
 const reused = { kind: 'conflict', message: 'This request id was already used for a different request.' };
 const supersededError = { kind: 'conflict', message: 'Superseded by a newer change.' };
 
@@ -352,6 +354,75 @@ describe('audited mutations are requestId-keyed and retry-safe', () => {
       expect(await opStatus(companyId, b)).toBe('applied');
       expect((await logRows(companyId)).filter(r => r.subject === 'dave').map(r => r.action)).toEqual(['member.remove']);
     });
+
+    it('remove A (older) and moderator.set B (newer) both paused; A lands first; B cannot reactivate or promote the removed member', async () => {
+      const a = rid();
+      const b = rid();
+      const removeBarrier = host.pauseBefore(removeWrite);
+      const removing = service.removeMember(companyId, 'alice', { requestId: a, userId: 'carol', reason: 'leaves' }).then(() => 'ok', e => e);
+      await removeBarrier.reached;
+      const roleBarrier = host.pauseBefore(roleWrite);
+      const promoting = service.setModerator(companyId, 'alice', { requestId: b, userId: 'carol', moderator: true, reason: 'trusted' }).then(() => 'ok', e => e);
+      await roleBarrier.reached;
+
+      removeBarrier.release();
+      expect(await removing).toBe('ok');
+      roleBarrier.release();
+
+      expect(await promoting).toMatchObject({ kind: 'conflict', message: 'Member not found.' });
+      expect((await memberRows(companyId)).find(m => m.user_id === 'carol')).toEqual({ user_id: 'carol', role: 'member', status: 'removed' });
+      expect(await opStatus(companyId, a)).toBe('applied');
+      expect(await opStatus(companyId, b)).toBe('superseded');
+      expect((await logRows(companyId)).filter(r => r.subject === 'carol').map(r => r.action)).toEqual(['member.add', 'member.remove']);
+    });
+
+    it('moderator.set A paused on an active member; remove and re-add complete; A is superseded and changes neither status nor role', async () => {
+      const a = rid();
+      const roleBarrier = host.pauseBefore(roleWrite);
+      const promoting = service.setModerator(companyId, 'alice', { requestId: a, userId: 'carol', moderator: true, reason: 'trusted' }).then(() => 'ok', e => e);
+      await roleBarrier.reached;
+      await service.removeMember(companyId, 'alice', { requestId: rid(), userId: 'carol', reason: 'leaves' });
+      await service.addMember(companyId, 'alice', { requestId: rid(), userId: 'carol', displayName: 'Carol', reason: 'back' });
+      roleBarrier.release();
+
+      expect(await promoting).toMatchObject(supersededError);
+      expect((await memberRows(companyId)).find(m => m.user_id === 'carol')).toEqual({ user_id: 'carol', role: 'member', status: 'active' });
+      expect(await opStatus(companyId, a)).toBe('superseded');
+      expect((await logRows(companyId)).filter(r => r.subject === 'carol').map(r => r.action)).toEqual(['member.add', 'member.remove', 'member.add']);
+    });
+
+    it('add A paused on a removed member; a newer add re-admits and promotion follows; A is superseded and changes nothing', async () => {
+      await service.removeMember(companyId, 'alice', { requestId: rid(), userId: 'carol', reason: 'leaves' });
+      const a = rid();
+      const addBarrier = host.pauseBefore(memberWrite);
+      const adding = service.addMember(companyId, 'alice', { requestId: a, userId: 'carol', displayName: 'Carol A', reason: 'back' }).then(() => 'ok', e => e);
+      await addBarrier.reached;
+      await service.addMember(companyId, 'alice', { requestId: rid(), userId: 'carol', displayName: 'Carol B', reason: 'back' });
+      await service.setModerator(companyId, 'alice', { requestId: rid(), userId: 'carol', moderator: true, reason: 'trusted' });
+      addBarrier.release();
+
+      expect(await adding).toMatchObject(supersededError);
+      expect((await memberRows(companyId)).find(m => m.user_id === 'carol')).toEqual({ user_id: 'carol', role: 'moderator', status: 'active' });
+      expect(await opStatus(companyId, a)).toBe('superseded');
+    });
+
+    for (const [name, run] of [
+      ['member.add', (r: string) => service.addMember(companyId, 'alice', { requestId: r, userId: 'dave', displayName: 'Dave', reason: 'joins' })],
+      ['member.remove', (r: string) => service.removeMember(companyId, 'alice', { requestId: r, userId: 'carol', reason: 'leaves' })],
+      ['moderator.set', (r: string) => service.setModerator(companyId, 'alice', { requestId: r, userId: 'bob', moderator: true, reason: 'trusted' })],
+    ] as const) {
+      it(`${name}: a same-op retry after its write landed stays idempotent, concurrent or not`, async () => {
+        const r = rid();
+        host.failWhen(markStep);
+        await expect(run(r)).rejects.toMatchObject({ kind: 'unavailable' });
+        const state = await memberRows(companyId);
+        const results = await Promise.all([run(r).then(() => 'ok', e => e), run(r).then(() => 'ok', e => e)]);
+        expect(results).toEqual(['ok', 'ok']);
+        await run(r);
+        expect(await memberRows(companyId)).toEqual(state);
+        expect((await logRows(companyId)).filter(row => row.op_key === r)).toHaveLength(1);
+      });
+    }
 
     it('two concurrent invocations of the same pending request both succeed and apply it once', async () => {
       const a = rid();

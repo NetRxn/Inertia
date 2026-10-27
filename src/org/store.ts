@@ -35,8 +35,16 @@ export interface OrgStore {
   completeFounder(companyId: string, userId: string): Promise<void>;
   readMember(companyId: string, userId: string): Promise<OrgMember | null>;
   listMembers(companyId: string): Promise<OrgMember[]>;
-  /** Write the member as op opSeq; false when a newer op already wrote this row (nothing changed). */
-  upsertMember(member: OrgMember, opSeq: string): Promise<boolean>;
+  /**
+   * Member writes as op opSeq. Each sets only its own fields and holds both its eligibility and the ordering
+   * guard (row not written by a newer op) in the one statement; a row this op already wrote stays writable so
+   * its own retry is idempotent. false: nothing written (a newer op owns the row, or the member is ineligible).
+   */
+  addMember(member: Pick<OrgMember, 'companyId' | 'userId' | 'displayName' | 'joinedAt'>, opSeq: string): Promise<boolean>;
+  removeMember(companyId: string, userId: string, opSeq: string): Promise<boolean>;
+  setMemberRole(companyId: string, userId: string, role: 'moderator' | 'member', opSeq: string): Promise<boolean>;
+  /** The org_log seq of the op that last wrote this member, as text; null when none has. */
+  memberAppliedSeq(companyId: string, userId: string): Promise<string | null>;
   countModerators(companyId: string): Promise<number>;
   /** Insert once; a retry with the same source key changes nothing. Content travels as base64 text. */
   insertSource(source: OrgSource, contentBase64: string | null, opSeq: string): Promise<void>;
@@ -206,16 +214,45 @@ export function createOrgStore(hostDb: PluginDatabaseClient): OrgStore {
       }));
     },
 
-    async upsertMember(member: OrgMember, opSeq: string): Promise<boolean> {
+    async addMember(member: Pick<OrgMember, 'companyId' | 'userId' | 'displayName' | 'joinedAt'>, opSeq: string): Promise<boolean> {
       const count = await execute(
         `INSERT INTO ${membersTable} AS m (company_id, user_id, display_name, role, status, joined_at, applied_seq)
-         VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::bigint)
+         VALUES ($1, $2, $3, 'member', 'active', $4::timestamptz, $5::bigint)
          ON CONFLICT (company_id, user_id) DO UPDATE
-         SET display_name=EXCLUDED.display_name, role=EXCLUDED.role, status=EXCLUDED.status, applied_seq=EXCLUDED.applied_seq
-         WHERE m.applied_seq IS NULL OR m.applied_seq <= EXCLUDED.applied_seq`,
-        [member.companyId, member.userId, member.displayName, member.role, member.status, member.joinedAt, opSeq]
+         SET status='active', role='member', display_name=EXCLUDED.display_name, applied_seq=EXCLUDED.applied_seq
+         WHERE (m.status='removed' AND (m.applied_seq IS NULL OR m.applied_seq <= EXCLUDED.applied_seq))
+            OR m.applied_seq = EXCLUDED.applied_seq`,
+        [member.companyId, member.userId, member.displayName, member.joinedAt, opSeq]
       );
       return count === 1;
+    },
+
+    async removeMember(companyId: string, userId: string, opSeq: string): Promise<boolean> {
+      const count = await execute(
+        `UPDATE ${membersTable} SET status='removed', applied_seq=$3::bigint
+         WHERE company_id=$1 AND user_id=$2
+           AND ((status='active' AND (applied_seq IS NULL OR applied_seq <= $3::bigint)) OR applied_seq = $3::bigint)`,
+        [companyId, userId, opSeq]
+      );
+      return count === 1;
+    },
+
+    async setMemberRole(companyId: string, userId: string, role: 'moderator' | 'member', opSeq: string): Promise<boolean> {
+      const count = await execute(
+        `UPDATE ${membersTable} SET role=$3, applied_seq=$4::bigint
+         WHERE company_id=$1 AND user_id=$2
+           AND ((status='active' AND role <> 'founder' AND (applied_seq IS NULL OR applied_seq <= $4::bigint)) OR applied_seq = $4::bigint)`,
+        [companyId, userId, role, opSeq]
+      );
+      return count === 1;
+    },
+
+    async memberAppliedSeq(companyId: string, userId: string): Promise<string | null> {
+      const rows = await query<{ applied_seq: string | null }>(
+        `SELECT applied_seq::text as applied_seq FROM ${membersTable} WHERE company_id=$1 AND user_id=$2`,
+        [companyId, userId]
+      );
+      return rows[0]?.applied_seq ?? null;
     },
 
     async countModerators(companyId: string): Promise<number> {
