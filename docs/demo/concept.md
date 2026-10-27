@@ -6,6 +6,36 @@ Drafted 2026-10-27. Working explainer for the FWTX demo, not a canonical artifac
 
 **Paperclip is the DAO's workforce and task board. Inertia is the DAO's memory and chief of staff.** Paperclip runs work once someone tells it what the work is. It doesn't know what was said in Wednesday's meeting, what's happening in Telegram, which member offered a venue last month, or that a new grant matches an initiative. Inertia listens to all of that, remembers it with sources, keeps a current picture of the organization, and **finds work**. It turns that picture into initiatives, projects and tasks in Paperclip, and points each human task at the member most likely to want it.
 
+## Product shape: a blank-slate shell with connectors (direction, 2026-10-27)
+
+Inertia starts empty. In **Settings → Sources**, an admin connects whatever the organization uses: Buzz, a Telegram bot, meeting uploads, Google Drive, GitHub, the website, socials, the grant finder. From then on it is a lightweight, secure shell that keeps growing:
+
+- it gathers internal and external sources;
+- it keeps org memory and the snapshot up to date;
+- it surfaces work for members.
+
+Nothing about FWTX is hard-coded. FWTX is just the first organization to connect its sources.
+
+Every connector implements the same small contract, so adding one never touches the core:
+
+| Part of the contract | Meaning |
+|---|---|
+| `describe` | Name, icon, what it reads, and whether it can write (most are read-only) |
+| `connect` | Credentials go into the secret vault (Paperclip's connections), never into config files or the database in plain text |
+| `listen` / `pull` | Webhook or bot for live sources; scheduled pull or manual upload for others. A cursor makes replay safe |
+| `normalize` | Turns anything into the one **source record** shape: raw content, hash, author, time, origin URL, audience |
+| `audience` | Who may see what came in (a private channel stays private) |
+| `health` | Last seen, error count, items ingested, shown on the settings card |
+| `disconnect` | Stops intake; already-ingested records stay, with a clear removal option |
+
+What makes it a *secure* shell:
+
+- connectors are added and removed by admins only;
+- each connector gets least-privilege, mostly read-only access;
+- everything that comes in is treated as **data, never as instructions**;
+- audience is carried from source to every derived fact;
+- every write back to the outside world (a Buzz reply, a Telegram message) needs an explicit setting, and anything sent in the DAO's name needs a person.
+
 ## Who does what
 
 | Job | Paperclip (exists) | Inertia (ours) |

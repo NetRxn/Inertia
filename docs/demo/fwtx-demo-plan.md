@@ -53,6 +53,25 @@ For the plain-language "what is Inertia versus Paperclip, and why store notes" e
 - **LLM for the demo:** GLM (Z.ai / Zhipu). See section 1e.
 - **Note:** the member app design from earlier needs reworking to show initiatives → projects → tasks and agent versus human work (section 1b). Not started.
 
+## 1a. Blank-slate shell with a Sources settings page (direction, 2026-10-27)
+
+Product direction: Inertia starts empty, and admins connect sources in **Settings → Sources**. See [concept.md](concept.md#product-shape-a-blank-slate-shell-with-connectors-direction-2026-10-27) for the connector contract.
+
+**Scope for Friday: show the shape, build only what the story needs.** A general connector framework plus a full rewrite toward a "streamlined repo" won't land safely by Oct 30. Instead:
+
+| Connector | Friday state | How |
+|---|---|---|
+| Meeting upload (transcript / notes; audio explained) | **Working** | Existing roundtable ingestion behind the new contract |
+| Website + GitHub repos | **Working** | One pull connector for public repos and pages |
+| Grant finder | **Working** | Existing discovery path behind the contract |
+| Buzz | **Working** (if the relay is up) | Existing bridge; card shows health |
+| Telegram | **Working via export upload**; live bot shown as "connect" | Export JSON through the same contract; live bot after the demo |
+| Drive, X/LinkedIn, Discord, Luma | Listed, "available soon" | Cards only |
+
+**Demo opening using this:** start on an empty FWTX org. Open Settings → Sources, where the connected cards show items ingested and last seen. Then cut to the populated org: proposed initiatives (section 1d) with citations, the snapshot, and the open-to-members pool. Ingestion is pre-run; the screen says when it ran. One live step: upload one transcript and watch new items and a suggested task appear.
+
+After the demo: extract the connector contract into its own small package, move the existing adapters behind it, and decide whether the shell becomes a slim new repo that depends on today's modules.
+
 ## 1b. Org model: initiatives → projects → tasks
 
 New direction (2026-10-27). This has to hold everywhere in the member app, not only in the grant demo.
@@ -215,6 +234,7 @@ Ranked by how much of the story breaks without them. "Fake it honestly" means pr
 | G14 | **Org memory schema + search** (section 1c stage 5) | Without retrieval the agents don't really use the org context | DAO PostgreSQL tables for sources, passages, knowledge items and links; full-text search first, `pgvector` if time allows; a `context pack` function used by every agent task | 1–1.5 days |
 | G16 | **Open-to-members pool + claim + contribution events** (section 1e) | "Uncover things for people to do" is the headline | `human` label filter as the pool for Wednesday; a claim action that records the events in an append-only table; "why you" text from the matcher | 1 day |
 | G17 | **GLM wiring** (section 1f) | All LLM steps and chat depend on it | GLM key in Paperclip secrets on John's runtime; `claude_local` agents pointed at the Z.ai Anthropic endpoint; Inertia calls via the OpenAI-compatible endpoint; smoke test every chat surface | 0.5 day |
+| G18 | **Settings → Sources page + connector contract** (section 1a) | Shows the blank-slate shell | Plugin settings page listing connectors with health; a small `SourceConnector` interface; wrap the 4–5 working adapters | 1–1.5 days |
 | G15 | **Member app design rework** | Must show initiatives → projects → tasks and agent versus human work | Revisit the earlier design after the demo; for the demo, native Paperclip views (G12) | Post-demo |
 | G10 | **Buzz** | Nice, not essential | Optional: show the same ask arriving in Buzz. Drop if time is short | — |
 
