@@ -243,7 +243,7 @@ describe('organization tools', () => {
     await addSource(db, { kind: 'meeting', title: 'October roundtable', content: 'Rob: The library can host our digital literacy workshops.' });
     const refs: { kind: string; title: string }[] = [];
     const tools = createAssistantTools({ adapters: createFixtureAdapters(), db, memberId: ana.id }, (r) => refs.push(...r));
-    const out = (await tools.searchOrganization.execute!({ query: 'library workshops' }, { toolCallId: 't', messages: [] })) as { results: string[] };
+    const out = (await tools.searchOrganization.execute!({ query: 'library workshops' }, options)) as { results: string[] };
     expect(out.results[0]).toContain('kind="source"');
     expect(out.results[0]).toContain('digital literacy');
     expect(refs).toEqual([expect.objectContaining({ kind: 'source', title: 'October roundtable' })]);

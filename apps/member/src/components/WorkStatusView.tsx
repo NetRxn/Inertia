@@ -34,7 +34,7 @@ export function WorkStatusView({ status, nameOf, memberExternalId }: { status: W
         {status.engine && <p className={cardStyles.meta}>Agent work runs in {status.engine.url ? <a href={status.engine.url} target="_blank" rel="noopener noreferrer">{status.engine.name}</a> : status.engine.name}.</p>}
       </section>
 
-      {status.initiatives.map(({ initiative, people, agents, peopleCounts, agentCounts }) => (
+      {status.initiatives.filter((g) => g.people.length || g.agents.length).map(({ initiative, people, agents, peopleCounts, agentCounts }) => (
         <section key={initiative.id || 'other'} className={`in-glass ${cardStyles.card}`} aria-label={initiative.title}>
           <h2 className={cardStyles.itemTitle}>
             {initiative.title}{' '}
@@ -81,6 +81,10 @@ export function WorkStatusView({ status, nameOf, memberExternalId }: { status: W
           </div>
         </section>
       ))}
+      {(() => {
+        const quiet = status.initiatives.filter((g) => g.initiative.id && !g.people.length && !g.agents.length);
+        return quiet.length ? <p className={cardStyles.meta}>No work yet: {quiet.map((g) => g.initiative.title).join(', ')}.</p> : null;
+      })()}
     </div>
   );
 }

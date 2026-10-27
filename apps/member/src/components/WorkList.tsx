@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { HumanTask, Initiative, TaskKind } from '../adapters/types';
 import { taskKind } from '../work/initiatives';
-import { claimTask } from '../work/claim';
+import { claimTask, completeTask } from '../work/claim';
 import { formatDay } from './cards/format';
 import styles from './cards/cards.module.css';
 
@@ -103,6 +103,8 @@ function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaim
         {message}
       </p>
 
+      {isClaimedByCurrentMember && <AnswerForm taskId={task.id} />}
+
       {!isClaimedByCurrentMember && (
         <div className="in-ask__actions">
           <button
@@ -114,6 +116,43 @@ function TaskCard({ task, isClaimedByCurrentMember }: { task: HumanTask; isClaim
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/** For a task you've claimed: write your answer or what you did, and finish it. */
+function AnswerForm({ taskId }: { taskId: string }) {
+  const [answer, setAnswer] = useState('');
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  async function send() {
+    setSending(true);
+    try {
+      const result = await completeTask(taskId, answer);
+      setMessage(result.message);
+      setDone(result.ok);
+    } catch {
+      setMessage("Couldn't reach the task system. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+  if (done) return <p role="status" className={styles.meta}>{message}</p>;
+  return (
+    <div className="in-ask__actions" style={{ display: 'grid', gap: 'var(--space-2)' }}>
+      <textarea
+        aria-label="Your answer"
+        value={answer}
+        onChange={(e) => setAnswer(e.target.value)}
+        rows={3}
+        placeholder="Your answer, or a note on what you did"
+        style={{ padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line-strong)', background: 'var(--surface)', color: 'var(--ink)', font: 'var(--text-body)' }}
+      />
+      <button onClick={send} disabled={sending || !answer.trim()} className="in-btn in-btn--primary">
+        {sending ? 'Sending…' : 'Done'}
+      </button>
+      {message && <p role="status" className={styles.meta}>{message}</p>}
     </div>
   );
 }

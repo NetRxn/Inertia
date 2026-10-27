@@ -51,6 +51,16 @@ export function createMemoryWorkSource(now: () => Date = () => new Date()): Work
       task.claimedBy = null;
       return { ok: true };
     },
+    async complete(taskId, memberExternalId, answer): Promise<ClaimResult> {
+      const task = humanTasks.find((t) => t.id === taskId);
+      if (!task) return { ok: false, reason: 'not-found' };
+      if (task.status !== 'claimed' || task.claimedBy !== memberExternalId) return { ok: false, reason: 'already-claimed' };
+      task.status = 'done';
+      task.completedBy = memberExternalId;
+      task.completedAt = now().toISOString();
+      task.prepared = `${task.prepared}\n\nAnswer: ${answer}`;
+      return { ok: true };
+    },
     async createInitiative({ title, adopted }) {
       const id = `ini-${randomUUID()}`;
       initiatives.push({ id, title, status: adopted ? 'active' : 'paused', statusLabel: adopted ? undefined : 'proposed' });

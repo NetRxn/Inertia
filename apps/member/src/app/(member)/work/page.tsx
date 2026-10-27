@@ -99,7 +99,7 @@ export default function WorkPage({
           aria-current={segment === 'needs-person' ? 'page' : undefined}
           className={styles.tab}
         >
-          Needs a person
+          Needs you
         </Link>
         <Link
           href="/work?tab=initiatives"

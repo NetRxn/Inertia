@@ -114,6 +114,8 @@ export interface WorkSource {
   createProject?(input: { initiativeId: string; title: string; description: string }): Promise<{ id: string }>;
   createTask?(input: NewTask): Promise<{ id: string }>;
   release?(taskId: string, memberExternalId: string): Promise<ClaimResult>;
+  /** The member finished a claimed task; their answer goes back to the engine for agents to use. */
+  complete?(taskId: string, memberExternalId: string, answer: string): Promise<ClaimResult>;
   /** The engine's name and where to open it, for Integrations and links. */
   engine?: { name: string; url: string | null };
 }

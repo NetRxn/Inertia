@@ -249,6 +249,19 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
       }
     },
 
+    async complete(taskId, memberExternalId, answer): Promise<ClaimResult> {
+      const who = await mapping.workUserOf(memberExternalId);
+      try {
+        await call(`/api/issues/${encodeURIComponent(taskId)}`, {
+          method: 'PATCH',
+          body: { status: 'done', comment: `${who?.displayName ?? 'A member'} answered in Inertia:\n\n${answer}` },
+        });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, reason: error instanceof PaperclipError && error.status === 404 ? 'not-found' : 'unavailable' };
+      }
+    },
+
     async createInitiative({ title, summary, adopted }) {
       const goal = await call<PcGoal>(`${company}/goals`, { method: 'POST', body: { title, description: summary, level: 'company', status: adopted ? 'active' : 'planned' } });
       return { id: goal.id };

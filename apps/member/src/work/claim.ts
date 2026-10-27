@@ -33,3 +33,30 @@ export async function claimTask(taskId: string): Promise<ClaimMessage> {
     return toClaimMessage(error instanceof Error ? error : new Error('Unknown error'));
   }
 }
+
+/**
+ * Finishes a claimed task with the member's answer. The answer goes back to
+ * the work engine for agents, and into what Inertia knows, so it isn't lost.
+ */
+export async function completeTask(taskId: string, answer: string): Promise<{ ok: boolean; message: string }> {
+  const member = await requireMember();
+  const text = answer.trim().slice(0, 4000);
+  if (!text) return { ok: false, message: 'Add your answer or a short note on what you did.' };
+  try {
+    const work = getAdapters().work;
+    if (!work.complete) return { ok: false, message: "This task system doesn't take answers here yet." };
+    const tasks = await work.listHumanTasks();
+    const task = tasks.find((t) => t.id === taskId);
+    const result = await work.complete(taskId, member.externalId, text);
+    if (!result.ok) return toClaimMessage(result);
+    const db = getDb();
+    await recordWorkEvent(db, { memberId: member.id, taskId, kind: 'completed', detail: text.slice(0, 500) });
+    const { addSource } = await import('../org/ingest');
+    await addSource(db, { kind: 'note', title: `${member.displayName}: ${task?.title ?? 'task answer'}`, content: text, addedBy: member.id }).catch(() => undefined);
+    revalidatePath('/work');
+    revalidatePath('/');
+    return { ok: true, message: 'Done. Thank you! Agents will pick up your answer.' };
+  } catch (error) {
+    return toClaimMessage(error instanceof Error ? error : new Error('Unknown error'));
+  }
+}

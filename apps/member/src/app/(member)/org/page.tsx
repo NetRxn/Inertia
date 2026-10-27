@@ -22,6 +22,9 @@ import cardStyles from '../../../components/cards/cards.module.css';
 import workStyles from '../work/work.module.css';
 import styles from './org.module.css';
 
+// Allow blocking route for searchParams access, as on Work.
+export const instant = false;
+
 type Tab = 'profile' | 'members' | 'data' | 'integrations' | 'settings';
 const TABS: { tab: Tab; label: string; adminOnly?: boolean }[] = [
   { tab: 'profile', label: 'Profile' },
