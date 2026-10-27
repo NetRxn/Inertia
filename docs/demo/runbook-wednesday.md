@@ -89,7 +89,7 @@ Then sign in as the founder and finish the review in `/setup`.
 
 ## Known limits (say them, don't hide them)
 
-- Audio files aren't transcribed in the app yet; transcribe with local Whisper first (one slide).
+- Audio files aren't transcribed in the app yet. `apps/member/scripts/transcribe.py` transcribes a recording locally with open-source Whisper (`pip install faster-whisper`, ffmpeg) into a `.transcript.md` to drop into Data. Its audio conversion and output are checked; the Whisper step itself hasn't been run end to end yet (model downloads were blocked in the build environment), so try it once on a short clip first.
 - Live Telegram bot: Kyle's piece; chat exports (.json) work today.
 - Funding comes from a grant finder export file until its live feed is connected.
 - Without Paperclip configured, work lives in process memory: tasks are lost on restart (kept initiatives come back).
