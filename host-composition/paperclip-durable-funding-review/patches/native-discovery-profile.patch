@@ -48,7 +48,21 @@ diff --git a/dist/services/native-runtime/native-session-executor.js b/dist/serv
  import { resolveAcpxQualification } from "./acpx-qualification.js";
  import { readLocalAiCredentialFile } from "../local-ai-credential-file.js";
  import { prepareGrokRunnerCredentials } from "./grok-runner-credentials.js";
-@@ -8118,7 +8120,10 @@
+@@ -5427,6 +5429,13 @@
+         // a later sweep from closing an owner this turn is about to acquire.
+         await closingWarmNativeSessions.get(sessionScopeId);
+         const targetKind = input.runnerExecutionTarget?.kind ?? "local";
++        // Closed public research must not stage private task/chat attachments.
++        // Reauthenticate again in the ordinary native execution path below.
++        const attachmentDiscoveryAdmission = await readNativeDiscoveryAdmission(input.db, input.execution.binding, input.execution.provider.nativeFundingPolicy, null);
++        if (attachmentDiscoveryAdmission?.role === "scout") {
++            assertPublicScoutWorkspace(input.execution.workspace.cwd);
++            return await executePaperclipNativeSessionWithinScope(input);
++        }
+         const chatAttachmentReadScope = new NativeChatAttachmentReadScope({
+             db: input.db,
+             binding: input.execution.binding,
+@@ -8118,7 +8127,10 @@
      // Remote Codex already sends dynamic tool calls over authenticated PRP. Keep
      // the assigned gateway on the control plane instead of asking the sandbox to
      // reach the host's HTTP origin (which may be private or loopback-only).
@@ -60,7 +74,7 @@ diff --git a/dist/services/native-runtime/native-session-executor.js b/dist/serv
      const assignedMcpUrl = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_URL;
      const assignedMcpToken = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_TOKEN;
      const assignedMcpName = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_NAME;
-@@ -8138,14 +8143,15 @@
+@@ -8138,14 +8150,15 @@
              gatewayPublicId: assignedGatewayPublicId,
              bearerToken: assignedMcpToken,
              workMode: input.execution.task.workMode,
@@ -78,7 +92,7 @@ diff --git a/dist/services/native-runtime/native-session-executor.js b/dist/serv
          ...(coordinator ? {nativeCoordinatorPolicy:{...coordinator,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
          ...(funding ? {nativeFundingPolicy:{...funding,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
          ...(nativeReview ? { nativeReview } : {}),
-@@ -9499,6 +9505,8 @@
+@@ -9499,6 +9512,8 @@
          opencodeRuntimeDirectory: resolve(resolvePaperclipInstanceRoot(), "runtime", "paperclip-runner", "opencode"),
          acpxRuntimeDirectory: resolve(resolvePaperclipInstanceRoot(), "runtime", "paperclip-runner", "acpx"),
          codexTransportFactory: (recoveryContext) => createRunnerdCodexTransport({
@@ -87,7 +101,7 @@ diff --git a/dist/services/native-runtime/native-session-executor.js b/dist/serv
              onSpawn: input.onSpawn,
              provider: input.execution.provider.kind === "codex"
                  ? "codex"
-@@ -9592,7 +9600,7 @@
+@@ -9592,7 +9607,7 @@
                  void input.onLog?.("stderr", `[paperclip-runner] runnerd diagnostic: ${redactSensitiveText(message).slice(-4_096)}\n`);
              },
              lifecyclePolicy: input.execution.session.lifecyclePolicy,
