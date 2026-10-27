@@ -29,7 +29,7 @@ async function checkPaperclip(env: Record<string, string | undefined>, fetchImpl
   if (!config) return { name: 'Paperclip', status: 'not set', detail: 'Set PAPERCLIP_URL, PAPERCLIP_API_KEY and PAPERCLIP_COMPANY_ID. Work runs in memory until then.' };
   const get = async <T,>(path: string): Promise<T> => {
     const response = await fetchImpl(`${config.url}${path}`, { headers: { authorization: `Bearer ${config.apiKey}`, accept: 'application/json' }, signal: AbortSignal.timeout(15_000) });
-    if (!response.ok) throw new Error(`${path} answered ${response.status}${response.status === 401 ? ' (check PAPERCLIP_API_KEY)' : response.status === 403 || response.status === 404 ? ' (check PAPERCLIP_COMPANY_ID and the key\'s company)' : ''}`);
+    if (!response.ok) throw new Error(`${path} answered ${response.status}${response.status === 401 ? ' (PAPERCLIP_API_KEY must be a board API key; agent keys are refused)' : response.status === 403 || response.status === 404 ? ' (check PAPERCLIP_COMPANY_ID and the key\'s company)' : ''}`);
     return (await response.json()) as T;
   };
   try {

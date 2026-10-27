@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../db/client';
-import { members } from '../db/schema';
+import { members, workEvents } from '../db/schema';
 import type { AgentTask, ClaimResult, HumanTask, Initiative, NewTask, TaskKind, WorkSource } from './types';
 
 export type PaperclipConfig = {
@@ -47,6 +47,11 @@ type PcIssue = {
 export type MemberMapping = {
   workUserOf(memberExternalId: string): Promise<{ userId: string | null; displayName: string } | null>;
   memberOfWorkUser(userId: string): Promise<string | null>;
+  /**
+   * Claims (and who finished) held in Inertia's work log for members with no
+   * Paperclip user: Paperclip can't mark those in progress, so Inertia keeps them exclusive.
+   */
+  inertiaClaims?(taskIds: string[]): Promise<Map<string, string>>;
 };
 
 const dbMapping: MemberMapping = {
@@ -57,6 +62,22 @@ const dbMapping: MemberMapping = {
   async memberOfWorkUser(userId) {
     const [row] = await getDb().select({ externalId: members.externalId }).from(members).where(eq(members.workUserId, userId));
     return row?.externalId ?? null;
+  },
+  async inertiaClaims(taskIds) {
+    const held = new Map<string, string>();
+    if (!taskIds.length) return held;
+    const rows = await getDb()
+      .select({ taskId: workEvents.taskId, kind: workEvents.kind, externalId: members.externalId })
+      .from(workEvents)
+      .leftJoin(members, eq(workEvents.memberId, members.id))
+      .where(inArray(workEvents.taskId, taskIds))
+      .orderBy(asc(workEvents.at));
+    for (const row of rows) {
+      // A finished task stays with whoever finished it, so the recap can credit them.
+      if ((row.kind === 'claimed' || row.kind === 'completed') && row.externalId) held.set(row.taskId, row.externalId);
+      else if (row.kind === 'released') held.delete(row.taskId);
+    }
+    return held;
   },
 };
 
@@ -129,11 +150,11 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     return projectGoals.get(issue.projectId) ?? null;
   }
 
-  async function toHumanTask(issue: PcIssue, projectGoals: Map<string, string | null>): Promise<HumanTask> {
+  async function toHumanTask(issue: PcIssue, projectGoals: Map<string, string | null>, localClaims: Map<string, string>): Promise<HumanTask> {
     const description = issue.description ?? '';
     const kind = description.match(KIND_PREFIX)?.[1]?.toLowerCase() as TaskKind | undefined;
     const minutes = description.match(MINUTES)?.[1];
-    const claimedBy = issue.assigneeUserId ? await mapping.memberOfWorkUser(issue.assigneeUserId) : null;
+    const claimedBy = issue.assigneeUserId ? await mapping.memberOfWorkUser(issue.assigneeUserId) : localClaims.get(issue.id) ?? null;
     const done = issue.status === 'done';
     return {
       id: issue.id,
@@ -143,7 +164,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
       estimateMinutes: minutes ? Number(minutes) : null,
       due: null,
       prepared: description.replace(KIND_PREFIX, '').trim(),
-      status: done ? 'done' : issue.assigneeUserId ? 'claimed' : 'open',
+      status: done ? 'done' : issue.assigneeUserId || claimedBy ? 'claimed' : 'open',
       claimedBy,
       completedBy: done ? claimedBy : null,
       completedAt: done ? issue.completedAt ?? issue.updatedAt : null,
@@ -172,7 +193,8 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
       const [labelId, issues] = await Promise.all([ensureHumanLabel(), listIssues()]);
       const projectGoals = new Map<string, string | null>();
       const tasks = issues.filter((i) => i.status !== 'cancelled' && isHuman(i, labelId));
-      return Promise.all(tasks.map((i) => toHumanTask(i, projectGoals)));
+      const localClaims = (await mapping.inertiaClaims?.(tasks.filter((i) => !i.assigneeUserId).map((i) => i.id))) ?? new Map<string, string>();
+      return Promise.all(tasks.map((i) => toHumanTask(i, projectGoals, localClaims)));
     },
 
     async listAgentTasks(): Promise<AgentTask[]> {
@@ -219,15 +241,16 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
         return { ok: false, reason: 'unavailable' };
       }
       if (issue.status === 'done' || issue.status === 'cancelled' || issue.assigneeUserId || issue.assigneeAgentId) return { ok: false, reason: 'already-claimed' };
+      if ((await mapping.inertiaClaims?.([taskId]))?.has(taskId)) return { ok: false, reason: 'already-claimed' };
       const who = await mapping.workUserOf(memberExternalId);
       try {
+        // Paperclip only allows in progress with an assignee. Members without a
+        // Paperclip user claim through a comment; Inertia's work log keeps it theirs.
         await call(`/api/issues/${encodeURIComponent(taskId)}`, {
           method: 'PATCH',
-          body: {
-            ...(who?.userId ? { assigneeUserId: who.userId } : {}),
-            status: 'in_progress',
-            comment: `Claimed in Inertia by ${who?.displayName ?? 'a member'}.`,
-          },
+          body: who?.userId
+            ? { assigneeUserId: who.userId, status: 'in_progress', comment: `Claimed in Inertia by ${who.displayName}.` }
+            : { comment: `Claimed in Inertia by ${who?.displayName ?? 'a member'} (not linked to a Paperclip user).` },
         });
         return { ok: true };
       } catch (error) {
@@ -241,7 +264,9 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
       try {
         await call(`/api/issues/${encodeURIComponent(taskId)}`, {
           method: 'PATCH',
-          body: { assigneeUserId: null, status: 'todo', comment: `Released in Inertia by ${who?.displayName ?? 'a member'}; it's open for someone else.` },
+          body: who?.userId
+            ? { assigneeUserId: null, status: 'todo', comment: `Released in Inertia by ${who.displayName}; it's open for someone else.` }
+            : { comment: `Released in Inertia by ${who?.displayName ?? 'a member'}; it's open for someone else.` },
         });
         return { ok: true };
       } catch (error) {

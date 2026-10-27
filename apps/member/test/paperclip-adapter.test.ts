@@ -37,7 +37,12 @@ function fakePaperclip() {
     if (issueMatch) {
       const issue = state.issues.find((i) => i.id === issueMatch[1]);
       if (!issue) return json({ error: 'Not found' }, 404);
-      if (method === 'PATCH') { const { comment: _comment, ...rest } = body; Object.assign(issue, rest); }
+      if (method === 'PATCH') {
+        const { comment: _comment, ...rest } = body;
+        // Like the real server: in progress needs someone assigned.
+        if (rest.status === 'in_progress' && !(rest.assigneeUserId ?? issue.assigneeUserId) && !issue.assigneeAgentId) return json({ error: 'in_progress issues require an assignee' }, 422);
+        Object.assign(issue, rest);
+      }
       return json(issue);
     }
     return json({ error: `unexpected ${method} ${p}` }, 500);
@@ -103,6 +108,28 @@ describe('Paperclip work engine', () => {
     const to = new Date('2026-10-28T00:00:00Z');
     expect(await work.completionsBetween(from, to)).toEqual([{ memberExternalId: 'm-john', count: 1 }]);
     expect(await work.agentCompletionsBetween!(from, to)).toBe(1);
+  });
+});
+
+describe('members without a Paperclip user', () => {
+  it('claim by comment and stay exclusive through the Inertia work log', async () => {
+    const pc = fakePaperclip();
+    const held = new Map<string, string>();
+    const unmapped: MemberMapping = {
+      async workUserOf() { return { userId: null, displayName: 'John' }; },
+      async memberOfWorkUser() { return null; },
+      async inertiaClaims(ids) { return new Map([...held].filter(([id]) => ids.includes(id))); },
+    };
+    const work = createPaperclipWorkSource({ url: 'https://pc.example.org', apiKey: 'key', companyId: 'c1', humanLabel: 'human', defaultAgentId: null }, { fetchImpl: pc.fetchImpl, mapping: unmapped });
+    const { id } = await work.createTask!({ initiativeId: 'g-hack', title: 'Confirm budget', description: 'Numbers', lane: 'human' });
+    expect(await work.claim(id, 'm-john')).toEqual({ ok: true });
+    expect(pc.calls.find((c) => c.method === 'PATCH')?.body).toEqual({ comment: 'Claimed in Inertia by John (not linked to a Paperclip user).' });
+    held.set(id, 'm-john'); // what the claim action records in the work log
+    expect((await work.listHumanTasks())[0]).toMatchObject({ status: 'claimed', claimedBy: 'm-john' });
+    expect(await work.claim(id, 'm-kyle')).toEqual({ ok: false, reason: 'already-claimed' });
+    expect(await work.complete!(id, 'm-john', 'Done')).toEqual({ ok: true });
+    expect(pc.state.issues[0]).toMatchObject({ status: 'done' });
+    expect((await work.listHumanTasks())[0]).toMatchObject({ status: 'done', completedBy: 'm-john' });
   });
 });
 
