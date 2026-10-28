@@ -1,0 +1,26 @@
+--- a/server/src/services/recovery/service.ts
++++ b/server/src/services/recovery/service.ts
+@@ -5568,6 +5568,23 @@
+         isNull(issues.conversationAgentId),
+         visibleIssueCondition(),
+         sql`${issues.assigneeAgentId} is not null`,
++        // Historical dependency readiness cannot override a current native wait.
++        // Only an applied decision for this exact status version is authoritative;
++        // stale/unlinked decisions and dependency-owned waits retain backstop repair.
++        notExists(
++          db.select({ id: statusDecisions.id }).from(statusDecisions).where(and(
++            eq(statusDecisions.id, issues.lastStatusDecisionId),
++            eq(statusDecisions.companyId, issues.companyId),
++            eq(statusDecisions.issueId, issues.id),
++            eq(statusDecisions.applicationState, "applied"),
++            eq(statusDecisions.toStatus, "blocked"),
++            inArray(statusDecisions.reasonCode, [
++              "current_track_blocker_waiting",
++              "task_wide_blocker_bound",
++            ]),
++            sql`${statusDecisions.decisionJson}->'projectedStatusVersion' = to_jsonb(${issues.statusVersion})`,
++          )),
++        ),
+       ];
+       if (opts?.companyId) filters.push(eq(issues.companyId, opts.companyId));
+       if (afterIssueId) filters.push(gt(issues.id, afterIssueId));
