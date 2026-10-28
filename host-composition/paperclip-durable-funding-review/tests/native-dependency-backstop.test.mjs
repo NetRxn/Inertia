@@ -13,6 +13,7 @@ const load=rel=>import(pathToFileURL(path.join(native,rel)));
 const schema=await load('@paperclipai/db/dist/schema/index.js');
 const {eq}=await load('drizzle-orm/index.js');
 const {recoveryService}=await load('@paperclipai/server/dist/services/recovery/service.js');
+const {heartbeatService}=await load('@paperclipai/server/dist/services/heartbeat.js');
 const {startEmbeddedPostgresTestDatabase,createDb}=await load('@paperclipai/db/dist/index.js');
 let temporary,db;
 before(async()=>{temporary=await startEmbeddedPostgresTestDatabase('native-dependency-backstop-');db=createDb(temporary.connectionString);});
@@ -41,10 +42,14 @@ async function fixture(options={}){
  // The real reconciler owns candidate/readiness/dedup/hold checks; only final delivery is stubbed.
  const service=recoveryService(db,{enqueueWakeup:async(agentId,input)=>{
   calls.push({agentId,input});
+  if(options.raceStatusVersion){
+   await db.update(schema.issues).set({statusVersion:4}).where(eq(schema.issues.id,issueId));
+   return heartbeatService(db).wakeup(agentId,input);
+  }
   const [wake]=await db.insert(schema.agentWakeupRequests).values({companyId,agentId,source:input.source,reason:input.reason,payload:input.payload,idempotencyKey:input.idempotencyKey,status:'completed'}).returning();
   return wake;
  }});
- return {...f,companyId,issueId,blockerId,calls,service};
+ return {...f,companyId,agentId,issueId,blockerId,calls,service};
 }
 for(const reason of ['current_track_blocker_waiting','task_wide_blocker_bound']){
  for(const targeted of [false,true])test(`current ${reason} prevents historical dependency replay (${targeted?'targeted':'scan'})`,async()=>{
@@ -73,6 +78,7 @@ for(const options of [
   assert.equal(result.healed,1);assert.equal(f.calls.length,1);
   assert.equal(f.calls[0].input.reason,'issue_blockers_resolved');
   assert.equal(f.calls[0].input.payload.issueId,f.issueId);
+  assert.deepEqual(f.calls[0].input.issueStateGuard,{statuses:['blocked'],assigneeAgentId:f.agentId,statusVersion:3});
   const again=await f.service.reconcileResolvedDependencyWakeBackstop({companyId:f.companyId});
   assert.equal(again.healed,0);assert.equal(again.existingWakeSkipped,1);assert.equal(f.calls.length,1);
  }finally{await f.close();}
@@ -81,6 +87,18 @@ test('unresolved dependencies remain ineligible',async()=>{
  const f=await fixture({unresolved:true});try{
   const result=await f.service.reconcileResolvedDependencyWakeBackstop({companyId:f.companyId});
   assert.equal(result.healed,0);assert.equal(f.calls.length,0);assert.equal(result.notReadySkipped,1);
+ }finally{await f.close();}
+});
+
+test('native enqueue rejects a status-version change after candidate selection without starting a run',async()=>{
+ const f=await fixture({raceStatusVersion:true});try{
+  const result=await f.service.reconcileResolvedDependencyWakeBackstop({companyId:f.companyId});
+  assert.equal(f.calls.length,1);
+  assert.deepEqual(f.calls[0].input.issueStateGuard,{statuses:['blocked'],assigneeAgentId:f.agentId,statusVersion:3});
+  assert.equal(result.healed,0);assert.equal(result.deferredOrFailed,1);
+  assert.equal((await f.db.select().from(schema.heartbeatRuns).where(eq(schema.heartbeatRuns.companyId,f.companyId))).length,0);
+  const receipts=await f.db.select().from(schema.agentWakeupRequests).where(eq(schema.agentWakeupRequests.companyId,f.companyId));
+  assert.equal(receipts.length,1);assert.equal(receipts[0].status,'skipped');assert.equal(receipts[0].reason,'issue_state_guard_mismatch');
  }finally{await f.close();}
 });
 

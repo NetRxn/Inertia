@@ -25,8 +25,11 @@ unlinked decisions, proposed decisions and unrelated reasons retain the existing
 readiness, deduplication, active-path, interaction and pause-hold gates. This guard
 does not modify the arbiter, committer, dependency wake keys or persisted records.
 It does not add a timer, retry budget or alternate controller. The query establishes
-authority at candidate selection; it does not introduce locking or transactional
-enqueue against concurrent task mutation.
+authority at candidate selection. Both candidate projections carry `statusVersion`;
+delivery passes the existing native `issueStateGuard` with blocked status, exact
+assignee and that version. The heartbeat enqueue transaction checks this snapshot
+under its existing issue lock and records a skipped receipt when it has changed.
+No new locking or delivery controller is introduced.
 
 ## Packaging and isolated qualification
 
@@ -50,6 +53,13 @@ enqueue against concurrent task mutation.
 - Run `tests/native-dependency-backstop-installer.test.mjs` against those packages
   for idempotence and refusal-before-write checks. It constructs temporary copies
   and can reconstruct the exact baseline from a candidate installation.
+
+The regression also intercepts delivery after real recovery candidate selection,
+commits a new synthetic status version, then calls the actual heartbeat service.
+It requires a native `issue_state_guard_mismatch` skipped receipt and zero runs.
+An enqueue-argument assertion alone is not treated as proof of race rejection.
+The existing upstream `heartbeat-stale-queue-invalidation.test.ts` verifies the
+status/assignee branch of the same native guard.
 
 Regression cases cover both explicit wait reasons in scan and targeted mode,
 repeated blocked timestamps, genuine dependency ownership, legacy/no current
@@ -79,10 +89,20 @@ changes are the existing `nativeDomainReviewComposition` import and
 pointer/status-version projection and applied/proposed commit semantics are
 unchanged. The backstop overlay preserves that completion-authority check.
 
-Candidate qualification on the same disposable pinned composition completed
+Initial candidate qualification on the same disposable pinned composition completed
 **23/23 tests passing, 0 skipped**: 14 actual-recovery-service PostgreSQL cases
 and 9 isolated installer integrity cases. The original four unexpected-delivery
 failures pass with only the recovery-service candidate applied. Positive cases
 also persist completed synthetic delivery receipts and verify the native
 same-ready-state dedup skips a second delivery. No live Docker/container, provider,
 task/configuration, intake or publication change is part of this source repair.
+
+The enqueue-race follow-up retained that initial qualification history. Against
+the initial candidate, its expanded 15-case service suite produced 5 passes and
+10 expected missing-guard assertion failures. With the selected status-version
+guard forwarded to native enqueue, final qualification completed **24/24 passing,
+0 skipped**: 15 actual-service PostgreSQL cases and the same 9 installer cases.
+The added post-selection race case passed through the actual heartbeat enqueue
+transaction, persisted `issue_state_guard_mismatch`, and created zero heartbeat
+runs. This qualifies stale-version rejection at the existing native delivery
+boundary; it does not claim provider execution or whole-case autonomy.

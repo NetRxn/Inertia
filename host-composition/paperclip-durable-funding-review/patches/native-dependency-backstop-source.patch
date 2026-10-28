@@ -1,7 +1,12 @@
 --- a/server/src/services/recovery/service.ts
 +++ b/server/src/services/recovery/service.ts
-@@ -5568,6 +5568,23 @@
-         isNull(issues.conversationAgentId),
+@@ -202,4 +202,5 @@
+     statuses: string[];
+     assigneeAgentId: string;
++    statusVersion?: number;
+   };
+ };
+@@ -5569,4 +5570,21 @@
          visibleIssueCondition(),
          sql`${issues.assigneeAgentId} is not null`,
 +        // Historical dependency readiness cannot override a current native wait.
@@ -23,4 +28,25 @@
 +        ),
        ];
        if (opts?.companyId) filters.push(eq(issues.companyId, opts.companyId));
-       if (afterIssueId) filters.push(gt(issues.id, afterIssueId));
+@@ -5586,4 +5604,5 @@
+             identifier: issues.identifier,
+             assigneeAgentId: issues.assigneeAgentId,
++            statusVersion: issues.statusVersion,
+             blockedTransitionAt: issues.blockedTransitionAt,
+             totalCount: sql<number>`count(*) over()::int`,
+@@ -5602,4 +5621,5 @@
+           identifier: issues.identifier,
+           assigneeAgentId: issues.assigneeAgentId,
++          statusVersion: issues.statusVersion,
+           blockedTransitionAt: issues.blockedTransitionAt,
+           totalCount: sql<number>`count(*) over()::int`,
+@@ -5746,4 +5766,9 @@
+             },
+             idempotencyKey,
++            issueStateGuard: {
++              statuses: ["blocked"],
++              assigneeAgentId: agentId,
++              statusVersion: candidate.statusVersion,
++            },
+             requestedByActorType: "system",
+             requestedByActorId,
