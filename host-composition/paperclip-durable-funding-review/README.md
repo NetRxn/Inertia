@@ -206,3 +206,8 @@ The paired private process can identify the exact pre-admission
 host recognizes only its exact exit-2 frame and reports confirmed non-admission;
 unknown process failures remain unconfirmed. This does not supply missing source
 evidence or authorize retrying unchanged input, eligibility, fit or an application.
+
+The source-only [native dependency backstop current-decision guard](NATIVE-DEPENDENCY-BACKSTOP.md)
+packages a pinned repair and disposable actual-service PostgreSQL regression. It
+is not wired into normal bootstrap or launch composition and does not authorize
+runtime changes.
