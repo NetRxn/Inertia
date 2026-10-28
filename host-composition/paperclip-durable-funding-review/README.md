@@ -194,3 +194,7 @@ Ordinary and diligence runs retain their attachment handling. Verify the actual
 native workspace binding; a legacy adapter cwd value alone does not select it.
 Focused entry-boundary fixtures are synthetic source checks, not hosted-search
 or business acceptance proof.
+
+### Public scout completion boundary
+
+Closed scout instructions distinguish successful bounded capture from subsequent independent agent diligence. A captured-review-required record is not human approval or application readiness. The scout completes its own satisfied stage so native dependencies can admit diligence; genuine owner-only authority and failed/incomplete captures remain explicit. This instruction regression proves delivery of the distinction, not provider compliance or end-to-end completion.
