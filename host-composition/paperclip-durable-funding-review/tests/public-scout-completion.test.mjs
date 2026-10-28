@@ -4,6 +4,8 @@ import {publicScoutProjection,publicScoutInstructions,publicScoutTurn} from '../
 const projection=publicScoutProjection({version:1,role:'scout',key:'public-funding-fixture',bindingHash:'a'.repeat(64),publicQueries:['official public funding policies']});
 test('closed scout instructions distinguish capture completion from later agent diligence and human authorization',()=>{
  const instructions=publicScoutInstructions(projection);
+ assert.match(instructions,/Coordinator owns delegation, follow-up and escalation/);
+ assert.match(instructions,/native completion report/);
  assert.match(instructions,/captured_review_required means subsequent independent agent diligence/);
  assert.match(instructions,/complete the bounded scout task as done/);
  assert.match(instructions,/Do not request human review merely because eligibility, fit, publication or application readiness is unverified/);

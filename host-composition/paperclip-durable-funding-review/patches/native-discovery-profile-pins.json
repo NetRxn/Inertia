@@ -24,10 +24,10 @@
       "candidate_sha256": "805245f6577f3e8abbc90fc38251a7746bfa2ca49b311067bbb89e0729d86499"
     },
     "dist/vendor/paperclip-runner/drivers/public-scout-projection.mjs": {
-      "candidate_sha256": "1a50f8c704b3b6b1e636312152fa740efced3408790b781363aac36e050799bc"
+      "candidate_sha256": "29e188671b5e71707b8b0d986cf710eec656a3f48d65d700f5d4e03bc208f1f5"
     }
   },
-  "patch_sha256": "0814ce504cb758fe98be9e002e2fb2cb8072f3c7fbe4152b8b740241f8b575db",
+  "patch_sha256": "b25029c4c56987c11378af6be9f189fc047b75bf7a401cd01097720776e3c73b",
   "patch": "native-discovery-profile.patch",
   "unchangedAuthGuard": {
     "file": "dist/services/ai-connection-runtime.js",
