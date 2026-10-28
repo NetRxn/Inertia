@@ -90,3 +90,20 @@ it("serializes bounded exact funding spans without adding caller identity or pol
   const input = { captureId: "capture", expectedSourceHash: "a".repeat(64), sourceIdentityReceiptId: "identity", runId: "run", queryReceiptId: "query", idempotencyKey: "key", facts: { programName: { quote: "🌱 Grant", span: { start: 0, end: 7 } } } };
   expect(await b.assessFundingFacts!(input)).toEqual({ op: "assess_funding_facts", ...input });
 });
+
+it("returns a bounded pre-admission identity rejection across the actual nonzero-exit process", async () => {
+  const b = bridge(`process.stdin.on('data',()=>{console.log(JSON.stringify({ok:false,error:{code:'program_identity_evidence_required',outcome:'not_admitted'}}));process.exitCode=2;});`);
+  await expect(b.knowledge.begin("run", {capabilities:[]})).rejects.toThrow(
+    "DFW admission rejected: program_identity_evidence_required; no admission committed",
+  );
+});
+it("keeps unrecognized nonzero process outcomes unconfirmed and never leaks diagnostics", async () => {
+  for(const script of[
+    `console.log(JSON.stringify({ok:false,error:{code:'unknown_private_failure',outcome:'not_admitted',detail:'PRIVATE'}}));process.exitCode=2;`,
+    `console.log(JSON.stringify({ok:false,error:{code:'program_identity_evidence_required',outcome:'not_admitted',detail:'PRIVATE'}}));process.exitCode=2;`,
+    `console.log(JSON.stringify({ok:false,error:{code:'program_identity_evidence_required',outcome:'not_admitted'}}));process.exitCode=3;`,
+    `console.log(JSON.stringify({ok:true,error:{code:'program_identity_evidence_required',outcome:'not_admitted'}}));process.exitCode=2;`,
+    `console.log(JSON.stringify({ok:false,error:{code:'program_identity_evidence_required',outcome:'not_admitted'}}));console.log('PRIVATE');process.exitCode=2;`,
+    `console.log('{malformed PRIVATE');process.exitCode=2;`,
+  ]) await expect(bridge(script).knowledge.begin("run",{capabilities:[]})).rejects.toThrow("DFW bridge process failed; outcome unconfirmed");
+});

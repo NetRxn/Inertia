@@ -94,8 +94,21 @@ export function createStdioDiscoveryBridge(
       });
       child.on("close", (code) => {
         if (done) return;
-        if (code !== 0)
+        if (code !== 0) {
+          // Only this pinned, pre-admission domain rejection has a confirmed
+          // non-admission outcome. Other process failures remain uncertain.
+          if (code === 2) {
+            try {
+              const lines = Buffer.concat(chunks).toString("utf8").trim().split("\n");
+              const value = lines.length === 1 ? JSON.parse(lines[0]!) : null;
+              if (value && Object.keys(value).sort().join() === "error,ok" && value.ok === false &&
+                value.error && Object.keys(value.error).sort().join() === "code,outcome" &&
+                value.error.code === "program_identity_evidence_required" && value.error.outcome === "not_admitted")
+                return fail("DFW admission rejected: program_identity_evidence_required; no admission committed");
+            } catch { /* Never forward unvalidated child output or diagnostics. */ }
+          }
           return fail("DFW bridge process failed; outcome unconfirmed");
+        }
         try {
           const lines = Buffer.concat(chunks)
             .toString("utf8")
