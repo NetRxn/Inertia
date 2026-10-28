@@ -45,6 +45,8 @@
     "apply-native-attention-deadline": "node scripts/apply-native-attention-deadline.mjs",
     "test:native-attention-deadline-installer": "node --test tests/native-attention-deadline-installer.test.mjs",
     "apply-native-domain-review": "node scripts/apply-native-domain-review.mjs",
-    "test:native-domain-review": "node --test tests/native-domain-review*.test.mjs tests/native-review-*.test.mjs"
+    "test:native-domain-review": "node --test tests/native-domain-review*.test.mjs tests/native-review-*.test.mjs",
+    "apply-native-discovery-profile": "node scripts/apply-native-discovery-profile.mjs",
+    "test:native-discovery-profile": "node --test tests/native-discovery-profile.test.mjs tests/native-discovery-installer.test.mjs"
   }
 }

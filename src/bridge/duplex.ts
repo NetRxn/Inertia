@@ -20,6 +20,17 @@ function rejectionMessage(message:Record<string,unknown>,version:string,operatio
   const generic="DFW drafting rejected request";
   if(version!=="dfw-public-drafting-v1")return generic;
   if(keys(message,["type","ok","error"]) && typeof message.error==="string" && safeRejectionCodes.has(message.error))return `${generic} (${message.error})`;
+  if(operation==="save" && authenticated && keys(message,["type","ok","error","details"]) && message.error==="proposal_validation_failed") {
+    const details=message.details;
+    if(!object(details)||!keys(details,["issues","truncated"])||typeof details.truncated!=="boolean"||!Array.isArray(details.issues)||details.issues.length<1||details.issues.length>32)return generic;
+    const fields=new Set(["target_type","target_key","value","evidence_ids","confidence","rationale","concerns","claim_support","proposal"]),seen=new Set<string>();
+    for(const issue of details.issues) {
+      if(!object(issue)||!keys(issue,["proposal_index","field","code"])||!Number.isSafeInteger(issue.proposal_index)||Number(issue.proposal_index)<0||Number(issue.proposal_index)>99||typeof issue.field!=="string"||!fields.has(issue.field)||typeof issue.code!=="string"||!["required","invalid_value","unsupported_field"].includes(issue.code))return generic;
+      const key=JSON.stringify([issue.proposal_index,issue.field,issue.code]);if(seen.has(key))return generic;seen.add(key);
+    }
+    if(Buffer.byteLength(JSON.stringify(details))>8192)return generic;
+    return `${generic}: ${JSON.stringify({code:"proposal_validation_failed",details})}`;
+  }
   if(version!=="dfw-public-drafting-v1" || operation!=="review" || !authenticated ||
      !keys(message,["type","ok","error","details"]) || message.error!=="review_validation_failed")return generic;
   const details=message.details;

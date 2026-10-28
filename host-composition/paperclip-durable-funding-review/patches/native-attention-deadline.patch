@@ -70,3 +70,12 @@
          })
          : undefined;
      const coordinator = input.execution.provider.nativeCoordinatorPolicy;
+@@ -9382,5 +9382,5 @@
+-    if (relayAssignedMcp) {
+-        // The server-held tool authority owns this credential. Do not deliver a
+-        // duplicate HTTP MCP server or its bearer token to the remote provider.
++    if (relayAssignedMcp || funding?.role === "reviewer") {
++        // Native funding reviewers use only the assigned native review authority.
++        // Never deliver a duplicate legacy HTTP MCP endpoint or its bearer token.
+         delete effectiveRunnerEnvironmentBase.PAPERCLIP_NATIVE_MCP_NAME;
+         delete effectiveRunnerEnvironmentBase.PAPERCLIP_NATIVE_MCP_URL;

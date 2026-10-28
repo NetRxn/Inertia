@@ -1,3 +1,5 @@
+import {NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA} from './native-review-artifact-schema.mjs';
+import {packetBinding,packetArtifact,packetReceipt} from './native-packet-review.mjs';
 /** One owning-host composition, installed before native startup/sweep work.
  * No registration route, model configuration, queue, reset or reconfiguration.
  * The root service must retain a returned lease until its OWN transaction ends.
@@ -16,6 +18,7 @@ const hash=value=>typeof value==='string'&&/^[0-9a-f]{64}$/.test(value);
 const toolContext='netrxn.inertia:funding_review_context',toolAdmit='netrxn.inertia:review_funding_candidate';
 function checkBinding(scope,input,binding,allowResolved=false){
  const expected=nativeDomainReviewAssignment(scope,input,{allowResolved});
+ if(scope.wholePacketReview===true&&packetBinding(binding)){if(Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_packet_review_receipt_mismatch');return;}
  if(!binding||Object.keys(binding).length!==9||!hash(binding.candidate_hash)||Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_domain_review_receipt_mismatch');
 }
 
@@ -34,6 +37,7 @@ export function createNativeDomainReviewComposition({required=false}={}) {
     },
     assertReady,
     isBound(issue){assertReady();return isBound(issue);},
+    reviewArtifactSchema(issue){assertReady();const scope=installed?.scopes.find(s=>s.companyId===issue?.companyId&&s.issueId===issue?.id);return scope?.wholePacketReview===true?NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA:NATIVE_REVIEW_ARTIFACT_SCHEMA;},
     async reviewContext(input){
       assertReady();if(!isBound(input?.issue))return null;
       const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
@@ -48,10 +52,11 @@ export function createNativeDomainReviewComposition({required=false}={}) {
       assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
       const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
       nativeDomainReviewAssignment(scope,input);
-      if(!artifact||!hash(artifact.candidate_hash)||Buffer.byteLength(JSON.stringify(artifact))>128*1024)fail('native_domain_review_artifact_invalid');
-      if(await installed.authorize(scope,input,toolAdmit,{request_id:artifact.candidate_hash,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
+      if(!artifact||!(hash(artifact.candidate_hash)||scope.wholePacketReview===true&&packetArtifact(artifact))||Buffer.byteLength(JSON.stringify(artifact))>128*1024)fail('native_domain_review_artifact_invalid');
+      if(await installed.authorize(scope,input,toolAdmit,{request_id:artifact.candidate_hash??artifact.manifest_hash,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
       const result=await installed.admitReview(scope,input,artifact);
       checkBinding(scope,input,result?.binding);
+      if(scope.wholePacketReview===true&&packetArtifact(artifact)){if(!packetReceipt(result,artifact))fail('native_packet_review_receipt_mismatch');return result;}
       if(result.binding.candidate_hash!==artifact.candidate_hash||result.artifact_hash!==digest(artifact)||!['supported','rejected'].includes(result.state))fail('native_domain_review_receipt_mismatch');
       return result;
     },
@@ -62,6 +67,7 @@ export function createNativeDomainReviewComposition({required=false}={}) {
       for(const tool of [toolContext,toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
       const result=await installed.readReviewReceipt(scope,input);
       checkBinding(scope,input,result?.binding,true);
+      if(scope.wholePacketReview===true&&packetArtifact(artifact)){if(!packetReceipt(result,artifact))fail('native_packet_review_receipt_mismatch');return result;}
       if(!artifact||result.binding.candidate_hash!==artifact.candidate_hash||result.artifact_hash!==digest(artifact)||!['supported','rejected'].includes(result.state))fail('native_domain_review_receipt_mismatch');
       return result;
     },

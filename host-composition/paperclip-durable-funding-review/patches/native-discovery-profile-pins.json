@@ -1,0 +1,40 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "candidate_sha256": "86b2a3bbaedbda1737a301617d246e3b972b75d8a691b536d7a83e74dceba470",
+      "base_sha256": "9c2b0e7b62e9ca81ca07c6ef945798d5bc144f2ec17d7233a2a5c0f7b5d4b2ec"
+    },
+    "dist/services/native-runtime/native-session-executor.js": {
+      "candidate_sha256": "ed17fb53b3b17b1853fe8e2fac84c8576eedcdd7972a7841ef2e875f0219faac",
+      "base_sha256": "3b4b6f44259e49aa112760e75918565dc25fca4eb3d02fb4747959c0c1649f42"
+    },
+    "dist/vendor/paperclip-runner/live/runnerd-codex-transport.js": {
+      "candidate_sha256": "9141dac62da8c4e7ebbe9b94f3f079942eb48d042289b07942d40ccc083b8171",
+      "base_sha256": "8711dae5584eb9402707849e5ef8b861a77b3cf6029412631bea88024bf9c02b"
+    },
+    "dist/vendor/paperclip-runner/drivers/runtime-context-materializer.js": {
+      "candidate_sha256": "591fc06e7fd2f72df5e5110680b55facc3d9a17ad44c0f9cc73344c87bff57bc",
+      "base_sha256": "8ac495b9596b6bd0a764319b238469e08a12c047e0acbd6c42bd60da9e15e4b2"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-discovery-policy.mjs": {
+      "candidate_sha256": "805245f6577f3e8abbc90fc38251a7746bfa2ca49b311067bbb89e0729d86499"
+    },
+    "dist/vendor/paperclip-runner/drivers/public-scout-projection.mjs": {
+      "candidate_sha256": "29e188671b5e71707b8b0d986cf710eec656a3f48d65d700f5d4e03bc208f1f5"
+    }
+  },
+  "patch_sha256": "b25029c4c56987c11378af6be9f189fc047b75bf7a401cd01097720776e3c73b",
+  "patch": "native-discovery-profile.patch",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/services/native-runtime/native-funding-policy.js": "c8dca6746fb1bafc5e6b2fb47cfb066d33c37ff9ec2b96a7dfcda6e2d4bf0215",
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  }
+}

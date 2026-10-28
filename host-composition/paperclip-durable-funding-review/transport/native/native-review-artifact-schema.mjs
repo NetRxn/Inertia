@@ -1,3 +1,4 @@
+import {NATIVE_PACKET_REVIEW_ARTIFACT_SCHEMA} from './native-packet-review.mjs';
 /** Exact public CandidateReview JSON contract, with nested references inlined for a tool property. Identity is never model input. */
 export const NATIVE_REVIEW_ARTIFACT_SCHEMA = {
   "additionalProperties": false,
@@ -81,3 +82,5 @@ export const NATIVE_REVIEW_ARTIFACT_SCHEMA = {
   "title": "CandidateReview",
   "type": "object"
 };
+
+export const NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA={oneOf:[NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_PACKET_REVIEW_ARTIFACT_SCHEMA]};

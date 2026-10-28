@@ -1,3 +1,4 @@
+import {packetBinding,packetArtifact,packetReceipt,packetContext,packetSubject} from './native-packet-review.mjs';
 /** Pinned native-review stdio only; no lifecycle, routing, credentials or listener.
  * An acquired fence has no expiry timer. The owning native transaction MUST
  * explicitly release it after commit/rollback and reconcile uncertain outcomes.
@@ -28,7 +29,7 @@ export class NativeReviewTransportError extends Error {
 const error=(code,message,uncertain=false)=>new NativeReviewTransportError(code,message,uncertain);
 function validContext(v){return keys(v,contextFields)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
 function validAssignment(v){return keys(v,assignmentFields)&&assignmentFields.every(k=>id(v[k]))&&v.producer_agent_id!==v.reviewer_agent_id&&v.producer_run_id!==v.reviewer_run_id;}
-function validBinding(v){return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
+function validBinding(v){if(packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
 function validArtifact(v){
  return keys(v,['candidate_hash','requirement_hash','evidence_set_hash','rubric_version','findings','requirement_supported'])
   &&['candidate_hash','requirement_hash','evidence_set_hash'].every(k=>hash(v[k]))&&typeof v.rubric_version==='string'&&v.rubric_version.length>0
@@ -69,7 +70,7 @@ function configuration(value){
 export function createNativeReviewStdio(config){
  const c=configuration(config);
  return Object.freeze({async call(op,params,callbacks){
-  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?validArtifact(params):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
   if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
   const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
@@ -197,6 +198,7 @@ class NativeReviewSession {
    &&b.reviewer_principal_id===this.context.principal_id;
  }
  validReceipt(v,artifact){
+  if(packetBinding(v?.binding))return this.bindingMatches(v.binding)&&packetReceipt(v,artifact);
   if(!keys(v,['binding','review_id','candidate_id','artifact_hash','state'])||!this.bindingMatches(v.binding)||!id(v.review_id)||!id(v.candidate_id)||!hash(v.artifact_hash)||!['supported','rejected'].includes(v.state))return false;
   if(!artifact)return true;
   const digest=createHash('sha256').update(JSON.stringify(canonical(artifact))).digest('hex');
@@ -206,6 +208,7 @@ class NativeReviewSession {
  validSuccess(v){
   if(this.op==='admit')return this.validReceipt(v,this.params);
   if(this.op==='receipt')return this.validReceipt(v);
+  if(packetBinding(v?.binding))return this.bindingMatches(v.binding)&&packetContext(v);
   if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
   const request=v.context.requests[0],candidate=request?.candidate;
   return object(request)&&request.request_id===v.binding.candidate_hash&&request.candidate_hash===v.binding.candidate_hash
@@ -216,6 +219,7 @@ class NativeReviewSession {
    &&(candidate.producer_run_id==null||candidate.producer_run_id===v.binding.producer_run_id);
  }
  validReady(v){
+  if(packetBinding(v?.binding))return keys(v,['binding','packet','receipt'])&&this.bindingMatches(v.binding)&&packetSubject(v.packet,v.binding)&&this.validReceipt(v.receipt)&&same(v.receipt.binding,v.binding);
   return keys(v,['binding','candidate','receipt'])&&this.bindingMatches(v.binding)&&keys(v.candidate,['candidate_hash','producer_principal_id','producer_run_id'])
    &&v.candidate.candidate_hash===v.binding.candidate_hash&&v.candidate.producer_principal_id===v.binding.producer_principal_id&&v.candidate.producer_run_id===v.binding.producer_run_id
    &&this.validReceipt(v.receipt)&&same(v.receipt.binding,v.binding);
@@ -230,8 +234,8 @@ class NativeReviewSession {
   const self=this;let alivePromise,releasePromise;
   return Object.freeze({binding:self.ready.binding,
    async readCandidate(selector){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);
-    if(selector!==undefined){const expected={companyId:self.assignment.company_id,projectId:self.assignment.project_id,issueId:self.assignment.issue_id,producerAgentId:self.assignment.producer_agent_id,reviewerAgentId:self.assignment.reviewer_agent_id,producerPrincipalId:self.ready.binding.producer_principal_id,reviewerPrincipalId:self.ready.binding.reviewer_principal_id,producerRunId:self.assignment.producer_run_id};if(!object(selector)||Object.keys(selector).some(k=>!Object.hasOwn(expected,k)||selector[k]!==expected[k]))throw error('native_review_scope','Native review fence scope mismatch');}
-    return self.ready.candidate;
+    if(selector!==undefined){const expected={...(packetBinding(self.ready.binding)?{wholePacketReview:true}:{}),companyId:self.assignment.company_id,projectId:self.assignment.project_id,issueId:self.assignment.issue_id,producerAgentId:self.assignment.producer_agent_id,reviewerAgentId:self.assignment.reviewer_agent_id,producerPrincipalId:self.ready.binding.producer_principal_id,reviewerPrincipalId:self.ready.binding.reviewer_principal_id,producerRunId:self.assignment.producer_run_id};if(!object(selector)||Object.keys(selector).some(k=>!Object.hasOwn(expected,k)||selector[k]!==expected[k]))throw error('native_review_scope','Native review fence scope mismatch');}
+    return self.ready.packet??self.ready.candidate;
    },
    async readAdmission(binding){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);if(!same(binding,self.ready.binding))throw error('native_review_scope','Native review fence binding mismatch');return self.ready.receipt;},
    assertAlive(){if(releasePromise)return Promise.reject(error('native_review_closed','Native review fence releasing; outcome unconfirmed',true));if(!alivePromise)alivePromise=Promise.resolve().then(()=>self.command('assert_alive')).finally(()=>{alivePromise=undefined;});return alivePromise;},
