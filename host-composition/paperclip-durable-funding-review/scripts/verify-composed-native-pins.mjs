@@ -4,7 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
-const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging','native-coordinator-child-capacity','native-reconciliation-isolation','native-ai-binding-comparison','native-coordinator-server-capacity','native-coordinator-structural-recovery'];
+const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging','native-coordinator-child-capacity','native-reconciliation-isolation','native-ai-binding-comparison','native-coordinator-server-capacity','native-coordinator-structural-recovery','native-organization-search'];
 // This is one explicitly reviewed metadata supersession, not a general last-writer-wins rule.
 const contractFile='dist/services/native-runtime/native-case-work-tools.mjs';
 const predecessor='56a31978d149429f7c626374b31710c4fe906afb7daa9c92b83308fe27dc200f';
@@ -32,6 +32,8 @@ async function safeRead(root,file){
 }
 const serverCapacityTransitions={"dist/services/native-runtime/native-coordinator-policy.js":{"base_sha256":"fde3c25c95835b1f0ab329ffc4e80fbc6bef4e98ccaaa940ac20032c8e916868","candidate_sha256":"8f76a2b29b1d9e24c27616d71b778ff1ba375ac9d031b026d9261452f36ad09f"},"dist/services/native-runtime/paperclip-runner-tool-authority.js":{"base_sha256":"34e2981aca364586b692e001999b172965e18778e82d24c9630fcb3e1fcd1f63","candidate_sha256":"2449ceca2332e558883ee2031d4d5f01a07a21c09411f26929d2bfe690ea7800"}};
 const structuralRecoveryTransitions={"dist/services/recovery/service.js":{"base_sha256":"06d5feba39fec523c3fbd3d1c9db40d1aa13eef8f0d283e280ba7f1da80a96ca","candidate_sha256":"7103efafa5f4f81637bfda81f4bc75d27b6721b9ab77fedb9246af54716996bb"}};
+const organizationTransitions={"dist/services/native-runtime/native-task-project-tools.mjs":{"base_sha256":"60ae7a4498ba68741f7e2191050fd89e47fca10010f7530852b22a7f1a89bb40","candidate_sha256":"46dff277ffb921a957457fd072fd98d19484a7da978e407e96b3409366030165"},"dist/services/native-runtime/paperclip-runner-tool-authority.js":{"base_sha256":"2449ceca2332e558883ee2031d4d5f01a07a21c09411f26929d2bfe690ea7800","candidate_sha256":"2ef121d7a48989bca0b2eb5b0b32e8e32d10b11dc3dd1953630d0f37b2e4d858"},"dist/services/native-runtime/native-session-executor.js":{"base_sha256":"5f8d198cdeb56c77d81eeb645fa28debc7884a35d25c7862bda14a091ce989e4","candidate_sha256":"30ca0ce200ad538af363b2e79a48dea8ec83dbb8cc4744ca8ef96820c383eb61"},"dist/services/tool-gateway.js":{"base_sha256":"4be446d0b5d67b53f6ec872506c835f5a824731205e815f2846cc51125929d00","candidate_sha256":"bdcd0dc4e1d7ae464b7d27a71328c31c74e7ea4fe23d4ecde6947a0d95d9f87d"},"dist/services/native-runtime/assigned-mcp-tools.js":{"base_sha256":"2832429aacddcaddc9f0f6e21876da663c3af4ec5c4ac0957b5ca45f77f16514","candidate_sha256":"c876e82442fa6d622391784c3f34f540e78a0a61fb925b3525cefb77c51957c3"},"dist/services/native-runtime/native-session-resume.js":{"base_sha256":"33ec66488d0331ffecaff5cf219f3e45c1d827e93c9b92f2c4566990b21d12f2","candidate_sha256":"cd8dc0f7e6da70242c1bd03891cc51b757bcce89a41da18322c52673deab1021"},"dist/services/plugin-host-services.js":{"base_sha256":"40e0bb0dd8c53743fbea964aa7afc36e606cd07330029b5d47552b140f42b852","candidate_sha256":"318ed53d9ad22ceaa5934b19f00b3ab5ad15dcca25629a6702b5535403772b90"}};
+const organizationNewFiles={"dist/services/native-runtime/native-organization-search.mjs":"6fbca7361917cf2144682a913ab1fb1995bfaa0e87ecb1403610c2017aa3923f"};
 export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
  if(![serverRoot,patchesRoot].every(value=>typeof value==='string'&&path.isAbsolute(value)))throw Error('explicit_native_source_roots_required');
  const server=await fs.realpath(serverRoot),patches=await fs.realpath(patchesRoot),pins=[];
@@ -55,10 +57,12 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
  const bindingPin=pins[12];if(Object.keys(bindingPin.files).length!==1||Object.keys(bindingPin.newFiles).length||Object.entries(aiBindingTransitions).some(([file,value])=>bindingPin.files[file]?.base_sha256!==value.base_sha256||bindingPin.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_ai_binding_lineage_denied');
  const serverCapacity=pins[13];if(Object.keys(serverCapacity.files).length!==2||Object.keys(serverCapacity.newFiles).length||Object.entries(serverCapacityTransitions).some(([file,value])=>serverCapacity.files[file]?.base_sha256!==value.base_sha256||serverCapacity.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_server_capacity_lineage_denied');
  const structuralRecovery=pins[14];if(Object.keys(structuralRecovery.files).length!==1||Object.keys(structuralRecovery.newFiles).length||Object.entries(structuralRecoveryTransitions).some(([file,value])=>structuralRecovery.files[file]?.base_sha256!==value.base_sha256||structuralRecovery.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_structural_recovery_lineage_denied');
+ const organization=pins[15];if(JSON.stringify(Object.keys(organization.files).sort())!==JSON.stringify(Object.keys(organizationTransitions).sort())||JSON.stringify(Object.keys(organization.newFiles).sort())!==JSON.stringify(Object.keys(organizationNewFiles).sort())||Object.entries(organizationTransitions).some(([f,v])=>organization.files[f]?.base_sha256!==v.base_sha256||organization.files[f]?.candidate_sha256!==v.candidate_sha256)||Object.entries(organizationNewFiles).some(([f,h])=>organization.newFiles[f]?.candidate_sha256!==h))throw Error('native_organization_lineage_denied');
  const packageInfo=JSON.parse(await safeRead(server,'package.json')),build=JSON.parse(await safeRead(server,'dist/build-info.json'));
  const expected=new Map();let supersededFiles=0;
  for(let i=0;i<pins.length;i++){
   const pin=pins[i];
+  if(i===15)for(const[file,value]of Object.entries(organizationTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
   if(i===14)for(const[file,value]of Object.entries(structuralRecoveryTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
   if(i===11)for(const[file,value]of Object.entries(reconciliationTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
   if(i===8)for(const[file,value]of Object.entries(currentTrackTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
@@ -84,13 +88,14 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
     const aiBindingContract=i===12&&aiBindingTransitions[file]?.base_sha256===previous&&aiBindingTransitions[file]?.candidate_sha256===digest;
     const serverCapacityContract=i===13&&serverCapacityTransitions[file]?.base_sha256===previous&&serverCapacityTransitions[file]?.candidate_sha256===digest;
     const structuralRecoveryContract=i===14&&structuralRecoveryTransitions[file]?.base_sha256===previous&&structuralRecoveryTransitions[file]?.candidate_sha256===digest;
-    if(!structuralRecoveryContract&&!serverCapacityContract&&!aiBindingContract&&!reconciliationContract&&!childCapacityContract&&!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
+    const organizationContract=i===15&&organizationTransitions[file]?.base_sha256===previous&&organizationTransitions[file]?.candidate_sha256===digest;
+    if(!organizationContract&&!structuralRecoveryContract&&!serverCapacityContract&&!aiBindingContract&&!reconciliationContract&&!childCapacityContract&&!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
     supersededFiles++;
    }
    expected.set(file,digest);
   }
  }
- if(supersededFiles!==26)throw Error('native_contract_lineage_denied');
+ if(supersededFiles!==33)throw Error('native_contract_lineage_denied');
  for(const [file,digest] of expected)if(sha(await safeRead(server,file))!==digest)throw Error('native_pin_drift: '+file);
  return {overlays:[...overlays],verifiedFiles:expected.size,supersededFiles,providerStarted:false,databaseStarted:false};
 }

@@ -65,6 +65,8 @@
     "test:native-case-result-envelope-installer": "node --test tests/native-case-result-envelope-installer.test.mjs",
     "apply-native-source-receipt-envelope": "node scripts/apply-native-source-receipt-envelope.mjs",
     "test:native-source-receipt-envelope-installer": "node --test tests/native-source-receipt-envelope-installer.test.mjs",
-    "apply-native-case-documents": "node scripts/apply-native-case-documents.mjs"
+    "apply-native-case-documents": "node scripts/apply-native-case-documents.mjs",
+    "apply-native-organization-search": "node scripts/apply-native-organization-search.mjs",
+    "test:native-organization-search": "node --test tests/native-organization-search.test.mjs tests/native-organization-search-installer.test.mjs"
   }
 }
