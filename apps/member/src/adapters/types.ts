@@ -44,6 +44,8 @@ export interface Proposal {
 }
 
 export interface ProposalSource {
+  /** False while no voting system is connected, so screens say so instead of showing an empty record. */
+  readonly connected?: boolean;
   listProposals(): Promise<Proposal[]>;
 }
 

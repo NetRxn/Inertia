@@ -64,7 +64,8 @@ export function createLiveAdapters(work: WorkSource, env: Record<string, string 
   return {
     // Members are added in the app; there is no outside directory to sync yet.
     directory: { async listMembers() { return []; } },
-    proposals: { async listProposals() { return []; } },
+    // Placeholder until Robert's Rules (Vocdoni) is connected.
+    proposals: { connected: false, async listProposals() { return []; } },
     events: { async listUpcoming() { return []; } },
     // Chat comes from digests the connectors (Telegram, Buzz) deliver, and from uploaded exports.
     chat: {

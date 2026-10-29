@@ -9,6 +9,7 @@ import {
   draftProfile,
   findWorkIn,
   inviteMember,
+  memberSignInLink,
   readOrganizationWebsite,
   readGithubRepos,
   setSourceVisibility,
@@ -23,22 +24,43 @@ function useAction() {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
   const run = (action: () => Promise<ActionResult>, after?: () => void) => {
     setMessage(null);
+    setLink(null);
     start(async () => {
       const result = await action();
       setMessage(result.ok ? result.message ?? null : result.error);
+      setLink(result.ok ? result.link ?? null : null);
       if (result.ok) {
         after?.();
         router.refresh();
       }
     });
   };
-  return { pending, message, run };
+  return { pending, message, link, run };
 }
 
 function Notice({ message }: { message: string | null }) {
   return message ? <p className={styles.notice} role="status">{message}</p> : null;
+}
+
+/** A one-time sign-in link for the admin to copy and send, since the app sends no email yet. */
+function SignInLink({ url }: { url: string | null }) {
+  const [copied, setCopied] = useState(false);
+  if (!url) return null;
+  return (
+    <div className={styles.row}>
+      <input className={styles.input} aria-label="Sign-in link" value={url} readOnly onFocus={(e) => e.currentTarget.select()} />
+      <button
+        type="button"
+        className="in-btn in-btn--quiet"
+        onClick={() => navigator.clipboard?.writeText(url).then(() => setCopied(true), () => setCopied(false))}
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  );
 }
 
 /** Redraft the profile from everything shared so far. */
@@ -168,7 +190,7 @@ export function SourceVisibility({ id, hidden }: { id: string; hidden: boolean }
 }
 
 export function InviteMember() {
-  const { pending, message, run } = useAction();
+  const { pending, message, link, run } = useAction();
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<Role>('member');
@@ -182,16 +204,18 @@ export function InviteMember() {
       </select>
       <button className="in-btn in-btn--primary" disabled={pending || !email.trim()}>Add member</button>
       <Notice message={message} />
+      <SignInLink url={link} />
     </form>
   );
 }
 
 export function MemberControls({ id, role, workUserId, isSelf }: { id: string; role: Role; workUserId: string | null; isSelf: boolean }) {
-  const { pending, message, run } = useAction();
+  const { pending, message, link, run } = useAction();
   const [work, setWork] = useState(workUserId ?? '');
   return (
     <div className={styles.stack}>
       <div className={styles.row}>
+        <button className="in-btn in-btn--quiet" disabled={pending} onClick={() => run(() => memberSignInLink(id))}>Sign-in link</button>
         <button className="in-btn in-btn--quiet" disabled={pending} onClick={() => run(() => updateMember(id, { role: role === 'admin' ? 'member' : 'admin' }))}>{role === 'admin' ? 'Make member' : 'Make admin'}</button>
         {!isSelf && <button className="in-btn in-btn--quiet" disabled={pending} onClick={() => { if (window.confirm('Remove this member? Their history stays.')) run(() => updateMember(id, { remove: true })); }}>Remove</button>}
       </div>
@@ -200,6 +224,7 @@ export function MemberControls({ id, role, workUserId, isSelf }: { id: string; r
         <button className="in-btn in-btn--quiet" disabled={pending || work === (workUserId ?? '')}>Save</button>
       </form>
       <Notice message={message} />
+      <SignInLink url={link} />
     </div>
   );
 }

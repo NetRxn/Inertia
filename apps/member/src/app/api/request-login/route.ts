@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { getDb } from '../../../db/client';
 import { requestLoginLink } from '../../../identity/auth';
-import { devMailer } from '../../../identity/mailer';
+import { devMailer, mailerMode } from '../../../identity/mailer';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
@@ -11,8 +11,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  // Respond immediately with success for every input
-  const response = NextResponse.json({ ok: true });
+  // The same answer for every input, so it reveals nothing about who is a member.
+  const mode = mailerMode();
+  const response = NextResponse.json({ ok: true, delivery: mode === 'none' ? 'admin' : 'email' });
+  if (mode === 'none') return response;
 
   // Do the actual work asynchronously to avoid timing attacks
   after(async () => {

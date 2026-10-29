@@ -117,7 +117,7 @@ async function MembersTab({ admin, selfId }: { admin: boolean; selfId: string })
         <section className={`in-glass ${cardStyles.card}`}>
           <h2 className={`in-label ${cardStyles.eyebrow}`}>Add someone</h2>
           <InviteMember />
-          <p className={cardStyles.meta}>They sign in with a link sent to their email.</p>
+          <p className={cardStyles.meta}>Inertia gives you a one-time sign-in link to send them. It doesn&apos;t email anyone yet.</p>
         </section>
       )}
       <section className={`in-glass ${cardStyles.card}`}>

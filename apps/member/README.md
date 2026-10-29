@@ -25,6 +25,12 @@ The database lives in `data/pglite` (git-ignored). No Docker is needed. Set `DAT
 2. In development no mail is sent. The login link is printed in the dev server's console and written to `data/dev-mail/<email>.txt`.
 3. Open that link. It works once and expires after 15 minutes. Unknown emails get the same "check your email" response, and no link.
 
+**On a real install (no email yet).** Production runs in live mode and sends no email (`MEMBER_APP_MAILER=none`). People get in with one-time sign-in links that work for 3 days:
+
+- **First admin:** on the server, run `npx tsx scripts/sign-in-link.ts you@example.org`. On a fresh install that email becomes the first admin. The script prints the link, so treat the output like a password.
+- **Everyone else:** an admin adds them in Organization → Members and copies the link that appears. If a link was used or expired, use **Sign-in link** on that member's row to get a new one.
+- Someone who enters their email on the login page is told to ask an admin for their link. The page says the same thing whether or not the email belongs to a member.
+
 Directory sync revokes every outstanding login link when a member's normalized
 email or active status changes (including disappearance from the directory).
 Changing the email back or reactivating the member does not revive old links.

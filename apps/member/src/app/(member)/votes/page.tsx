@@ -48,7 +48,20 @@ function ProposalRow({ proposal }: { proposal: Proposal }) {
 
 async function VotesContent() {
   await requireMember();
-  const proposals = await getAdapters().proposals.listProposals();
+  const source = getAdapters().proposals;
+  if (source.connected === false) {
+    return (
+      <div className={styles.sections}>
+        <section className={`in-glass ${cardStyles.card}`} aria-labelledby="votes-not-connected">
+          <h2 id="votes-not-connected" className={`in-label ${cardStyles.eyebrowTide}`}>
+            Not connected yet
+          </h2>
+          <p>Votes will show here once Inertia is connected to Robert&apos;s Rules. Until then, vote in Robert&apos;s Rules as usual.</p>
+        </section>
+      </div>
+    );
+  }
+  const proposals = await source.listProposals();
 
   return (
     <div className={styles.sections}>

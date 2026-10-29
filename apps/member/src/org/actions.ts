@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { getAdapters } from '../adapters';
 import { backgroundProviderOptions, getFastModel } from '../assistant/model';
 import { getDb } from '../db/client';
+import { issueSignInLink } from '../identity/auth';
 import { requireMember } from '../identity/session';
 import { addSource, hideSource, IngestError, restoreSource } from './ingest';
 import { createAskJson } from './llm';
@@ -13,7 +14,7 @@ import { completeSetup, getOrganization, saveBasics, saveProfile, setGovernance,
 import { regenerateProfile } from './profile';
 import { readWebsite } from './website';
 
-export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
+export type ActionResult = { ok: true; message?: string; link?: string } | { ok: false; error: string };
 
 function fail(error: unknown, fallback: string): ActionResult {
   if (error instanceof MemberError || error instanceof IngestError) return { ok: false, error: error.message };
@@ -176,14 +177,31 @@ export async function setSourceVisibility(id: string, visible: boolean, reason =
   }
 }
 
+const signInBase = () => process.env.MEMBER_APP_BASE_URL || 'http://localhost:3000';
+
+/** Adds a member and returns a one-time sign-in link for the admin to send them. */
 export async function inviteMember(input: { email: string; displayName: string; role: Role }): Promise<ActionResult> {
   try {
     const member = await requireMember();
-    const added = await addMember(getDb(), member, input);
+    const db = getDb();
+    const added = await addMember(db, member, input);
+    const issued = await issueSignInLink(db, added.id, { baseUrl: signInBase() });
     refresh();
-    return { ok: true, message: `${added.displayName} can now sign in with ${added.email}.` };
+    return { ok: true, message: `${added.displayName} is a member. Send them this sign-in link; it works once, within 3 days.`, link: issued?.url };
   } catch (error) {
     return fail(error, "Couldn't add that member.");
+  }
+}
+
+/** A fresh one-time sign-in link for an existing member, for when theirs was used or expired. */
+export async function memberSignInLink(memberId: string): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    const issued = await issueSignInLink(getDb(), memberId, { baseUrl: signInBase() });
+    if (!issued) return { ok: false, error: 'That member is no longer active.' };
+    return { ok: true, message: 'Send this sign-in link; it works once, within 3 days.', link: issued.url };
+  } catch (error) {
+    return fail(error, "Couldn't make a sign-in link.");
   }
 }
 

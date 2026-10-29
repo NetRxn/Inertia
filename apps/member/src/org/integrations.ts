@@ -1,3 +1,4 @@
+import { adapterMode } from '../adapters';
 import type { Adapters } from '../adapters/types';
 
 export type IntegrationStatus = 'connected' | 'available' | 'planned';
@@ -17,7 +18,7 @@ export interface IntegrationCard {
  * integration only needs to say what it reads or writes and how it connects.
  */
 export function integrationCards(env: Record<string, string | undefined>, adapters: Pick<Adapters, 'work'>, counts: { sources: number; meetings: number; chatExports: number; repositories?: number; buzzDigests?: number; telegramDigests?: number }): IntegrationCard[] {
-  const live = env.MEMBER_APP_ADAPTERS === 'live';
+  const live = adapterMode(env) === 'live';
   const engine = adapters.work.engine?.name;
   const model = env.MEMBER_APP_MODEL_PROVIDER && env.MEMBER_APP_MODEL ? `${env.MEMBER_APP_MODEL}${env.MEMBER_APP_MODEL_BASE_URL?.includes('z.ai') ? ' (Z.ai)' : ''}` : null;
   return [
