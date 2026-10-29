@@ -1,0 +1,9 @@
+{
+  "generatedAt": "2026-10-29T21:13:25+00:00",
+  "evidenceCutoff": "2026-10-29 16:01:56 CDT operator maintenance restoration proof",
+  "progressSha256": "cb58a50a2a44ed392ad4d105590b0f8a65739236a050a124135653afaf6d25e9",
+  "availability": "Paperclip UI/API restored in maintenance mode; scheduler disabled",
+  "source": "../OPERATOR-SNAPSHOT.md",
+  "isLiveMonitor": false,
+  "operatorHandoffSha256": "f9cc10530ddfa14864d067a8bd0e4df9975eda6b43850da981b1afaf90227c32"
+}

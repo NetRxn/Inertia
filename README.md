@@ -1,5 +1,7 @@
 # Inertia
 
+**October30 demo:** [dated readiness](docs/delivery/CURRENT-DEMO-READINESS.md), [visual proof map](docs/delivery/architecture/index.html), and [walkthrough](docs/delivery/DEMO-WALKTHROUGH.md). UI/API maintenance restored16:01:56 CDT; normal execution remains offline in this snapshot. Historical claims below do not override it.
+
 Inertia connects DAO conversations, meeting records, application packets and agent contributions. Paperclip owns native work; Buzz presents the same records. The Wednesday October 28 target uses existing authorized PostgreSQL domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred, not demo prerequisites.
 
 ## Join the sprint
