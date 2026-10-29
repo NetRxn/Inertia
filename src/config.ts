@@ -1,3 +1,4 @@
+import {organizationKnowledgeSchema} from './organization-search/host.js';
 import { objectiveIntakeSchema } from "./intake/schema.js";
 import { centralConfigSchema } from "./central/setup.js";
 import { publicDraftingSchema } from "./drafting/schema.js";
@@ -22,6 +23,7 @@ export const configurationSchema: JsonSchema = {
   type: "object",
   properties: {
     roundtable: roundtableSchema,
+    organizationKnowledge: organizationKnowledgeSchema,
     objectiveIntake: objectiveIntakeSchema,
     enabled: { type: "boolean", default: false },
     fundingDiscovery: fundingDiscoverySchema,

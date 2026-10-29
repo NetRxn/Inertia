@@ -6,8 +6,14 @@ export function parseOrganizationSearch(value:unknown):OrganizationPassage[]{
  if(!object(value)||value.version!=='member-organization-read-v1'||value.audience!=='organization_shared'||value.evidenceStatus!=='unverified_source_context'||!Array.isArray(value.results)||value.results.length>8)throw Error('organization_reader_response_invalid');
  return value.results.map(v=>{if(!object(v)||!id(v.sourceId)||!id(v.passageId)||typeof v.contentHash!=='string'||!/^[a-f0-9]{64}$/.test(v.contentHash)||v.status!=='active'||!['website','meeting','document','note','chat-export','link'].includes(String(v.kind))||['title','location','text'].some(k=>typeof v[k]!=='string')||String(v.title).length>200||String(v.text).length>4000)throw Error('organization_reader_evidence_invalid');return{sourceId:v.sourceId,passageId:v.passageId,title:v.title as string,kind:v.kind as string,location:v.location as string,text:v.text as string,contentHash:v.contentHash,status:'active'};});
 }
-export function createOrganizationReader(input:{endpoint:string;authorize:()=>Promise<boolean>;resolveReadToken:()=>Promise<string>;fetch:typeof fetch}){
- const url=new URL(input.endpoint);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/api/org/knowledge')throw Error('organization_reader_endpoint_invalid');
+/** Operator-only endpoint admission. No model URL or implicit HTTP downgrade. */
+export function validateOrganizationEndpoint(endpoint:string,privateHttpOrigins:readonly string[]=[]):URL{
+ if(!Array.isArray(privateHttpOrigins)||privateHttpOrigins.length>20)throw Error('organization_reader_endpoint_invalid');
+ for(const origin of privateHttpOrigins){if(typeof origin!=='string')throw Error('organization_reader_endpoint_invalid');const o=new URL(origin);if(o.protocol!=='http:'||o.origin!==origin||o.username||o.password||o.search||o.hash||o.pathname!=='/')throw Error('organization_reader_endpoint_invalid');}
+ const url=new URL(endpoint);if(url.username||url.password||url.search||url.hash||url.pathname!=='/api/org/knowledge'||!(url.protocol==='https:'||url.protocol==='http:'&&privateHttpOrigins.includes(url.origin)))throw Error('organization_reader_endpoint_invalid');return url;
+}
+export function createOrganizationReader(input:{endpoint:string;privateHttpOrigins?:readonly string[];authorize:()=>Promise<boolean>;resolveReadToken:()=>Promise<string>;fetch:typeof fetch}){
+ const url=validateOrganizationEndpoint(input.endpoint,input.privateHttpOrigins);
  return{async search(query:string,signal?:AbortSignal){
   if(typeof query!=='string'||!query.trim()||query.length>200)throw Error('organization_reader_query_invalid');
   if(signal?.aborted||!await input.authorize())throw Error('organization_reader_scope_revoked');
