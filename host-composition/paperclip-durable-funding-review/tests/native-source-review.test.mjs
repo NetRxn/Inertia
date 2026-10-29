@@ -26,3 +26,11 @@ test('terminal source receipt requires exact independent domain actor/proposal a
  for(const change of[x=>x.state='packet_accepted',x=>x.producer.issue_id='sibling',x=>x.reviewer.agent_id='beta',x=>x.proposal_hash='b'.repeat(64),x=>x.business_complete=true,x=>x.decision='accept']){const r=structuredClone(receipt);change(r);assert.throws(()=>source.validateSourceReviewReceipt(a,c,r),/denied/);}
  const settled={...receipt,state:'settled_source_drift',drift:[{field:'raw_sha256',expected_hash:'a'.repeat(64),current_hash:'b'.repeat(64)}]};delete settled.decision;assert.equal(source.validateSourceReviewReceipt(a,c,settled).state,'settled_source_drift');assert.throws(()=>source.validateSourceReviewReceipt(a,c,{...settled,drift:[]}),/denied/);
 });
+test('case history exclusion requires current configured root, project, Beta and exact case purpose',()=>{
+ const f=fixture(),rows=f.rows,b={companyId:'company',issueId:'root',agentId:'co',nativeCoordinatorPolicy:{projectIds:['P','Q']}},c={issue:{id:'root',companyId:'company',projectId:'P',assigneeAgentId:'co',status:'in_progress'},actor:{id:'co'}},input={idempotencyKey:'case:binding',projectId:'Q',assigneeActorId:'beta'};
+ assert.deepEqual(source.selectCaseHistoryContinuation(rows,b,c,input),{projectId:'Q',assigneeAgentId:'beta'});
+ for(const [field,value]of [['idempotencyKey','case:'],['idempotencyKey','helper:binding'],['projectId','P'],['assigneeActorId','alpha']])assert.equal(source.selectCaseHistoryContinuation(rows,b,c,{...input,[field]:value}),null);
+ assert.equal(source.selectCaseHistoryContinuation(rows,{...b,nativeCoordinatorPolicy:null},c,input),null);
+ assert.equal(source.selectCaseHistoryContinuation(rows,b,{...c,issue:{...c.issue,hiddenAt:new Date()}},input),null);
+ assert.equal(source.selectCaseHistoryContinuation([{...rows[0],enabled:false}],b,c,input),null);
+});

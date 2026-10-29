@@ -105,3 +105,19 @@ export async function assertSourceReviewCompletion(db,{issue,toStatus,runId}){
 // Not a JSON/API option. Only the validated native mutation path can opt into
 // excluding completed exact source-review history from the helper's live quota.
 export const SOURCE_REVIEW_CHILD_CONTINUATION=Symbol('inertia.native-source-review-child');
+
+export const CASE_HISTORY_CONTINUATION=Symbol('inertia.native-case-history');
+export function selectCaseHistoryContinuation(rows,binding,context,input){
+ if(!binding.nativeCoordinatorPolicy||!/^case:[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(input.idempotencyKey??''))return null;
+ const matches=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.companyId===binding.companyId&&r.status==='ready'&&r.enabled!==false&&r.config?.nativeCaseWork?.enabled===true);
+ if(matches.length!==1)return null;
+ const c=matches[0].config.nativeCaseWork,i=context.issue;
+ if(i.id!==binding.issueId||i.id!==c.rootIssueId||i.companyId!==binding.companyId||i.projectId!==c.rootProjectId||i.assigneeAgentId!==binding.agentId||i.hiddenAt||!['todo','in_progress','blocked'].includes(i.status)||input.projectId!==c.projectId||input.assigneeActorId!==c.producer?.agentId||!binding.nativeCoordinatorPolicy.projectIds?.includes(c.projectId)||!binding.nativeCoordinatorPolicy.projectIds?.includes(c.rootProjectId))return null;
+ return{projectId:c.projectId,assigneeAgentId:c.producer.agentId};
+}
+export async function readCaseHistoryContinuation(db,binding,context,input){
+ if(!binding.nativeCoordinatorPolicy||!String(input.idempotencyKey??'').startsWith('case:'))return null;
+ const[{and,eq},{plugins,pluginConfig,pluginCompanySettings}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
+ const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
+ return selectCaseHistoryContinuation(rows,binding,context,input);
+}

@@ -5,7 +5,7 @@ export const NATIVE_INERTIA_RESOURCE_KIND = 'inertia-native-resource-v1';
 export const NATIVE_INERTIA_RESOURCE_TOOLS = Object.freeze(['netrxn.inertia:funding_case_work','netrxn.inertia:entity_context']);
 export const NATIVE_INERTIA_RESOURCE_OVERHEAD = Object.freeze({rpcMs:40_000,gatewayMs:50_000});
 const CASE=NATIVE_INERTIA_RESOURCE_TOOLS[0],ENTITY=NATIVE_INERTIA_RESOURCE_TOOLS[1];
-const caseOperations=new Set(['context','checkpoint','prepare','workspace','save','save_gap_progress','render','packet','source_context','source_links','source_capture','source_propose','source_receipt']);
+const caseOperations=new Set(['context','checkpoint','prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk','source_context','source_links','source_capture','source_propose','source_receipt']);
 const sourceOperations=new Set(['source_context','source_review','source_receipt','source_settlement']);
 const entityOperations=new Set(['context','search','refresh']);
 const fields=['version','kind','role','companyId','agentId','runId','issueId','projectId','toolName','invocationId','bindingHash','startedAt','operationTimeoutMs','operationDeadlineAt','rpcDeadlineAt','gatewayDeadlineAt'];
