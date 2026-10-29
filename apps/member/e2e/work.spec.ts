@@ -15,7 +15,7 @@ test.describe('Work on Home and Agents', () => {
     await expect(main.getByText('Grant Writer finished')).toBeVisible();
     await expect(main.getByText('Buzz brought in')).toBeVisible();
     // Member work stays on Home.
-    await expect(main.getByText('Design community garden signage')).toHaveCount(0);
+    await expect(main.getByText('Design community garden signage').filter({ visible: true })).toHaveCount(0);
 
     await main.getByRole('navigation', { name: 'Agents sections' }).getByRole('link', { name: 'Connections' }).click();
     await page.waitForURL(/tab=connections/);

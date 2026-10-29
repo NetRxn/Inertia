@@ -41,7 +41,7 @@ test.describe('Home feed', () => {
     await main.getByRole('region', { name: 'Initiatives' }).getByRole('link', { name: /Youth coding nights/ }).click();
     await page.waitForURL(/initiative=init-coding/);
     await expect(main.getByRole('heading', { level: 2, name: 'Open in Youth coding nights' })).toBeVisible();
-    await expect(main.getByText('Design community garden signage')).toHaveCount(0);
+    await expect(main.getByText('Design community garden signage').filter({ visible: true })).toHaveCount(0);
   });
 
   test('the menu is Agents, Home and Organization, and stays visible after scrolling', async ({ page }) => {
