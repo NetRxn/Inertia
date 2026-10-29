@@ -42,9 +42,14 @@ and continues `prepare`, `workspace`, typed `save`, gap progress, `render` and
 `packet`. Candidate and complete-packet review retain native attention review.
 Partial research/draft checkpoints never complete the case.
 
-Actual file delivery must use the bounded native artifact helper and verified
-DFW bytes. A server path, registration request or saved review acknowledgement
-is not an attachment, download or completed human handoff. Current manual
+Beta's `packet_artifacts({})` returns the existing exact DFW packet projection:
+manifest/hash, canonical packet data, and descriptor-bound base64 bytes. The host
+verifies company/case, manifest/data hashes and each descriptor/byte size and
+hash. This operation accepts no manifest, artifact path or file selector.
+The bounded native `register_deliverable({artifactKey})` composition consumes
+these verified bytes and owns actual native attachment/work-product creation.
+A server path, returned base64 payload, registration request or saved review
+acknowledgement is not an attachment, download or completed human handoff. Current manual
 submission keeps final human authorization, execution and actual submission
 receipt distinct; no agent submission tool is enabled by this facade.
 

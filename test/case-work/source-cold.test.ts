@@ -38,5 +38,14 @@ it('real Python source facade admits exact Charlie ordinary child and preserves 
   const accepted=await call('source_review',{proposal_hash:proposed.proposal_hash,decision:'accept',findings:[]},true);expect(accepted.state).toBe('accepted');
   const receipt=await call('source_receipt',{proposal_hash:proposed.proposal_hash},true);expect(receipt.current_admission).toBe(true);expect(receipt.receipt.state).toBe('accepted');
   expect(receipt.case_binding_id).toBe(meta.reserved.case_binding_id);expect(receipt.business_complete).toBe(false);expect(rows[1].status).toBe('blocked');
+  const drift=path.join(dir,'drift.py');await writeFile(drift,[
+   'import sys,json','sys.path.insert(0,'+JSON.stringify(backend+'/src')+')','from dfw_incentives.db import Database,make_engine','from dfw_incentives.models import SourceRecordCurrent','from dfw_incentives.repository import Repository','from dfw_incentives.schemas import SourceRecord',
+   "config=json.load(open(sys.argv[1]))","db=Database(make_engine(config['enrichment']['database_url']))",
+   'with db.session() as session:'," row=session.get(SourceRecordCurrent,sys.argv[2])"," source=row.source_id;run=row.last_seen_run_id;record=SourceRecord('opportunity',row.external_id,{**row.data,'title':'Changed current official form'},row.source_document_id)",
+   'Repository(db).upsert_source_record(source,record,run_id=run)'
+  ].join('\n'));
+  const changed=spawnSync(python,[drift,configurationPath,meta.record],{encoding:'utf8'});expect(changed.status,changed.stderr).toBe(0);
+  const historical=await call('source_receipt',{proposal_hash:proposed.proposal_hash},true);expect(historical.receipt.state).toBe('accepted');expect(historical.current_admission).toBe(false);expect(historical.currentness).toBe('source_drift');
+
  }finally{await rm(dir,{recursive:true,force:true});}
 });
