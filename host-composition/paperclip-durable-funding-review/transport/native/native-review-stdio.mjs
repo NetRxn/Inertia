@@ -1,3 +1,4 @@
+import {artifactViewParameters,packetArtifactView} from './native-review-paging.mjs';
 import{preparationBinding,preparationArtifact,preparationReceipt,preparationContext}from'./native-preparation-review.mjs';
 import{gapBinding,gapArtifact,gapReceipt,gapContext}from'./native-gap-review.mjs';
 import {packetBinding,packetArtifact,packetReceipt,packetContext,packetSubject} from './native-packet-review.mjs';
@@ -76,7 +77,7 @@ export function createNativeReviewStdio(config,{privatePreparation=false,caseWor
  if(typeof privatePreparation!=='boolean'||typeof caseWork!=='boolean'||privatePreparation&&caseWork)throw error('native_review_configuration','Invalid native review mode');
  const c=configuration(config),protocolVersion=caseWork?'dfw-native-case-review-v1':privatePreparation?"dfw-private-preparation-v1":VERSION;
  return Object.freeze({async call(op,params,callbacks){
-  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)||preparationArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+  if(!['context','artifact_view','admit','receipt','fence'].includes(op)||!(op==='artifact_view'?!privatePreparation&&artifactViewParameters(params):op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)||preparationArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
   if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
   const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
@@ -224,6 +225,7 @@ class NativeReviewSession {
   return v.binding.candidate_hash===artifact.candidate_hash&&v.artifact_hash===digest&&v.state===state;
  }
  validSuccess(v){
+  if(this.op==='artifact_view')return packetBinding(v?.binding)&&this.bindingMatches(v.binding)&&packetArtifactView(v,this.params);
   if(this.op==='admit')return this.validReceipt(v,this.params);
   if(this.op==='receipt')return this.validReceipt(v);
   if(preparationBinding(v?.binding))return this.bindingMatches(v.binding)&&preparationContext(v);
