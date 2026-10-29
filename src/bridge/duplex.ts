@@ -1,4 +1,5 @@
-import { readFile, stat } from "node:fs/promises";
+import { open, stat } from "node:fs/promises";
+import { constants, type BigIntStats } from "node:fs";
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { isAbsolute } from "node:path";
@@ -19,6 +20,35 @@ export interface ContextBridge<C> {
 const object=(v:unknown):v is Record<string,unknown>=>!!v && typeof v==="object" && !Array.isArray(v);
 const keys=(v:Record<string,unknown>,fields:string[])=>Object.keys(v).length===fields.length && fields.every(k=>Object.hasOwn(v,k));
 const safeRejectionCodes=new Set(["invalid_config","invalid_protocol","invalid_request","authentication_failed","drafting_rejected","native_preparation_rejected","internal_error"]);
+const samePinnedFile=(a:BigIntStats,b:BigIntStats)=>a.dev===b.dev&&a.ino===b.ino&&a.size===b.size&&a.mtimeNs===b.mtimeNs&&a.ctimeNs===b.ctimeNs;
+async function verifyPinnedFile(pin:{path:string;sha256:string},checkDeadline:()=>void):Promise<void> {
+  checkDeadline();
+  const initial=await stat(pin.path,{bigint:true});
+  checkDeadline();
+  if(!initial.isFile())throw Error("DFW drafting pins must be regular files");
+  // Keep configured symlink-to-regular-file behavior. NONBLOCK prevents a path
+  // swapped to a FIFO from hanging open before descriptor type verification.
+  const file=await open(pin.path,constants.O_RDONLY|constants.O_NONBLOCK);
+  try {
+    checkDeadline();
+    const opened=await file.stat({bigint:true});
+    checkDeadline();
+    if(!opened.isFile())throw Error("DFW drafting pins must be regular files");
+    if(!samePinnedFile(initial,opened))throw Error("DFW drafting pin changed while verifying");
+    const hash=createHash("sha256"),chunk=Buffer.allocUnsafe(64*1024);
+    while(true) {
+      checkDeadline();
+      const {bytesRead}=await file.read(chunk,0,chunk.length,null);
+      checkDeadline();
+      if(bytesRead===0)break;
+      hash.update(chunk.subarray(0,bytesRead));
+    }
+    const after=await file.stat({bigint:true});checkDeadline();
+    const pathAfter=await stat(pin.path,{bigint:true});checkDeadline();
+    if(!samePinnedFile(opened,after)||!samePinnedFile(opened,pathAfter))throw Error("DFW drafting pin changed while verifying");
+    if(hash.digest("hex")!==pin.sha256)throw Error("DFW drafting pin mismatch");
+  } finally { await file.close(); }
+}
 function rejectionMessage(message:Record<string,unknown>,version:string,operation:string,authenticated:boolean):string {
   const generic="DFW drafting rejected request";
   if(version==="dfw-entity-grounding-v1"){
@@ -102,13 +132,7 @@ export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig
     const input=JSON.stringify({version,op,params})+"\n";
     if(Buffer.byteLength(input)>(version==="dfw-native-case-work-v1"?256:128)*1024) throw Error("DFW drafting request too large");
     for(const pin of c.pins) {
-      checkDeadline();
-      const metadata=await stat(pin.path);
-      checkDeadline();
-      if(!metadata.isFile()) throw Error("DFW drafting pins must be regular files");
-      if(metadata.size>16*1024*1024) throw Error("DFW drafting pinned input too large");
-      if(createHash("sha256").update(await readFile(pin.path)).digest("hex")!==pin.sha256) throw Error("DFW drafting pin mismatch");
-      checkDeadline();
+      await verifyPinnedFile(pin,checkDeadline);
     }
     const remaining=deadline-Date.now();
     if(remaining<=0) throw Error("DFW drafting deadline exhausted");
