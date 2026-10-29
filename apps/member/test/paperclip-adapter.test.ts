@@ -133,6 +133,38 @@ describe('members without a Paperclip user', () => {
   });
 });
 
+describe('Paperclip read-only', () => {
+  it('is read-only unless write is asked for', () => {
+    const env = { PAPERCLIP_URL: 'https://x', PAPERCLIP_API_KEY: 'k', PAPERCLIP_COMPANY_ID: 'c' };
+    expect(paperclipConfig(env)?.readOnly).toBe(true);
+    expect(paperclipConfig({ ...env, PAPERCLIP_ACCESS: 'write' })?.readOnly).toBe(false);
+  });
+
+  it('reads work and claims without writing anything to Paperclip', async () => {
+    const pc = fakePaperclip();
+    pc.state.labels.push({ id: 'l-h', name: 'Human' });
+    pc.state.issues.push(
+      { id: 'i1', identifier: 'FW-1', title: 'Pick the lead story', description: '[creative] Choose A or B', status: 'todo', goalId: 'g-hack', projectId: null, assigneeAgentId: null, assigneeUserId: null, labels: [{ id: 'l-h', name: 'Human' }], completedAt: null, updatedAt: '2026-10-27T10:00:00Z' },
+      { id: 'i2', identifier: 'FW-2', title: 'Draft the narrative', description: '', status: 'in_progress', goalId: 'g-hack', projectId: null, assigneeAgentId: 'a-ceo', assigneeUserId: null, labels: [], completedAt: null, updatedAt: '2026-10-27T10:00:00Z' },
+    );
+    const work = createPaperclipWorkSource({ url: 'https://pc.example.org', apiKey: 'key', companyId: 'c1', humanLabel: 'human', defaultAgentId: null, readOnly: true }, { fetchImpl: pc.fetchImpl, mapping });
+    expect(work.engine).toMatchObject({ readOnly: true });
+    expect(work.createInitiative ?? work.createProject ?? work.createTask ?? work.complete).toBeUndefined();
+    expect((await work.listHumanTasks()).map((t) => t.title)).toEqual(['Pick the lead story']);
+    expect((await work.listAgentTasks!()).map((t) => t.status)).toEqual(['running']);
+    expect(await work.claim('i1', 'm-john')).toEqual({ ok: true });
+    expect(await work.release!('i1', 'm-john')).toEqual({ ok: true });
+    expect(pc.calls.filter((c) => c.method !== 'GET')).toEqual([]);
+  });
+
+  it('treats a missing label as no human tasks rather than creating it', async () => {
+    const pc = fakePaperclip();
+    const work = createPaperclipWorkSource({ url: 'https://pc.example.org', apiKey: 'key', companyId: 'c1', humanLabel: 'human', defaultAgentId: null, readOnly: true }, { fetchImpl: pc.fetchImpl, mapping });
+    expect(await work.listHumanTasks()).toEqual([]);
+    expect(pc.calls.filter((c) => c.method !== 'GET')).toEqual([]);
+  });
+});
+
 describe('memory work engine', () => {
   it('creates, lists and claims work without an outside engine', async () => {
     const work = createMemoryWorkSource();

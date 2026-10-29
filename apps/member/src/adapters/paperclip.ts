@@ -13,6 +13,12 @@ export type PaperclipConfig = {
   humanLabel: string;
   /** Agent that picks up new agent tasks, usually the CEO. Unset leaves them for the engine to route. */
   defaultAgentId: string | null;
+  /**
+   * Read Paperclip and write nothing back: claims stay in Inertia's work log,
+   * and creating work or answering tasks is off. Board keys carry their
+   * issuer's permissions, so this is how a shared key stays read-only here.
+   */
+  readOnly?: boolean;
 };
 
 /** Reads Paperclip settings from the environment; null when it isn't configured. */
@@ -21,7 +27,7 @@ export function paperclipConfig(env: Record<string, string | undefined>): Paperc
   const apiKey = env.PAPERCLIP_API_KEY?.trim();
   const companyId = env.PAPERCLIP_COMPANY_ID?.trim();
   if (!url || !apiKey || !companyId) return null;
-  return { url: url.replace(/\/+$/, ''), apiKey, companyId, humanLabel: env.PAPERCLIP_HUMAN_LABEL?.trim() || 'human', defaultAgentId: env.PAPERCLIP_DEFAULT_AGENT_ID?.trim() || null };
+  return { url: url.replace(/\/+$/, ''), apiKey, companyId, humanLabel: env.PAPERCLIP_HUMAN_LABEL?.trim() || 'human', defaultAgentId: env.PAPERCLIP_DEFAULT_AGENT_ID?.trim() || null, readOnly: env.PAPERCLIP_ACCESS?.trim() !== 'write' };
 }
 
 type PcGoal = { id: string; title: string; description: string | null; level: string; status: 'planned' | 'active' | 'achieved' | 'cancelled' };
@@ -100,7 +106,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
   const mapping = deps.mapping ?? dbMapping;
   const base = config.url.replace(/\/+$/, '');
   const company = `/api/companies/${encodeURIComponent(config.companyId)}`;
-  let humanLabelId: Promise<string> | null = null;
+  let humanLabelId: Promise<string | null> | null = null;
 
   async function call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
     const response = await fetchImpl(`${base}${path}`, {
@@ -116,11 +122,13 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     return (await response.json()) as T;
   }
 
-  function ensureHumanLabel(): Promise<string> {
+  /** The human label's id; read-only, a missing label is null and matching falls back to its name. */
+  function ensureHumanLabel(): Promise<string | null> {
     humanLabelId ??= (async () => {
       const labels = await call<PcLabel[]>(`${company}/labels`);
       const found = labels.find((l) => l.name.toLowerCase() === config.humanLabel.toLowerCase());
       if (found) return found.id;
+      if (config.readOnly) return null;
       return (await call<PcLabel>(`${company}/labels`, { method: 'POST', body: { name: config.humanLabel, color: '#e8a33d' } })).id;
     })().catch((error) => {
       humanLabelId = null;
@@ -129,8 +137,8 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     return humanLabelId;
   }
 
-  const isHuman = (issue: PcIssue, labelId: string) =>
-    (issue.labelIds ?? []).includes(labelId) || (issue.labels ?? []).some((l) => l.id === labelId || l.name.toLowerCase() === config.humanLabel.toLowerCase());
+  const isHuman = (issue: PcIssue, labelId: string | null) =>
+    (labelId !== null && (issue.labelIds ?? []).includes(labelId)) || (issue.labels ?? []).some((l) => l.id === labelId || l.name.toLowerCase() === config.humanLabel.toLowerCase());
 
   async function listIssues(): Promise<PcIssue[]> {
     return call<PcIssue[]>(`${company}/issues`);
@@ -175,7 +183,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     status === 'done' ? 'done' : status === 'blocked' ? 'blocked' : status === 'in_progress' || status === 'in_review' ? 'running' : 'queued';
 
   const source: WorkSource = {
-    engine: { name: 'Paperclip', url: base },
+    engine: { name: 'Paperclip', url: base, readOnly: config.readOnly },
 
     async listInitiatives(): Promise<Initiative[]> {
       const goals = await call<PcGoal[]>(`${company}/goals`);
@@ -242,6 +250,8 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
       }
       if (issue.status === 'done' || issue.status === 'cancelled' || issue.assigneeUserId || issue.assigneeAgentId) return { ok: false, reason: 'already-claimed' };
       if ((await mapping.inertiaClaims?.([taskId]))?.has(taskId)) return { ok: false, reason: 'already-claimed' };
+      // Read-only, the claim lives in Inertia's work log alone.
+      if (config.readOnly) return { ok: true };
       const who = await mapping.workUserOf(memberExternalId);
       try {
         // Paperclip only allows in progress with an assignee. Members without a
@@ -260,6 +270,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     },
 
     async release(taskId, memberExternalId): Promise<ClaimResult> {
+      if (config.readOnly) return { ok: true };
       const who = await mapping.workUserOf(memberExternalId);
       try {
         await call(`/api/issues/${encodeURIComponent(taskId)}`, {
@@ -318,5 +329,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
       return { id: issue.id };
     },
   };
-  return source;
+  if (!config.readOnly) return source;
+  const { complete: _complete, createInitiative: _initiative, createProject: _project, createTask: _task, ...readOnly } = source;
+  return readOnly;
 }

@@ -120,7 +120,7 @@ export interface WorkSource {
   /** The member finished a claimed task; their answer goes back to the engine for agents to use. */
   complete?(taskId: string, memberExternalId: string, answer: string): Promise<ClaimResult>;
   /** The engine's name and where to open it, for Integrations and links. */
-  engine?: { name: string; url: string | null };
+  engine?: { name: string; url: string | null; readOnly?: boolean };
 }
 
 // Meetings

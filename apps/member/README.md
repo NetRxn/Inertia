@@ -105,6 +105,6 @@ Set `MEMBER_APP_ADAPTERS=live` and `MEMBER_APP_FOUNDER_EMAIL`, plus a model (`.e
 - **Organization** (`/org`): the cited profile and initiatives, members and roles, Data (anything anyone adds; Find work; Read GitHub), Integrations and Settings (governance).
 - **Work** (`/work`): a recap and the People and Agents lanes per initiative; **Needs you** to claim and answer.
 - **Funding** (`/funding`): **Pursue this** turns a grant finder opportunity into a project with agent and human tasks.
-- Work runs in **Paperclip** when `PAPERCLIP_URL`, `PAPERCLIP_API_KEY` and `PAPERCLIP_COMPANY_ID` are set, otherwise in process memory.
+- Work runs in **Paperclip** when `PAPERCLIP_URL`, `PAPERCLIP_API_KEY` and `PAPERCLIP_COMPANY_ID` are set, otherwise in process memory. Paperclip is read-only unless `PAPERCLIP_ACCESS=write`: members see its initiatives and tasks, claims stay in Inertia's work log, and nothing is written back. A board key carries the permissions of the user who issued it, so issue it from a user with no more access than that.
 
 `scripts/setup-org.ts` does the setup steps from the command line for seeding. The demo runbook is in `docs/demo/runbook-wednesday.md`.
