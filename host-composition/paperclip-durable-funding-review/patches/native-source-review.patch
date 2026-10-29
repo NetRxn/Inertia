@@ -1,22 +1,55 @@
 --- a/dist/services/heartbeat.js
 +++ b/dist/services/heartbeat.js
 @@ -1,3 +1,4 @@
-+import {readCommittedSourceReviewWake} from "./native-runtime/native-source-review.mjs";
++import {readCommittedSourceReviewWake,readDurableNativeStatusFollowup} from "./native-runtime/native-source-review.mjs";
  import {privateSessionIsolation,privateDigest} from "./native-runtime/native-private-preparation.mjs";
  import { getNativeReviewRetryState } from "./native-runtime/native-review-retry.mjs";
  import { retryIdempotentDatabaseOperation } from "../database-retry.js";
-@@ -21681,7 +21682,11 @@
+@@ -21618,15 +21619,24 @@
+             const scopeKey = issueId
+                 ? `${candidate.companyId}:${candidate.agentId}:${issueId}:${readNativeReviewAssignmentContext(wakeContext)?.nativeReviewInteractionId ?? ""}`
+                 : null;
++            try {
++            // Source review is fresh input. A same-batch wake merged into the
++            // currently running turn must not consume this durable followup.
++            const sourceReviewFollowup = issueId && candidate.reason === "issue_children_completed"
++                ? await readCommittedSourceReviewWake(db, { companyId: candidate.companyId, agentId: candidate.agentId, issueId, intentId: candidate.id })
++                : false;
+             const priorDelivery = scopeKey
+                 ? deliveredByIssueScope.get(scopeKey)
+                 : null;
+-            if (priorDelivery) {
++            const priorHasFollowup = priorDelivery && sourceReviewFollowup
++                ? await readDurableNativeStatusFollowup(db, { companyId: candidate.companyId, agentId: candidate.agentId, issueId }, priorDelivery.deliveryId)
++                : false;
++            if (priorDelivery && (!sourceReviewFollowup || priorHasFollowup)) {
+                 await db
+                     .update(agentWakeupRequests)
+                     .set({
+                     status: "coalesced",
+-                    runId: priorDelivery.runId,
++                    runId: priorHasFollowup ? priorHasFollowup.runId : priorDelivery.runId,
+                     finishedAt: new Date(),
+                     error: null,
+                     updatedAt: new Date(),
+@@ -21680,8 +21690,8 @@
+                     continue;
                  }
              }
-             try {
-+                const sourceReviewFollowup = issueId && candidate.reason === "issue_children_completed"
-+                    ? await readCommittedSourceReviewWake(db, { companyId: candidate.companyId, agentId: candidate.agentId, issueId, intentId: candidate.id })
-+                    : false;
+-            try {
                  const wakeRun = await enqueueWakeup(candidate.agentId, {
 +                    ...(sourceReviewFollowup ? { allowRunCoalescing: false } : {}),
                      source: candidate.source,
                      triggerDetail: (candidate.triggerDetail ??
                          "system"),
+@@ -21729,6 +21739,7 @@
+                     .where(eq(agentWakeupRequests.id, candidate.id));
+                 if (scopeKey) {
+                     deliveredByIssueScope.set(scopeKey, {
++                        deliveryId: delivered?.id ?? null,
+                         runId: wakeRun?.id ?? delivered?.runId ?? null,
+                         status: wakeRun ? "coalesced" : (delivered?.status ?? "queued"),
+                     });
 --- a/dist/services/issues.js
 +++ b/dist/services/issues.js
 @@ -1,3 +1,4 @@
@@ -250,7 +283,7 @@
          : undefined;
 --- /dev/null
 +++ b/dist/services/native-runtime/native-source-review.mjs
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,165 @@
 +/** Ordinary source critique is a separately owned child, never native packet attention. */
 +import {createHash} from 'node:crypto';
 +const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
@@ -401,6 +434,20 @@
 + const effects=await db.select({effect:statusDecisionEffects,decision:statusDecisions}).from(statusDecisionEffects).innerJoin(statusDecisions,and(eq(statusDecisions.id,statusDecisionEffects.decisionId),eq(statusDecisions.companyId,statusDecisionEffects.companyId))).where(and(eq(statusDecisionEffects.companyId,scope.companyId),eq(statusDecisionEffects.targetId,intent.id),eq(statusDecisionEffects.targetType,'agent_wakeup_request'),inArray(statusDecisionEffects.effectKind,['parent_dependency_wake','parent_wake']))).limit(4);
 + const settlements=await db.select().from(activityLog).where(and(eq(activityLog.companyId,scope.companyId),eq(activityLog.entityId,childId),eq(activityLog.action,'inertia.source_review_settled'),eq(activityLog.actorType,'system'),eq(activityLog.actorId,'inertia.source-review')));
 + return effects.some(({effect,decision})=>settlements.some(settlement=>isCommittedSourceReviewWake({intent,parent,child,effect,decision,settlement},scope)));
++}
++
++/** Batch delivery to an already-running turn cannot absorb fresh source input. */
++export function isDurableNativeStatusFollowup({wake,run},scope){
++ if(!wake||wake.companyId!==scope.companyId||wake.agentId!==scope.agentId||wake.requestedByActorType!=='system'||!String(wake.requestedByActorId??'').startsWith('native-status-wake-dispatch:')||wake.payload?.issueId!==scope.issueId)return false;
++ if(wake.status==='deferred_issue_execution'&&!wake.runId)return true;
++ return Boolean(['queued','claimed','coalesced','deferred_issue_execution'].includes(wake.status)&&wake.runId&&run?.id===wake.runId&&run.companyId===scope.companyId&&run.agentId===scope.agentId&&run.contextSnapshot?.issueId===scope.issueId&&run.status==='queued');
++}
++export async function readDurableNativeStatusFollowup(db,scope,deliveryId){
++ if(!deliveryId)return false;
++ const[{and,eq},{agentWakeupRequests,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[wake]=await db.select().from(agentWakeupRequests).where(and(eq(agentWakeupRequests.id,deliveryId),eq(agentWakeupRequests.companyId,scope.companyId))).limit(1);let run=null;
++ if(wake?.runId)[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,wake.runId),eq(heartbeatRuns.companyId,scope.companyId))).limit(1);
++ return isDurableNativeStatusFollowup({wake,run},scope)?{runId:wake.runId??null,status:run?.status??wake.status}:null;
 +}
 --- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
 +++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js

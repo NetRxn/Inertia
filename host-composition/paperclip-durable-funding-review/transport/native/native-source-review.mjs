@@ -149,3 +149,17 @@ export async function readCommittedSourceReviewWake(db,scope){
  const settlements=await db.select().from(activityLog).where(and(eq(activityLog.companyId,scope.companyId),eq(activityLog.entityId,childId),eq(activityLog.action,'inertia.source_review_settled'),eq(activityLog.actorType,'system'),eq(activityLog.actorId,'inertia.source-review')));
  return effects.some(({effect,decision})=>settlements.some(settlement=>isCommittedSourceReviewWake({intent,parent,child,effect,decision,settlement},scope)));
 }
+
+/** Batch delivery to an already-running turn cannot absorb fresh source input. */
+export function isDurableNativeStatusFollowup({wake,run},scope){
+ if(!wake||wake.companyId!==scope.companyId||wake.agentId!==scope.agentId||wake.requestedByActorType!=='system'||!String(wake.requestedByActorId??'').startsWith('native-status-wake-dispatch:')||wake.payload?.issueId!==scope.issueId)return false;
+ if(wake.status==='deferred_issue_execution'&&!wake.runId)return true;
+ return Boolean(['queued','claimed','coalesced','deferred_issue_execution'].includes(wake.status)&&wake.runId&&run?.id===wake.runId&&run.companyId===scope.companyId&&run.agentId===scope.agentId&&run.contextSnapshot?.issueId===scope.issueId&&run.status==='queued');
+}
+export async function readDurableNativeStatusFollowup(db,scope,deliveryId){
+ if(!deliveryId)return false;
+ const[{and,eq},{agentWakeupRequests,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
+ const[wake]=await db.select().from(agentWakeupRequests).where(and(eq(agentWakeupRequests.id,deliveryId),eq(agentWakeupRequests.companyId,scope.companyId))).limit(1);let run=null;
+ if(wake?.runId)[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,wake.runId),eq(heartbeatRuns.companyId,scope.companyId))).limit(1);
+ return isDurableNativeStatusFollowup({wake,run},scope)?{runId:wake.runId??null,status:run?.status??wake.status}:null;
+}
