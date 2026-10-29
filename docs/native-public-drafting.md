@@ -2,6 +2,52 @@
 
 This default-disabled application adapter binds the existing three public DFW drafting operations to Paperclip's authenticated plugin tool path. It does not modify the Paperclip core gateway, expose the operator MCP, provision credentials, create connections, or submit/accept application content.
 
+## Current per-case source and preparation facade
+
+The `nativeCaseWork` configuration uses Alpha for discovery, Beta for each case,
+and a separate Charlie agent and principal for independent review. Its
+`funding_case_work({operation,parameters})` tool derives the case from the actual
+native task origin and rechecks current configuration, ancestry, assignment and
+running execution on each trusted callback. Caller parameters cannot choose a
+record, case, actor, project, root or process path. The legacy `publicDrafting`
+adapter described below is a separate configured path.
+
+Beta reads `source_context` with `{}` for its current reserved record or
+`{view:"contract"}` for the exact domain-owned operation and field schemas. It can
+page `source_links({offset?,limit?,context_hash?})`, capture an admitted official
+link with `source_capture({url})`, and save an immutable source proposal with
+`source_propose({context_hash,fields,requirements})`. The host advertises the
+actual DFW field, passage and sponsor-requirement schemas. Evidence and source
+text never grant tool authority.
+
+A saved source proposal reports `queued:false`. Beta invokes the returned native
+`create_task({purpose:"source_review",proposalHash})` handoff. Native Paperclip
+owns the ordinary Charlie child, atomic parent dependency and execution wake.
+The host stores the original verified producer run in an immutable native
+proposal document; the domain independently compares it against its source
+proposal audit. Charlie must be assigned the exact child whose origin binds
+that proposal and whose parent is this Beta case under the configured root.
+It reads `source_context({view:"proposal",proposal_hash})` and calls
+`source_review({proposal_hash,decision,findings})`. Accept has no findings;
+rejection supplies substantive corrections. The original Beta run need not
+remain active while Charlie reviews.
+
+Confirmed changed source bytes can be settled by Charlie through
+`source_settlement({proposal_hash,findings})`; this records source drift and
+resumes correction without accepting the source. Transport failure or unreadable
+bytes do not establish drift. `source_receipt({proposal_hash})` preserves the
+historical terminal receipt and separately reports current admission and drift.
+After the child completes, Beta resumes the same case, rechecks current source
+and continues `prepare`, `workspace`, typed `save`, gap progress, `render` and
+`packet`. Candidate and complete-packet review retain native attention review.
+Partial research/draft checkpoints never complete the case.
+
+Actual file delivery must use the bounded native artifact helper and verified
+DFW bytes. A server path, registration request or saved review acknowledgement
+is not an attachment, download or completed human handoff. Current manual
+submission keeps final human authorization, execution and actual submission
+receipt distinct; no agent submission tool is enabled by this facade.
+
 ## Trusted composition
 
 Enable `publicDrafting` only after separately admitting the connection, native tool policy, and database access. This release supports one enabled company binding in the plugin instance. Server configuration fixes the company (native config owner), project, applicant, match, producer issue/agent/principal, reviewer issue/agent/principal, and administrator-pinned process. In legacy mode the two issue IDs, native agents and mapped principals must each differ. The explicit native-attention mode below permits a shared issue while retaining independent agents and mapped principals. Both agents may use the same available model provider; independent principals and native runs are still mandatory.
