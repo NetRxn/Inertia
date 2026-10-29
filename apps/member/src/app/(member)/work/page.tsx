@@ -9,6 +9,7 @@ import { ShareComposer } from '../../../components/ShareComposer';
 import { WorkList } from '../../../components/WorkList';
 import { WorkStatusView } from '../../../components/WorkStatusView';
 import { buildWorkStatus } from '../../../work/status';
+import { listOrgInitiatives } from '../../../work/org-initiatives';
 import { members } from '../../../db/schema';
 import { PrioritiesCard } from '../../../components/cards/PrioritiesCard';
 import { RecentlySharedCard } from '../../../components/cards/RecentlySharedCard';
@@ -35,18 +36,17 @@ async function WorkContent({ segment }: { segment: Segment }) {
   }
 
   const adapters = getAdapters();
+  const orgInitiatives = await listOrgInitiatives(getDb(), adapters.work);
   if (segment === 'status') {
     const [status, people] = await Promise.all([
-      buildWorkStatus(adapters, now),
+      buildWorkStatus(adapters, now, orgInitiatives),
       getDb().select({ externalId: members.externalId, displayName: members.displayName }).from(members),
     ]);
     const nameOf = Object.fromEntries(people.map((p) => [p.externalId, p.displayName]));
     return <WorkStatusView status={status} nameOf={nameOf} memberExternalId={member.externalId} />;
   }
-  const [initiatives, allTasks] = await Promise.all([
-    adapters.work.listInitiatives(),
-    adapters.work.listHumanTasks(),
-  ]);
+  const initiatives = orgInitiatives;
+  const allTasks = await adapters.work.listHumanTasks();
 
   // Sort initiatives by priority
   // Proposed initiatives (awaiting a vote) still have work people can do.

@@ -4,6 +4,7 @@ import { requireMember } from '../../identity/session';
 import { getDb } from '../../db/client';
 import { listShares } from '../../shares/shares';
 import { buildFeed } from '../../feed/build-feed';
+import { listOrgInitiatives } from '../../work/org-initiatives';
 import { FeedCards } from '../../components/cards/FeedCards';
 import { firstName } from '../../components/cards/format';
 import { redirect } from 'next/navigation';
@@ -21,7 +22,8 @@ async function HomeFeed() {
     ...share,
     isMine: share.authorExternalId === member.externalId,
   }));
-  const cards = await buildFeed(getAdapters(), member, shares, now);
+  const adapters = getAdapters();
+  const cards = await buildFeed(adapters, member, shares, now, await listOrgInitiatives(getDb(), adapters.work));
 
   return (
     <>

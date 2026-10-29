@@ -59,6 +59,10 @@ export interface Initiative {
   progress?: number; // 0..1
   statusLabel?: string;
   priority?: number; // lower is more important
+  /** Where the app found it: the organization's profile, the work engine, or both. */
+  source?: 'organization' | 'engine' | 'both';
+  /** Accepted, but governance hasn't adopted it yet. */
+  awaitingVote?: boolean;
 }
 
 export type TaskKind = 'creative' | 'outreach' | 'review' | 'real-world';

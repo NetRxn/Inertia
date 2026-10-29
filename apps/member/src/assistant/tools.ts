@@ -21,6 +21,7 @@ import { byPriority, taskKind } from '../work/initiatives';
 import { wrapSourceDataCapped } from './source-data';
 import { searchPassages } from '../org/ingest';
 import { getOrganization } from '../org/organization';
+import { listOrgInitiatives } from '../work/org-initiatives';
 
 /** At most this many blocks per tool call, each at most this long (tags included). */
 export const MAX_RESULTS = 8;
@@ -263,7 +264,7 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
       inputSchema: z.object({}),
       execute: async () => {
         const [initiatives, tasks] = await Promise.all([
-          ctx.adapters.work.listInitiatives(),
+          listOrgInitiatives(ctx.db, ctx.adapters.work),
           ctx.adapters.work.listHumanTasks(),
         ]);
         const ranked = [...initiatives].sort(byPriority);
