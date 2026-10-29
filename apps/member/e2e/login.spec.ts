@@ -28,8 +28,8 @@ test.describe('Login flow', () => {
     await login(page, 'rob@example.org');
     await expect(page).toHaveURL('/');
 
-    // Sign out from Profile
-    await page.goto('/profile');
+    // Sign out from your profile in Organization → People
+    await page.goto('/org?tab=people');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL('/login');
 

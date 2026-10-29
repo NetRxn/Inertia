@@ -18,7 +18,7 @@ test.describe('Chat', () => {
 
     const chip = sheet.getByRole('list', { name: 'Sources' }).getByRole('link', { name: /Community garden planning session/ });
     await expect(chip).toBeVisible();
-    await expect(chip).toHaveAttribute('href', /^\/docs#meeting-/);
+    await expect(chip).toHaveAttribute('href', /^\/org\?tab=docs#meeting-/);
 
     // Dismissing by the handle puts the sheet away; reopening keeps the conversation.
     await sheet.getByRole('button', { name: 'Close chat' }).click();
@@ -27,15 +27,15 @@ test.describe('Chat', () => {
     await expect(page.getByRole('dialog', { name: 'Chat' }).getByText('What happened at the last meeting?')).toBeVisible();
   });
 
-  test('tapping the Last meeting card sends the card question', async ({ page }) => {
+  test('tapping the Coming up card sends the card question', async ({ page }) => {
     await login(page, 'jordan@example.org');
 
-    const card = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: 'Last meeting' }) });
-    await card.getByRole('heading', { level: 2, name: 'Last meeting' }).click();
+    const card = page.getByRole('region', { name: 'Coming up' });
+    await card.getByRole('heading', { level: 2, name: 'Coming up' }).click();
 
     const sheet = page.getByRole('dialog', { name: 'Chat' });
     await expect(sheet).toBeVisible();
-    await expect(sheet.locator('[data-role="user"]')).toHaveText(/^What happened at the [A-Z][a-z]{2} \d{1,2} meeting\?$/);
+    await expect(sheet.locator('[data-role="user"]')).toHaveText("What's coming up in the next two weeks?");
     await expect(sheet.getByRole('list', { name: 'Sources' })).toBeVisible();
   });
 });

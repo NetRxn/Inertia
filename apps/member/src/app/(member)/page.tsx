@@ -9,6 +9,7 @@ import { byPriority } from '../../work/initiatives';
 import { firstName, plural } from '../../components/cards/format';
 import { WaitingCard } from '../../components/cards/WaitingCard';
 import { ComingUpCard } from '../../components/cards/ComingUpCard';
+import { RecentlySharedCard } from '../../components/cards/RecentlySharedCard';
 import { AskCard } from '../../components/cards/AskCard';
 import { InitiativesStrip } from '../../components/InitiativesStrip';
 import { SectionTabs } from '../../components/SectionTabs';
@@ -135,12 +136,17 @@ async function HomeFeed({ params }: { params: HomeParams }) {
             label="Show"
             tabs={SHOW.map((s) => ({ href: homeHref({ show: s.show, initiative: focus }), label: s.label, current: s.show === show.show }))}
           />
-          <Timeline
-            items={items}
-            now={now}
-            moreHref={moreHref}
-            empty="Nothing has happened here yet. Add a meeting, link or note to get started."
-          />
+          {show.show === 'shared' ? (
+            // Shares keep their own card: link previews, files, and Delete for your own posts.
+            <RecentlySharedCard shares={shares.map((s) => ({ ...s, isMine: s.authorExternalId === member.externalId }))} now={now} label="Shared" showDelete />
+          ) : (
+            <Timeline
+              items={items}
+              now={now}
+              moreHref={moreHref}
+              empty="Nothing has happened here yet. Add a meeting, link or note to get started."
+            />
+          )}
         </section>
       </div>
 
