@@ -1,0 +1,76 @@
+/** Disposable actual native tasks, SQL, catalog and gateway. No providers or live state. */
+import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs/promises';import{randomUUID}from'node:crypto';import{pathToFileURL}from'node:url';
+process.env.PAPERCLIP_API_URL='http://127.0.0.1:3100';
+const native='/opt/host/node_modules',source='/qual/source',root='/tmp/case-native-sql',server=root+'/node_modules/@paperclipai/server';await fs.mkdir(server,{recursive:true});await fs.cp(native+'/@paperclipai/server/dist',server+'/dist',{recursive:true});await fs.copyFile(native+'/@paperclipai/server/package.json',server+'/package.json');await fs.cp('/qual/candidate/dist',server+'/dist',{recursive:true,force:true});
+for(const from of[native+'/@paperclipai/server/node_modules',native])for(const name of await fs.readdir(from).catch(()=>[])){if(name==='@paperclipai'||name.startsWith('.'))continue;await fs.symlink(from+'/'+name,root+'/node_modules/'+name).catch(e=>{if(e.code!=='EEXIST')throw e;});}
+for(const name of await fs.readdir(native+'/@paperclipai'))if(name!=='server')await fs.symlink(native+'/@paperclipai/'+name,root+'/node_modules/@paperclipai/'+name);
+const load=p=>import(pathToFileURL(native+'/'+p)),local=p=>import(pathToFileURL(server+'/dist/'+p)),s=await load('@paperclipai/db/dist/schema/index.js'),{eq,sql}=await load('drizzle-orm/index.js'),{startEmbeddedPostgresTestDatabase,createDb}=await load('@paperclipai/db/dist/index.js');
+const{PaperclipRunnerToolAuthority}=await local('services/native-runtime/paperclip-runner-tool-authority.js'),{readTaskProjectAdmission,CASE_PROJECTED_TOOL}=await local('services/native-runtime/native-case-work-tools.mjs'),{createAssignedMcpTools,registerAssignedMcpGateway}=await local('services/native-runtime/assigned-mcp-tools.js'),{createPluginToolDispatcher}=await local('services/plugin-tool-dispatcher.js'),{createToolGatewayService}=await local('services/tool-gateway.js'),{buildPaperclipRuntimeMcpServers}=await local('services/heartbeat.js'),{manifest}=await import(pathToFileURL('/opt/inertia-reviewed/dist/src/manifest.js'));
+const pg=await startEmbeddedPostgresTestDatabase('case-work-native-'),db=createDb(pg.connectionString);test.after(async()=>pg.cleanup());
+
+test('actual native producer reads current/root issue documents under normal authority and denies sibling/hidden/path' ,async()=>{
+ const {heartbeatService,startTaskDrain,stopTaskDrain}=await local('services/heartbeat.js');startTaskDrain();test.after(()=>stopTaskDrain());const heartbeat=heartbeatService(db);
+ const {documentService}=await local('services/documents.js');const{createHash}=await import('node:crypto');
+ const companyId=randomUUID(),P=randomUUID(),Q=randomUUID(),rootId=randomUUID(),caseId=randomUUID(),coId=randomUUID(),betaId=randomUUID(),alphaId=randomUUID(),charlieId=randomUUID(),runId=randomUUID(),pluginId=randomUUID(),proposal='a'.repeat(64);
+ const policy={version:1,role:'worker',projectIds:[P,Q].sort(),issueIds:[rootId],portfolioRootIssueId:rootId},common={provider:'codex',engine:'cli',disableCommandExecution:true,codexPermissionMode:'never',dangerouslyBypassApprovalsAndSandbox:false};
+ const cfg={enabled:true,projectId:Q,researchProjectId:Q,rootIssueId:rootId,rootProjectId:P,applicantSlug:'synthetic',researcher:{agentId:alphaId,principalId:'alpha'},producer:{agentId:betaId,principalId:'beta'},reviewer:{agentId:charlieId,principalId:'charlie'},policyRevision:'v1',process:{}};
+ const temporary=await fs.mkdtemp('/tmp/native-case-envelope-'),controlPath=temporary+'/control.json',configurationPath=temporary+'/review-config.json',entrypoint=temporary+'/unused-review.mjs';test.after(async()=>fs.rm(temporary,{recursive:true,force:true}));
+ await fs.writeFile(configurationPath,JSON.stringify({enrichment:{company_id:companyId,applicant_slug:'synthetic',root_issue_id:rootId,root_project_id:P},preparation:{},case_project_id:Q,producer:{agent_id:betaId,principal_id:'beta'},reviewer:{agent_id:charlieId,principal_id:'charlie'}}),{mode:0o600});await fs.writeFile(entrypoint,"throw Error('Unexpected synthetic review process invocation');\n",{mode:0o600});
+ cfg.process={executable:process.execPath,args:[entrypoint,'--config',configurationPath],cwd:temporary,entrypoint,configurationPath,timeoutMs:120000,maxOutputBytes:4194304,pins:await Promise.all([entrypoint,configurationPath].map(async path=>({path,sha256:createHash('sha256').update(await fs.readFile(path)).digest('hex')})))};cfg.reviewProcess=structuredClone(cfg.process);
+ await db.insert(s.companies).values({id:companyId,name:'Synthetic source review',issuePrefix:'S'+companyId.slice(0,7).toUpperCase()});await db.insert(s.projects).values([{id:P,companyId,name:'Root'},{id:Q,companyId,name:'Cases'}]);
+ const human='synthetic-'+randomUUID();await db.insert(s.authUsers).values({id:human,name:'Synthetic responsible operator',email:human+'@example.invalid',emailVerified:true,createdAt:new Date(),updatedAt:new Date()});await db.insert(s.companyMemberships).values({companyId,principalType:'user',principalId:human,status:'active',membershipRole:'owner'});await db.update(s.companies).set({defaultResponsibleUserId:human}).where(eq(s.companies.id,companyId));
+ await db.insert(s.agents).values({id:coId,companyId,name:'Co',role:'ceo',status:'running',adapterType:'paperclip_runner'});
+ await db.insert(s.agents).values([alphaId,betaId,charlieId].map(id=>({id,companyId,name:id,role:'general',reportsTo:coId,status:'running',adapterType:'paperclip_runner',adapterConfig:{...common,nativeFunding:policy}})));
+ await db.insert(s.companyMemberships).values({companyId,principalType:'agent',principalId:betaId,status:'active'});await db.update(s.agents).set({permissions:{authorizationPolicy:{assignmentPolicy:{mode:'protected'}}}}).where(eq(s.agents.id,charlieId));
+ await db.insert(s.issues).values([{id:rootId,companyId,projectId:P,title:'Root',status:'in_progress',assigneeAgentId:coId},{id:caseId,companyId,projectId:Q,parentId:rootId,title:'Case',status:'in_progress',assigneeAgentId:betaId,originKind:'manual',originId:'paperclip-runner:create-task:'+rootId+':case:binding'}]);
+ await db.insert(s.plugins).values({id:pluginId,pluginKey:'netrxn.inertia',packageName:'synthetic-source',version:'0.1.0',status:'ready',manifestJson:manifest});await db.insert(s.pluginConfig).values({pluginId,companyId,configJson:{nativeCaseWork:cfg}});
+ await db.insert(s.principalPermissionGrants).values({companyId,principalType:'agent',principalId:betaId,permissionKey:'tasks:assign_scope',scope:{projectId:Q,assigneeAgentId:charlieId}});
+ const{authorizationService}=await local('services/authorization.js');const foreignAssignment=await authorizationService(db).decide({actor:{type:'agent',source:'agent_jwt',companyId,agentId:betaId,runId},action:'tasks:assign',resource:{type:'issue',companyId,projectId:P,parentIssueId:caseId,assigneeAgentId:charlieId,assigneeUserId:null},scope:{projectId:P,parentIssueId:caseId,assigneeAgentId:charlieId,assigneeUserId:null}});assert.equal(foreignAssignment.allowed,false);
+ const doc={version:'inertia-case-source-proposal-v1',company_id:companyId,project_id:Q,root_issue_id:rootId,case_binding_id:'binding',record_id:'record',proposal_hash:proposal,producer_issue_id:caseId,producer_agent_id:betaId,producer_principal_id:'beta',producer_run_id:runId};
+ const key='funding-'+createHash('sha256').update(JSON.stringify('case-source-proposal-'+proposal)).digest('hex').slice(0,32)+'-0000000001';await documentService(db).upsertIssueDocument({issueId:caseId,key,format:'markdown',body:JSON.stringify(doc),createdByAgentId:betaId});
+ const{nativeDomainReviewComposition}=await local('services/native-runtime/native-domain-review-composition.mjs'),{createNativeCaseReviewApplicationRuntime}=await local('services/native-runtime/native-case-review-runtime.mjs');nativeDomainReviewComposition.installCaseWork(await createNativeCaseReviewApplicationRuntime(db,{companyId,expectedPluginId:pluginId,nativeCaseWork:cfg}));
+ const make=async(id,wake)=>{await db.insert(s.heartbeatRuns).values({id,companyId,agentId:betaId,nativeIssueId:caseId,runtimeMode:'native',status:'running',contextSnapshot:{issueId:caseId}});await db.update(s.issues).set({executionRunId:id,checkoutRunId:id}).where(eq(s.issues.id,caseId));const binding={companyId,projectId:Q,issueId:caseId,runId:id,agentId:betaId},admission=await readTaskProjectAdmission(db,binding,policy,null);return new PaperclipRunnerToolAuthority(db,{...binding,nativeTaskProjectAdmission:admission,nativeFundingPolicy:{...policy,role:'producer',companyId,agentId:betaId},assignedMcpTools:{definitionsFresh:async()=>[{name:CASE_PROJECTED_TOOL}]},enqueueWakeup:wake});};
+ const first=await make(runId,async()=>{throw Error('synthetic loss after commit before initial wake');});
+
+ await documentService(db).upsertIssueDocument({issueId:rootId,key:'owner-evidence',format:'markdown',body:'SYNTHETIC owner-provided context; not verified applicant fact.',createdByAgentId:coId});
+ await documentService(db).upsertIssueDocument({issueId:caseId,key:'case-checkpoint',format:'markdown',body:'SYNTHETIC partial preparation.',createdByAgentId:betaId});
+ const own=await first.execute({tool:'list_documents',callId:randomUUID(),arguments:{}});assert(own.documents.some(d=>d.key==='case-checkpoint'));assert(own.readableTaskIds.includes(rootId));
+ const read=await first.execute({tool:'read_document',callId:randomUUID(),arguments:{targetTaskId:rootId,key:'owner-evidence'}});assert.equal(read.document.body,'SYNTHETIC owner-provided context; not verified applicant fact.');
+ const sibling=randomUUID();await db.insert(s.issues).values({id:sibling,companyId,projectId:Q,parentId:rootId,title:'Unrelated sibling',status:'todo',assigneeAgentId:betaId});
+ await assert.rejects(()=>first.execute({tool:'list_documents',callId:randomUUID(),arguments:{targetTaskId:sibling}}),/scope_denied/);
+ await assert.rejects(()=>first.execute({tool:'read_document',callId:randomUUID(),arguments:{key:'owner-evidence',path:'/etc/passwd'}}),/scope_denied/);
+
+ await assert.rejects(()=>first.execute({tool:'create_task',callId:randomUUID(),arguments:{purpose:'source_review',proposalHash:proposal}}),/synthetic loss/);
+ const child=(await db.select().from(s.issues).where(eq(s.issues.parentId,caseId)))[0],reviewerRun=randomUUID();
+ await db.insert(s.heartbeatRuns).values({id:reviewerRun,companyId,agentId:charlieId,nativeIssueId:child.id,runtimeMode:'native',status:'running',contextSnapshot:{issueId:child.id}});
+ await db.update(s.issues).set({status:'in_progress',executionRunId:reviewerRun,checkoutRunId:reviewerRun}).where(eq(s.issues.id,child.id));
+ const rb={companyId,projectId:Q,issueId:child.id,runId:reviewerRun,agentId:charlieId},ra=await readTaskProjectAdmission(db,rb,policy,null);
+ const reviewer=new PaperclipRunnerToolAuthority(db,{...rb,nativeTaskProjectAdmission:ra,nativeFundingPolicy:{...policy,role:'producer',companyId,agentId:charlieId},assignedMcpTools:{definitionsFresh:async()=>[{name:CASE_PROJECTED_TOOL}]}});
+
+ const{toolAccessPolicyService}=await local('services/tool-access-policy.js');
+ const grantId=randomUUID();await db.insert(s.principalPermissionGrants).values({id:grantId,companyId,principalType:'agent',principalId:charlieId,permissionKey:'tools:use',scope:{allow:['tool:netrxn.inertia:funding_case_work']}});
+ await db.insert(s.toolPolicies).values({companyId,name:'Exact source reviewer fixture',policyType:'allow',enabled:true,priority:10,selectors:{toolName:'netrxn.inertia:funding_case_work'},config:{}});
+ const freshDefinitions=async()=>{const d=await toolAccessPolicyService(db).decide({companyId,actor:{actorType:'agent',actorId:charlieId,agentId:charlieId},runContext:{heartbeatRunId:reviewerRun,issueId:child.id,projectId:Q},request:{toolName:'netrxn.inertia:funding_case_work',providerType:'paperclip_plugin',arguments:{},sideEffecting:false},consumeRateLimit:false});return d.allowed?[{name:CASE_PROJECTED_TOOL}]:[];};
+ reviewer.binding.assignedMcpTools.definitionsFresh=freshDefinitions;
+ const parentRead=await reviewer.execute({tool:'read_document',callId:randomUUID(),arguments:{targetTaskId:caseId,key:'case-checkpoint'}});assert.equal(parentRead.document.body,'SYNTHETIC partial preparation.');
+ const reviewed=await reviewer.execute({tool:'read_document',callId:randomUUID(),arguments:{targetTaskId:rootId,key:'owner-evidence'}});assert.equal(reviewed.document.body,read.document.body);
+ await assert.rejects(()=>reviewer.execute({tool:'read_document',callId:randomUUID(),arguments:{targetTaskId:sibling,key:'owner-evidence'}}),/scope_denied/);
+
+ // Fresh assigned tool/grant ceiling is checked again on each standard read.
+ await db.delete(s.principalPermissionGrants).where(eq(s.principalPermissionGrants.id,grantId));await db.update(s.toolPolicies).set({enabled:false}).where(eq(s.toolPolicies.companyId,companyId));
+ for(const tool of['list_documents','read_document'])await assert.rejects(()=>reviewer.execute({tool,callId:randomUUID(),arguments:tool==='read_document'?{key:'owner-evidence',targetTaskId:rootId}:{targetTaskId:rootId}}),/scope_denied/);
+ await db.insert(s.principalPermissionGrants).values({id:grantId,companyId,principalType:'agent',principalId:charlieId,permissionKey:'tools:use',scope:{allow:['tool:netrxn.inertia:funding_case_work']}});await db.update(s.toolPolicies).set({enabled:true}).where(eq(s.toolPolicies.companyId,companyId));
+ await db.update(s.issues).set({assigneeAgentId:betaId}).where(eq(s.issues.id,child.id));
+ for(const tool of['list_documents','read_document'])await assert.rejects(()=>reviewer.execute({tool,callId:randomUUID(),arguments:tool==='read_document'?{key:'owner-evidence',targetTaskId:rootId}:{targetTaskId:rootId}}));
+ await db.update(s.issues).set({assigneeAgentId:charlieId}).where(eq(s.issues.id,child.id));
+ await db.update(s.issues).set({projectId:Q}).where(eq(s.issues.id,rootId));
+ for(const tool of['list_documents','read_document'])await assert.rejects(()=>reviewer.execute({tool,callId:randomUUID(),arguments:tool==='read_document'?{key:'owner-evidence',targetTaskId:rootId}:{targetTaskId:rootId}}));
+ await db.update(s.issues).set({projectId:P}).where(eq(s.issues.id,rootId));
+ const {nativeToolContractFingerprintForTarget}=await local('services/native-runtime/native-session-resume.js');
+ const oldSource=await fs.readFile('/qual/base/dist/services/native-runtime/native-session-resume.js','utf8');assert(oldSource.includes('paperclip.native-tool-contract.v17'));
+ const oldFunction=oldSource.slice(oldSource.indexOf('export function nativeToolContractFingerprintForTarget('),oldSource.indexOf('/** Default local-target fingerprint'));
+ const {CONTINUE_TASK_DEFINITION}=await local('services/native-runtime/native-task-continuation.mjs');
+ const old=new Function('createHash','CONTINUE_TASK_DEFINITION',oldFunction.replace('export function','function')+';return nativeToolContractFingerprintForTarget;')(createHash,CONTINUE_TASK_DEFINITION);
+ for(const target of['local','remote'])assert.notEqual(nativeToolContractFingerprintForTarget(target),old(target));
+ await db.update(s.issues).set({hiddenAt:new Date()}).where(eq(s.issues.id,rootId));await assert.rejects(()=>first.execute({tool:'read_document',callId:randomUUID(),arguments:{targetTaskId:rootId,key:'owner-evidence'}}));
+});
