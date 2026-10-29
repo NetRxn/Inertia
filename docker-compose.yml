@@ -1,15 +1,20 @@
-# Inertia member app: app + Postgres + Caddy (HTTPS), with optional extras.
+# Inertia member app: app + Postgres + nightly backups, with optional extras.
 #
 #   cp deploy/compose.env.example .env                    # DOMAIN, POSTGRES_PASSWORD
 #   cp apps/member/.env.example apps/member/.env.production  # app settings
 #   docker compose up -d --build
 #
+# The app listens on 127.0.0.1:3000 only. On the VPS, public traffic arrives
+# through a Cloudflare Tunnel (cloudflared on the host) behind Zero Trust Access;
+# no web ports are open. Never publish a port on 0.0.0.0: Docker bypasses ufw.
+#
 # Optional profiles:
 #   docker compose run --rm tools                         # check every integration
 #   docker compose --profile connectors up -d             # Buzz/Telegram digests
-#
-# Only Caddy publishes ports. Postgres and the app stay on the internal network,
-# because Docker publishes ports past ufw.
+#   docker compose --profile caddy up -d                  # HTTPS on 80/443 without the
+#                                                         # tunnel (sslip.io, local tests)
+
+name: inertia
 
 x-member-env: &member-env
   NODE_ENV: production
@@ -41,6 +46,12 @@ services:
       - path: ./apps/member/.env.production
         required: false
     environment: *member-env
+    ports:
+      - "127.0.0.1:3000:3000"
+    # Reaches services bound to the host's loopback, e.g. Paperclip at
+    # PAPERCLIP_URL=http://host.docker.internal:3100
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - member-data:/app/data
     depends_on:
@@ -53,8 +64,10 @@ services:
       start_period: 30s
       retries: 3
 
+  # Only without the tunnel: Caddy terminates HTTPS on 80/443 itself.
   caddy:
     image: caddy:2-alpine
+    profiles: [caddy]
     restart: unless-stopped
     ports:
       - "80:80"
