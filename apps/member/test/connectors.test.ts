@@ -82,6 +82,35 @@ describe('Buzz', () => {
     expect(newest).toBe(1761566460);
   });
 
+  it('delivers the newest message once, though the relay returns its second again', async () => {
+    const relay = [message('first', CHANNEL, 1761566400), message('last', CHANNEL, 1761566460)];
+    const delivered: string[] = [];
+    const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+      if (String(url).endsWith('/query')) {
+        const [filter] = JSON.parse(String(init?.body)) as { since: number }[];
+        return json(relay.filter((e) => e.created_at >= filter.since).reverse());
+      }
+      delivered.push((JSON.parse(String(init?.body)) as { text: string }).text);
+      return json({ id: 's1', duplicate: false }, 201);
+    }) as typeof fetch;
+    let clock = 1761570000_000;
+    const runner = createRunner(runnerConfig({ ...env, MEMBER_APP_BASE_URL: 'https://app.example.org', MEMBER_APP_INGEST_TOKEN: 'tok' }), {
+      fetchImpl, log: () => {}, now: () => new Date((clock += 120_000)), readState: async () => ({ telegramOffset: 0, buzzSince: 1761566000, pending: [] }), writeState: async () => {},
+    });
+    await runner.start();
+    await runner.read();
+    expect(await runner.flush(true)).toBe(1);
+    await runner.read();
+    expect(await runner.flush(true)).toBe(0);
+    relay.push(message('same second', CHANNEL, 1761566460), message('newer', CHANNEL, 1761566520));
+    await runner.read();
+    expect(await runner.flush(true)).toBe(1);
+    expect(delivered[1]).toContain('same second');
+    expect(delivered[1]).toContain('newer');
+    expect(delivered[1]).not.toContain('last');
+    expect(runner.state()).toMatchObject({ buzzSince: 1761566520, buzzSeen: [expect.any(String)] });
+  });
+
   it('pages back through a backlog bigger than one query', async () => {
     // 600 messages, one a second; the relay answers newest first, 500 at a time.
     const all = Array.from({ length: 600 }, (_, i) => message(`m${i}`, CHANNEL, 1761560000 + i));
