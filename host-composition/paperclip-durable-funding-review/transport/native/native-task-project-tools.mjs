@@ -51,7 +51,7 @@ export function taskProjectMappingKeys(companyId,c){
  });
 }
 /** Pure selector consumes native/config/mapping records, never model-supplied scope. */
-export function selectTaskProjectAdmission(rows,binding,policy,nativeReview,context,mappings=[],ancestors=[]){
+function selectSingleTaskProjectAdmission(rows,binding,policy,nativeReview,context,mappings=[],ancestors=[]){
  const selected=base(rows,binding,policy,nativeReview,context);if(!selected)return null;
  const{c,coordinator,adapterHash}=selected;
  const extraction=c.meetings.filter(m=>m.nativeExtraction?.issueId===binding.issueId);
@@ -84,6 +84,25 @@ export function selectTaskProjectAdmission(rows,binding,policy,nativeReview,cont
  }
  return Object.freeze({version:1,role,companyId:binding.companyId,projectId:context.issue.projectId,issueId:binding.issueId,agentId:binding.agentId,runId:binding.runId,bindingHash:hash([c,mapping??null]),adapterHash});
 }
+/** Notes reuse the existing read-only mapped-objective admission. They never
+ * receive transcript extraction/submission tools. Preserve independent enabled
+ * transcript configuration and fail closed if both resolve the current task. */
+function sourceLanes(rows){
+ const lanes=[rows];
+ const notes=rows.filter(r=>r.config?.ownerNotes?.enabled===true);
+ if(notes.length){
+  if(notes.length!==1)deny();
+  const r=notes[0],c=r.config.ownerNotes;
+  if(!Array.isArray(c.meetings)||c.meetings.some(m=>!object(m)||Object.hasOwn(m,'nativeExtraction')||Object.hasOwn(m,'withdrawn')))deny();
+  if(c.meetings.length)lanes.push([{...r,config:{roundtable:{...c,ownerNotesReader:true,meetings:c.meetings.map(m=>({...m,withdrawn:false}))}}}]);
+ }
+ return lanes;
+}
+export function selectTaskProjectAdmission(rows,binding,policy,nativeReview,context,mappings=[],ancestors=[]){
+ if(nativeReview||!optIn(context?.actor?.adapterConfig))return null;
+ const selected=sourceLanes(rows).map(lane=>selectSingleTaskProjectAdmission(lane,binding,policy,nativeReview,context,mappings,ancestors)).filter(Boolean);
+ if(selected.length>1)deny();return selected[0]??null;
+}
 export async function readTaskProjectAdmission(db,binding,policy,nativeReview,context){
  const [{and,eq,sql},{plugins,pluginCompanySettings,pluginConfig,agents,issues,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
  if(!context){[context]=await db.select({actor:agents,issue:issues,run:heartbeatRuns}).from(heartbeatRuns).innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId)).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);}
@@ -92,11 +111,15 @@ export async function readTaskProjectAdmission(db,binding,policy,nativeReview,co
  const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,settingsId:pluginCompanySettings.id,enabled:pluginCompanySettings.enabled}).from(plugins)
   .innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId)))
   .leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
- const source=rows.map(r=>({...r,settingsPresent:r.settingsId!=null})),selected=base(source,binding,policy,nativeReview,context);if(!selected)return null;
- if(selected.c.meetings.some(m=>m.nativeExtraction?.issueId===binding.issueId))return selectTaskProjectAdmission(source,binding,policy,nativeReview,context);
- const intake=selected.c.nativeIntake;
- if(intake?.sourceAccess!==true||intake.projectId!==context.issue.projectId||![intake.intakeAgentId,...(intake.allowedAgentIds??[])].includes(binding.agentId))return null;
- const keys=taskProjectMappingKeys(binding.companyId,selected.c);if(!keys.length)return null;
+ const source=rows.map(r=>({...r,settingsPresent:r.settingsId!=null}));
+ const lanes=sourceLanes(source),keys=[];
+ for(const lane of lanes){
+  const selected=base(lane,binding,policy,nativeReview,context);if(!selected)continue;
+  if(selected.c.meetings.some(m=>m.nativeExtraction?.issueId===binding.issueId))continue;
+  const intake=selected.c.nativeIntake;
+  if(intake?.sourceAccess===true&&intake.projectId===context.issue.projectId&&[intake.intakeAgentId,...(intake.allowedAgentIds??[])].includes(binding.agentId))keys.push(...taskProjectMappingKeys(binding.companyId,selected.c));
+ }
+ if(!keys.length)return selectTaskProjectAdmission(source,binding,policy,nativeReview,context);
  const records=await db.execute(sql`SELECT record FROM "plugin_netrxn_inertia_e936d62b87".objective_intake WHERE mapping_key IN (${sql.join(keys.map(k=>sql`${k}`),sql`, `)})`);
  const mappings=(records.rows??records).map(r=>r.record),ancestors=[];let current=context.issue;
  for(let depth=0;current.parentId&&depth<32;depth++){
