@@ -1,0 +1,9 @@
+/** Full disposable server bootstrap; only a synthetic fixture PostgreSQL URL is accepted. */
+import fs from'node:fs/promises';import{randomBytes}from'node:crypto';import{pathToFileURL}from'node:url';
+const [dsn]=process.argv.slice(2);if(!dsn?.startsWith('postgres'))throw Error('synthetic_fixture_database_required');
+const root=await fs.mkdtemp('/tmp/full-native-bootstrap-'),key=root+'/key';await fs.writeFile(key,randomBytes(48).toString('hex'),{mode:0o600});
+const config={$meta:{version:1,updatedAt:new Date().toISOString(),source:'configure'},logging:{mode:'file',logDir:root+'/logs'},database:{mode:'postgres',connectionString:dsn,backup:{enabled:false}},server:{deploymentMode:'local_trusted',exposure:'private',host:'127.0.0.1',port:43112,serveUi:false},telemetry:{enabled:false},updates:{checkEnabled:false},storage:{provider:'local_disk',localDisk:{baseDir:root+'/storage'}},secrets:{provider:'local_encrypted',strictMode:false,localEncrypted:{keyFilePath:key}}};
+await fs.writeFile(root+'/config.json',JSON.stringify(config));Object.assign(process.env,{PAPERCLIP_HOME:root,PAPERCLIP_CONFIG:root+'/config.json',DATABASE_URL:dsn,HOST:'127.0.0.1',PORT:'43112',SERVE_UI:'false',PAPERCLIP_MIGRATION_AUTO_APPLY:'true',HEARTBEAT_SCHEDULER_ENABLED:'true',PAPERCLIP_TELEMETRY_DISABLED:'1',PAPERCLIP_UPDATE_CHECK_ENABLED:'false',PAPERCLIP_AGENT_JWT_SECRET:'synthetic-fixture-signer-'+randomBytes(32).toString('hex')});
+try{const{startServer}=await import(pathToFileURL('/tmp/case-native-sql/node_modules/@paperclipai/server/dist/index.js'));const runtime=await startServer();const response=await fetch('http://127.0.0.1:'+runtime.listenPort+'/api/health');if(response.status!==200)throw Error('full_boot_health_failed');console.log(JSON.stringify({fullServerBootstrap:true,heartbeatEnabled:true,health:200,providerStarted:false}));await runtime.shutdown();}finally{await fs.rm(root,{recursive:true,force:true});}
+process.exit(0);
+

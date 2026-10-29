@@ -1,0 +1,34 @@
+--- a/dist/services/recovery/service.js
++++ b/dist/services/recovery/service.js
+@@ -1,3 +1,4 @@
++import { normalizeNativeCoordinatorPolicy } from '../native-runtime/native-coordinator-policy.js';
+ import { isAiAuthenticationBlocked } from "../ai-auth-failure.js";
+ import { isNativeWorkspaceExportRepairCause } from "@paperclipai/shared";
+ import { settleSlackConversation } from "../slack-conversation-lifecycle.js";
+@@ -1787,10 +1788,16 @@
+         }
+         return openChildren;
+     }
++    async function coordinatorChildrenAreStructural(issue) {
++        if (!issue.assigneeAgentId) return false;
++        const actor = await getAgent(issue.assigneeAgentId);
++        if (!actor || actor.id !== issue.assigneeAgentId || actor.companyId !== issue.companyId || actor.role !== "ceo" || actor.adapterType !== "paperclip_runner") return false;
++        try { const policy = normalizeNativeCoordinatorPolicy(actor.adapterConfig); return Boolean(policy && policy.projectIds.includes(issue.projectId)); } catch { return false; }
++    }
+     async function resolveContinuationWaitingOnReview(issue) {
+         const [existingBlockers, openChildren] = await Promise.all([
+             existingUnresolvedBlockerIssues(issue.companyId, issue.id),
+-            openChildIssues(issue),
++            (await coordinatorChildrenAreStructural(issue)) ? Promise.resolve([]) : openChildIssues(issue),
+         ]);
+         const blockedByIssueIds = [
+             ...new Set([
+@@ -2223,7 +2230,7 @@
+             }
+             const [sourceState, healthyChildren, hasNewSourcePath] = await Promise.all([
+                 collectDispositionRepairSourceState(db, { issue }),
+-                healthyOpenChildIssues(issue),
++                (await coordinatorChildrenAreStructural(issue)) ? Promise.resolve([]) : healthyOpenChildIssues(issue),
+                 sourceHasNewPathOutsideRecoveryAction(action),
+             ]);
+             const durablePathRestored = action.ownerType !== "board" && sourceState.hasDurableWaitingPath;

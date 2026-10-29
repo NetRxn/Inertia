@@ -32,11 +32,13 @@ class Duplex(BytesIO):
   return self.pending.pop(0)
 def call(op,params):
  d=Duplex(op,params);return run(config,d,d)
+pending=call('source_receipt',{'proposal_hash':meta['proposalHash']})
+assert pending['receipt'] is None and pending['state']=='awaiting_independent_review' and pending['current_admission'] is False and pending['business_complete'] is False
 review=call('source_review',{'proposal_hash':meta['proposalHash'],'decision':'accept','findings':[]})
 db=Database(make_engine(config.enrichment.database_url));sha=lambda v:hashlib.sha256(json.dumps(v,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 with db.session()as session:before=sha(session.get(WorkbenchAuditEvent,_id(['review',meta['proposalHash']])).event_data)
 receipt=call('source_receipt',{'proposal_hash':meta['proposalHash']})
 with db.session()as session:after=sha(session.get(WorkbenchAuditEvent,_id(['review',meta['proposalHash']])).event_data)
 assert before==after
-out={'sourceReviewResult':review,'sourceReceiptResult':receipt,'immutableStoredReviewSha256Before':before,'immutableStoredReviewSha256After':after,'actualDomain':True,'childId':a.child_id,'reviewerRun':meta['reviewerRun']}
+out={'sourcePendingResult':pending,'sourceReviewResult':review,'sourceReceiptResult':receipt,'immutableStoredReviewSha256Before':before,'immutableStoredReviewSha256After':after,'actualDomain':True,'childId':a.child_id,'reviewerRun':meta['reviewerRun']}
 (directory/'actual-terminal.json').write_text(json.dumps(out));print(json.dumps(out))

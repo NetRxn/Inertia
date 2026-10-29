@@ -1,0 +1,1 @@
+Normalize both current and requested AI connection bindings through the same locked schema before comparing them. PostgreSQL JSONB key order is not a binding change. Unrelated adapter edits preserve existing responsible-user execution identity; genuine binding changes and incompatible provider/harness selections keep existing validation. No credentials or defaults are moved.
