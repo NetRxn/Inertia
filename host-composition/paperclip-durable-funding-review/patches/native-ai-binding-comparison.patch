@@ -1,0 +1,11 @@
+--- a/dist/routes/agents.js
++++ b/dist/routes/agents.js
+@@ -4697,7 +4697,7 @@
+         const nextAiBinding = aiRuntimeConnectionBindingSchema.safeParse(requestedRuntimeConfig?.aiConnection ?? existing.runtimeConfig.aiConnection).data;
+         if (nextAiBinding) {
+             await assertCanUpdateAgent(req, existing);
+-            const changed = JSON.stringify(nextAiBinding) !== JSON.stringify(existing.runtimeConfig.aiConnection);
++            const changed = JSON.stringify(nextAiBinding) !== JSON.stringify(aiRuntimeConnectionBindingSchema.safeParse(existing.runtimeConfig.aiConnection).data);
+             const aiConfig = (patchData.adapterConfig ?? existing.adapterConfig);
+             if (nextAiBinding.mode !== "router" && !isAiConnectionCompatible(nextAiBinding, requestedAdapterType, aiConfig.model, aiConfig.provider, aiConfig.acpxAgent))
+                 throw unprocessable("Select an AI connection compatible with the new harness and model");

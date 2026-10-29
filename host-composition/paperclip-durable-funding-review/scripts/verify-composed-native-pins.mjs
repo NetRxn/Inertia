@@ -4,7 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
-const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging','native-coordinator-child-capacity','native-reconciliation-isolation'];
+const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging','native-coordinator-child-capacity','native-reconciliation-isolation','native-ai-binding-comparison'];
 // This is one explicitly reviewed metadata supersession, not a general last-writer-wins rule.
 const contractFile='dist/services/native-runtime/native-case-work-tools.mjs';
 const predecessor='56a31978d149429f7c626374b31710c4fe906afb7daa9c92b83308fe27dc200f';
@@ -20,6 +20,7 @@ const currentTrackTransitions={"dist/services/native-runtime/status-arbiter.js":
 const sourceContextPagingTransitions={"dist/services/native-runtime/native-case-work-tools.mjs":{"base_sha256":"c1b2f2ac05a2cecf131f64299b4fd41bc9ed1bf5f853e5a467df8239816efa20","candidate_sha256":"3ca335af6fe99c080b12168f04bb27c4d544e928da3300be979405873ebd2964"},"dist/services/native-runtime/native-session-resume.js":{"base_sha256":"a39873e1af3ef8e244e7f8a4b1992bad968b9c5d3694b39c86eb63cc08860293","candidate_sha256":"33ec66488d0331ffecaff5cf219f3e45c1d827e93c9b92f2c4566990b21d12f2"}};
 const childCapacityTransitions={"dist/services/native-runtime/native-coordinator-policy.js":{"base_sha256":"0c1096e1ba52b481dabca09ba2b19ce6de042ef812335b7f32ac769321dfd1c8","candidate_sha256":"fde3c25c95835b1f0ab329ffc4e80fbc6bef4e98ccaaa940ac20032c8e916868"},"dist/services/native-runtime/paperclip-runner-tool-authority.js":{"base_sha256":"3855e3bb3d36907e15940a1e2f8920f7fdfd90299b111af321e6f5f42c9f48f4","candidate_sha256":"34e2981aca364586b692e001999b172965e18778e82d24c9630fcb3e1fcd1f63"},"dist/services/issues.js":{"base_sha256":"81f5a53a055d390b09ee22b43f7965151b8ead5878658d326a639f8eec476a25","candidate_sha256":"e7ee8b208c40c565320f2dc9dd81e9bea9e80e360b3c82faaa2971757eba9992"}};
 const reconciliationTransitions={"dist/services/native-runtime/native-finalization-reconciler.js":{"base_sha256":"63090b2dc77151a0d31af0f839d88d95c9dadc3234bdcf5aed7fad45623a7f7a","candidate_sha256":"b404aad833657392ef5a7ab6d3aee7618f0a6afabc7dab15de3b24303a8374c9"}};
+const aiBindingTransitions={"dist/routes/agents.js":{"base_sha256":"46b47bee5adc0c4c6a897c8fe0d6b30a44f9f3923289a0976414230927b1c3f5","candidate_sha256":"3e496bedae29d56e44962382ffb357c9045031a22f1ac1217b5a80652e7c53c9"}};
 async function safeRead(root,file){
  if(typeof file!=='string'||path.isAbsolute(file)||file.split(/[\\/]/).some(p=>!p||p==='.'||p==='..'))throw Error('native_pin_path_denied');
  let current=root;const parts=file.split('/');
@@ -49,6 +50,7 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
  const sourceContextPaging=pins[9];if(Object.keys(sourceContextPaging.files).length!==2||Object.keys(sourceContextPaging.newFiles).length||Object.entries(sourceContextPagingTransitions).some(([file,value])=>sourceContextPaging.files[file]?.base_sha256!==value.base_sha256||sourceContextPaging.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_source_context_paging_lineage_denied');
  const childCapacity=pins[10];if(Object.keys(childCapacity.files).length!==3||Object.keys(childCapacity.newFiles).length||Object.entries(childCapacityTransitions).some(([file,value])=>childCapacity.files[file]?.base_sha256!==value.base_sha256||childCapacity.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_child_capacity_lineage_denied');
  const isolation=pins[11];if(Object.keys(isolation.files).length!==1||Object.keys(isolation.newFiles).length||Object.entries(reconciliationTransitions).some(([file,value])=>isolation.files[file]?.base_sha256!==value.base_sha256||isolation.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_reconciliation_isolation_lineage_denied');
+ const bindingPin=pins[12];if(Object.keys(bindingPin.files).length!==1||Object.keys(bindingPin.newFiles).length||Object.entries(aiBindingTransitions).some(([file,value])=>bindingPin.files[file]?.base_sha256!==value.base_sha256||bindingPin.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_ai_binding_lineage_denied');
  const packageInfo=JSON.parse(await safeRead(server,'package.json')),build=JSON.parse(await safeRead(server,'dist/build-info.json'));
  const expected=new Map();let supersededFiles=0;
  for(let i=0;i<pins.length;i++){
@@ -74,13 +76,14 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
     const sourceContextPagingContract=i===9&&sourceContextPagingTransitions[file]?.base_sha256===previous&&sourceContextPagingTransitions[file]?.candidate_sha256===digest;
     const childCapacityContract=i===10&&childCapacityTransitions[file]?.base_sha256===previous&&childCapacityTransitions[file]?.candidate_sha256===digest;
     const reconciliationContract=i===11&&reconciliationTransitions[file]?.base_sha256===previous&&reconciliationTransitions[file]?.candidate_sha256===digest;
-    if(!reconciliationContract&&!childCapacityContract&&!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
+    const aiBindingContract=i===12&&aiBindingTransitions[file]?.base_sha256===previous&&aiBindingTransitions[file]?.candidate_sha256===digest;
+    if(!aiBindingContract&&!reconciliationContract&&!childCapacityContract&&!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
     supersededFiles++;
    }
    expected.set(file,digest);
   }
  }
- if(supersededFiles!==22)throw Error('native_contract_lineage_denied');
+ if(supersededFiles!==23)throw Error('native_contract_lineage_denied');
  for(const [file,digest] of expected)if(sha(await safeRead(server,file))!==digest)throw Error('native_pin_drift: '+file);
  return {overlays:[...overlays],verifiedFiles:expected.size,supersededFiles,providerStarted:false,databaseStarted:false};
 }
