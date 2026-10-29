@@ -1,3 +1,4 @@
+import {organizationSearchTool} from './organization-search/host.js';
 import {entityContextTool} from "./entity-context/host.js";
 import {caseWorkTool} from "./case-work/host.js";
 import {privatePreparationTool} from "./private-preparation/host.js";
@@ -46,7 +47,7 @@ export const manifest: PaperclipPluginManifestV1 = {
   entrypoints: { worker: "dist/src/worker.js", ui: "dist/ui" },
   ui: { slots: [{ type: "detailTab", id: "member-packet", displayName: "Packet", exportName: "MemberPacketTab", entityTypes: ["issue"] }] },
   database: { migrationsDir: "migrations" },
-  tools: [entityContextTool, caseWorkTool, privatePreparationTool, enrichmentTool, ...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), (({operation:_,...tool})=>tool)(publicGapPlanReviewTool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
+  tools: [organizationSearchTool, entityContextTool, caseWorkTool, privatePreparationTool, enrichmentTool, ...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), (({operation:_,...tool})=>tool)(publicGapPlanReviewTool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
   jobs: [
     ...fundingDiscoveryManifest.jobs,
     roundtableJobDeclaration,

@@ -22,7 +22,8 @@ it('advertises complete checkpoint and source/history parameter schemas to comma
 it('routes exact-case prepare/workspace/packet operations only for the bound producer and preserves noncompletion',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};for(const op of['prepare','workspace','render','packet']){const result=await f.invoke(op,{},beta('a'));expect(result.data.case_binding_id).toBe('binding-a');expect(result.data.business_complete).toBe(false);}await expect(f.invoke('prepare',{},scan)).rejects.toThrow(/role denied/);await expect(f.invoke('prepare',{case_binding_id:'binding-b'},beta('a'))).rejects.toThrow(/Invalid case preparation/);expect(f.rows[2].status).toBe('in_progress');});
 it('passes typed workspace saves to exact bound case, denies model scope and stale-shaped digests',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};await f.invoke('save',{workspace_hash:'a'.repeat(64),proposals:[{target_type:'sponsor_answer',target_key:'question',value:'Current grounded draft'}]},beta('a'));await f.invoke('save_gap_progress',{workspace_hash:'a'.repeat(64),progress:{items:[]}},beta('a'));for(const [op,p]of[['save',{workspace_hash:'bad',proposals:[]}],['save_gap_progress',{workspace_hash:'a'.repeat(64),progress:{},match_id:'foreign'}]])await expect(f.invoke(String(op),p,beta('a'))).rejects.toThrow(/Invalid case preparation/);expect(f.calls.every(c=>c.actor.case_binding_id==='binding-a')).toBe(true);});
 
-it('exposes the exact protected native reviewer attention request without claiming a queued run',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};const result=await f.invoke('workspace',{},beta('a'));expect(result.data.native_review_guidance.queued).toBe(false);expect(result.data.native_review_guidance.attention_request.targetAgentId).toBe('alpha');expect(f.wakes).toHaveLength(0);});
+it('does not turn a workspace read or incomplete render into a completion-review request',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};for(const operation of ['context','workspace','render']){const result=await f.invoke(operation,{},beta('a'));const guide=result.data.native_review_guidance;expect(guide.queued).toBe(false);expect(guide.reviewer_agent_id).toBe('alpha');expect(guide.attention_request).toBeUndefined();expect(guide.review_request_condition).toBe('persisted_typed_review_request_or_completion_ready');expect(guide.when_review_ready.attention_request.targetAgentId).toBe('alpha');expect(guide.when_exhausted.reportedWorkDisposition).toBe('blocked');expect(guide.when_exhausted.blocker.scope).toBe('current_track');expect(guide.when_exhausted.instruction).toContain('revisit');expect(guide.instruction).toContain('native_review_request_ids');}expect(f.wakes).toHaveLength(0);});
+it('preserves useful checkpoint text and case identity without automatically queuing another reviewer',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};const result=await f.invoke('checkpoint',{revision_hash:'a'.repeat(64),previous_checkpoint_hash:null,phase:'draft',artifact_refs:[],note:'Useful partial application answer',unresolved:['Exact public sponsor wording unavailable after documented research.']},beta('a'));expect(result.data.note).toBe('Useful partial application answer');expect(f.docs.size).toBe(1);expect(result.data.business_complete).toBe(false);expect(result.data.native_review_guidance.attention_request).toBeUndefined();expect(result.data.native_review_guidance.when_exhausted.instruction).toContain('new evidence');expect(f.rows[2].status).toBe('in_progress');expect(f.wakes).toHaveLength(0);});
 
 it("advertises separate case context views so summary paging cannot be mistaken for source/history paging",async()=>{
  const{caseWorkTool}=await import('../../src/case-work/host.js');const schema:any=caseWorkTool.parametersSchema;
@@ -56,3 +57,25 @@ it('rejects candidate reservation reattributed to a different original source ca
 });
 
 it('saves proposed planning assumptions only through the current producer case without factual authority',async()=>{const f=fixture();f.binding.reviewer={agentId:'charlie',principalId:'c'};const p={workspace_hash:'a'.repeat(64),assumption:{key:'request-plan',value:'10000',units:'USD',currency:'USD',commitment:'proposed',rationale:'Proposed delivery envelope supported by current sponsor range.',source_evidence_ids:['sponsor-range']}};const result=await f.invoke('save_assumption',p,beta('a'));expect(result.data.case_binding_id).toBe('binding-a');expect(result.data.business_complete).toBe(false);expect(result.data.native_review_guidance.queued).toBe(false);await expect(f.invoke('save_assumption',p,scan)).rejects.toThrow(/role denied/);for(const extra of[{assumption:{...p.assumption,commitment:'actual'}},{assumption:{...p.assumption,value:10000}},{assumption:{...p.assumption,source_evidence_ids:[]}},{company_id:'foreign'}])await expect(f.invoke('save_assumption',{...p,...extra},beta('a'))).rejects.toThrow(/Invalid case assumption/);expect(f.calls).toHaveLength(1);expect(f.calls[0].actor.case_binding_id).toBe('binding-a');expect(f.docs.size).toBe(0);});
+
+
+describe("committed researcher reservation with dependent Coordinator",()=>{
+ it("returns the saved candidate and deferred notification while the real dependency remains blocked; replay reuses the document",async()=>{
+  const f=fixture(),original=f.binding.bridge.call;f.rows[0].status="blocked";
+  f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:"one-off-source",source_candidate_record_id:"candidate-record"});
+  let attempts=0;f.ctx.issues.requestWakeup=async()=>{attempts++;throw new Error("Issue is blocked by unresolved blockers");};
+  for(let n=0;n<2;n++){
+   const result=await f.invoke("reserve_candidate",{record_id:"candidate-record",record_hash:"a".repeat(64)},scan);
+   expect(result.data).toMatchObject({case_binding_id:"binding-a",business_complete:false,preliminary:true,coordinator_notification:{state:"deferred",reason:"unresolved_blockers"},create_task:{idempotencyKey:"case:binding-a",assigneeActorId:"beta"}});
+   expect(result.data.coordinator_notification.queued).toBeUndefined();
+  }
+  expect(f.docs.size).toBe(1);expect(f.comments).toHaveLength(1);expect(attempts).toBe(2);expect(f.rows[0].status).toBe("blocked");expect(f.rows[1].status).toBe("in_progress");
+ });
+ it("preserves all unexpected wake errors after the durable checkpoint",async()=>{
+  for(const error of[new Error("permission denied"),new Error("Issue has no assigned agent to wake"),new Error("Issue is blocked by unresolved blockers: unexpected detail"),"Issue is blocked by unresolved blockers"]){
+   const f=fixture();f.ctx.issues.requestWakeup=async()=>{throw error;};
+   await expect(f.invoke("reserve_case",{record_id:"record",record_hash:"a".repeat(64)},scan)).rejects.toBe(error);
+   expect(f.docs.size).toBe(1);
+  }
+ });
+});
