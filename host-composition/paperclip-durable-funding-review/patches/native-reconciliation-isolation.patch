@@ -1,0 +1,16 @@
+--- a/dist/services/native-runtime/native-finalization-reconciler.js
++++ b/dist/services/native-runtime/native-finalization-reconciler.js
+@@ -600,6 +600,13 @@
+                 catch (error) {
+                     if (error instanceof NativeStatusRaceError)
+                         continue;
++                    // A historical review may be superseded by a newer DONE run.
++                    // Keep its failed live-admission check local to that finalizer;
++                    // existing failure recording preserves newer status and evidence.
++                    if (error instanceof Error && error.message === "native_source_review_scope_denied") {
++                        results.push(await recordNativeFinalizationFailure({ db, runId: row.runId, error, projectRunStatus: false }));
++                        continue;
++                    }
+                     throw error;
+                 }
+                 results.push({
