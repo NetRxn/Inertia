@@ -1,0 +1,18 @@
+--- a/dist/services/native-runtime/status-arbiter.js
++++ b/dist/services/native-runtime/status-arbiter.js
+@@ -293,13 +293,13 @@
+             // authorized, productive track exists. Bind the actual unblock request
+             // without waking the same agent to repeat the blocked work or old title.
+             unblockDescriptor: {
+-                owner: "board",
++                owner,
+                 action: input.assessment.blocker.unblockAction,
+             },
+             effects: [
+                 {
+                     kind: "bind_blocker",
+-                    owner: "board",
++                    owner,
+                     action: input.assessment.blocker.unblockAction,
+                 },
+             ],
