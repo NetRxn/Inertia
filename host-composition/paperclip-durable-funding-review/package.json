@@ -60,6 +60,8 @@
     "apply-native-coordinator-continuation": "node scripts/apply-native-coordinator-continuation.mjs",
     "test:native-coordinator-continuation": "node --test tests/native-coordinator-continuation.test.mjs tests/native-coordinator-continuation-installer.test.mjs",
     "apply-native-scout-deadline": "node scripts/apply-native-scout-deadline.mjs",
-    "test:native-scout-deadline-installer": "node --test tests/native-scout-deadline-installer.test.mjs"
+    "test:native-scout-deadline-installer": "node --test tests/native-scout-deadline-installer.test.mjs",
+    "apply-native-case-result-envelope": "node scripts/apply-native-case-result-envelope.mjs",
+    "test:native-case-result-envelope-installer": "node --test tests/native-case-result-envelope-installer.test.mjs"
   }
 }
