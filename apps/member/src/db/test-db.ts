@@ -1,8 +1,7 @@
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
-import { migrate } from 'drizzle-orm/pglite/migrator';
 import { schema } from './schema';
-import path from 'path';
+import { runMigrations } from './migrate';
 
 export async function createTestDb() {
   // Create in-memory PGlite instance
@@ -12,8 +11,7 @@ export async function createTestDb() {
   const db = drizzle({ client, schema });
 
   // Run migrations
-  const migrationsFolder = path.join(process.cwd(), 'drizzle');
-  await migrate(db, { migrationsFolder });
+  await runMigrations(db);
 
   return db;
 }
