@@ -83,7 +83,7 @@ export function createPlugin() {
       await registerConfiguredEntityContext(ctx);
       await registerConfiguredEnrichment(ctx);
       await registerConfiguredTrustedCentral(ctx);
-      roundtableStatus = registerRoundtableJobs(ctx);
+      roundtableStatus = await registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {

@@ -34,7 +34,7 @@ async function fixture(){
  return {h,pg,config,ownerFile,wakes,run};
 }
 it("registered job and native tools complete owner-file extraction through durable local SQL publication/readback",async()=>{
- const f=await fixture(),status=registerRoundtableJobs(f.h.ctx);
+ const f=await fixture(),status=await registerRoundtableJobs(f.h.ctx);
  await f.h.runJob("reconcile-roundtable-sources");
  expect(status()).toMatchObject({state:"attention",results:[{state:"pending",code:"extraction_pending",publicationMode:"local"}]});
  expect(f.wakes).toHaveLength(1);
@@ -46,10 +46,10 @@ it("registered job and native tools complete owner-file extraction through durab
  const rows=await f.pg.query<any>(`SELECT value FROM ${BRIDGE_NAMESPACE}.bridge_runtime WHERE state_key LIKE 'local-meeting-publication:%'`);
  expect(rows.rows).toHaveLength(1);const receipt=rows.rows[0].value.current;
  expect(receipt.envelope.publication).toMatchObject({transcript:source.text,audience:"members",notes:{decisions:[{line:2,verification:"unverified"}],actions:[{line:3,owner:null,verification:"unverified"}]}});
- const restarted=registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");expect(restarted()).toMatchObject({state:"complete",results:[{state:"unchanged",publicationMode:"local"}]});
+ const restarted=await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");expect(restarted()).toMatchObject({state:"complete",results:[{state:"unchanged",publicationMode:"local"}]});
 });
 it("rejects corrected or revoked owner sources before protected context or candidate continuation",async()=>{
- const f=await fixture();registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
+ const f=await fixture();await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
  const context:any=(await f.h.executeTool("meeting_source_context",{meetingId:"meeting"},f.run)).data;
  await writeFile(f.ownerFile,JSON.stringify({...source,revision:"2",text:"Corrected source"}),{mode:0o600});
  await expect(f.h.executeTool("submit_meeting_candidates",{meetingId:"meeting",requestHash:context.requestHash,notes:{notes:[],decisions:[],actions:[]}},f.run)).rejects.toThrow();
@@ -58,7 +58,7 @@ it("rejects corrected or revoked owner sources before protected context or candi
 it("missing native extraction binding retains an unpublished pending source and later enriches the same revision",async()=>{
  const f=await fixture(),actor=f.config.roundtable.meetings[0].nativeExtraction;
  delete f.config.roundtable.meetings[0].nativeExtraction;f.h.ctx.config.get=async()=>f.config;
- const status=registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
+ const status=await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
  expect(status()).toMatchObject({state:"attention",results:[{state:"pending",code:"native_extraction_binding_required"}]});
  expect((await f.pg.query(`SELECT value FROM ${BRIDGE_NAMESPACE}.bridge_runtime WHERE state_key LIKE 'local-meeting-publication:%'`)).rows).toHaveLength(0);
  f.config.roundtable.meetings[0].nativeExtraction=actor;
@@ -70,7 +70,7 @@ it("missing native extraction binding retains an unpublished pending source and 
 it("the explicitly admitted native follow-up agent resolves protected meeting evidence but cannot submit extraction",async()=>{
  const f=await fixture();await f.pg.exec(await readFile(new URL("../../migrations/007_objective_intake.sql",import.meta.url),"utf8"));
  f.config.roundtable.nativeIntake={organizationId:"org",intakeAgentId:"triage",projectId:"project",referenceOnly:true,sourceAccess:true};f.h.ctx.config.get=async()=>f.config;
- const status=registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
+ const status=await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
  expect(status().results[0]).toMatchObject({nativeIntake:"applied",code:"extraction_pending"});
  const rows=await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true});expect(rows).toHaveLength(1);
  const followup=rows[0]!;expect(followup.projectId).toBe("project");expect(followup.description).not.toContain(source.text);
@@ -85,7 +85,7 @@ it("the explicitly admitted native follow-up agent resolves protected meeting ev
  await expect(f.h.executeTool("meeting_source_context",{meetingRef},run)).rejects.toThrow();
 });
 async function complete(f:Awaited<ReturnType<typeof fixture>>) {
- const status=registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
+ const status=await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
  const context:any=(await f.h.executeTool("meeting_source_context",{meetingId:"meeting"},f.run)).data;
  const result:any=(await f.h.executeTool("submit_meeting_candidates",{meetingId:"meeting",requestHash:context.requestHash,notes:{notes:[{text:source.text.split("\n")[0],line:1}],decisions:[],actions:[]}},f.run)).data;
  expect(result.publication).toMatchObject({state:"published",publicationMode:"local"});return status;
@@ -98,7 +98,7 @@ it("cannot relabel a local successful receipt as live website completion by chan
  expect(status()).toMatchObject({state:"attention",results:[{state:"blocked",code:"binding_changed",publicationMode:"website"}]});expect(calls).toBe(0);
 });
 it("withdrawal during a local receipt absence read prevents the subsequent SQL publication write",async()=>{
- const f=await fixture();f.h.ctx.config.get=async()=>f.config;registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
+ const f=await fixture();f.h.ctx.config.get=async()=>f.config;await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
  const context:any=(await f.h.executeTool("meeting_source_context",{meetingId:"meeting"},f.run)).data;
  const query=f.h.ctx.db.query.bind(f.h.ctx.db);let changed=false;
  f.h.ctx.db.query=async(q:any,p:any)=>{const out=await query(q,p);if(p?.[2]?.startsWith("local-meeting-publication:")){changed=true;f.config.roundtable.meetings[0].withdrawn=true;}return out as any;};
@@ -109,7 +109,7 @@ it("withdrawal during a local receipt absence read prevents the subsequent SQL p
 it("explicit reader admission permits only verified active descendants of the exact meeting follow-up",async()=>{
  const f=await fixture();await f.pg.exec(await readFile(new URL("../../migrations/007_objective_intake.sql",import.meta.url),"utf8"));
  f.config.roundtable.nativeIntake={organizationId:"org",intakeAgentId:"triage",projectId:"project",referenceOnly:true,sourceAccess:true,allowedAgentIds:["triage","reader"]};f.h.ctx.config.get=async()=>f.config;
- registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
+ await registerRoundtableJobs(f.h.ctx);await f.h.runJob("reconcile-roundtable-sources");
  const root=(await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true}))[0]!;
  await f.h.ctx.issues.update(root.id,{status:"in_progress"},"company");
  const child=await f.h.ctx.issues.create({companyId:"company",projectId:"project",parentId:root.id,title:"Review source evidence",status:"in_progress",assigneeAgentId:"reader"});
@@ -176,7 +176,7 @@ it("publishes through controlled loopback HTTPS while source-linked actions reac
  cleanup.push(website.close);
  f.config.roundtable.origin=website.origin;
  f.h.ctx.http.fetch=async(url,init)=>url.startsWith(website.origin)?website.fetch(url,init):httpFixture(url,init);
- const status=registerRoundtableJobs(f.h.ctx);
+ const status=await registerRoundtableJobs(f.h.ctx);
  const submit=async()=>{
   await f.h.runJob("reconcile-roundtable-sources");
   const context:any=(await f.h.executeTool("meeting_source_context",{meetingId:"meeting"},f.run)).data;
@@ -207,7 +207,7 @@ it("publishes through controlled loopback HTTPS while source-linked actions reac
  expect(await f.h.ctx.issues.get(root.id,"company")).toMatchObject({assigneeAgentId:"triage",status:"in_progress",priority:"high"});
  const corrected:any=(await f.h.executeTool("meeting_source_context",{meetingRef},triageRun)).data;
  expect(corrected.candidates.filter((candidate:any)=>candidate.kind==="commitment")).toMatchObject([{source_revision:"2",value:"Please investigate the remaining accessibility tests."}]);
- const restarted=registerRoundtableJobs(f.h.ctx);
+ const restarted=await registerRoundtableJobs(f.h.ctx);
  await f.h.runJob("reconcile-roundtable-sources");
  expect(restarted()).toMatchObject({state:"complete",results:[{state:"unchanged",nativeIntake:"replayed",publicationMode:"website"}]});
  expect(requests).toHaveLength(2);
@@ -232,7 +232,7 @@ it.each(["done","reassigned","missing"])("routes a %s extraction task into the e
   if(id!=="task" || !unavailable)return row;
   return failure==="missing"?null:{...row,...(failure==="done"?{status:"done" as const}:{assigneeAgentId:"other-agent"})} as typeof row;
  };
- const status=registerRoundtableJobs(f.h.ctx);
+ const status=await registerRoundtableJobs(f.h.ctx);
  await f.h.runJob("reconcile-roundtable-sources");
  expect(status()).toMatchObject({state:"attention",results:[{state:"pending",code:"native_extraction_assignment_required",nativeIntake:"applied"}]});
  const issues=await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true});
@@ -261,3 +261,4 @@ it.each(["done","reassigned","missing"])("routes a %s extraction task into the e
  expect(updatedIssues).not.toContain("task");
  expect(f.wakes).toHaveLength(1);
 });
+it('snapshots admitted company IDs during setup and keeps source jobs independent of later global inventory scope',async()=>{const f=await fixture();let inventories=0;const list=f.h.ctx.companies.list;f.h.ctx.companies.list=async p=>{inventories++;return list(p);};const status=await registerRoundtableJobs(f.h.ctx);expect(inventories).toBeGreaterThan(0);f.h.ctx.companies.list=async()=>{throw Error('Concurrent native invocation makes global company inventory unavailable');};await f.h.runJob('reconcile-roundtable-sources');expect(f.wakes).toHaveLength(1);expect(status().results[0]?.code).not.toBe('native_state_unavailable');});

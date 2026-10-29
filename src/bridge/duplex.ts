@@ -8,6 +8,7 @@ export interface ContextCallbacks<C> {
   /** Trusted caller deadline, never serialized into private/model parameters. */
   operationDeadlineAt?: number;
   context(signal?:AbortSignal):Promise<C>;
+  sourceAssignment?(request:Record<string,unknown>,signal?:AbortSignal):Promise<Record<string,unknown>>;
   caseTask?(request:Record<string,unknown>,signal?:AbortSignal):Promise<Record<string,unknown>>;
   privateAuthorization?(request:Record<string,unknown>,signal?:AbortSignal):Promise<{authorized:boolean;scope_hash:string;actor_hash:string}>;
   review?(request:Record<string,unknown>,signal?:AbortSignal):Promise<{state:"pending";request_id:string}>;
@@ -36,7 +37,8 @@ function rejectionMessage(message:Record<string,unknown>,version:string,operatio
     for(const i of d.issues)if(!object(i)||!keys(i,["path","type"])||!Array.isArray(i.path)||i.path.length>12||i.path.some(t=>!(typeof t==="string"&&fields.has(t))&&!(Number.isInteger(t)&&Number(t)>=0&&Number(t)<1000))||typeof i.type!=="string"||!types.has(i.type))return generic;
     return `${generic}: ${JSON.stringify({code:"private_validation_failed",details:d})}`;
   }
-  if(version==="dfw-general-enrichment-v1"){
+  const caseSource=version==="dfw-native-case-work-v1"&&["source_context","source_links","source_capture","source_propose","source_receipt","source_review","source_settlement"].includes(operation);
+  if(version==="dfw-general-enrichment-v1"||caseSource){
     if(operation==="capture"&&authenticated&&keys(message,["type","ok","error","details"])&&message.error==="capture_failed"){
       const d=message.details;
       if(object(d)&&keys(d,["code","http_status"])&&
@@ -45,11 +47,12 @@ function rejectionMessage(message:Record<string,unknown>,version:string,operatio
         return `${generic}: ${JSON.stringify({code:"capture_failed",details:d})}`;
       return generic;
     }
-    if(!["context","propose","review","receipt","capture","triage_scan","triage_page","links"].includes(operation)||!keys(message,["type","ok","error","details"])||message.error!=="enrichment_validation_failed")return generic;
+    const validationCode=caseSource?"case_source_validation_failed":"enrichment_validation_failed";
+    if(!caseSource&&!["context","propose","review","receipt","capture","triage_scan","triage_page","links"].includes(operation)||!keys(message,["type","ok","error","details"])||message.error!==validationCode)return generic;
     const d=message.details,paths=new Set('answer_key artifact_type confidence content_sha256 context_hash decision effective_date end evidence evidence_required evidence_requirements expected_content_sha256 expected_media_types field fields findings form_version instructions key language_kind limit locator_notes max_characters max_verification_age_days max_words message offset op operation owner_role parameters params portal_field proposal_hash quote record_id required required_attachment required_for_handoff requirement requirements resolution_answer_key response_type responsible_party role severity source_document_id source_locator source_reference source_url sponsor_language start title unresolved_concerns unsupported_field url validation_rules value verification_status verified_on version scan_hash view'.split(" ")),codes=new Set('missing extra_forbidden dict_type model_type model_attributes_type list_type value_error literal_error string_type string_pattern_mismatch string_too_short string_too_long int_type int_parsing int_from_float greater_than greater_than_equal less_than_equal bool_type bool_parsing float_type float_parsing date_type date_parsing date_from_datetime_parsing finite_number invalid_value'.split(" "));
     if(!object(d)||!keys(d,["issues","truncated"])||typeof d.truncated!=="boolean"||!Array.isArray(d.issues)||d.issues.length<1||d.issues.length>32||Buffer.byteLength(JSON.stringify(d))>8192)return generic;
     for(const i of d.issues)if(!object(i)||!keys(i,["path","code"])||!Array.isArray(i.path)||i.path.length>12||i.path.some(t=>!(typeof t==="string"&&paths.has(t))&&!(Number.isSafeInteger(t)&&Number(t)>=0&&Number(t)<=10_000_000))||typeof i.code!=="string"||!codes.has(i.code))return generic;
-    return `${generic}: ${JSON.stringify({code:"enrichment_validation_failed",details:d})}`;
+    return `${generic}: ${JSON.stringify({code:validationCode,details:d})}`;
   }
   if(version!=="dfw-public-drafting-v1")return generic;
   if(keys(message,["type","ok","error"]) && typeof message.error==="string" && safeRejectionCodes.has(message.error))return `${generic} (${message.error})`;
@@ -157,13 +160,17 @@ export function createBoundedContextBridge<C>(configuration:BoundedProcessConfig
           resultSeen=true;result=message.result;child.stdin.end();return;
         }
         if(!Number.isSafeInteger(message.id) || message.id!==sequence+1 || sequence>=1024 ||
-           !((message.type==="context" && keys(message,["type","id"])) || (message.type==="review" && keys(message,["type","id","request"]) && object(message.request) && contextCount>0) || (version==="dfw-native-case-work-v1" && message.type==="case_task" && keys(message,["type","id","case_binding_id"]) && typeof message.case_binding_id==="string" && contextCount>0) || (version==="dfw-private-preparation-v1" && message.type==="private_authorization" && keys(message,["type","id","scope","actor","scope_hash","actor_hash"]) && object(message.scope) && object(message.actor) && contextCount>0)))
+           !((message.type==="context" && keys(message,["type","id"])) || (message.type==="review" && keys(message,["type","id","request"]) && object(message.request) && contextCount>0) || (version==="dfw-native-case-work-v1" && message.type==="source_assignment" && keys(message,["type","id","case_binding_id","proposal_hash"]) && typeof message.case_binding_id==="string" && typeof message.proposal_hash==="string" && /^[a-f0-9]{64}$/.test(message.proposal_hash) && contextCount>0) || (version==="dfw-native-case-work-v1" && message.type==="case_task" && keys(message,["type","id","case_binding_id"]) && typeof message.case_binding_id==="string" && contextCount>0) || (version==="dfw-private-preparation-v1" && message.type==="private_authorization" && keys(message,["type","id","scope","actor","scope_hash","actor_hash"]) && object(message.scope) && object(message.actor) && contextCount>0)))
           return fail("DFW drafting invalid callback; outcome unconfirmed");
         sequence++;busy=true;
         try {
           if(message.type==="context") {
             const context=await callbacks.context(controller.signal);contextCount++;
             send({type:"context",id:message.id,context});
+          } else if(message.type==="source_assignment") {
+            if(!callbacks.sourceAssignment)throw Error();
+            const assignment=await callbacks.sourceAssignment({case_binding_id:message.case_binding_id,proposal_hash:message.proposal_hash},controller.signal);
+            send({type:"source_assignment",id:message.id,assignment});
           } else if(message.type==="case_task") {
             if(!callbacks.caseTask)throw Error();
             const task=await callbacks.caseTask({case_binding_id:message.case_binding_id},controller.signal);

@@ -246,12 +246,29 @@ export interface RoundtableStatus {
   results: MeetingJobResult[];
 }
 /** Actual pinned SDK composition; registration does not enable, provision credentials or schedule work. */
-export function registerRoundtableJobs(
+export async function registerRoundtableJobs(
   ctx: Pick<
     PluginContext,
     "jobs" | "companies" | "config" | "db" | "secrets" | "http" | "issues" | "tools"
   >,
-): () => RoundtableStatus {
+): Promise<() => RoundtableStatus> {
+  // Jobs are unscoped SDK invocations. Resolve the finite configured inventory
+  // before concurrent tool calls start; every job still rechecks live admission.
+  const companyIds: string[] = [];
+  const seen = new Set<string>();
+  for(let offset=0;;offset+=1000){
+    const page=await ctx.companies.list({limit:1000,offset});
+    for(const company of page){
+      if(seen.has(company.id))throw Error("Duplicate company inventory");
+      seen.add(company.id);
+      let config:Record<string,unknown>;
+      try{config=await ctx.config.get(company.id);}
+      catch(error){if(error instanceof Error&&error.message.includes("company context is required"))continue;throw error;}
+      const candidate=config.roundtable;
+      if(candidate&&typeof candidate==="object"&&(candidate as {enabled?:unknown}).enabled===true)companyIds.push(company.id);
+    }
+    if(page.length<1000)break;
+  }
   const workerId = randomUUID();
   let status: RoundtableStatus = { state: "disabled", results: [] };
   const extractionOwner=createRuntimeOwner(ctx.db,{workerId,runId:"meeting-extraction"});
@@ -302,7 +319,8 @@ export function registerRoundtableJobs(
     const results: MeetingJobResult[] = [];
     let enabled = false;
     try {
-      for (const company of await ctx.companies.list({ limit: 1000 })) {
+      for (const companyId of companyIds) {
+        const company={id:companyId};
         if(only && company.id!==only.companyId)continue;
         try {
           const settings = parse((await ctx.config.get(company.id)).roundtable);

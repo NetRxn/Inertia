@@ -91,7 +91,7 @@ it("registers actual SDK manual job with no recurring schedule and keeps disable
     http++;
     throw Error();
   };
-  const status = registerRoundtableJobs(h.ctx);
+  const status = await registerRoundtableJobs(h.ctx);
   await h.runJob("reconcile-roundtable-sources");
   expect(roundtableJobDeclaration).not.toHaveProperty("schedule");
   expect(secrets).toBe(0);
@@ -166,7 +166,7 @@ it("composes real source, private SQL state, exact-byte website publication and 
     }
     return receipt ? json(receipt) : json({ code: "operation_absent" }, 404);
   };
-  const status = registerRoundtableJobs(h.ctx);
+  const status = await registerRoundtableJobs(h.ctx);
   await extract(h,"meeting");
   expect(status()).toMatchObject({
     state: "complete",
@@ -179,7 +179,7 @@ it("composes real source, private SQL state, exact-byte website publication and 
   const websiteCalls = urls.filter((u) =>
     u.startsWith("https://dao.example"),
   ).length;
-  registerRoundtableJobs(h.ctx);
+  await registerRoundtableJobs(h.ctx);
   await h.runJob("reconcile-roundtable-sources");
   expect(urls.filter((u) => u.startsWith("https://dao.example"))).toHaveLength(
     websiteCalls,
@@ -197,7 +197,7 @@ it("malformed enabled settings fail closed without secret resolution", async () 
     called = true;
     throw Error();
   };
-  const status = registerRoundtableJobs(h.ctx);
+  const status = await registerRoundtableJobs(h.ctx);
   await h.runJob("reconcile-roundtable-sources");
   expect(status()).toMatchObject({
     state: "attention",
@@ -295,7 +295,7 @@ it.each(["removed", "withdrawn", "rebound"])(
         { headers: { "content-type": "application/json" } },
       );
     };
-    registerRoundtableJobs(h.ctx);
+    await registerRoundtableJobs(h.ctx);
     await extract(h,unique.meetings[0]!.meetingId);
     expect(writes).toBe(0);
   },
@@ -328,7 +328,7 @@ it("summary-only creates actionable reference-only native work without resolving
     calls++;
     throw Error();
   };
-  const status = registerRoundtableJobs(h.ctx);
+  const status = await registerRoundtableJobs(h.ctx);
   await h.runJob("reconcile-roundtable-sources");
   expect(calls).toBe(0);
   expect(status().results[0]).toMatchObject({
@@ -389,7 +389,7 @@ it("rechecks admission after website absence lookup before POST", async () => {
       trashed: false,
     });
   };
-  registerRoundtableJobs(h.ctx);
+  await registerRoundtableJobs(h.ctx);
   await extract(h,unique.meetings[0]!.meetingId);
   expect(posts).toBe(0);
 });
