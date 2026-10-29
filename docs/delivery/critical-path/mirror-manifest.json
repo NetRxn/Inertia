@@ -1,32 +1,197 @@
 {
-  "capturedAt": "2026-10-29T22:23:01+00:00",
+  "capturedAt": "2026-10-29T22:49:19+00:00",
   "canonical": "mission-alignment-20261028/execution-20261028/critical-path",
-  "sourceStatusUpdatedAt": "2026-10-29T22:20:32.342803+00:00",
-  "statusSha256": "26505f74668fad50389f049087bbd4e4b3ba3a68ee12818260dffd84339d6b1e",
-  "files": {
-    "earned-time.md": "95fceaf9d6f1b590c5e18112f708b65585127930564d10ea8d63d742e5de6f32",
-    "index.html": "47544221d425cbbf1b65e60b290acd6bc11864b8828e225a9123c493d624015a",
-    "critical-path.pdf": "d3662a2629bb37617ad560ecc0db97e7f2a4d33874430351022c52fa4029d777",
+  "sourceStatusUpdatedAt": "2026-10-29T22:44:25.978645+00:00",
+  "statusSha256": "e11c67fe9f3c5c749523c9d096b17ea8a89fc75dc341b036fa5f7229d159caa3",
+  "sourceFiles": {
+    "business-writing-first-finding.md": "ff9b3805e34c8993d4236844e40bded19248be4db33fe333d94ebeab7eb6350e",
+    "earned-time.md": "2b919c28724df2dbb2ecbbb547beea7a49e28570d2f3102d7d85d14bd11348db",
+    "review-index.md": "2833f84fab1bcfbf23a8be1035230057f206f908c3613847d12e632ccc247530",
+    "index.html": "294699fd6b93fda20a9fd958bf2478db5741ccb06e2c98fa7ab69292dc8b3d79",
+    "discovery-reconciliation-receipt.json": "42c6d95d2d58bc177a534d13ae6361607fe88db89c4a2e624211f887b2840063",
+    "critical-path.pdf": "c3e98f1c041775e6d4dc6be21b4798c835f6b4520277fadbce6cf2928f99f6bb",
     "README.md": "7241903aed81a1b6cf42b2591b40f62a0ada18031fb0b5f6dae8854abcb107f5",
     "validate-chart.py": "13364f14e0af8a605dbd82bce17f9cbab89e50fd5529313314044f898a4e0e6b",
-    "discovery-audit.md": "347745cb0998a049016eb01504c656ea44178af531d681e33aae69aa3da5d2a3",
-    "render-chart.py": "f34af96744f84fd96982a2fb930499173f6d548aa9d3ceca85497361dda9c56f",
-    "status.json": "26505f74668fad50389f049087bbd4e4b3ba3a68ee12818260dffd84339d6b1e",
-    "plans/packet.md": "7eb677338cc0e910e8420e70c500577e1b0d1e61003440f2e2c9550001ee6644",
-    "plans/buzz.md": "04f0942c4a862e9016af2a8e76c5b61f4d0c9f918af7a89034869b4c25704cfc",
-    "plans/drafting.md": "48e335cbdffff8cfbc1825f2afe3fc05ff89a2a8f467727952b82045111ee4cc",
-    "plans/fanout.md": "9a1ab25ce79b9f9a687f22a46eaf9fd76c6f5b1977ab34d84df4a607b4659f57",
-    "plans/organization-search.md": "c8526e0f798ea4498f2aa45a8d6195494f31e042d773648a7871c186577149af",
+    "discovery-audit.md": "eed7413c11da594e516a09c6c030efacc544b55ad5733f7d419ebc9ff43711f4",
+    "render-chart.py": "08a64e03d8ebc5a3af8739a661cd79dc44450549b71f55f11becfe603f9da189",
+    "status.json": "e11c67fe9f3c5c749523c9d096b17ea8a89fc75dc341b036fa5f7229d159caa3",
+    "plans/packet.md": "ccb704c44960e35bb5969c3f3469e31a3d2ddf37ced32d7893930c9efc324f76",
+    "plans/buzz.md": "c2da37dae015b060018e15f87c3161a79661fcaf083b6a20fd8f183b474c2ebf",
+    "plans/drafting.md": "890f294b3f0aca77382ce5ed7a4037d829a48ffd37070fc43e8cc5015a76e02a",
+    "plans/fanout.md": "c66b6ced0cd2f5da4493be0899221a3c25afdd530401aa6bdd445a2f1ed259af",
+    "plans/organization-search.md": "87cdebfb9b0ad6f04cc2a5f8bb38e4efdf7d7b7908a04575a9cff9e0f01f70d9",
     "plans/demo.md": "5ba29e7572793f47f5023d9e1b7d1151652ce967d018474ac6b247c42145593a",
     "plans/charlie-review.md": "f97dec4ab95b28542ad2943914a7de48afc7a34284592793e27ea265f3a51ce5",
-    "plans/beta-lifecycle.md": "3d16e5f5a9257a846506c83404d4d3f51167f2e370a73fb0340c4830167cfeba",
-    "plans/discovery.md": "897df1f1cb77a207382f81454f24d94863d2f860d05bdb39d7c2b1533f0a1c3e",
-    "plans/notes.md": "2361bd9b8fa8b89488de334237fe5bd44cbd44dffc8bf9a0cd8f26959128a435",
-    "plans/runtime.md": "a4dc7de9a257c08fb9a02c21575ca41145ecfa30f1712cccf055dbcdc20266e6",
+    "plans/beta-lifecycle.md": "dfb0ae6eb80e96a5688d0500e7dd02524b0ca1f6ec40d92a0cadd4d2c167d774",
+    "plans/discovery.md": "cd84b68a1a33263bfd53d82312764eda8a22ba0cd8af7fec2133b3ae2c53c482",
+    "plans/notes.md": "e07a4ec8026777c52f5015800a73baf014ed330051081c1a3d84f46b54bd9e1e",
+    "plans/runtime.md": "2aa94e960daa9d9df4bf5d4e815b97335be584fa2b52f0c97dbf6c8c391c3854",
     "plans/alpha-handoff.md": "cd5b8d4cb7a736d3b0a10ce3c8a0eedadfb820985b0083a083033c46ddd258fb",
-    "plans/source-research.md": "d09157c8e550eb6a406c6e794f8be13b30001f9ad6dd71534e1f9a0e172767b9",
-    "scripts/render-chart.py": "a774ad78f1d207df6faa687de96bd63c3819cd8682259eb92668d59feea913b4"
+    "plans/source-research.md": "51391c2f193b59a9ae893a5baa714214b41b1c1dd830d632142f19e4dc56f7ea",
+    "scripts/render-chart.py": "55630a316f77b2d33157df7cf32e50043502a316eebe259657d5e0ce67561f6d"
   },
+  "externalCanonicalReferencesRenderedAsText": [
+    {
+      "file": "business-writing-first-finding.md",
+      "target": "../business-writing-audit-20261029/acceptance-contract.md",
+      "canonicalReference": "mission-alignment-20261028/execution-20261028/business-writing-audit-20261029/acceptance-contract.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../dfw-paperclip-integration-plan-20261028.md",
+      "canonicalReference": "mission-alignment-20261028/dfw-paperclip-integration-plan-20261028.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../midnight-delivery-plan-20261028.md",
+      "canonicalReference": "mission-alignment-20261028/midnight-delivery-plan-20261028.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../funding-critical-path-midnight-plan.md",
+      "canonicalReference": "mission-alignment-20261028/funding-critical-path-midnight-plan.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../p1-buzz-p2-docs-production-plan.md",
+      "canonicalReference": "mission-alignment-20261028/p1-buzz-p2-docs-production-plan.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../docs/development/current-mission.md",
+      "canonicalReference": "mission-alignment-20261028/docs/development/current-mission.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../adversarial-integration-review-summary.md",
+      "canonicalReference": "mission-alignment-20261028/adversarial-integration-review-summary.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../adversarial-integration-domain-review.md",
+      "canonicalReference": "mission-alignment-20261028/adversarial-integration-domain-review.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../adversarial-integration-native-review.md",
+      "canonicalReference": "mission-alignment-20261028/adversarial-integration-native-review.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../adversarial-integration-release-review.md",
+      "canonicalReference": "mission-alignment-20261028/adversarial-integration-release-review.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../paperclip-native-final-audit.md",
+      "canonicalReference": "mission-alignment-20261028/paperclip-native-final-audit.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../paperclip-agents-operations-final-audit.md",
+      "canonicalReference": "mission-alignment-20261028/paperclip-agents-operations-final-audit.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../paperclip-native-workflow-final-audit.md",
+      "canonicalReference": "mission-alignment-20261028/paperclip-native-workflow-final-audit.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../business-reference/park-place-workflow-reference.md",
+      "canonicalReference": "mission-alignment-20261028/business-reference/park-place-workflow-reference.md"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../alignment-receipt.json",
+      "canonicalReference": "mission-alignment-20261028/alignment-receipt.json"
+    },
+    {
+      "file": "review-index.md",
+      "target": "../../execution-20261028/business-writing-audit-20261029/active-four-original-plan-review.md",
+      "canonicalReference": "mission-alignment-20261028/execution-20261028/business-writing-audit-20261029/active-four-original-plan-review.md"
+    },
+    {
+      "file": "plans/packet.md",
+      "target": "../../business-writing-audit-20261029/active-four-matrix.md",
+      "canonicalReference": "mission-alignment-20261028/execution-20261028/business-writing-audit-20261029/active-four-matrix.md"
+    },
+    {
+      "file": "plans/packet.md",
+      "target": "../../business-writing-audit-20261029/acceptance-contract.md",
+      "canonicalReference": "mission-alignment-20261028/execution-20261028/business-writing-audit-20261029/acceptance-contract.md"
+    },
+    {
+      "file": "plans/buzz.md",
+      "target": "../../../midnight-delivery-plan-20261028.md#task-4--buzz-careful-ingress-p1",
+      "canonicalReference": "mission-alignment-20261028/midnight-delivery-plan-20261028.md"
+    },
+    {
+      "file": "plans/buzz.md",
+      "target": "../../../p1-buzz-p2-docs-production-plan.md",
+      "canonicalReference": "mission-alignment-20261028/p1-buzz-p2-docs-production-plan.md"
+    },
+    {
+      "file": "plans/drafting.md",
+      "target": "../../business-writing-audit-20261029/active-four-matrix.md",
+      "canonicalReference": "mission-alignment-20261028/execution-20261028/business-writing-audit-20261029/active-four-matrix.md"
+    },
+    {
+      "file": "plans/drafting.md",
+      "target": "../../business-writing-audit-20261029/acceptance-contract.md",
+      "canonicalReference": "mission-alignment-20261028/execution-20261028/business-writing-audit-20261029/acceptance-contract.md"
+    },
+    {
+      "file": "plans/beta-lifecycle.md",
+      "target": "../../../midnight-delivery-plan-20261028.md",
+      "canonicalReference": "mission-alignment-20261028/midnight-delivery-plan-20261028.md"
+    },
+    {
+      "file": "plans/beta-lifecycle.md",
+      "target": "../../../dfw-paperclip-integration-plan-20261028.md",
+      "canonicalReference": "mission-alignment-20261028/dfw-paperclip-integration-plan-20261028.md"
+    },
+    {
+      "file": "plans/beta-lifecycle.md",
+      "target": "../../../adversarial-integration-domain-review.md",
+      "canonicalReference": "mission-alignment-20261028/adversarial-integration-domain-review.md"
+    },
+    {
+      "file": "plans/discovery.md",
+      "target": "../../../midnight-delivery-plan-20261028.md",
+      "canonicalReference": "mission-alignment-20261028/midnight-delivery-plan-20261028.md"
+    },
+    {
+      "file": "plans/discovery.md",
+      "target": "../../../dfw-paperclip-integration-plan-20261028.md",
+      "canonicalReference": "mission-alignment-20261028/dfw-paperclip-integration-plan-20261028.md"
+    },
+    {
+      "file": "plans/discovery.md",
+      "target": "../../../paperclip-native-workflow-final-audit.md",
+      "canonicalReference": "mission-alignment-20261028/paperclip-native-workflow-final-audit.md"
+    },
+    {
+      "file": "plans/notes.md",
+      "target": "../../../midnight-delivery-plan-20261028.md#task-5--gemini-notes--existing-dao-meetings--native-triage-p2",
+      "canonicalReference": "mission-alignment-20261028/midnight-delivery-plan-20261028.md"
+    },
+    {
+      "file": "plans/notes.md",
+      "target": "../../../p1-buzz-p2-docs-production-plan.md",
+      "canonicalReference": "mission-alignment-20261028/p1-buzz-p2-docs-production-plan.md"
+    },
+    {
+      "file": "plans/notes.md",
+      "target": "../../../meeting-autostart-independent-review.md",
+      "canonicalReference": "mission-alignment-20261028/meeting-autostart-independent-review.md"
+    },
+    {
+      "file": "plans/notes.md",
+      "target": "../../../meeting-extraction-contract-independent-review.md",
+      "canonicalReference": "mission-alignment-20261028/meeting-extraction-contract-independent-review.md"
+    }
+  ],
   "rowCount": 14,
   "rootStatusOrCreditsChangedByDocs": false,
   "htmlStructurallyChecked": true,

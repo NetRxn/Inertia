@@ -14,7 +14,9 @@ page='''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewpor
 </style><h1>Inertia critical path</h1>'''
 page+=f'<p>Updated {e(d["updatedAt"])} · displayed proof timestamps are UTC; local working timezone is America/Chicago.</p>'
 page+='<div class="banner"><strong>⚠️ Warning = no clean plan established yet.</strong> Every item links its closure plan. A green applies only to the named capability, not complete production readiness.'
-page+=f'<p class="credits">New earned time this renewed window: {d["earnedMinutes"]} minutes</p><a href="earned-time.md">Proof / time-credit ledger</a> · <a href="status.json">Machine-readable snapshot</a></div>'
+page+=f'<p class="credits">New earned time from critical greens: {d["earnedMinutes"]} minutes</p>'
+page+=f'<p>Separate explicit human diagnostic bonus: {d.get("explicitDiagnosticBonusMinutes", 0)} minutes. This is not a business green.</p>'
+page+='<a href="earned-time.md">Proof / time-credit ledger</a> · <a href="status.json">Machine-readable snapshot</a></div>'
 page+='<table><thead><tr><th>Status</th><th>Item / linked plan / owner</th><th>Current evidence</th><th>Next step / proof time</th></tr></thead><tbody>'+''.join(rows)+'</tbody></table>'
 page+='<p class="foot">Keep partial work and evidence. Hold exhausted cases independently. Do not count source tests, a saved setting, or a successful agent run as a delivered application. Existing greens are not re-credited.</p></html>'
 (p/'index.html').write_text(page)

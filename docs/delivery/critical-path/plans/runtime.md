@@ -11,3 +11,7 @@ Last app-only cutover: old2d8d physicalSTOP/PID0 verified, new3672 installed; on
 Proofs: `/tmp/inertia-ai-binding-ops-20261029/postboot-proof.json`, `checkpoint.json`; VPS build/cutover receipts under `/home/netrxn/inertia-build-20261028/ai-binding-cd26255ada88/`. No credentials or database backups were exported off VPS.
 
 Remaining: observe real business preparation/review/handoff. Runtime health and synthetic regressions do not prove a complete funding portfolio. Future maintenance must allow active providers to finish naturally, preserve queued intents and history, verify physical stop, and qualify the actual image and startup with normal guards before releasing work. No instruction tuning or new source scope is implied by this plan.
+
+## Current actual image —22:32:19 UTC /17:32:19 CDT
+
+Image `9e62bef7d631b62c47e7f1fc8d3aab0073e67aa86079f9b283b1e68f398da15e` is deployed with source5bbb/payload764e, native42guards25. Original46a boot, plugin71d/registrycff8/composebc8/auth/security remain unchanged. Fresh VPS-only339runs626wakes checkpoint17:29 preceded physical old3672 STOP/PID0 and app-only recreation; one rollback3672 is retained. CompanyACTIVE/drainOFF now runs four real new funding-case Betas; details and exact acceptance boundaries are in fanout.md. No maintenance interruption is authorized while those providers work.

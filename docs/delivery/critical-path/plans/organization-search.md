@@ -37,12 +37,12 @@ Wrong/missing credential denies; hidden sources and personal documents stay abse
 
 Files: create apps/member/src/org/machine-reader.ts and apps/member/src/app/api/org/knowledge/route.ts; minimally extend org/ingest.ts search projection with stored contentHash/status and source identity. Test test/org-machine-reader.test.ts plus a disposable real HTTP/PostgreSQL proof.
 
-Interface: one POST with a discriminated operation: search{query}; read{sourceId}; find_by_hash{contentHash}. Server configuration fixes the organization/audience to active organization-shared sources. Search returns the existing bounded results with sourceId,passageId,kind,title,location,text,contentHash,status. Exact source reads return id,kind,content,contentHash,status or null. No personal tables or write method. Missing MEMBER_APP_KNOWLEDGE_READ_TOKEN disables admission; constant-time bearer comparison uses a distinct read credential.
+Interface: one POST with a discriminated operation: search{query}; read{sourceId}; find_by_hash{contentHash}. Server configuration fixes the organization/audience to active organization-shared sources. Search returns the existing bounded results with sourceId,passageId,kind,title,location,text,contentHash,status. Exact source reads return id/kind/title/contentHash/status plus bounded Unicode pages; reconstruct all pages and verify the complete hash. Hash lookup returns identity only, never a fabricated full-content receipt. No personal tables or write method. Missing MEMBER_APP_KNOWLEDGE_READ_TOKEN disables admission; constant-time bearer comparison uses a distinct read credential.
 
-- [ ] RED: actual store fixture contains a synthetic DAO mission passage plus hidden and personal-document controls. Missing/wrong token401; correct token returns exact active passage/citation/hash, read/hash lookup match; arbitrary selectors400; no mutation.
-- [ ] Implement the minimal handler and route over existing store functions, preserving search semantics.
-- [ ] GREEN: owning tests and actual HTTP/PostgreSQL prove the same source/citation, hidden-source exclusion and no writes; independent review before publication.
-- [ ] Inform peer issue40 of exact isolated paths/contracts; no instruction to manage their branch or deployment.
+- [x] RED: actual store fixture contains a synthetic DAO mission passage plus hidden and personal-document controls. Missing/wrong token401; correct token returns exact active passage/citation/hash, read/hash lookup match; arbitrary selectors400; no mutation.
+- [x] Implement the minimal handler and route over existing store functions, preserving search semantics.
+- [x] GREEN: owning17tests plus app typecheck, actual HTTP/PostgreSQL source/hash/read/hidden/auth proof, and3funding-client citation tests passed. Independent source review and native SDK/catalog admission remain pending.
+- [x] Inform peer issue40 of exact isolated paths/contracts; no instruction to manage their branch or deployment.
 
 ### Task2: Funding read adapter and case citation (owners: implement_host + native author)
 
@@ -53,3 +53,17 @@ Proposed owned new module src/organization-search/host.ts; do not edit the lifec
 - [ ] Operator-only: stage protected endpoint/auth references, execute one real existing-corpus query and verify one proposed field/readback. No new rescan or member DB export.
 
 **Acceptance:** a real admitted agent query returns an existing organizational passage and the same citation/hash survives a saved current-case field. UI /work success alone is not this forward wiring proof.
+
+## Focused adversarial review — 2026-10-29
+
+**ORG-1: ⚠ source reader exists; actual native admission/composition remains unproved.** Original integration Task2 and prior adversarial domain finding7 require organization context before case drafting with scoped actor and exact provenance. Current isolated `/tmp/inertia-member-knowledge-reader-20261029` is based on peer5049059e63d86fb4484e601a7854068d1a638dea; app read route and `src/organization-search/client.ts` now exist. Client rechecks injected authorize before/after HTTP, validates citations/hash, and creates an explicitly unverified preliminary field with evidence_ids empty. Its3-test log and typecheck are source evidence, not native wiring. Do not report reader source absent after this patch.
+
+Native primitive: existing plugin tools/current actor authorization and delegation; [current delegation docs](https://docs.paperclip.ing/guides/org/delegation/) refreshed today and [pinned plugin host](https://github.com/paperclipai/paperclip/blob/bba6a45f0d364cfd962ac59b3bdf2426a8222adb/server/src/services/plugin-host-services.ts), matching inspected local native checkout. Native tasks do not automatically expose member assistant tools.
+
+Root cause/minimum: client `authorize:()=>Promise<boolean>` leaves concrete admission to composition. implement_host + native owner must wire current company/project/assignment/grant checks and actual funding catalog to this client, preserve public Scout denial and separate read token. No second knowledge store/controller. Operator-owned endpoint/token references remain separate readiness.
+
+Exact acceptance: actual native SDK/current actor→HTTP→existing store yields one real passage; current workspace save/readback retains identical sourceId/passageId/location/hash and uncertainty. Foreign company, revoked assignment/grant and public Scout deny before HTTP; hidden/personal sources remain absent. Rationale citation may inform proposed prose but is not a foreign SourceDocument ID or accepted eligibility/finance fact. Preserve earlier implementation sections.
+
+## Source milestone (not deployment acceptance)
+
+Isolated peer-base5049059 checkout `/tmp/inertia-member-knowledge-reader-20261029`; peer informed in issue40 comment6509619953. Existing `org/ingest.ts` and DB schema are unchanged. New read handler reuses search/getSource and adds exact active hash lookup. HTTP/PG proof `/tmp/inertia-member-reader-http-pg-proof-20261029/green.log`; owning `/tmp/inertia-member-knowledge-reader-green.log`; client `/tmp/inertia-member-reader-client-green.log`. No production corpus read, token creation or native tool registration occurred. Real research-agent→corpus→saved-case proof remains ⚠ until those concrete bindings are installed.

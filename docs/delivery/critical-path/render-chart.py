@@ -31,8 +31,8 @@ for n,row in enumerate(rows,1):
 t.setStyle(TableStyle(styles))
 cut=s.get('updatedAt',s.get('observedAt',s.get('baselineAt','See individual row proofs')))
 story=[p('Inertia critical path - plans and proof',head),Spacer(1,8),p('Saved status: '+txt(cut)+'. Generated '+datetime.now(timezone.utc).isoformat(timespec='seconds')+'. Source SHA256 '+hashlib.sha256(raw).hexdigest()[:16],sub),Spacer(1,8),p('Mechanism GREEN is not full business acceptance. [!] marks no clean plan. Earlier credits remain historical; this export changes no status, proof or clock endpoint.',sub),Spacer(1,18),t]
-ledger={k:s[k] for k in ['rule','renewedAt','earnedGreenCredits','earnedMinutes','baseDeadline'] if k in s}
-if ledger is not None:story.extend([Spacer(1,16),p('Parent-owned earned-time record',body),p(ledger,small)])
+ledger={k:s[k] for k in ['rule','renewedAt','earnedGreenCredits','earnedMinutes','explicitDiagnosticBonusMinutes','firstNewGreenRequiredBy','firstNewGreenRequirementMet','baseDeadline'] if k in s}
+if ledger is not None:story.extend([Spacer(1,16),p('Parent-owned earned-time record',body),p('Critical greens: '+str(s.get('earnedMinutes',0))+' minutes. Separate explicit human diagnostic bonus: '+str(s.get('explicitDiagnosticBonusMinutes',0))+' minutes. No additional business green is implied.',small),p(ledger,small)])
 def footer(c,doc):
  c.setFont('Helvetica',9);c.setFillColor(HexColor('#526879'));c.drawString(50,25,'Static export; canonical status.json and linked plans remain authoritative. No new green credit is created by rendering.');c.drawRightString(1150,25,str(doc.page))
 SimpleDocTemplate(str(r/'critical-path.pdf'),pagesize=(1200,900),rightMargin=50,leftMargin=50,topMargin=42,bottomMargin=45,title='Inertia critical path plans and proof').build(story,onFirstPage=footer,onLaterPages=footer)
