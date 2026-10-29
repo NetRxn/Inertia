@@ -8,8 +8,9 @@ import { byPriority } from '../../../work/initiatives';
 import { listSources } from '../../../org/ingest';
 import { integrationCards, type IntegrationCard } from '../../../org/integrations';
 import { isAdmin } from '../../../org/members';
+import { effectiveEnv, getIntegrationSetting } from '../../../settings/store';
 import { plural } from '../../../components/cards/format';
-import { CheckConnections } from '../../../components/OrgControls';
+import { CheckConnections, ModelSettings, TelegramSettings } from '../../../components/OrgControls';
 import { InitiativesStrip } from '../../../components/InitiativesStrip';
 import { SectionTabs } from '../../../components/SectionTabs';
 import { Timeline } from '../../../components/Timeline';
@@ -128,9 +129,45 @@ function ConnectionList({ cards }: { cards: IntegrationCard[] }) {
   );
 }
 
+/** Admin settings for the integrations that run inside Inertia. Saved keys never come back to the page. */
+async function SettingsSections({ env }: { env: Record<string, string | undefined> }) {
+  const db = getDb();
+  const [model, telegram] = await Promise.all([getIntegrationSetting(db, 'model'), getIntegrationSetting(db, 'telegram')]);
+  const canStoreKeys = (process.env.MEMBER_APP_SECRET_KEY?.trim().length ?? 0) >= 32;
+  return (
+    <>
+      <section className={`in-glass ${cardStyles.card}`} aria-labelledby="settings-model">
+        <h2 id="settings-model" className={`in-label ${cardStyles.eyebrow}`}>Language model</h2>
+        <p className={cardStyles.meta}>
+          {model ? 'Saved here.' : env.MEMBER_APP_MODEL ? `Using the server's setting: ${env.MEMBER_APP_MODEL}.` : 'Not set yet.'} Used by the chat and to read meetings, uploads and chat digests.
+        </p>
+        <ModelSettings
+          canStoreKeys={canStoreKeys}
+          current={{
+            provider: model?.config.provider ?? env.MEMBER_APP_MODEL_PROVIDER ?? 'anthropic',
+            model: model?.config.model ?? env.MEMBER_APP_MODEL ?? '',
+            fastModel: model?.config.fastModel ?? env.MEMBER_APP_FAST_MODEL ?? '',
+            baseUrl: model?.config.baseUrl ?? env.MEMBER_APP_MODEL_BASE_URL ?? '',
+            hasKey: Boolean(model?.hasSecret),
+            saved: Boolean(model),
+          }}
+        />
+      </section>
+      <section className={`in-glass ${cardStyles.card}`} aria-labelledby="settings-telegram">
+        <h2 id="settings-telegram" className={`in-label ${cardStyles.eyebrow}`}>Telegram</h2>
+        <p className={cardStyles.meta}>
+          {telegram?.hasSecret ? 'A bot is saved here.' : env.TELEGRAM_BOT_TOKEN ? 'Using the server’s bot.' : 'No bot yet.'} Group messages become a daily digest in Data and show under Incoming data.
+        </p>
+        <TelegramSettings canStoreKeys={canStoreKeys} current={{ chatIds: telegram?.config.chatIds ?? env.TELEGRAM_CHAT_IDS ?? '', hasToken: Boolean(telegram?.hasSecret), saved: Boolean(telegram) }} />
+      </section>
+    </>
+  );
+}
+
 async function ConnectionsTab({ admin }: { admin: boolean }) {
-  const sources = await listSources(getDb());
-  const cards = integrationCards(process.env, getAdapters(), {
+  const db = getDb();
+  const [sources, env] = await Promise.all([listSources(db), effectiveEnv(db)]);
+  const cards = integrationCards(env, getAdapters(), {
     sources: sources.length,
     meetings: sources.filter((s) => s.kind === 'meeting').length,
     chatExports: sources.filter((s) => s.kind === 'chat-export').length,
@@ -150,6 +187,7 @@ async function ConnectionsTab({ admin }: { admin: boolean }) {
         <h2 className={`in-label ${cardStyles.eyebrow}`}>Everything else</h2>
         <ConnectionList cards={[...rest].sort((a, b) => ['connected', 'available', 'planned'].indexOf(a.status) - ['connected', 'available', 'planned'].indexOf(b.status))} />
       </section>
+      {admin && <SettingsSections env={env} />}
       {admin && (
         <section className={`in-glass ${cardStyles.card}`}>
           <h2 className={`in-label ${cardStyles.eyebrow}`}>Test the connections</h2>

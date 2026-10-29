@@ -142,7 +142,21 @@ export const workEvents = memberAppSchema.table('work_events', {
   at: timestamp('at').notNull().defaultNow(),
 });
 
+/**
+ * Integration settings an admin saved in the app. They overlay the matching
+ * environment variables; the secret is encrypted (src/settings/secrets.ts)
+ * and never leaves the server.
+ */
+export const integrationSettings = memberAppSchema.table('integration_settings', {
+  id: text('id', { enum: ['model', 'telegram'] }).primaryKey(),
+  config: jsonb('config').notNull().$type<Record<string, string>>(),
+  secret: text('secret'),
+  updatedBy: uuid('updated_by').references(() => members.id),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
 export const schema = {
+  integrationSettings,
   members,
   loginTokens,
   sessions,

@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { getAdapters } from '../adapters';
 import { backgroundAskJson } from '../assistant/model';
 import { getDb } from '../db/client';
+import { clearIntegrationSetting, effectiveEnv, getIntegrationSetting, saveIntegrationSetting } from '../settings/store';
+import { SecretKeyMissingError } from '../settings/secrets';
 import { issueSignInLink } from '../identity/auth';
 import { requireMember } from '../identity/session';
 import { addSource, hideSource, IngestError, restoreSource } from './ingest';
@@ -86,7 +88,7 @@ export async function addNote(input: { title: string; text: string; kind?: 'note
 export async function draftProfile(): Promise<ActionResult> {
   try {
     await requireAdminMember();
-    const profile = await regenerateProfile(getDb(), backgroundAskJson());
+    const profile = await regenerateProfile(getDb(), backgroundAskJson(await effectiveEnv(getDb())));
     refresh();
     return { ok: true, message: `Drafted ${profile.initiatives.length} initiatives.` };
   } catch (error) {
@@ -227,12 +229,12 @@ export async function pursueFunding(opportunityId: string): Promise<ActionResult
     const opportunity = (await adapters.funding.listOpportunities()).find((o) => o.id === opportunityId);
     if (!opportunity) return { ok: false, error: 'That opportunity is gone. Refresh?' };
     const { pursueOpportunity } = await import('../work/pursue');
-    const result = await pursueOpportunity(getDb(), adapters, backgroundAskJson(), opportunity, member.id);
+    const result = await pursueOpportunity(getDb(), adapters, backgroundAskJson(await effectiveEnv(getDb())), opportunity, member.id);
     for (const path of ['/org', '/']) revalidatePath(path);
     refresh();
-    if (result.already) return { ok: true, message: 'Already being pursued. See Work.' };
+    if (result.already) return { ok: true, message: 'Already being pursued. See Home.' };
     const people = result.plan.tasks.filter((t) => t.lane === 'human').length;
-    return { ok: true, message: `Started: ${result.created} tasks, ${people} for people. See Work.` };
+    return { ok: true, message: `Started: ${result.created} tasks, ${people} for people. See Home.` };
   } catch (error) {
     return fail(error, 'Inertia could not plan this one just now. Try again in a moment?');
   }
@@ -243,11 +245,11 @@ export async function findWorkIn(sourceId: string): Promise<ActionResult> {
   try {
     const member = await requireAdminMember();
     const { suggestWorkFromSource } = await import('../work/suggest');
-    const result = await suggestWorkFromSource(getDb(), getAdapters(), backgroundAskJson(), sourceId, member.id);
+    const result = await suggestWorkFromSource(getDb(), getAdapters(), backgroundAskJson(await effectiveEnv(getDb())), sourceId, member.id);
     refresh();
-    if (result.already) return { ok: true, message: 'Already read for work. See Work.' };
+    if (result.already) return { ok: true, message: 'Already read for work. See Home and Agents.' };
     if (!result.created) return { ok: true, message: 'Nothing actionable found in this one.' };
-    return { ok: true, message: `Found ${result.created} item${result.created === 1 ? '' : 's'}, ${result.people} for people. See Work.` };
+    return { ok: true, message: `Found ${result.created} item${result.created === 1 ? '' : 's'}, ${result.people} for people. See Home and Agents.` };
   } catch (error) {
     if (error instanceof Error && /Keep at least one initiative|not available/.test(error.message)) return { ok: false, error: error.message };
     return fail(error, 'Inertia could not read this for work just now. Try again in a moment?');
@@ -274,14 +276,84 @@ export async function readGithubRepos(input: string): Promise<ActionResult> {
   }
 }
 
-/** Tests each integration with the current settings, for the Integrations page. */
+/** Tests each integration with the current settings, for Agents → Connections. */
 export async function checkIntegrations(): Promise<{ ok: true; results: import('../connectors/check').CheckResult[] } | { ok: false; error: string }> {
   try {
     await requireAdminMember();
     const { checkConnections } = await import('../connectors/check');
-    return { ok: true, results: await checkConnections() };
+    return { ok: true, results: await checkConnections(await effectiveEnv(getDb(), process.env, { fresh: true })) };
   } catch (error) {
     if (error instanceof MemberError) return { ok: false, error: error.message };
     return { ok: false, error: "Couldn't run the checks." };
+  }
+}
+
+const MODEL_PROVIDERS = ['anthropic', 'openai-compatible'] as const;
+const TELEGRAM_TOKEN = /^\d{5,}:[A-Za-z0-9_-]{30,}$/;
+const CHAT_IDS = /^\s*(-?\d+\s*(,\s*-?\d+\s*)*)?$/;
+
+function settingError(error: unknown, fallback: string): ActionResult {
+  if (error instanceof SecretKeyMissingError) return { ok: false, error: error.message };
+  return fail(error, fallback);
+}
+
+/** The language model for the chat and the data processing. An empty key keeps the saved one. */
+export async function saveModelSettings(input: { provider: string; model: string; fastModel: string; baseUrl: string; apiKey: string }): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const provider = MODEL_PROVIDERS.find((p) => p === input.provider);
+    if (!provider) return { ok: false, error: 'Pick Anthropic or an OpenAI-compatible server.' };
+    const model = input.model.trim().slice(0, 120);
+    if (!model) return { ok: false, error: 'Name the model, e.g. claude-sonnet-5-5.' };
+    const baseUrl = input.baseUrl.trim();
+    if (baseUrl && !/^https?:\/\/[^\s]+$/.test(baseUrl)) return { ok: false, error: 'The server address should start with https://.' };
+    if (provider === 'openai-compatible' && !baseUrl) return { ok: false, error: 'An OpenAI-compatible server needs its address.' };
+    const db = getDb();
+    await saveIntegrationSetting(db, 'model', { provider, model, fastModel: input.fastModel.trim().slice(0, 120), baseUrl }, input.apiKey.trim() || undefined, member.id);
+    refresh();
+    return { ok: true, message: 'Saved. The chat and the data processing use it from now on. Check the connections to try it.' };
+  } catch (error) {
+    return settingError(error, "Couldn't save the model settings.");
+  }
+}
+
+/** The Telegram bot the connectors read. The token is checked with Telegram before it is kept. */
+export async function saveTelegramSettings(input: { token: string; chatIds: string }): Promise<ActionResult> {
+  try {
+    const member = await requireAdminMember();
+    const token = input.token.trim();
+    if (token && !TELEGRAM_TOKEN.test(token)) return { ok: false, error: 'That doesn’t look like a bot token from @BotFather (it looks like 123456:ABC…).' };
+    if (!CHAT_IDS.test(input.chatIds)) return { ok: false, error: 'Chat ids are numbers separated by commas, like -1001234567890.' };
+    const chatIds = input.chatIds.split(',').map((id) => id.trim()).filter(Boolean).join(',');
+    const db = getDb();
+    let who = '';
+    if (token) {
+      const { telegramMe } = await import('../connectors/telegram');
+      try {
+        const me = await telegramMe({ token, chatIds: [] });
+        who = ` as @${me.username}${me.canReadAllGroupMessages ? '' : '. Turn off privacy in @BotFather (/setprivacy → Disable) so it sees group messages'}`;
+      } catch {
+        return { ok: false, error: 'Telegram didn’t accept that token. Copy it again from @BotFather?' };
+      }
+    } else if (!(await getIntegrationSetting(db, 'telegram'))?.hasSecret) {
+      return { ok: false, error: 'Paste the bot token from @BotFather.' };
+    }
+    await saveIntegrationSetting(db, 'telegram', { chatIds }, token || undefined, member.id);
+    refresh();
+    return { ok: true, message: `Saved${who}. The connectors pick it up within a minute (they must be running).` };
+  } catch (error) {
+    return settingError(error, "Couldn't save the Telegram settings.");
+  }
+}
+
+/** Forgets what was saved in the app, so the server's own settings apply again. */
+export async function clearIntegrationSettings(id: 'model' | 'telegram'): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    await clearIntegrationSetting(getDb(), id);
+    refresh();
+    return { ok: true, message: 'Cleared. The server’s own settings apply again.' };
+  } catch (error) {
+    return fail(error, "Couldn't clear that.");
   }
 }

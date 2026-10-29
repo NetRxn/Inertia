@@ -17,6 +17,7 @@ import { saveBasics } from '../src/org/organization';
 import { regenerateProfile } from '../src/org/profile';
 import { readWebsite } from '../src/org/website';
 import { readGithub } from '../src/org/github';
+import { effectiveEnv } from '../src/settings/store';
 
 function args(argv: string[]) {
   const out: { name?: string; website?: string; description?: string; founder?: string; files: string[]; github?: string; profile: boolean } = { files: [], profile: true };
@@ -67,7 +68,7 @@ async function main() {
   }
   if (opts.profile) {
     console.log('Drafting the profile...');
-    const profile = await regenerateProfile(db, backgroundAskJson());
+    const profile = await regenerateProfile(db, backgroundAskJson(await effectiveEnv(db)));
     console.log(JSON.stringify({
       mission: profile.mission?.text,
       programs: profile.programs.map((l) => l.text),

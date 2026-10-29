@@ -38,12 +38,16 @@ Tips:
 - Keep or add the initiatives (including *Pursue grant funding strategy*) **before** running Find work, so tasks land under the right goal.
 - Without Paperclip settings the app uses an in-memory engine: fine for rehearsals, but tasks are lost on restart.
 
+## Settings in the app
+
+Admins can set the **language model** and the **Telegram bot** in Agents → Connections instead of this file. Saved settings override the matching variables. Keys and tokens are encrypted with `MEMBER_APP_SECRET_KEY` (at least 32 characters; `openssl rand -base64 48`), which must be set on the server, and never sent back to the page. The connectors read saved Telegram settings when the app uses a shared Postgres (`DATABASE_URL`) and restart themselves within a minute of a change.
+
 ## 2. Telegram bot
 
 1. In Telegram, message **@BotFather** → `/newbot` → copy the token.
 2. Still in @BotFather: `/setprivacy` → choose the bot → **Disable**, so it sees all group messages (not just commands).
 3. Add the bot to the FWTX group. If you changed privacy after adding it, remove and re-add it.
-4. Set:
+4. Paste the token in Agents → Connections → Telegram (it is checked with Telegram before it is saved), or set:
    ```sh
    TELEGRAM_BOT_TOKEN=123456:ABC…
    TELEGRAM_CHAT_IDS=-100…      # optional: only these chats (the check shows what it reads)
