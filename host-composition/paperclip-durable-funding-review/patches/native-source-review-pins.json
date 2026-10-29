@@ -45,6 +45,10 @@
     "dist/services/tool-gateway.js": {
       "base_sha256": "d56e7ce2e610ca012df70ffda1526b3f95c79076fc1c7a0c383fe1c854626f45",
       "candidate_sha256": "4be446d0b5d67b53f6ec872506c835f5a824731205e815f2846cc51125929d00"
+    },
+    "dist/services/heartbeat.js": {
+      "base_sha256": "676584dc5db0851a09fa35dfc3ed5d562930080193c744384d9910a1af8faf48",
+      "candidate_sha256": "a33d1aa1a23fea11e7903bf9ee1bfdc089350b787b2e700ee5946cf7aa3fafe9"
     }
   },
   "newFiles": {
@@ -58,9 +62,9 @@
       "candidate_sha256": "00eb17e2e23ce4432af5c786bf5ca608254e21788cfa77dadad8abae8688991a"
     },
     "dist/services/native-runtime/native-source-review.mjs": {
-      "candidate_sha256": "11b6630961dbddfa3dd68be625d4577345c6797c1443497e768d739f7e6d289a"
+      "candidate_sha256": "df6c5a52673beec603884bb367aaf9b386d3fb7c10ef5b93b907bd00bfed05ab"
     }
   },
   "patch": "native-source-review.patch",
-  "patch_sha256": "3f15751091e23766f2f04cf03ca837a04608e666466c8fda7ec0f1c8f4f379f5"
+  "patch_sha256": "66310cf8ca23b78656fa58926eb9a88f9aff35a307469919577c767631ab5897"
 }
