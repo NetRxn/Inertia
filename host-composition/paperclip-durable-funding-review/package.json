@@ -53,6 +53,8 @@
     "apply-native-review-paging": "node scripts/apply-native-review-paging.mjs",
     "test:native-review-paging": "node --test tests/native-review-paging.test.mjs tests/native-review-paging-installer.test.mjs",
     "apply-native-agent-permission-grants": "node scripts/apply-native-agent-permission-grants.mjs",
-    "test:native-agent-permission-grants": "node --test tests/native-agent-permission-grants-installer.test.mjs"
+    "test:native-agent-permission-grants": "node --test tests/native-agent-permission-grants-installer.test.mjs",
+    "apply-native-source-review-contract": "node scripts/apply-native-source-review-contract.mjs",
+    "test:native-source-review-contract": "node --test tests/native-case-work-tools.test.mjs tests/native-source-review.test.mjs tests/native-source-review-contract-installer.test.mjs"
   }
 }
