@@ -55,6 +55,7 @@
     "apply-native-agent-permission-grants": "node scripts/apply-native-agent-permission-grants.mjs",
     "test:native-agent-permission-grants": "node --test tests/native-agent-permission-grants-installer.test.mjs",
     "apply-native-source-review-contract": "node scripts/apply-native-source-review-contract.mjs",
-    "test:native-source-review-contract": "node --test tests/native-case-work-tools.test.mjs tests/native-source-review.test.mjs tests/native-source-review-contract-installer.test.mjs"
+    "test:native-source-review-contract": "node --test tests/native-case-work-tools.test.mjs tests/native-source-review.test.mjs tests/native-source-review-contract-installer.test.mjs",
+    "test:composed-native-pins": "node --test tests/composed-native-pins.test.mjs"
   }
 }
