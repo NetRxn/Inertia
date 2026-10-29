@@ -4,7 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
-const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner'];
+const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging'];
 // This is one explicitly reviewed metadata supersession, not a general last-writer-wins rule.
 const contractFile='dist/services/native-runtime/native-case-work-tools.mjs';
 const predecessor='56a31978d149429f7c626374b31710c4fe906afb7daa9c92b83308fe27dc200f';
@@ -17,6 +17,7 @@ const sourceReceiptTransitions={"dist/services/native-runtime/native-source-revi
 const caseDocumentTransitions={"dist/services/native-runtime/native-case-work-tools.mjs":{"base_sha256":"92ee5dc92268560162bb0d3eb7f5fcff8aca2b7a3a696a57b7a9782411f794cf","candidate_sha256":"c1b2f2ac05a2cecf131f64299b4fd41bc9ed1bf5f853e5a467df8239816efa20"},"dist/services/native-runtime/paperclip-runner-tool-authority.js":{"base_sha256":"f6883b87c340edddadb338f73359f5c867fee9515576a0cc66cdada5b4551016","candidate_sha256":"3855e3bb3d36907e15940a1e2f8920f7fdfd90299b111af321e6f5f42c9f48f4"},"dist/services/native-runtime/native-session-resume.js":{"base_sha256":"9df7909a3b9a6b1f732607ec1cf94446bcbb63c53a4467730c433831128f6734","candidate_sha256":"a39873e1af3ef8e244e7f8a4b1992bad968b9c5d3694b39c86eb63cc08860293"}};
 const caseDocumentNewFiles={"dist/services/native-runtime/native-case-document-read.mjs":"d89ecdc6aa40b017dfd44fc3d000aa49e3b779cd7d7bd0651ab67895a3e5b9bf"};
 const currentTrackTransitions={"dist/services/native-runtime/status-arbiter.js":{"base_sha256":"ff63007d6dbeafbdf119c63ed9dda626e70a7d1cf6efa20bec7700f49fffa79f","candidate_sha256":"0bf19c10255b56522ab160094355e46471010f8070e5e5ae61956ce5173ddba2"}};
+const sourceContextPagingTransitions={"dist/services/native-runtime/native-case-work-tools.mjs":{"base_sha256":"c1b2f2ac05a2cecf131f64299b4fd41bc9ed1bf5f853e5a467df8239816efa20","candidate_sha256":"3ca335af6fe99c080b12168f04bb27c4d544e928da3300be979405873ebd2964"},"dist/services/native-runtime/native-session-resume.js":{"base_sha256":"a39873e1af3ef8e244e7f8a4b1992bad968b9c5d3694b39c86eb63cc08860293","candidate_sha256":"33ec66488d0331ffecaff5cf219f3e45c1d827e93c9b92f2c4566990b21d12f2"}};
 async function safeRead(root,file){
  if(typeof file!=='string'||path.isAbsolute(file)||file.split(/[\\/]/).some(p=>!p||p==='.'||p==='..'))throw Error('native_pin_path_denied');
  let current=root;const parts=file.split('/');
@@ -43,6 +44,7 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
  const caseDocuments=pins[7];
  if(JSON.stringify(Object.keys(caseDocuments.files??{}).sort())!==JSON.stringify(Object.keys(caseDocumentTransitions).sort())||JSON.stringify(Object.keys(caseDocuments.newFiles??{}).sort())!==JSON.stringify(Object.keys(caseDocumentNewFiles).sort())||Object.entries(caseDocumentTransitions).some(([file,value])=>caseDocuments.files[file]?.base_sha256!==value.base_sha256||caseDocuments.files[file]?.candidate_sha256!==value.candidate_sha256)||Object.entries(caseDocumentNewFiles).some(([file,digest])=>caseDocuments.newFiles[file]?.candidate_sha256!==digest))throw Error('native_case_documents_lineage_denied');
  const currentTrack=pins[8];if(Object.keys(currentTrack.files).length!==1||Object.keys(currentTrack.newFiles).length!==0||Object.entries(currentTrackTransitions).some(([file,value])=>currentTrack.files[file]?.base_sha256!==value.base_sha256||currentTrack.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_current_track_owner_lineage_denied');
+ const sourceContextPaging=pins[9];if(Object.keys(sourceContextPaging.files).length!==2||Object.keys(sourceContextPaging.newFiles).length||Object.entries(sourceContextPagingTransitions).some(([file,value])=>sourceContextPaging.files[file]?.base_sha256!==value.base_sha256||sourceContextPaging.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_source_context_paging_lineage_denied');
  const packageInfo=JSON.parse(await safeRead(server,'package.json')),build=JSON.parse(await safeRead(server,'dist/build-info.json'));
  const expected=new Map();let supersededFiles=0;
  for(let i=0;i<pins.length;i++){
@@ -64,13 +66,14 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
     const sourceReceiptContract=i===6&&sourceReceiptTransitions[file]?.base_sha256===previous&&sourceReceiptTransitions[file]?.candidate_sha256===digest;
     const caseDocumentContract=i===7&&caseDocumentTransitions[file]?.base_sha256===previous&&caseDocumentTransitions[file]?.candidate_sha256===digest;
     const currentTrackContract=i===8&&currentTrackTransitions[file]?.base_sha256===previous&&currentTrackTransitions[file]?.candidate_sha256===digest;
-    if(!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
+    const sourceContextPagingContract=i===9&&sourceContextPagingTransitions[file]?.base_sha256===previous&&sourceContextPagingTransitions[file]?.candidate_sha256===digest;
+    if(!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
     supersededFiles++;
    }
    expected.set(file,digest);
   }
  }
- if(supersededFiles!==16)throw Error('native_contract_lineage_denied');
+ if(supersededFiles!==18)throw Error('native_contract_lineage_denied');
  for(const [file,digest] of expected)if(sha(await safeRead(server,file))!==digest)throw Error('native_pin_drift: '+file);
  return {overlays:[...overlays],verifiedFiles:expected.size,supersededFiles,providerStarted:false,databaseStarted:false};
 }

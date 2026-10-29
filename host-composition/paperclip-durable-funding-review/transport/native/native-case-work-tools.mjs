@@ -69,13 +69,13 @@ export async function taskProjectDefinitions(binding,context){
   if(typeof proposalHash!=='string'||!/^[a-f0-9]{64}$/.test(proposalHash))deny();
   const digest={type:'string',const:proposalHash},findings={type:'array',maxItems:100,items:{type:'string',minLength:1,maxLength:5000}};
   const parameters={
-   source_context:{type:'object',properties:{view:{type:'string',const:'proposal'},proposal_hash:digest},required:['view','proposal_hash'],additionalProperties:false},
+   source_context:{type:'object',properties:{view:{type:'string',const:'proposal'},proposal_hash:digest,context_hash:{type:'string',pattern:'^[a-f0-9]{64}$'},offset:{type:'integer',minimum:0},limit:{type:'integer',minimum:1,maximum:32000}},required:['view','proposal_hash'],additionalProperties:false,anyOf:[{properties:{offset:{const:0}}},{required:['context_hash']}]},
    source_review:{type:'object',properties:{proposal_hash:digest,decision:{type:'string',enum:['accept','reject']},findings},required:['proposal_hash','decision','findings'],additionalProperties:false,oneOf:[{properties:{decision:{const:'accept'},findings:{maxItems:0}}},{properties:{decision:{const:'reject'},findings:{minItems:1}}}]},
    source_receipt:{type:'object',properties:{proposal_hash:digest},required:['proposal_hash'],additionalProperties:false},
    source_settlement:{type:'object',properties:{proposal_hash:digest,findings:{...findings,minItems:1}},required:['proposal_hash','findings'],additionalProperties:false}
   };
   const tool=result.find(t=>t.name===CASE_PROJECTED_TOOL);
-  tool.description='Independent source review of this exact proposal only. First use source_context with view "proposal" and proposal_hash "'+proposalHash+'". Every call requires that exact proposal_hash. Then source_review accept with empty findings or reject with specific findings; source_receipt reads the resulting receipt. Use source_settlement only for independently confirmed source drift. This does not approve a funding packet or submission.';
+  tool.description='Independent source review of this exact proposal only. First use source_context with view "proposal" and proposal_hash "'+proposalHash+'". Every call requires that exact proposal_hash. Large source_context returns delivery paged with canonical_json_ascii text. Read ALL pages using the same exact proposal_hash and context_hash, offset=next_offset until null, concatenate text, verify UTF-8 SHA-256 equals context_hash, then JSON-parse once. Every source/evidence byte remains accessible. Then source_review accept with empty findings or reject with specific findings; source_receipt reads the resulting receipt. Use source_settlement only for independently confirmed source drift. This does not approve a funding packet or submission.';
   tool.inputSchema={type:'object',properties:{operation:{type:'string',enum:Object.keys(parameters)},parameters:{type:'object'}},required:['operation','parameters'],additionalProperties:false,oneOf:Object.entries(parameters).map(([operation,payload])=>({type:'object',properties:{operation:{const:operation},parameters:payload},required:['operation','parameters'],additionalProperties:false}))};
  }
  return result;
