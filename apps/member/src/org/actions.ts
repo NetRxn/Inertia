@@ -12,11 +12,12 @@ import { addMember, isAdmin, MemberError, removeMember, setRole, setWorkUser, ty
 import { completeSetup, getOrganization, saveBasics, saveProfile, setGovernance, updateInitiative } from './organization';
 import { regenerateProfile } from './profile';
 import { readWebsite } from './website';
+import { ReadOnlyWorkError } from '../work/read-only';
 
 export type ActionResult = { ok: true; message?: string; link?: string } | { ok: false; error: string };
 
 function fail(error: unknown, fallback: string): ActionResult {
-  if (error instanceof MemberError || error instanceof IngestError) return { ok: false, error: error.message };
+  if (error instanceof MemberError || error instanceof IngestError || error instanceof ReadOnlyWorkError) return { ok: false, error: error.message };
   console.error('[org]', error);
   return { ok: false, error: fallback };
 }

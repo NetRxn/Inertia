@@ -81,6 +81,23 @@ describe('Buzz', () => {
     expect(lines).toEqual([expect.objectContaining({ conversationName: 'general', author: 'Ana', text: 'We need judges' })]);
     expect(newest).toBe(1761566460);
   });
+
+  it('pages back through a backlog bigger than one query', async () => {
+    // 600 messages, one a second; the relay answers newest first, 500 at a time.
+    const all = Array.from({ length: 600 }, (_, i) => message(`m${i}`, CHANNEL, 1761560000 + i));
+    const filters: { until?: number }[] = [];
+    const fetchImpl = (async (_url: string | URL, init?: RequestInit) => {
+      const [filter] = JSON.parse(String(init?.body)) as { since: number; until?: number; limit: number }[];
+      filters.push(filter);
+      const page = all.filter((e) => e.created_at >= filter.since && (filter.until === undefined || e.created_at <= filter.until)).reverse().slice(0, filter.limit);
+      return json(page);
+    }) as typeof fetch;
+    const { lines, newest } = await queryBuzz(buzzConfig(env)!, 1761560000, fetchImpl);
+    expect(filters).toHaveLength(2);
+    expect(lines).toHaveLength(600);
+    expect(lines[0].text).toBe('m0');
+    expect(newest).toBe(1761560599);
+  });
 });
 
 describe('connector runner', () => {

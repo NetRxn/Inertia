@@ -1,5 +1,5 @@
-import { generateText } from 'ai';
-import { backgroundProviderOptions, getFastModel } from '../assistant/model';
+import { generateText, type LanguageModel } from 'ai';
+import { backgroundProviderOptions, getFastModel, getModel } from '../assistant/model';
 import { paperclipConfig } from '../adapters/paperclip';
 import { buzzConfig, queryBuzz, readerPublicKey } from './buzz';
 import { telegramConfig, telegramMe } from './telegram';
@@ -16,11 +16,21 @@ async function timed<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }>
 
 async function checkModel(env: Record<string, string | undefined>): Promise<CheckResult> {
   if (!env.MEMBER_APP_MODEL_PROVIDER || !env.MEMBER_APP_MODEL) return { name: 'Language model', status: 'not set', detail: 'Set MEMBER_APP_MODEL_PROVIDER and MEMBER_APP_MODEL.' };
+  const ask = async (model: LanguageModel) => timed(() => generateText({ model, providerOptions: backgroundProviderOptions(env), prompt: 'Reply with exactly: ok', maxOutputTokens: 200 }));
+  const answered = (id: string | undefined, value: { text: string }, ms: number) => `${id} answered "${value.text.trim().slice(0, 20)}" in ${(ms / 1000).toFixed(1)} s`;
+  const fast = env.MEMBER_APP_FAST_MODEL?.trim();
   try {
-    const { value, ms } = await timed(() => generateText({ model: getFastModel(env), providerOptions: backgroundProviderOptions(env), prompt: 'Reply with exactly: ok', maxOutputTokens: 200 }));
-    return { name: 'Language model', status: 'ok', detail: `${env.MEMBER_APP_FAST_MODEL || env.MEMBER_APP_MODEL} answered "${value.text.trim().slice(0, 20)}" in ${(ms / 1000).toFixed(1)} s.` };
+    const { value, ms } = await ask(getFastModel(env));
+    return { name: 'Language model', status: 'ok', detail: `${answered(fast || env.MEMBER_APP_MODEL, value, ms)}.` };
   } catch (error) {
-    return { name: 'Language model', status: 'failed', detail: message(error) };
+    // Background work falls back to the main model when the fast one can't answer.
+    if (!fast || fast === env.MEMBER_APP_MODEL?.trim()) return { name: 'Language model', status: 'failed', detail: message(error) };
+    try {
+      const { value, ms } = await ask(getModel(env));
+      return { name: 'Language model', status: 'warning', detail: `Fast model ${fast} failed (${message(error).slice(0, 120)}); ${answered(env.MEMBER_APP_MODEL, value, ms)}, and background work falls back to it.` };
+    } catch (mainError) {
+      return { name: 'Language model', status: 'failed', detail: `${fast}: ${message(error).slice(0, 120)}; ${env.MEMBER_APP_MODEL}: ${message(mainError).slice(0, 120)}` };
+    }
   }
 }
 
@@ -47,6 +57,9 @@ async function checkPaperclip(env: Record<string, string | undefined>, fetchImpl
       `${agents.length} agent${agents.length === 1 ? '' : 's'}${agents.length ? ` (${agents.slice(0, 5).map((a) => a.name).join(', ')})` : ''}`,
       human ? `"${config.humanLabel}" label exists` : `"${config.humanLabel}" label will be created on first human task`,
       config.defaultAgentId ? (defaultAgent ? `new agent tasks go to ${defaultAgent}` : 'PAPERCLIP_DEFAULT_AGENT_ID is not an agent in this company') : 'new agent tasks are left for Paperclip to route',
+      config.readOnly
+        ? 'read-only (PAPERCLIP_ACCESS=read): claims stay in Inertia, and Find work, Pursue and answers write nothing; set PAPERCLIP_ACCESS=write to turn them on'
+        : 'read and write (PAPERCLIP_ACCESS=write)',
     ];
     const warn = Boolean(config.defaultAgentId && !defaultAgent);
     return { name: 'Paperclip', status: warn ? 'warning' : 'ok', detail: `Connected to ${config.url}: ${notes.join('; ')}.` };

@@ -32,6 +32,7 @@ describe('connection checks', () => {
     }, fetchImpl);
     const by = Object.fromEntries(results.map((r) => [r.name, r]));
     expect(by['Paperclip']).toMatchObject({ status: 'ok', detail: expect.stringContaining('1 initiative goal; 1 agent (CEO); "human" label will be created on first human task; new agent tasks go to CEO') });
+    expect(by['Paperclip'].detail).toContain('read-only (PAPERCLIP_ACCESS=read)');
     expect(by['Ingest endpoint']).toMatchObject({ status: 'ok', detail: 'Connectors deliver to https://app.example.org/api/org/ingest.' });
     expect(by['Telegram bot']).toMatchObject({ status: 'warning', detail: expect.stringContaining('/setprivacy') });
     expect(by['Buzz']).toMatchObject({ status: 'failed', detail: expect.stringContaining('add it as a member') });

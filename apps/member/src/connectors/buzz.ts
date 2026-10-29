@@ -53,36 +53,55 @@ export function readerPublicKey(config: BuzzConfig): string {
   return getPublicKey(config.secretKey);
 }
 
-/** Queries the relay for channel messages since a time. Only verified, single-channel messages are kept. */
+const PAGE = 500;
+const MAX_PAGES = 20;
+
+/**
+ * Queries the relay for channel messages since a time. Only verified, single-channel messages are kept.
+ * A full page means there may be more: older pages are fetched with `until` (relays answer newest
+ * first), so a backlog bigger than one page isn't skipped when the read position moves on.
+ */
 export async function queryBuzz(config: BuzzConfig, since: number, fetchImpl: typeof fetch = fetch, now = () => Math.floor(Date.now() / 1000)): Promise<{ lines: ChatLine[]; newest: number }> {
   const url = `${config.relayUrl}/query`;
-  const body = JSON.stringify([{ kinds: [9], '#h': config.channels, since, limit: 500 } satisfies Filter]);
-  const response = await fetchImpl(url, {
-    method: 'POST',
-    redirect: 'error',
-    headers: { 'content-type': 'application/json', authorization: authHeader(config, url, body, now()) },
-    body,
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!response.ok) throw new Error(`Buzz query answered ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`);
-  const events = (await response.json()) as unknown;
-  if (!Array.isArray(events)) throw new Error('Buzz query returned something other than a list of events.');
   let newest = since;
   const lines: ChatLine[] = [];
-  for (const raw of events) {
-    const event = raw as Event;
-    if (!event || event.kind !== 9 || typeof event.content !== 'string' || !verifyEvent(event)) continue;
-    const channels = event.tags.filter((t) => t[0] === 'h').map((t) => t[1]);
-    if (channels.length !== 1 || !config.channels.includes(channels[0])) continue;
-    newest = Math.max(newest, event.created_at);
-    lines.push({
-      conversationId: channels[0],
-      conversationName: config.channelNames[channels[0]] ?? `channel ${channels[0].slice(0, 8)}`,
-      at: new Date(event.created_at * 1000),
-      author: config.names[event.pubkey] ?? `${event.pubkey.slice(0, 8)}…`,
-      text: event.content,
-      messageId: event.id,
+  const seen = new Set<string>();
+  let until: number | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const filter: Filter = { kinds: [9], '#h': config.channels, since, limit: PAGE, ...(until !== undefined ? { until } : {}) };
+    const body = JSON.stringify([filter]);
+    const response = await fetchImpl(url, {
+      method: 'POST',
+      redirect: 'error',
+      headers: { 'content-type': 'application/json', authorization: authHeader(config, url, body, now()) },
+      body,
+      signal: AbortSignal.timeout(20_000),
     });
+    if (!response.ok) throw new Error(`Buzz query answered ${response.status}: ${(await response.text().catch(() => '')).slice(0, 200)}`);
+    const events = (await response.json()) as unknown;
+    if (!Array.isArray(events)) throw new Error('Buzz query returned something other than a list of events.');
+    let oldest = Infinity;
+    for (const raw of events) {
+      const event = raw as Event;
+      if (event && typeof event.created_at === 'number') oldest = Math.min(oldest, event.created_at);
+      if (!event || event.kind !== 9 || typeof event.content !== 'string' || seen.has(event.id) || !verifyEvent(event)) continue;
+      const channels = event.tags.filter((t) => t[0] === 'h').map((t) => t[1]);
+      if (channels.length !== 1 || !config.channels.includes(channels[0])) continue;
+      seen.add(event.id);
+      newest = Math.max(newest, event.created_at);
+      lines.push({
+        conversationId: channels[0],
+        conversationName: config.channelNames[channels[0]] ?? `channel ${channels[0].slice(0, 8)}`,
+        at: new Date(event.created_at * 1000),
+        author: config.names[event.pubkey] ?? `${event.pubkey.slice(0, 8)}…`,
+        text: event.content,
+        messageId: event.id,
+      });
+    }
+    if (events.length < PAGE || !Number.isFinite(oldest) || oldest <= since) break;
+    // Overlap one second; the seen set drops repeats.
+    until = oldest;
   }
+  lines.sort((a, b) => a.at.getTime() - b.at.getTime());
   return { lines, newest };
 }
