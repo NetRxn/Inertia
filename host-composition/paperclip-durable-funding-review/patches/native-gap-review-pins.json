@@ -1,0 +1,56 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/services/native-runtime/funding-tool-preapproval.js": {
+      "candidate_sha256": "ae3b345565ff7f9c8231e0e5bdec2995abcfac5c975a31be7fd7d07d83fe565d",
+      "base_sha256": "83c83662ed09ab257bdf7a949c14d21de009790116ea10952499da2955ae5bd7"
+    },
+    "dist/services/native-runtime/native-domain-review-composition.mjs": {
+      "candidate_sha256": "c0d498708b7b78afd2418b7cdc84c917ac5c980358b60b8c939b7d4c6bd86e74",
+      "base_sha256": "cc9218b45e88f78538cae999106f96da1cb724607038847757c15c55680caff1"
+    },
+    "dist/services/native-runtime/native-domain-review.mjs": {
+      "candidate_sha256": "47a40be8aa7a3a040791ecbbf2685a05de3933dc1e6f2567f792f763e61f063b",
+      "base_sha256": "05840a71ffa48560399de4020ca7bff87a83a358149655fadb0f127ba1f717a2"
+    },
+    "dist/services/native-runtime/native-review-application.mjs": {
+      "candidate_sha256": "1b13d3324f01484401157052522c8c26d93e045d562cacb039434046f40a3b84",
+      "base_sha256": "60965c5bc8375080b8d22ca8d58538d2f4cf851f07de69eda1f1aa6f789d943f"
+    },
+    "dist/services/native-runtime/native-review-artifact-schema.mjs": {
+      "candidate_sha256": "25b85b843adb3c2361ccb185f0f3b3e2b8534a66b9001a28b7d6bb74a7154631",
+      "base_sha256": "ae43c15fdc2af0368404ff82a04af96bba0e777edf66a2356148d769a0533545"
+    },
+    "dist/services/native-runtime/native-review-host-admission.mjs": {
+      "candidate_sha256": "2bbc8628c73e566152fa8acc05461d41a1555570dfc85eae9d41b4841b7f637d",
+      "base_sha256": "808b890522f0366d5242cb3bbccfc444fe877924b60a4ad9505fa0c91a63347e"
+    },
+    "dist/services/native-runtime/native-review-runtime.mjs": {
+      "candidate_sha256": "b20bb5bc49cea470f91c4c43176954864a8e257d0f3c4d29f38dc66b4a8ffa13",
+      "base_sha256": "617b4692638e307574c8ce2650373cd26e60a11598cd74b078053eba9a79862d"
+    },
+    "dist/services/native-runtime/native-review-stdio.mjs": {
+      "candidate_sha256": "a5d8cfba1ed485f002037f1e9eec38cbf03999d811b87ada49079d46f3cf3bcf",
+      "base_sha256": "1f7b4df6d14cf9c146677c9d5cddbb7728c0a625aedb051e4d91f97ef4df4294"
+    },
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "candidate_sha256": "227c404bc2194ba1cdb91599c16b315bfdf971e237d04226c7b11498968d0563",
+      "base_sha256": "1696882d536c0f37c34dffe38da4413315d9e5bf961be944900d894bcf87ed75"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-gap-review.mjs": {
+      "candidate_sha256": "13fd78ce74af73adf937d84d6764a57f0a1e3b0b5abc841a8a73e102487de17f"
+    }
+  },
+  "patch": "native-gap-review.patch",
+  "patch_sha256": "5536618754444f8cc1570c00ddab6275a33fb47acc8bdce549b22ec4689f2291",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  }
+}

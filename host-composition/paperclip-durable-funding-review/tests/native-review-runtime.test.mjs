@@ -16,3 +16,32 @@ for(const reason of ['plugin_disabled','company_disabled','public_drafting_disab
 test('host admission requires an explicit true result and receives immutable native facts',async()=>{const f=await fixture();try{f.options.native.assertHostAdmission=async(s,i)=>{assert(Object.isFrozen(s));assert(Object.isFrozen(i));assert(Object.isFrozen(i.issue));assert.throws(()=>{s.issueId='other';},TypeError);assert.throws(()=>{i.issue.id='other';},TypeError);return undefined;};const r=await create(f.options);await assert.rejects(()=>r.readReviewContext(scope,input()),/native_domain_review_host_admission_denied/);assert.equal(f.state.calls.length,0);}finally{await f.close();}});
 test('configuration revocation between private callbacks denies the next callback without returning context',async()=>{const f=await fixture();try{f.options.stdioFactory=()=>({async call(_op,_params,callbacks){await callbacks.context();f.state.hostAdmission=false;return callbacks.nativeAssignment();}});const r=await create(f.options);await assert.rejects(()=>r.readReviewContext(scope,input()),/native_domain_review_host_admission_denied/);}finally{await f.close();}});
 for(const moment of ['before_check','during_check'])test(`retained fence rejects host revocation ${moment} while permitting owner cleanup`,async()=>{const f=await fixture();let alive=0,released=0;try{f.options.stdioFactory=()=>({async call(){return {binding:{synthetic:true},readCandidate:async()=>({}),readAdmission:async()=>({}),async assertAlive(){alive++;if(moment==='during_check')f.state.hostAdmission=false;},async release(){released++;return {released:true};}};}});const r=await create(f.options),lease=await r.acquireFence(scope,input());if(moment==='before_check')f.state.hostAdmission=false;await assert.rejects(()=>lease.assertAlive(),/native_domain_review_host_admission_denied/);assert.equal(alive,moment==='before_check'?0:1);assert.deepEqual(await lease.release(),{released:true});assert.equal(released,1);}finally{await f.close();}});
+test('portfolio review derives a direct child only from fresh native assignment and root',async()=>{
+ const f=await fixture();try{
+  const template={...scope,portfolioRootIssueId:'task',wholePacketReview:true};f.options.bindings[0].scope=template;
+  f.options.bindings[0].reviewerPolicy.projectIds.push('research-project');f.options.bindings[0].reviewerPolicy.projectIds.sort();
+  f.options.native.assertCurrentReviewer=async binding=>{assert.deepEqual(binding.nativeFundingPolicy.projectIds,['project','research-project']);};
+  f.options.bindings[0].reviewerPolicy.portfolioRootIssueId='task';f.options.bindings[0].reviewerPolicy.issueIds.push('scout-task');f.config.whole_packet_review=true;
+  const bytes=JSON.stringify(f.config);await fs.writeFile(f.file,bytes);f.options.bindings[0].process.pins[0].sha256=createHash('sha256').update(bytes).digest('hex');
+  const i=input();i.issue.id='child';i.issue.parentId='task';i.interaction.issueId='child';i.assignment.sourceRun.nativeIssueId='child';i.assignment.sourceDecision.issueId='child';
+  const root={id:'task',companyId:'company',projectId:'project',status:'in_progress'};
+  f.options.native.getIssue=async id=>id==='task'?root:i.issue;
+  f.options.native.getReviewAssignment=async()=>({...i.assignment,interaction:i.interaction});
+  const r=await create(f.options),current={...template,issueId:'child'};
+  const result=await r.readReviewContext(current,i);assert.equal(result.context.issue_id,'child');assert.equal(result.context.portfolio_root_issue_id,'task');assert.equal(result.assignment.issue_id,'child');
+  root.hiddenAt='withdrawn';await assert.rejects(()=>r.readReviewContext(current,i),/portfolio/);delete root.hiddenAt;
+  i.issue.parentId='foreign';await assert.rejects(()=>r.readReviewContext(current,i),/portfolio/);
+  i.issue.parentId='task';root.status='done';await assert.rejects(()=>r.readReviewContext(current,i),/portfolio/);
+ }finally{await f.close();}
+});
+for(const fault of ['interaction','decision','producer_run'])test(`private grant revalidates complete original native assignment after cached identity (${fault})`,async()=>{
+ const f=await fixture();try{
+  const template={...scope,portfolioRootIssueId:'task',wholePacketReview:true};f.options.bindings[0].scope=template;f.options.bindings[0].reviewerPolicy.portfolioRootIssueId='task';
+  Object.assign(f.config,{private_preparation_enabled:true,actor_role:'reviewer',policy_revision:'v1',whole_packet_review:true,cycle:{project_id:'project',portfolio_root_issue_id:'task',producer:{agent_id:'alpha',principal_id:'domain-alpha'},reviewer:{agent_id:'beta',principal_id:'domain-beta'}}});
+  const bytes=JSON.stringify(f.config);await fs.writeFile(f.file,bytes);f.options.bindings[0].process.pins[0].sha256=createHash('sha256').update(bytes).digest('hex');
+  const original=input();original.issue.id='child';original.issue.parentId='task';original.interaction.issueId='child';original.assignment.sourceRun.nativeIssueId='child';original.assignment.sourceDecision.issueId='child';const live=structuredClone(original);
+  f.options.native.getIssue=async id=>id==='task'?{id:'task',companyId:'company',projectId:'project',status:'in_progress'}:live.issue;f.options.native.getReviewAssignment=async()=>({...live.assignment,interaction:live.interaction});
+  f.options.stdioFactory=()=>({async call(_op,_params,callbacks){await callbacks.context();await callbacks.nativeAssignment();if(fault==='interaction')live.interaction.id='replacement-card';if(fault==='decision'){live.assignment.sourceDecision.id='replacement-decision';live.interaction.payload.target.revisionId='replacement-decision';}if(fault==='producer_run'){live.assignment.sourceRun.id='replacement-run';live.interaction.sourceRunId='replacement-run';live.assignment.sourceDecision.runId='replacement-run';}return callbacks.privateAuthorization({});}});
+  const r=await create(f.options);await assert.rejects(()=>r.readReviewContext({...template,issueId:'child'},original),/private_review_assignment_changed/);
+ }finally{await f.close();}
+});

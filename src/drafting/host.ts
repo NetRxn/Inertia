@@ -1,4 +1,4 @@
-import { assertNativeTaskRun, validateNativeTaskRun } from "../paperclip/context.js";
+import { assertNativeTaskRun, validateNativeTaskRun, resolveNativeDescendantTask } from "../paperclip/context.js";
 import type { PluginContext, PluginCapability, ToolRunContext } from "@paperclipai/plugin-sdk";
 import type { createRuntimeOwner } from "../bridge/ownership.js";
 import { readNativeDocument, writeNativeDocument } from "../discovery/documents.js";
@@ -17,6 +17,8 @@ export interface PublicDraftingBinding {
   matchId: string;
   /** Administrator opt-in: native attention owns lifecycle; plugin is producer-only. */
   nativeAttention?: true;
+  /** Native direct child tasks under this protected portfolio root only. */
+  portfolioRootIssueId?: string;
   /** Administrator opt-in for the private immutable case handoff protocol. */
   nativeCaseProgression?: boolean;
   /** Requires the matching private run-freeze protocol and preconfigured P -> R dependency. */
@@ -117,24 +119,27 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   const gapEnabled = new WeakMap(bindings.map(b=>[b,b.nativeGapPlanReview===true]));
   const attentionEnabled = new WeakMap(bindings.map(b=>[b,b.nativeAttention===true]));
   for (const b of bindings) {
+    if (b.portfolioRootIssueId !== undefined && (!text(b.portfolioRootIssueId) || b.nativeAttention !== true ||
+        b.producer.issueId !== b.portfolioRootIssueId || b.reviewer.issueId !== b.portfolioRootIssueId))
+      throw Error("Invalid native portfolio template");
     if ([b.companyId,b.projectId,b.applicantSlug,b.matchId,...Object.values(b.producer),...Object.values(b.reviewer)].some(v=>!text(v)) ||
         (b.producer.issueId===b.reviewer.issueId && b.nativeAttention!==true) || b.producer.agentId===b.reviewer.agentId || b.producer.principalId===b.reviewer.principalId || typeof b.authorize!=="function" ||
         (b.nativeAttention!==undefined && b.nativeAttention!==true) ||
-        (b.nativeAttention===true && (b.nativeCaseProgression===true || b.nativeDependencyHandoff===true || b.nativeGapPlanReview===true)) ||
+        (b.nativeAttention===true && (b.nativeCaseProgression===true || b.nativeDependencyHandoff===true)) ||
         (b.nativeCaseProgression!==undefined && typeof b.nativeCaseProgression!=="boolean") ||
         (b.nativeDependencyHandoff!==undefined && typeof b.nativeDependencyHandoff!=="boolean") ||
         (b.nativeDependencyHandoff===true && b.nativeCaseProgression!==true) ||
         (b.nativeGapPlanReview!==undefined && typeof b.nativeGapPlanReview!=="boolean") ||
-        (b.nativeGapPlanReview===true && (b.nativeCaseProgression!==true || b.nativeDependencyHandoff!==true)))
+        (b.nativeGapPlanReview===true && b.nativeAttention!==true && (b.nativeCaseProgression!==true || b.nativeDependencyHandoff!==true)))
       throw Error("Invalid independent public drafting bindings");
   }
   async function configured(b: PublicDraftingBinding, signal?: AbortSignal) {
     notAborted(signal);
     if (b.enabled!==true || (b.nativeAttention!==undefined && b.nativeAttention!==true) || attentionEnabled.get(b)!==(b.nativeAttention===true) ||
-      (b.nativeAttention===true && (b.nativeCaseProgression===true || b.nativeDependencyHandoff===true || b.nativeGapPlanReview===true)) ||
+      (b.nativeAttention===true && (b.nativeCaseProgression===true || b.nativeDependencyHandoff===true)) ||
       (b.nativeDependencyHandoff===true && b.nativeCaseProgression!==true) ||
       (b.nativeGapPlanReview!==undefined && typeof b.nativeGapPlanReview!=="boolean") || gapEnabled.get(b)!==(b.nativeGapPlanReview===true) ||
-      (b.nativeGapPlanReview===true && (b.nativeCaseProgression!==true || b.nativeDependencyHandoff!==true)) || !(await b.authorize())) throw Error("Public drafting disabled or configuration changed");
+      (b.nativeGapPlanReview===true && b.nativeAttention!==true && (b.nativeCaseProgression!==true || b.nativeDependencyHandoff!==true)) || !(await b.authorize())) throw Error("Public drafting disabled or configuration changed");
     notAborted(signal);
   }
   async function target(b: PublicDraftingBinding, actor: DraftingActor, signal?: AbortSignal, allowIdleDone=false) {
@@ -185,7 +190,8 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
       if(row.status!=="in_progress" || row.executionRunId!==run.runId || (row.checkoutRunId!=null && row.checkoutRunId!==run.runId))
         throw Error("Native attention producer ownership unavailable");
       await configured(b,signal);
-      return {company_id:b.companyId,applicant_slug:b.applicantSlug,match_id:b.matchId,principal_id:actor.principalId,run_id:run.runId,role};
+      return {company_id:b.companyId,applicant_slug:b.applicantSlug,match_id:b.matchId,principal_id:actor.principalId,run_id:run.runId,role,
+        ...(b.portfolioRootIssueId?{issue_id:actor.issueId,portfolio_root_issue_id:b.portfolioRootIssueId}:{})};
     }
     const dependencyAuthority=async()=>{
       if(!b.nativeDependencyHandoff)return;
@@ -204,12 +210,26 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
   const declarations = [...publicDraftingTools, ...(bindings.some(b=>gapEnabled.get(b))?[publicGapPlanReviewTool]:[])];
   for (const declaration of declarations) {
     ctx.tools.register(declaration.name,declaration,async (parameters, trustedRun) => {
-      const run=structuredClone(trustedRun), original=bindings.find(v=>v.companyId===run.companyId);
+      const run=structuredClone(trustedRun); let original=bindings.find(v=>v.companyId===run.companyId);
       if (!original) throw Error("Public drafting disabled or actor denied");
       if(original.nativeAttention===true && ["review","review_context","gap_plan_review"].includes(declaration.operation))
         throw Error("Use the assigned native completion review; reviewer plugin operations are disabled");
       if(original.nativeAttention===true && (run as ToolRunContext & {fundingExecution?:unknown}).fundingExecution===undefined)
         throw Error("Native attention requires trusted funding execution metadata");
+      if(original.portfolioRootIssueId) {
+        const template=original,rootIssueId=template.portfolioRootIssueId!;
+        const resolve=async()=>{
+          const issueId=await resolveNativeDescendantTask(ctx,{companyId:template.companyId,projectId:template.projectId,
+            rootIssueId,allowedAgentIds:[template.producer.agentId],authorize:async()=>{await configured(template);return true;}},run);
+          const row=issueId?await ctx.issues.get(issueId,template.companyId):null;
+          if(!row || row.parentId!==rootIssueId || issueId===rootIssueId)throw Error("Native portfolio direct child unavailable");
+          return issueId!;
+        };
+        const issueId=await resolve();
+        original={...template,producer:{...template.producer,issueId},reviewer:{...template.reviewer,issueId},
+          authorize:async()=>{if(await resolve()!==issueId)throw Error("Native portfolio task changed");return true;}};
+        gapEnabled.set(original,gapEnabled.get(template)??false);attentionEnabled.set(original,true);
+      }
       const operationDeadlineAt=fundingDeadline((run as ToolRunContext & {fundingExecution?:unknown}).fundingExecution,original,run,declaration.name);
       const operation=new AbortController();
       const checkDeadline=()=>{if(operation.signal.aborted||(operationDeadlineAt!==undefined&&Date.now()>=operationDeadlineAt))throw Error("Public funding operation deadline expired; outcome unconfirmed");};
@@ -328,7 +348,7 @@ export function registerPublicDrafting(ctx: Host, bindings: PublicDraftingBindin
               throw Error("Invalid public review dispatch");
             if(checkpointReplayOnly)throw Error("Read-only checkpoint replay cannot redispatch review");
             if(b.nativeAttention===true) {
-              if(gap)throw Error("Native attention does not use legacy gap-plan review dispatch");
+              if(gap){await context(b,run,"producer",signal);return {kind:"gap_plan" as const,state:"pending" as const,request_id:request.request_id as string};}
               await context(b,run,"producer",signal);
               return {state:"pending" as const,request_id:request.request_id as string};
             }

@@ -1,5 +1,5 @@
 import {afterEach,expect,it} from "vitest";
-import {mkdtemp,writeFile,readFile,rm} from "node:fs/promises";
+import {mkdtemp,writeFile,readFile,rm,realpath} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {PGlite} from "@electric-sql/pglite";
@@ -8,10 +8,12 @@ import {manifest} from "../../src/manifest.js";
 import {registerRoundtableJobs} from "../../src/roundtable/host.js";
 import {meetingExtractionTools} from "../../src/roundtable/extraction.js";
 import {BRIDGE_NAMESPACE} from "../../src/store/postgres.js";
+import {createHash} from "node:crypto";
+import {controlledHttps} from "./controlled-https.js";
 const cleanup:Array<()=>Promise<unknown>>=[];afterEach(async()=>{for(const clean of cleanup.splice(0))await clean();});
 const source={meetingId:"meeting",sourceId:"drive:doc",revision:"1",ready:true,kind:"transcript",audience:"members",text:"We discussed timing without reaching agreement.\nWe decided to defer the launch until testing is complete.\nPlease investigate the missing accessibility tests."};
 async function fixture(){
- const directory=await mkdtemp(join(tmpdir(),"inertia-owner-meeting-"));cleanup.push(()=>rm(directory,{recursive:true,force:true}));
+ const directory=await realpath(await mkdtemp(join(tmpdir(),"inertia-owner-meeting-")));cleanup.push(()=>rm(directory,{recursive:true,force:true}));
  const ownerFile=join(directory,"source.json");await writeFile(ownerFile,JSON.stringify(source),{mode:0o600});
  const pg=new PGlite();cleanup.push(()=>pg.close());await pg.exec(`CREATE SCHEMA ${BRIDGE_NAMESPACE}`);await pg.exec(await readFile(new URL("../../migrations/004_runtime_state.sql",import.meta.url),"utf8"));
  const config:any={roundtable:{enabled:true,admission:"admission-1",origin:"https://local.example",principalId:"owner",publicationMode:"local",meetings:[{meetingId:"meeting",folderId:"folder",fileId:"doc",artifact:"meet-transcript",transcriptName:"conferenceRecords/conf/transcripts/t",ownerFile,withdrawn:false,nativeExtraction:{issueId:"task",projectId:"project",agentId:"agent"},meeting:{title:"Roundtable",date:"2026-10-25",attendees:null,agenda:null,tags:[]}}]}};
@@ -125,4 +127,137 @@ it("explicit reader admission permits only verified active descendants of the ex
  await expect(f.h.executeTool("submit_meeting_candidates",{meetingId:"meeting",requestHash:"a".repeat(64),notes:{notes:[],decisions:[],actions:[]}},run)).rejects.toThrow();
  detached=true;
  await expect(f.h.executeTool("meeting_source_context",{meetingRef},run)).rejects.toThrow();
+});
+
+it("publishes through controlled loopback HTTPS while source-linked actions reach one native coordinator issue across correction and restart",async()=>{
+ const f=await fixture();
+ await f.pg.exec(await readFile(new URL("../../migrations/007_objective_intake.sql",import.meta.url),"utf8"));
+ delete f.config.roundtable.publicationMode;
+ delete f.config.roundtable.meetings[0].ownerFile;
+ f.config.roundtable.sourceTokenRef={type:"secret_ref",secretId:"source"};
+ f.config.roundtable.websiteTokenRef={type:"secret_ref",secretId:"website"};
+ f.config.roundtable.nativeIntake={organizationId:"org",intakeAgentId:"triage",projectId:"project",referenceOnly:true,sourceAccess:true,allowedAgentIds:["reader"]};
+ f.h.ctx.config.get=async()=>f.config;
+ // Controlled composition: website requests cross actual loopback HTTPS with a pinned test CA.
+ // Google/native issue boundaries use doubles, SQL uses PGlite, and candidates are test-supplied.
+ // This is not native-runtime/model/live-Google/deployed-website/Buzz proof.
+ let currentSource={...source};
+ const receipts=new Map<string,any>(),requests:string[]=[];
+ let head:any=null;
+ f.h.ctx.secrets.resolve=async()=>"synthetic-token";
+ const websiteMethods:string[]=[];
+ const httpFixture=async(url:string,init?:RequestInit)=>{
+  const json=(value:unknown,status=200,etag?:string)=>new Response(JSON.stringify(value),{status,headers:{"content-type":"application/json",...(etag?{etag:'"'+etag+'"'}:{})}});
+  if(url.startsWith("https://meet.googleapis.com/"))return json({name:f.config.roundtable.meetings[0].transcriptName,state:"FILE_GENERATED",docsDestination:{document:"doc"}});
+  if(url.includes("/files/doc?"))return json({id:"doc",version:currentSource.revision,mimeType:"application/vnd.google-apps.document",parents:["folder"],trashed:false});
+  if(url.includes("/export?"))return new Response(currentSource.text,{headers:{"content-type":"text/plain"}});
+  if(url.startsWith(f.config.roundtable.origin+"/api/integrations/v1/roundtables/operations/") && init?.method==="GET"){
+   const receipt=receipts.get(url.split("/").at(-1)!);
+   return receipt?json({...receipt,current:receipt.operationId===head.operationId,currentOutputHash:head.outputHash},200,receipt.outputHash):json({code:"operation_absent"},404);
+  }
+  if(url===f.config.roundtable.origin+"/api/integrations/v1/roundtables/publications" && init?.method==="POST"){
+   const body=String(init.body),envelope=JSON.parse(body),p=envelope.publication,headers=new Headers(init.headers);
+   if(p.expectedPreviousOutputHash!==(head?.outputHash??null))return json({},412);
+   if(headers.get("idempotency-key")!==p.operationId)return json({},409);
+   if(head?headers.get("if-match")!=='"'+head.outputHash+'"':headers.get("if-none-match")!=="*")return json({},428);
+   const saved=await f.pg.query<any>(`SELECT value FROM ${BRIDGE_NAMESPACE}.bridge_runtime WHERE state_key LIKE 'roundtable:state:%'`);
+   expect(saved.rows[0].value.operation.body).toBe(body);
+   head={state:"present",publicationId:"synthetic-"+p.operationId,meetingNoteId:"synthetic-note",operationId:p.operationId,outputHash:p.outputHash,requestBodyHash:createHash("sha256").update(body).digest("hex"),audience:"members",current:true,currentOutputHash:p.outputHash,readbackPath:"/api/integrations/v1/roundtables/operations/"+p.operationId,envelope};
+   receipts.set(p.operationId,head);requests.push(body);
+   return json({},201);
+  }
+  throw Error("Unexpected integration request "+url);
+ };
+ const website=await controlledHttps(async(url,init)=>{
+  websiteMethods.push(init.method??"GET");
+  expect(new Headers(init.headers).get("authorization")).toBe("Bearer synthetic-token");
+  return httpFixture(url,init);
+ });
+ cleanup.push(website.close);
+ f.config.roundtable.origin=website.origin;
+ f.h.ctx.http.fetch=async(url,init)=>url.startsWith(website.origin)?website.fetch(url,init):httpFixture(url,init);
+ const status=registerRoundtableJobs(f.h.ctx);
+ const submit=async()=>{
+  await f.h.runJob("reconcile-roundtable-sources");
+  const context:any=(await f.h.executeTool("meeting_source_context",{meetingId:"meeting"},f.run)).data;
+  const lines=context.source.text.split("\n");
+  return (await f.h.executeTool("submit_meeting_candidates",{meetingId:"meeting",requestHash:context.requestHash,notes:{notes:[{text:lines[0],line:1}],decisions:[{text:lines[1],line:2}],actions:[{text:lines[2],line:3,owner:null}]}},f.run)).data as any;
+ };
+ expect(await submit()).toMatchObject({state:"recorded",publication:{state:"published",nativeIntake:"applied",publicationMode:"website"}});
+ const followups=await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true});
+ expect(followups).toHaveLength(1);
+ const root=followups[0]!;
+ expect(root).toMatchObject({assigneeAgentId:"triage",projectId:"project",status:"backlog"});
+ expect(root.description).not.toContain("missing accessibility tests");
+ const meetingRef=/meeting_source_context\(\{"meetingRef":"([a-f0-9]{64})"\}\)/.exec(root.description??"")?.[1];
+ expect(meetingRef).toBeTruthy();
+ await f.h.ctx.issues.update(root.id,{status:"in_progress",priority:"high"},"company");
+ const triageRun={companyId:"company",projectId:"project",agentId:"triage",runId:"intake-run"};
+ const triage:any=(await f.h.executeTool("meeting_source_context",{meetingRef},triageRun)).data;
+ expect(triage.sourceEvidence).toBe("drive");
+ expect(triage.candidates).toContainEqual(expect.objectContaining({kind:"commitment",value:"Please investigate the missing accessibility tests.",source_id:"drive:doc",source_revision:"1",source_locator:{meeting_id:"meeting",line_start:3,line_end:3},source_hash:createHash("sha256").update(source.text).digest("hex"),owner:null,status:"candidate",verification:"unverified"}));
+ expect(head.envelope.publication).toMatchObject({transcript:source.text,audience:"members",notes:{actions:[{text:"Please investigate the missing accessibility tests.",line:3,owner:null,verification:"unverified"}]}});
+ const priorHash=head.outputHash;
+ // Corrections must update the existing mapped issue without taking native priorities/assignment back.
+ currentSource={...source,revision:"2",text:source.text.replace("missing accessibility tests","remaining accessibility tests")};
+ expect(await submit()).toMatchObject({publication:{state:"published",nativeIntake:"applied"}});
+ expect(requests).toHaveLength(2);
+ expect(head.envelope.publication).toMatchObject({revision:"2",expectedPreviousOutputHash:priorHash,transcript:currentSource.text});
+ expect((await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true})).map(row=>row.id)).toEqual([root.id]);
+ expect(await f.h.ctx.issues.get(root.id,"company")).toMatchObject({assigneeAgentId:"triage",status:"in_progress",priority:"high"});
+ const corrected:any=(await f.h.executeTool("meeting_source_context",{meetingRef},triageRun)).data;
+ expect(corrected.candidates.filter((candidate:any)=>candidate.kind==="commitment")).toMatchObject([{source_revision:"2",value:"Please investigate the remaining accessibility tests."}]);
+ const restarted=registerRoundtableJobs(f.h.ctx);
+ await f.h.runJob("reconcile-roundtable-sources");
+ expect(restarted()).toMatchObject({state:"complete",results:[{state:"unchanged",nativeIntake:"replayed",publicationMode:"website"}]});
+ expect(requests).toHaveLength(2);
+ expect(websiteMethods).toEqual(["GET","POST","GET","GET","POST","GET"]);
+ const durable=await f.pg.query<any>(`SELECT value FROM ${BRIDGE_NAMESPACE}.bridge_runtime WHERE state_key LIKE 'roundtable:state:%'`);
+ expect(durable.rows[0].value.outcome.receipt.envelope.publication.revision).toBe("2");
+ expect(JSON.parse(durable.rows[0].value.previous.body).publication.revision).toBe("1");
+ expect(status().results[0]?.state).toBe("published");
+});
+
+it.each(["done","reassigned","missing"])("routes a %s extraction task into the existing native exception issue without publishing",async failure=>{
+ const f=await fixture();
+ await f.pg.exec(await readFile(new URL("../../migrations/007_objective_intake.sql",import.meta.url),"utf8"));
+ f.config.roundtable.nativeIntake={organizationId:"org",intakeAgentId:"triage",projectId:"project",referenceOnly:true};
+ f.h.ctx.config.get=async()=>f.config;
+ const update=f.h.ctx.issues.update.bind(f.h.ctx.issues),updatedIssues:string[]=[];
+ f.h.ctx.issues.update=async(...args)=>{updatedIssues.push(args[0]);return update(...args);};
+ const get=f.h.ctx.issues.get.bind(f.h.ctx.issues);
+ let unavailable=true;
+ f.h.ctx.issues.get=async(id,companyId)=>{
+  const row=await get(id,companyId);
+  if(id!=="task" || !unavailable)return row;
+  return failure==="missing"?null:{...row,...(failure==="done"?{status:"done" as const}:{assigneeAgentId:"other-agent"})} as typeof row;
+ };
+ const status=registerRoundtableJobs(f.h.ctx);
+ await f.h.runJob("reconcile-roundtable-sources");
+ expect(status()).toMatchObject({state:"attention",results:[{state:"pending",code:"native_extraction_assignment_required",nativeIntake:"applied"}]});
+ const issues=await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true});
+ expect(issues).toHaveLength(1);
+ expect(issues[0]).toMatchObject({assigneeAgentId:"triage",projectId:"project",status:"backlog"});
+ expect(issues[0]!.description).toContain("Restore the admitted native extraction task");
+ expect(issues[0]!.description).not.toContain(source.text);
+ expect(f.wakes).toHaveLength(0);
+ expect((await f.pg.query(`SELECT value FROM ${BRIDGE_NAMESPACE}.bridge_runtime WHERE state_key LIKE 'local-meeting-publication:%'`)).rows).toHaveLength(0);
+ await f.h.runJob("reconcile-roundtable-sources");
+ expect(status().results[0]).toMatchObject({code:"native_extraction_assignment_required",nativeIntake:"replayed"});
+ expect((await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true})).map(row=>row.id)).toEqual([issues[0]!.id]);
+ // Only the native owner restores assignment; intake must neither reopen nor reassign the task.
+ unavailable=false;
+ await f.h.runJob("reconcile-roundtable-sources");
+ expect(status()).toMatchObject({state:"attention",results:[{state:"pending",code:"extraction_pending",nativeIntake:"applied"}]});
+ expect((await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true})).map(row=>row.id)).toEqual([issues[0]!.id]);
+ expect(f.wakes).toHaveLength(1);
+ const context:any=(await f.h.executeTool("meeting_source_context",{meetingId:"meeting"},f.run)).data;
+ expect(context.source).toMatchObject({sourceId:"drive:doc",revision:"1",text:source.text});
+ const completed:any=(await f.h.executeTool("submit_meeting_candidates",{meetingId:"meeting",requestHash:context.requestHash,notes:{notes:[],decisions:[],actions:[{text:"Please investigate the missing accessibility tests.",line:3,owner:null}]}},f.run)).data;
+ expect(completed.publication).toMatchObject({state:"published",publicationMode:"local",nativeIntake:"applied"});
+ const published=await f.pg.query<any>(`SELECT value FROM ${BRIDGE_NAMESPACE}.bridge_runtime WHERE state_key LIKE 'local-meeting-publication:%'`);
+ expect(published.rows[0].value.current.envelope.publication).toMatchObject({revision:"1",transcript:source.text,notes:{actions:[{text:"Please investigate the missing accessibility tests.",line:3,owner:null,verification:"unverified"}]}});
+ expect((await f.h.ctx.issues.list({companyId:"company",includePluginOperations:true})).map(row=>row.id)).toEqual([issues[0]!.id]);
+ expect(updatedIssues).not.toContain("task");
+ expect(f.wakes).toHaveLength(1);
 });

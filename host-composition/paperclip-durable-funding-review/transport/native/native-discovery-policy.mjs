@@ -18,7 +18,7 @@ export function assertDiscoveryTool(admission,name){if(!nativeDiscoveryToolNames
 export function selectNativeDiscoveryAdmission(rows,binding,policy,context,nativeReview){
  if(!policy)return null;
  const candidates=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.config?.fundingDiscovery?.enabled===true&&
-  [r.config.fundingDiscovery.issueId,r.config.fundingDiscovery.diligence?.issueId].includes(binding.issueId));
+  ([r.config.fundingDiscovery.issueId,r.config.fundingDiscovery.diligence?.issueId].includes(binding.issueId)||r.config.fundingDiscovery.portfolioRootIssueId!==undefined&&r.config.fundingDiscovery.portfolioRootIssueId===policy.portfolioRootIssueId&&[r.config.fundingDiscovery.agentId,r.config.fundingDiscovery.diligence?.agentId].includes(binding.agentId)&&r.config.fundingDiscovery.projectId===context.issue.projectId&&!nativeReview));
  if(candidates.length===0)return null;
  if(candidates.length!==1||nativeReview)return denied();
  const row=candidates[0],c=row.config.fundingDiscovery;
@@ -26,14 +26,22 @@ export function selectNativeDiscoveryAdmission(rows,binding,policy,context,nativ
   ||!id(c.key)||!id(c.organizationId)||!id(c.projectId)||!id(c.principalId)||!object(c.process)
   ||!Array.isArray(c.publicQueries)||!c.publicQueries.length||c.publicQueries.length>10
   ||c.publicQueries.some(q=>typeof q!=='string'||!q.trim()||q.length>500||/[\x00-\x1f]/.test(q)))denied();
- const role=c.issueId===binding.issueId?'scout':'diligence';
+ const portfolio=c.portfolioRootIssueId!==undefined;
+ if(c.rootProjectId!==undefined&&(!portfolio||!id(c.rootProjectId)))denied();
+ if(portfolio&&(!id(c.portfolioRootIssueId)||c.issueId!==c.portfolioRootIssueId||c.diligence&&c.diligence.issueId!==c.portfolioRootIssueId||policy.portfolioRootIssueId!==c.portfolioRootIssueId
+  ||!policy.issueIds.includes(c.portfolioRootIssueId)||binding.issueId===c.portfolioRootIssueId||context.issue.parentId!==c.portfolioRootIssueId
+  ||context.issue.status!=='in_progress'||!context.rootIssue||context.rootIssue.id!==c.portfolioRootIssueId
+  ||context.rootIssue.companyId!==binding.companyId||context.rootIssue.projectId!==(c.rootProjectId??c.projectId)||!policy.projectIds.includes(c.rootProjectId??c.projectId)||context.rootIssue.hiddenAt||['done','cancelled'].includes(context.rootIssue.status)))denied();
+ const role=portfolio?(c.agentId===binding.agentId?'scout':'diligence'):c.issueId===binding.issueId?'scout':'diligence';
  const actor=role==='scout'?c:c.diligence;
+ const configuredPolicy=normalizeNativeFundingPolicy(context.actor.adapterConfig);
+ if(configuredPolicy?.role==='worker')policy={...policy,role:role==='scout'?'producer':'reviewer'};
  if(!actor||actor.agentId!==binding.agentId||!id(actor.principalId)||!object(actor.process)
-  ||c.projectId!==context.issue.projectId||!policy.projectIds.includes(c.projectId)||!policy.issueIds.includes(binding.issueId)
+  ||c.projectId!==context.issue.projectId||!policy.projectIds.includes(c.projectId)||!(portfolio||policy.issueIds.includes(binding.issueId))
   ||policy.role!==(role==='scout'?'producer':'reviewer')
-  ||c.diligence&&(c.diligence.issueId===c.issueId||c.diligence.agentId===c.agentId||c.diligence.principalId===c.principalId))denied();
- let now;try{now=normalizeNativeFundingPolicy(context.actor.adapterConfig);}catch{return denied();}
- if(canonical(now)!==canonical({version:policy.version,role:policy.role,projectIds:policy.projectIds,issueIds:policy.issueIds})||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId
+  ||c.diligence&&(!portfolio&&c.diligence.issueId===c.issueId||c.diligence.agentId===c.agentId||c.diligence.principalId===c.principalId))denied();
+ let now;try{now=normalizeNativeFundingPolicy(context.actor.adapterConfig);if(now?.role==='worker')now={...now,role:policy.role};}catch{return denied();}
+ if(canonical(now)!==canonical({version:policy.version,role:policy.role,projectIds:policy.projectIds,issueIds:policy.issueIds,...(policy.portfolioRootIssueId?{portfolioRootIssueId:policy.portfolioRootIssueId}:{})})||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId
   ||context.actor.role!=='general'||context.actor.adapterType!=='paperclip_runner'||['paused','terminated','pending_approval','error'].includes(context.actor.status)
   ||context.issue.id!==binding.issueId||context.issue.companyId!==binding.companyId||context.issue.hiddenAt
   ||context.issue.assigneeAgentId!==binding.agentId||context.issue.executionRunId!==binding.runId||context.issue.workMode!=='standard'
@@ -50,6 +58,10 @@ export async function readNativeDiscoveryAdmission(db,binding,policy,nativeRevie
   .innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId))
   .where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);}
  if(!context)denied();
+ if(policy.portfolioRootIssueId){
+  const [rootIssue]=await db.select().from(issues).where(and(eq(issues.id,policy.portfolioRootIssueId),eq(issues.companyId,binding.companyId))).limit(1);
+  context={...context,rootIssue};
+ }
  const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,
   settingsId:pluginCompanySettings.id,enabled:pluginCompanySettings.enabled}).from(plugins)
   .innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId)))

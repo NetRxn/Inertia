@@ -1,0 +1,97 @@
+--- a/dist/routes/issues.js
++++ b/dist/routes/issues.js
+@@ -1,3 +1,4 @@
++import { projectUnusedNativeCleanupRecovery, assertUnusedNativeCleanupRecoveryCurrent } from "../services/native-unused-cleanup-recovery.mjs";
+ import { setIssueTitle } from "../services/issue-title.js";
+ import { setIssueTitleSchema } from "@paperclipai/shared";
+ import { resolveConfirmationFromComment } from "../services/confirmation-comment-resolution.js";
+@@ -6220,6 +6221,7 @@
+             return;
+         if (!(await assertIssueReadAllowed(req, res, issue)))
+             return;
++        if (req.actor.type === "board") await projectUnusedNativeCleanupRecovery(db, issue.companyId, issue.id);
+         const active = await revalidateActiveSourceRecoveryForRead({
+             issue,
+             trigger: "read_projection",
+@@ -6378,7 +6380,8 @@
+             if (sourceIssueStatus === "todo" &&
+                 requiresExecutionReconciliation(activeRecoveryAction.cause)) {
+                 assertBoard(req);
+-                await validateExecutionReconciliation({
++                await assertUnusedNativeCleanupRecoveryCurrent(tx, activeRecoveryAction);
++            await validateExecutionReconciliation({
+                     db: tx,
+                     companyId: lockedIssue.companyId,
+                     issueId: lockedIssue.id,
+--- /dev/null
++++ b/dist/services/native-unused-cleanup-recovery.mjs
+@@ -0,0 +1,69 @@
++/** Missing manual recovery projection only: never reconcile, wake, or retire a session. */
++import {and,desc,eq,inArray,or,sql} from "drizzle-orm";
++import {issues,heartbeatRuns,heartbeatRunEvents,nativeRunFinalizations,environmentLeases,issueRecoveryActions,issueThreadInteractions,issueApprovals,approvals} from "@paperclipai/db";
++import {issueRecoveryActionService} from "./issue-recovery-actions.js";
++import {isUnusedNativeSessionBootstrap,nativeSessionProviderEvidence} from "./native-runtime/native-session-resume.js";
++import {parseNativeExecutionInput} from "../vendor/paperclip-runner/index.js";
++import {conflict} from "../errors.js";
++import {adapterExecutionControls} from "./adapter-execution-control.js";
++const PRE_PROVIDER_EVENT_TYPES = new Set(["error","instruction_save","lifecycle","run.performance.span"]);
++const record = value => value && typeof value === "object" && !Array.isArray(value) ? value : {};
++/** Existing route authenticates a BOARD reader and task access before calling. */
++async function unusedCleanupCandidate(tx,companyId,issueId,action=null) {
++  // Same task -> coordinator -> run lock order as native admission/finalization.
++  const [task] = await tx.select().from(issues).where(and(eq(issues.companyId,companyId),eq(issues.id,issueId))).for("update");
++  if (!task || task.hiddenAt || !task.assigneeAgentId || task.assigneeUserId || !["todo","in_progress","blocked"].includes(task.status)) return null;
++  // Reading cannot resurrect or supersede a prior source disposition.
++  const [history] = await tx.select({id:issueRecoveryActions.id}).from(issueRecoveryActions).where(and(eq(issueRecoveryActions.companyId,companyId),eq(issueRecoveryActions.sourceIssueId,issueId))).limit(1);
++  if (history && (!action || history.id !== action.id)) return null;
++  const [question] = await tx.select({id:issueThreadInteractions.id}).from(issueThreadInteractions).where(and(eq(issueThreadInteractions.companyId,companyId),eq(issueThreadInteractions.issueId,issueId),eq(issueThreadInteractions.status,"pending"))).limit(1);
++  const [approval] = await tx.select({id:approvals.id}).from(issueApprovals).innerJoin(approvals,and(eq(approvals.id,issueApprovals.approvalId),eq(approvals.companyId,companyId))).where(and(eq(issueApprovals.companyId,companyId),eq(issueApprovals.issueId,issueId),inArray(approvals.status,["pending","revision_requested"]))).limit(1);
++  if (question || approval) return null;
++  // Never skip a newer task execution, including legacy/bootstrap attempts.
++  const [latest] = await tx.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.companyId,companyId),
++   or(eq(heartbeatRuns.nativeIssueId,issueId),sql`${heartbeatRuns.contextSnapshot}->>'issueId' = ${issueId}`))).orderBy(desc(heartbeatRuns.createdAt),desc(heartbeatRuns.id)).limit(1);
++  if (!latest || latest.agentId !== task.assigneeAgentId || latest.nativeIssueId !== task.id || latest.runtimeMode !== "native" || latest.status !== "failed" || !latest.finishedAt ||
++   latest.errorCode !== "native_session_cleanup_quarantined" || !latest.nativeSessionId || !latest.runnerInstanceId ||
++   (task.executionRunId && task.executionRunId !== latest.id) || (task.checkoutRunId && task.checkoutRunId !== latest.id)) return null;
++  const [coordinator] = await tx.select().from(nativeRunFinalizations).where(and(eq(nativeRunFinalizations.companyId,companyId),eq(nativeRunFinalizations.runId,latest.id))).for("update");
++  if (!coordinator || coordinator.issueId !== task.id ||
++   coordinator.phase !== "terminal_failure" || coordinator.leaseOwner || coordinator.resultId || coordinator.assessmentId || coordinator.decisionId || coordinator.nextAttemptAt || record(coordinator.failureDetail).successorRunId) return null;
++  const [run] = await tx.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.companyId,companyId),eq(heartbeatRuns.id,latest.id))).for("update");
++  if (!run || adapterExecutionControls.has(run.id) || run.companyId !== companyId || run.nativeIssueId !== issueId || run.agentId !== task.assigneeAgentId || !run.nativeSessionId || !run.runnerInstanceId || run.status !== "failed" || !run.finishedAt || run.errorCode !== "native_session_cleanup_quarantined" ||
++   !isUnusedNativeSessionBootstrap(run,(await nativeSessionProviderEvidence(tx,[run.id])).has(run.id))) return null;
++  let execution;
++  try { execution = parseNativeExecutionInput(record(run.runnerProfileJson).nativeExecutionInput); } catch { return null; }
++  if (execution.binding.companyId !== companyId || execution.binding.issueId !== issueId || execution.binding.agentId !== task.assigneeAgentId || execution.binding.runId !== run.id ||
++   execution.session.normalizedSessionId !== run.nativeSessionId || !["codex","acpx"].includes(execution.provider.kind)) return null;
++  // Closed known pre-provider envelope: unknown/process/tool events fail closed.
++  const events = await tx.select({eventType:heartbeatRunEvents.eventType}).from(heartbeatRunEvents).where(and(eq(heartbeatRunEvents.companyId,companyId),eq(heartbeatRunEvents.runId,run.id)));
++  if (!events.length || events.some(event => !PRE_PROVIDER_EVENT_TYPES.has(event.eventType))) return null;
++  const leases = await tx.select().from(environmentLeases).where(and(eq(environmentLeases.companyId,companyId),eq(environmentLeases.heartbeatRunId,run.id)));
++  if (leases.some(lease => !lease.releasedAt || lease.cleanupStatus === "failed" || lease.status === "pending_cleanup")) return null;
++  return {task,run};
++}
++
++/** Existing GET authenticates a BOARD reader and task access before calling. */
++export async function projectUnusedNativeCleanupRecovery(db,companyId,issueId) {
++ return db.transaction(async tx => {
++  const candidate=await unusedCleanupCandidate(tx,companyId,issueId);
++  if (!candidate) return null;
++  const {task,run}=candidate;
++  return issueRecoveryActionService(tx).upsertSourceScoped({
++   companyId,sourceIssueId:issueId,kind:"active_run_watchdog",ownerType:"board",returnOwnerAgentId:task.assigneeAgentId,
++   cause:"native_session_cleanup_quarantined",fingerprint:"native-unused-cleanup:"+run.id,
++   evidence:{runId:run.id,sourceFailureCode:run.errorCode,projection:"unused_native_bootstrap_v1",unusedBootstrap:{processIdentityAbsent:true,checkpointAbsent:true,providerEventsAbsent:true}},
++   nextAction:"Inspect the preserved cleanup quarantine and record the stopped provider and observed action outcomes through the existing operator execution reconciliation API. This action does not retire quarantine or automatically retry work.",
++   wakePolicy:null,monitorPolicy:null
++  });
++ });
++}
++
++/** Only this additive projection gets stricter current-source checks at BOARD resolution. */
++export async function assertUnusedNativeCleanupRecoveryCurrent(db,action) {
++ if (record(action.evidence).projection !== "unused_native_bootstrap_v1") return;
++ const candidate=await unusedCleanupCandidate(db,action.companyId,action.sourceIssueId,action);
++ if (!candidate || action.kind !== "active_run_watchdog" || action.cause !== "native_session_cleanup_quarantined" ||
++     candidate.run.id !== action.evidence.runId || candidate.task.assigneeAgentId !== action.returnOwnerAgentId)
++  throw conflict("This unused native startup recovery changed or has a pending decision or execution authority. Inspect its current source before continuing.");
++}

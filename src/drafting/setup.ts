@@ -25,19 +25,20 @@ export async function registerConfiguredPublicDrafting(ctx:PluginContext):Promis
     catch(error) {if(error instanceof Error && error.message.includes("company context is required"))continue;throw error;}
     if(!object(raw) || raw.enabled!==true)continue;
     const required=["enabled","projectId","applicantSlug","matchId","producer","reviewer","process"];
-    const c=fields(raw,[...required,"nativeAttention","nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"],required);
-    if((c.nativeAttention!==undefined && c.nativeAttention!==true) || (c.nativeAttention===true && (c.nativeCaseProgression===true || c.nativeDependencyHandoff===true || c.nativeGapPlanReview===true)))throw Error("Invalid native attention configuration");
+    const c=fields(raw,[...required,"portfolioRootIssueId","nativeAttention","nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"],required);
+    if((c.nativeAttention!==undefined && c.nativeAttention!==true) || (c.nativeAttention===true && (c.nativeCaseProgression===true || c.nativeDependencyHandoff===true)))throw Error("Invalid native attention configuration");
     if(c.nativeCaseProgression!==undefined && typeof c.nativeCaseProgression!=="boolean")throw Error("Invalid native case progression configuration");
     if((c.nativeDependencyHandoff!==undefined && typeof c.nativeDependencyHandoff!=="boolean") ||
       (c.nativeDependencyHandoff===true && c.nativeCaseProgression!==true))throw Error("Invalid native dependency handoff configuration");
     if((c.nativeGapPlanReview!==undefined && typeof c.nativeGapPlanReview!=="boolean") ||
-      (c.nativeGapPlanReview===true && (c.nativeCaseProgression!==true || c.nativeDependencyHandoff!==true)))throw Error("Invalid native gap-plan review configuration");
+      (c.nativeGapPlanReview===true && c.nativeAttention!==true && (c.nativeCaseProgression!==true || c.nativeDependencyHandoff!==true)))throw Error("Invalid native gap-plan review configuration");
     fields(c.producer,["issueId","agentId","principalId"]);fields(c.reviewer,["issueId","agentId","principalId"]);
     const process=fields(c.process,["executable","args","cwd","entrypoint","configurationPath","timeoutMs","maxOutputBytes","pins"]);
     if(!Array.isArray(process.pins))throw Error("Invalid public drafting process pins");
     for(const pin of process.pins)fields(pin,["path","sha256"]);
     const fingerprint=configurationFingerprint(c);
     bindings.push({enabled:true,companyId:company.id,projectId:c.projectId as string,applicantSlug:c.applicantSlug as string,matchId:c.matchId as string,
+      ...(c.portfolioRootIssueId===undefined?{}:{portfolioRootIssueId:c.portfolioRootIssueId as string}),
       ...(c.nativeAttention===true?{nativeAttention:true as const}:{}),
       nativeCaseProgression:c.nativeCaseProgression===true,
       nativeDependencyHandoff:c.nativeDependencyHandoff===true,

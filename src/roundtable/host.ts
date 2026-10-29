@@ -56,6 +56,7 @@ export const roundtableSchema: JsonSchema = {
         referenceOnly: { const: true },
         projectId: {type:"string",minLength:1},
         sourceAccess: {const:true},
+        autoStart: {type:"boolean",default:false},
         allowedAgentIds: {type:"array",items:{type:"string",minLength:1,maxLength:128},minItems:1,maxItems:32,uniqueItems:true},
       },
       required: ["organizationId", "intakeAgentId", "referenceOnly"],
@@ -173,6 +174,8 @@ function parse(value: unknown): Settings | null {
       typeof s.nativeIntake.intakeAgentId !== "string" ||
       !s.nativeIntake.intakeAgentId.trim() ||
       (s.nativeIntake.projectId!==undefined && (typeof s.nativeIntake.projectId!=="string" || !s.nativeIntake.projectId.trim())) ||
+      (s.nativeIntake.autoStart!==undefined && typeof s.nativeIntake.autoStart!=="boolean") ||
+      (s.nativeIntake.autoStart===true && (s.nativeIntake.sourceAccess!==true || !s.nativeIntake.projectId)) ||
       (s.nativeIntake.sourceAccess!==undefined && (s.nativeIntake.sourceAccess!==true || !s.nativeIntake.projectId)) ||
       (s.nativeIntake.allowedAgentIds!==undefined && (!Array.isArray(s.nativeIntake.allowedAgentIds) || !s.nativeIntake.allowedAgentIds.length || s.nativeIntake.allowedAgentIds.length>32 || s.nativeIntake.allowedAgentIds.some(v=>typeof v!=="string" || !v.trim() || v.length>128) || new Set(s.nativeIntake.allowedAgentIds).size!==s.nativeIntake.allowedAgentIds.length)))
   )

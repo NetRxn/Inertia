@@ -1,0 +1,30 @@
+import {it,expect} from "vitest";
+import {registerPrivatePreparation} from "../../src/private-preparation/host.js";
+import {discoveryHash} from "../../src/discovery/service.js";
+function fixture(){
+ let admitted=true;const tools=new Map<string,any>(),calls:any[]=[];
+ const root:any={id:"root",companyId:"company",projectId:"P",status:"in_progress"};
+ const child:any={id:"child",parentId:"root",companyId:"company",projectId:"P",assigneeAgentId:"beta",executionRunId:"run",status:"in_progress"};
+ const active:any={id:"run",issueId:"child",agentId:"beta",status:"running",finishedAt:null};
+ const ctx:any={tools:{register:(n:string,_:any,h:any)=>tools.set(n,h)},issues:{get:async(id:string)=>id==="root"?root:child,getSubtree:async(id:string)=>({companyId:"company",rootIssueId:id,issueIds:id==="root"?["root","child"]:["child"],issues:id==="root"?[root,child]:[child],activeRuns:{child:[active]},assignees:{beta:{id:"beta",status:"running"}}})}};
+ const binding:any={companyId:"company",projectId:"P",portfolioRootIssueId:"root",applicantSlug:"dao",matchId:"binding",policyRevision:"v1",fingerprint:"f".repeat(64),producer:{issueId:"root",agentId:"beta",principalId:"b"},reviewer:{issueId:"root",agentId:"alpha",principalId:"a"},authorize:async()=>admitted,bridge:{call:async(op:string,p:any,callbacks:any)=>{const actor=await callbacks.context();calls.push({op,p,actor});const scope={company_id:"company",project_id:"P",issue_id:"child",root_issue_id:"root",applicant_slug:"dao",match_id:"actual-match",source_run_id:"run",producer_agent_id:"beta",producer_principal_id:"b",reviewer_agent_id:"alpha",reviewer_principal_id:"a",policy_revision:"v1",permitted_audiences:["public","internal","restricted"]};const a={company_id:"company",project_id:"P",issue_id:"child",root_issue_id:"root",agent_id:"beta",principal_id:"b",run_id:"run",role:"producer"};const grant=await callbacks.privateAuthorization({scope,actor:a,scope_hash:discoveryHash(scope),actor_hash:discoveryHash(a)});expect(grant.authorized).toBe(true);return{restricted:true};}}};
+ registerPrivatePreparation(ctx,[binding],{own:async(_:any,f:any)=>f()} as any);
+ const execution={version:1,companyId:"company",projectId:"P",issueId:"child",rootIssueId:"root",agentId:"beta",runId:"run",bindingHash:binding.fingerprint,webSearch:"disabled",historyReuse:false};
+ const run:any={companyId:"company",projectId:"P",agentId:"beta",runId:"run",privatePreparationExecution:execution};
+ return{root,child,active,run,calls,execution,revoke:()=>admitted=false,call:(input:any={operation:"workspace",parameters:{}})=>tools.get("funding_private_preparation")(input,run)};
+}
+it("binds native private execution, exact direct child and current backend grant",async()=>{const f=fixture();expect((await f.call()).data.restricted).toBe(true);expect(f.calls[0].actor.match_id).toBe("binding");});
+it("denies absent/misbound execution receipt, public project, role or model scope before process I/O",async()=>{for(const mutate of[(f:any)=>delete f.run.privatePreparationExecution,(f:any)=>f.execution.webSearch="cached",(f:any)=>f.execution.historyReuse=true,(f:any)=>f.child.projectId="Q",(f:any)=>f.run.agentId="alpha",(f:any)=>f.root.hiddenAt=new Date(),(f:any)=>f.revoke()]){const f=fixture();mutate(f);await expect(f.call()).rejects.toThrow();expect(f.calls).toEqual([]);}const f=fixture();await expect(f.call({operation:"workspace",parameters:{},role:"producer"})).rejects.toThrow();});
+it("prior private subject read keeps current actor and requires a completed exact portfolio child",async()=>{
+ const tools=new Map<string,any>();let status="done",hiddenAt:Date|null=null,foreign=false;
+ const current={id:"child",parentId:"root",companyId:"company",projectId:"P",assigneeAgentId:"beta",executionRunId:"run",status:"in_progress"};
+ const root={id:"root",companyId:"company",projectId:"P",status:"in_progress"};
+ const ctx:any={tools:{register:(n:string,_:any,h:any)=>tools.set(n,h)},issues:{get:async(id:string)=>id==="root"?root:id==="prior"?{...current,id:"prior",parentId:foreign?"other":"root",status,hiddenAt}:current,getSubtree:async(id:string)=>({companyId:"company",rootIssueId:id,issueIds:id==="root"?["root","child"]:["child"],issues:id==="root"?[root,current]:[current],activeRuns:{child:[{id:"run",issueId:"child",agentId:"beta",status:"running",finishedAt:null}]},assignees:{beta:{id:"beta",status:"running"}}})}};
+ const actor={company_id:"company",project_id:"P",issue_id:"child",root_issue_id:"root",agent_id:"beta",principal_id:"b",run_id:"run",role:"producer"};
+ const scope={company_id:"company",project_id:"P",issue_id:"prior",root_issue_id:"root",applicant_slug:"dao",match_id:"prior-match",source_run_id:"prior-run",producer_agent_id:"beta",producer_principal_id:"b",reviewer_agent_id:"alpha",reviewer_principal_id:"a",policy_revision:"v1",permitted_audiences:["public","internal","restricted"],read_purpose:"prior_private_case_read"};
+ const b:any={companyId:"company",projectId:"P",portfolioRootIssueId:"root",applicantSlug:"dao",matchId:"binding",policyRevision:"v1",fingerprint:"f".repeat(64),producer:{issueId:"root",agentId:"beta",principalId:"b"},reviewer:{issueId:"root",agentId:"alpha",principalId:"a"},authorize:async()=>true,bridge:{call:async(_:any,__:any,callbacks:any)=>callbacks.privateAuthorization({scope,actor,scope_hash:discoveryHash(scope),actor_hash:discoveryHash(actor)})}};
+ registerPrivatePreparation(ctx,[b],{own:async(_:any,f:any)=>f()} as any);
+ const run:any={companyId:"company",projectId:"P",agentId:"beta",runId:"run",privatePreparationExecution:{version:1,companyId:"company",projectId:"P",issueId:"child",rootIssueId:"root",agentId:"beta",runId:"run",bindingHash:b.fingerprint,webSearch:"disabled",historyReuse:false}};
+ const call=()=>tools.get("funding_private_preparation")({operation:"workspace",parameters:{}},run);
+ expect((await call()).data.authorized).toBe(true);status="in_review";await expect(call()).rejects.toThrow(/Prior private subject/);status="done";hiddenAt=new Date();await expect(call()).rejects.toThrow();hiddenAt=null;foreign=true;await expect(call()).rejects.toThrow();
+});

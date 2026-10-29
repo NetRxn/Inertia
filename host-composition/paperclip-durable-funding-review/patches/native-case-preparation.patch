@@ -1,0 +1,299 @@
+--- a/dist/services/native-runtime/native-session-resume.js
++++ b/dist/services/native-runtime/native-session-resume.js
+@@ -13,7 +13,7 @@
+ export function nativeToolContractFingerprintForTarget(executionTargetKind) {
+     return `sha256:${createHash("sha256")
+         .update(JSON.stringify({
+-        schema: "paperclip.native-tool-contract.v15",
++        schema: "paperclip.native-tool-contract.v16",
+         executionTargetKind,
+         advertisementPolicy: {
+             // Direct provider threads retain declarations from thread/start.
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1,3 +1,4 @@
++import{assertNativeCaseReviewConfigured}from'./native-case-review-runtime.mjs';
+ import {entityDefinitions,executeEntityTool,ENTITY_PROJECTED_TOOL} from "./native-entity-context.mjs";
+ import {readPrivatePreparation,privateDigest,privateDefinitions,executePrivateTool,assertCoordinatorPrivateIsolation} from "./native-private-preparation.mjs";
+ import {taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-case-work-tools.mjs";
+@@ -829,6 +830,7 @@
+             throw badRequest("Choose accept or reject for this run's assigned review.");
+         }
+         if(input.domainReview?.review_kind==='gap_plan'&&input.decision!=='reject')throw badRequest('Gap-plan review requires producer continuation and complete packet review before acceptance');
++        if(input.decision==="accept")await assertNativeCaseReviewConfigured(this.db,context.issue);
+         const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+         if (input.decision === "reject" && !reason)
+             throw badRequest("Explain the changes required before rejecting the review.");
+--- a/dist/services/native-runtime/status-decision-committer.js
++++ b/dist/services/native-runtime/status-decision-committer.js
+@@ -1,3 +1,4 @@
++import{assertNativeCaseProducerCompletion}from'./native-case-review-runtime.mjs';
+ import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { and, asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
+ import { agentWakeupRequests, agents, approvals, completionContracts, heartbeatRuns, issueApprovals, issueRecoveryActions, issueThreadInteractions, issues, nativeRunFinalizations, nativeRunResults, statusDecisionEffects, statusDecisions, workAssessments, workspaceOperations, } from "@paperclipai/db";
+@@ -1224,6 +1225,7 @@
+             issue.lastStatusDecisionId !== input.priorDecisionId) {
+             throw new NativeStatusRaceError();
+         }
++        await assertNativeCaseProducerCompletion(tx,{issue,toStatus:input.decision.toStatus});
+         nativeDomainReviewComposition.assertCompletion({ issue, toStatus: input.decision.toStatus });
+         if (input.requireModelRejectionOwner || input.requireProviderFailureOwner) {
+             const owner = (input.requireProviderFailureOwner ?? input.requireModelRejectionOwner);
+--- a/dist/services/native-runtime/native-completion-feedback.js
++++ b/dist/services/native-runtime/native-completion-feedback.js
+@@ -1,3 +1,4 @@
++import{assertNativeCaseProducerCompletion}from'./native-case-review-runtime.mjs';
+ import { validateNativeDeliverableEvidence } from "./native-deliverable-feedback.js";
+ import { findAutomaticCompletionReviews } from "./automatic-completion-reviews.js";
+ import { evaluateAgentInvokabilityFromDb } from "../agent-invokability.js";
+@@ -78,6 +79,7 @@
+             throw new Error(`completionClaim.criteria must contain exactly these criterion IDs, once each: ${JSON.stringify(expected)}. Keep contractRevision ${JSON.stringify(current.revision)} and correct the report without repeating completed work.`);
+         }
+     }
++    if(result.reportedWorkDisposition==="done")await assertNativeCaseProducerCompletion(db,{issue,toStatus:"done"});
+     const signals = normalizePrpResultSignals(result);
+     if (result.reportedWorkDisposition === "done" &&
+         (!result.completionClaim.objectiveSatisfied ||
+--- a/dist/services/native-runtime/native-case-work-tools.mjs
++++ b/dist/services/native-runtime/native-case-work-tools.mjs
+@@ -1,3 +1,4 @@
++import{nativeDomainReviewComposition}from'./native-domain-review-composition.mjs';
+ /** Opt-in current public case tools. Existing enrichment/meeting paths delegate unchanged. */
+ import * as base from './native-enrichment-tools.mjs';
+ import{createHash}from'node:crypto';
+@@ -63,6 +64,6 @@
+  const a=binding.nativeTaskProjectAdmission;
+  if(a?.kind!=='case-work')return base.executeTaskProjectTool(binding,call,context);
+  if(!isTaskProjectTool(binding,call.tool)||!binding.assignedMcpTools?.has(call.tool))deny();
+- if(call.tool===CASE_PROJECTED_TOOL&&!((a.role==='researcher'&&call.arguments?.operation==='reserve_case')||(a.role==='producer'&&['context','checkpoint'].includes(call.arguments?.operation))))deny();
+- await taskProjectDefinitions(binding,context);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;
++ if(call.tool===CASE_PROJECTED_TOOL&&!((a.role==='researcher'&&call.arguments?.operation==='reserve_case')||(a.role==='producer'&&['context','checkpoint','prepare','workspace','save','save_gap_progress','render','packet'].includes(call.arguments?.operation))))deny();
++ await taskProjectDefinitions(binding,context);if(call.tool===CASE_PROJECTED_TOOL&&a.role==='producer'&&['prepare','workspace','save','save_gap_progress','render','packet'].includes(call.arguments?.operation))nativeDomainReviewComposition.assertCasePreparation((await context()).issue,a.bindingHash);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;
+ }
+--- a/dist/services/native-runtime/native-review-stdio.mjs
++++ b/dist/services/native-runtime/native-review-stdio.mjs
+@@ -30,6 +30,9 @@
+ }
+ const error=(code,message,uncertain=false)=>new NativeReviewTransportError(code,message,uncertain);
+ function validContext(v){return (keys(v,contextFields)||keys(v,[...contextFields,'issue_id','portfolio_root_issue_id'])&&id(v.issue_id)&&id(v.portfolio_root_issue_id)&&v.issue_id!==v.portfolio_root_issue_id)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
++const caseContextFields=['company_id','applicant_slug','project_id','issue_id','root_issue_id','root_project_id','agent_id','principal_id','run_id','role','case_binding_id'];
++function validCaseContext(v){return keys(v,caseContextFields)&&caseContextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.role==='reviewer'&&v.issue_id!==v.root_issue_id;}
++function validCaseTask(v,c,a){return keys(v,['company_id','project_id','issue_id','parent_id','assignee_agent_id','origin_kind','origin_id','hidden','status','active_run_id','root_hidden','root_status'])&&v.company_id===c.company_id&&v.project_id===c.project_id&&v.issue_id===c.issue_id&&v.parent_id===c.root_issue_id&&v.assignee_agent_id===a.producer_agent_id&&v.origin_kind==='manual'&&v.origin_id==='paperclip-runner:create-task:'+c.root_issue_id+':case:'+c.case_binding_id&&v.hidden===false&&v.root_hidden===false&&['in_review','done','in_progress'].includes(v.status)&&!['done','cancelled'].includes(v.root_status)&&v.active_run_id===a.reviewer_run_id;}
+ function validAssignment(v){return keys(v,assignmentFields)&&assignmentFields.every(k=>id(v[k]))&&v.producer_agent_id!==v.reviewer_agent_id&&v.producer_run_id!==v.reviewer_run_id;}
+ function validBinding(v){if(preparationBinding(v)||gapBinding(v)||packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
+ function validArtifact(v){
+@@ -62,15 +65,16 @@
+  const c=structuredClone(value);
+  if(![c.executable,c.cwd,c.entrypoint,c.configurationPath].every(x=>typeof x==='string'&&isAbsolute(x))
+   ||!Array.isArray(c.args)||c.args.length>30||c.args.some(x=>typeof x!=='string'||x.length>4096)||!c.args.includes(c.entrypoint)||!c.args.includes(c.configurationPath)
+-  ||!Array.isArray(c.pins)||c.pins.length<2||c.pins.length>128||new Set(c.pins.map(x=>x?.path)).size!==c.pins.length
++  ||!Array.isArray(c.pins)||c.pins.length<2||c.pins.length>256||new Set(c.pins.map(x=>x?.path)).size!==c.pins.length
+   ||c.pins.some(p=>!keys(p,['path','sha256'])||typeof p.path!=='string'||!isAbsolute(p.path)||!hash(p.sha256))
+   ||![c.entrypoint,c.configurationPath].every(p=>c.pins.some(pin=>pin.path===p))
+   ||!Number.isInteger(c.timeoutMs)||c.timeoutMs<100||c.timeoutMs>120000||!Number.isInteger(c.maxOutputBytes)||c.maxOutputBytes<1024||c.maxOutputBytes>4*1024*1024)
+   throw error('native_review_configuration','Invalid native review process configuration');
+  return freeze(c);
+ }
+-export function createNativeReviewStdio(config,{privatePreparation=false}={}){
+- const c=configuration(config),protocolVersion=privatePreparation?"dfw-private-preparation-v1":VERSION;
++export function createNativeReviewStdio(config,{privatePreparation=false,caseWork=false}={}){
++ if(typeof privatePreparation!=='boolean'||typeof caseWork!=='boolean'||privatePreparation&&caseWork)throw error('native_review_configuration','Invalid native review mode');
++ const c=configuration(config),protocolVersion=caseWork?'dfw-native-case-review-v1':privatePreparation?"dfw-private-preparation-v1":VERSION;
+  return Object.freeze({async call(op,params,callbacks){
+   if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)||preparationArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
+@@ -84,12 +88,12 @@
+    if(createHash('sha256').update(await readFile(pin.path)).digest('hex')!==pin.sha256)throw error('native_review_pins','Native review pin mismatch');check();
+   }
+   if(!(await stat(c.cwd)).isDirectory())throw error('native_review_configuration','Native review cwd is not a directory');check();
+-  return new NativeReviewSession(c,op,input,callbacks,deadline,privatePreparation).initial.promise;
++  return new NativeReviewSession(c,op,input,callbacks,deadline,privatePreparation,caseWork).initial.promise;
+  }});
+ }
+ class NativeReviewSession {
+- constructor(c,op,input,callbacks,deadline,privatePreparation){
+-  Object.assign(this,{c,op,callbacks,deadline,privatePreparation,privateCount:0,params:freeze(JSON.parse(input).params),sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
++ constructor(c,op,input,callbacks,deadline,privatePreparation,caseWork){
++  Object.assign(this,{c,op,callbacks,deadline,privatePreparation,caseWork,caseCount:0,privateCount:0,params:freeze(JSON.parse(input).params),sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
+   this.initial=deferred();this.controller=new AbortController();this.closeWait=deferred();
+   this.child=spawn(c.executable,c.args,{cwd:c.cwd,shell:false,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe'],env:{PATH:'/usr/bin:/bin',HOME:'/nonexistent',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONNOUSERSITE:'1'}});
+   this.timer=setTimeout(()=>this.fail('native_review_timeout','Native review timed out; outcome unconfirmed'),Math.max(1,deadline-Date.now()));
+@@ -155,13 +159,18 @@
+  async frame(line){
+   if(this.failure)return;if(this.busy||this.resultSeen)return this.fail('native_review_protocol','Native review protocol violation; outcome unconfirmed');
+   let m;try{m=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(line));if(!object(m))throw Error();}catch{return this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed');}
+-  if(m.type==='context'||m.type==='native_assignment'||m.type==='private_authorization'&&this.privatePreparation){
+-   if(!(m.type==='private_authorization'?keys(m,['type','id','scope','actor','scope_hash','actor_hash']):keys(m,['type','id']))||!Number.isSafeInteger(m.id)||m.id!==this.sequence+1||m.id>MAX_CALLBACKS||(this.phase==='ready'&&this.pending?.kind!=='assert_alive'))return this.fail('native_review_callback','Native review invalid callback; outcome unconfirmed');
++  if(m.type==='context'||m.type==='native_assignment'||m.type==='private_authorization'&&this.privatePreparation||m.type==='case_task'&&this.caseWork){
++   if(!(m.type==='private_authorization'?keys(m,['type','id','scope','actor','scope_hash','actor_hash']):m.type==='case_task'?keys(m,['type','id','case_binding_id']):keys(m,['type','id']))||!Number.isSafeInteger(m.id)||m.id!==this.sequence+1||m.id>MAX_CALLBACKS||(this.phase==='ready'&&this.pending?.kind!=='assert_alive'))return this.fail('native_review_callback','Native review invalid callback; outcome unconfirmed');
+    this.sequence++;this.busy=true;
+    try{
+     if(m.type==='context'){
+-     const value=await this.trustedCallback(signal=>this.callbacks.context(signal));if(!validContext(value)||(this.context&&!same(value,this.context)))throw Error();
++     const value=await this.trustedCallback(signal=>this.callbacks.context(signal));if(!(this.caseWork?validCaseContext(value):validContext(value))||(this.context&&!same(value,this.context)))throw Error();
+      this.context=freeze(structuredClone(value));this.contextCount++;this.send({type:'context',id:m.id,context:this.context});
++    }else if(m.type==='case_task'){
++     if(!this.contextCount||!this.nativeCount||m.case_binding_id!==this.context.case_binding_id||typeof this.callbacks.caseTask!=='function')throw Error();
++     const value=await this.trustedCallback(signal=>this.callbacks.caseTask({case_binding_id:m.case_binding_id},signal));
++     if(!validCaseTask(value,this.context,this.assignment))throw Error();
++     this.caseCount++;this.send({type:'case_task',id:m.id,task:value});
+     }else if(m.type==='private_authorization'){
+      if(!this.contextCount||!this.nativeCount||typeof this.callbacks.privateAuthorization!=='function')throw Error();
+      const value=await this.trustedCallback(signal=>this.callbacks.privateAuthorization(m,signal));
+@@ -169,7 +178,7 @@
+      this.privateCount++;this.send({type:'private_authorization',id:m.id,...value});
+     }else{
+      if(!this.contextCount)throw Error();const value=await this.trustedCallback(signal=>this.callbacks.nativeAssignment(signal));
+-     if(!validAssignment(value)||value.company_id!==this.context.company_id||value.reviewer_run_id!==this.context.run_id||(this.assignment&&!same(value,this.assignment)))throw Error();
++     if(!validAssignment(value)||value.company_id!==this.context.company_id||value.reviewer_run_id!==this.context.run_id||this.caseWork&&(value.reviewer_agent_id!==this.context.agent_id||value.issue_id!==this.context.issue_id||value.project_id!==this.context.project_id)||(this.assignment&&!same(value,this.assignment)))throw Error();
+      this.assignment=freeze(structuredClone(value));this.nativeCount++;this.send({type:'native_assignment',id:m.id,assignment:this.assignment});
+     }
+    }catch{this.fail('native_review_authority','Native review trusted callback rejected; outcome unconfirmed');}
+@@ -184,13 +193,13 @@
+     // the pinned child exits0 with no further/trailing frames or protocol error.
+     this.resultSeen=true;this.terminalRejection=error('native_review_validation',rejected.message,false);this.terminalRejection.validationRejected=true;this.child.stdin.end();return;
+    }
+-   if(!keys(m,['type','ok','result'])||m.ok!==true||!object(m.result)||!this.contextCount||!this.nativeCount||this.privatePreparation&&!this.privateCount)return this.fail('native_review_result','Native review invalid result; outcome unconfirmed');
++   if(!keys(m,['type','ok','result'])||m.ok!==true||!object(m.result)||!this.contextCount||!this.nativeCount||this.privatePreparation&&!this.privateCount||this.caseWork&&!this.caseCount)return this.fail('native_review_result','Native review invalid result; outcome unconfirmed');
+    if(this.op!=='fence'&&!this.validSuccess(m.result))return this.fail('native_review_result','Native review misbound result; outcome unconfirmed');
+    if(this.op==='fence'&&(!this.pending||this.pending.kind!=='release'||!keys(m.result,['released'])||m.result.released!==true))return this.fail('native_review_protocol','Native review unexpected final result; outcome unconfirmed');
+    this.resultSeen=true;this.finalResult=m.result;this.child.stdin.end();return;
+   }
+   if(m.type==='fence_ready'){
+-   if(this.op!=='fence'||this.phase!=='initial'||!keys(m,['type','result'])||!this.contextCount||!this.nativeCount||this.privatePreparation&&!this.privateCount||!this.validReady(m.result))return this.fail('native_review_fence','Native review invalid fence binding; outcome unconfirmed');
++   if(this.op!=='fence'||this.phase!=='initial'||!keys(m,['type','result'])||!this.contextCount||!this.nativeCount||this.privatePreparation&&!this.privateCount||this.caseWork&&!this.caseCount||!this.validReady(m.result))return this.fail('native_review_fence','Native review invalid fence binding; outcome unconfirmed');
+    this.ready=freeze(structuredClone(m.result));this.phase='ready';clearTimeout(this.timer);this.initialResolved=true;this.initial.resolve(this.lease());return;
+   }
+   if(m.type==='fence_alive'){
+@@ -245,7 +254,7 @@
+   const self=this;let alivePromise,releasePromise;
+   return Object.freeze({binding:self.ready.binding,
+    async readCandidate(selector){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);
+-    if(selector!==undefined){const expected={...(packetBinding(self.ready.binding)?{wholePacketReview:true}:{}),companyId:self.assignment.company_id,projectId:self.assignment.project_id,issueId:self.assignment.issue_id,producerAgentId:self.assignment.producer_agent_id,reviewerAgentId:self.assignment.reviewer_agent_id,producerPrincipalId:self.ready.binding.producer_principal_id,reviewerPrincipalId:self.ready.binding.reviewer_principal_id,producerRunId:self.assignment.producer_run_id};if(!object(selector)||Object.keys(selector).some(k=>!Object.hasOwn(expected,k)||selector[k]!==expected[k]))throw error('native_review_scope','Native review fence scope mismatch');}
++    if(selector!==undefined){const expected={...(self.context.portfolio_root_issue_id?{portfolioRootIssueId:self.context.portfolio_root_issue_id}:self.caseWork?{portfolioRootIssueId:self.context.root_issue_id}:{}),...(packetBinding(self.ready.binding)?{wholePacketReview:true}:{}),companyId:self.assignment.company_id,projectId:self.assignment.project_id,issueId:self.assignment.issue_id,producerAgentId:self.assignment.producer_agent_id,reviewerAgentId:self.assignment.reviewer_agent_id,producerPrincipalId:self.ready.binding.producer_principal_id,reviewerPrincipalId:self.ready.binding.reviewer_principal_id,producerRunId:self.assignment.producer_run_id};if(!object(selector)||Object.keys(selector).some(k=>!Object.hasOwn(expected,k)||selector[k]!==expected[k]))throw error('native_review_scope','Native review fence scope mismatch');}
+     return self.ready.packet??self.ready.candidate;
+    },
+    async readAdmission(binding){self.usable();if(releasePromise)throw error('native_review_closed','Native review fence releasing; outcome unconfirmed',true);if(!same(binding,self.ready.binding))throw error('native_review_scope','Native review fence binding mismatch');return self.ready.receipt;},
+--- a/dist/services/native-runtime/native-review-host-admission.mjs
++++ b/dist/services/native-runtime/native-review-host-admission.mjs
+@@ -26,7 +26,7 @@
+     &&p.args.includes(p.entrypoint)&&p.args.includes(p.configurationPath)
+     &&Number.isInteger(p.timeoutMs)&&p.timeoutMs>=100&&p.timeoutMs<=120000
+     &&Number.isInteger(p.maxOutputBytes)&&p.maxOutputBytes>=1024&&p.maxOutputBytes<=4*1024*1024
+-    &&Array.isArray(p.pins)&&p.pins.length>=2&&p.pins.length<=128
++    &&Array.isArray(p.pins)&&p.pins.length>=2&&p.pins.length<=256
+     &&p.pins.every(v=>keys(v,['path','sha256'])&&typeof v.path==='string'&&isAbsolute(v.path)&&hash(v.sha256))
+     &&new Set(p.pins.map(v=>v.path)).size===p.pins.length
+     &&[p.entrypoint,p.configurationPath].every(path=>p.pins.some(pin=>pin.path===path));
+--- a/dist/services/native-runtime/native-review-application.mjs
++++ b/dist/services/native-runtime/native-review-application.mjs
+@@ -1,3 +1,4 @@
++import{validateNativeCaseReviewBinding,createNativeCaseReviewApplicationRuntime}from'./native-case-review-runtime.mjs';
+ import {templateMatches,scopeForIssue} from './native-portfolio-scope.mjs';
+ /** Owning-server initialization only. No model route, listener or lifecycle controller. */
+ import fs from 'node:fs/promises';
+@@ -11,7 +12,8 @@
+ const exact=(v,keys)=>object(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
+ const freeze=v=>{if(v&&typeof v==='object'){for(const c of Object.values(v))freeze(c);Object.freeze(v);}return v;};
+ function validate(registry){
+-  if(!exact(registry,['version','bindings'])||registry.version!==1||!Array.isArray(registry.bindings)||registry.bindings.length!==1)fail();
++  if(!(exact(registry,['version','bindings'])||exact(registry,['version','bindings','caseWork']))||registry.version!==1||!Array.isArray(registry.bindings)||registry.bindings.length!==1)fail();
++  if(registry.caseWork!==undefined){validateNativeCaseReviewBinding(registry.caseWork);createNativeReviewStdio(registry.caseWork.nativeCaseWork.reviewProcess,{caseWork:true});}
+   for(const b of registry.bindings){
+     if(!exact(b,['scope','reviewerPolicy','process','host'])||!(exact(b.host,['expectedPluginId','publicDrafting'])||exact(b.host,['expectedPluginId','privatePreparation'])))fail();
+     const p=b.reviewerPolicy,s=b.scope;
+@@ -73,5 +75,6 @@
+   const {nativeDomainReviewComposition}=await import('./native-domain-review-composition.mjs');
+   const runtime=await createNativeReviewApplicationRuntime(db,registry.bindings);
+   nativeDomainReviewComposition.install(runtime);
++  if(registry.caseWork!==undefined)nativeDomainReviewComposition.installCaseWork(await createNativeCaseReviewApplicationRuntime(db,registry.caseWork));
+   nativeDomainReviewComposition.assertReady();
+ }
+--- a/dist/services/native-runtime/native-domain-review-composition.mjs
++++ b/dist/services/native-runtime/native-domain-review-composition.mjs
+@@ -1,3 +1,4 @@
++import{createNativeCaseReviewRouter}from'./native-case-review-router.mjs';
+ import{preparationBinding,preparationArtifact,preparationReceipt,preparationItemSchema}from'./native-preparation-review.mjs';
+ import{gapBinding,gapArtifact,gapReceipt}from'./native-gap-review.mjs';
+ import {scopeForIssue} from './native-portfolio-scope.mjs';
+@@ -132,4 +133,4 @@
+ const flag=process.env.PAPERCLIP_NATIVE_DOMAIN_REVIEW_REQUIRED;
+ if(flag!==undefined&&flag!=='0'&&flag!=='1')fail('native_domain_review_configuration_invalid');
+ // Same ESM instance is imported by bootstrap and every native service constructor.
+-export const nativeDomainReviewComposition=createNativeDomainReviewComposition({required:flag==='1'});
++export const nativeDomainReviewComposition=createNativeCaseReviewRouter(createNativeDomainReviewComposition({required:flag==='1'}),createNativeDomainReviewComposition);
+--- /dev/null
++++ b/dist/services/native-runtime/native-case-review-runtime.mjs
+@@ -0,0 +1,56 @@
++/** Origin-bound adapter to the existing independent review/fence composition. No lifecycle. */
++import fs from'node:fs/promises';import{constants}from'node:fs';import{createHash}from'node:crypto';import{entityHash as hash}from'./native-entity-context.mjs';import{nativeDomainReviewAssignment}from'./native-domain-review.mjs';import{createNativeReviewStdio}from'./native-review-stdio.mjs';
++const deny=()=>{throw Error('native_case_review_scope_denied');},object=v=>v&&typeof v==='object'&&!Array.isArray(v),id=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\s\x00-\x1f\x7f]/.test(v),exact=(v,keys)=>object(v)&&Object.keys(v).sort().join()===keys.sort().join(),clone=v=>structuredClone(v),freeze=v=>{if(v&&typeof v==='object'){for(const c of Object.values(v))freeze(c);Object.freeze(v);}return v;};
++const names=['netrxn.inertia:funding_review_context','netrxn.inertia:review_funding_candidate','netrxn.inertia:review_funding_gap_plan'];
++export function validateNativeCaseReviewBinding(binding){
++ if(!exact(binding,['companyId','expectedPluginId','nativeCaseWork'])||!id(binding.companyId)||!id(binding.expectedPluginId))deny();
++ const c=binding.nativeCaseWork,fields=['enabled','researchProjectId','projectId','rootIssueId','rootProjectId','applicantSlug','researcher','producer','policyRevision','process','reviewer','reviewProcess'];
++ if(!exact(c,fields)||c.enabled!==true||!['researchProjectId','projectId','rootIssueId','rootProjectId','applicantSlug','policyRevision'].every(k=>id(c[k])))deny();
++ for(const p of[c.researcher,c.producer,c.reviewer])if(!exact(p,['agentId','principalId'])||!Object.values(p).every(id))deny();
++ if(c.producer.agentId===c.reviewer.agentId||c.producer.principalId===c.reviewer.principalId||c.researcher.agentId===c.producer.agentId||c.researcher.principalId===c.producer.principalId||c.process?.configurationPath!==c.reviewProcess?.configurationPath)deny();
++ return binding;
++}
++export async function createNativeCaseReviewRuntime({binding,native,stdioFactory=createNativeReviewStdio}){
++ validateNativeCaseReviewBinding(binding);if(!native||typeof native.getFacts!=='function'||typeof native.decideTool!=='function')deny();binding=freeze(clone(binding));const c=binding.nativeCaseWork;
++ let handle;
++ try{const f=c.reviewProcess.configurationPath;if(await fs.realpath(f)!==f)deny();handle=await fs.open(f,constants.O_RDONLY|constants.O_NOFOLLOW);const before=await handle.stat();if(!before.isFile()||(before.mode&0o777)!==0o600||before.uid!==process.getuid?.()||before.size>256*1024)deny();const bytes=await handle.readFile(),after=await handle.stat(),current=await fs.lstat(f);if(bytes.length>256*1024||before.size!==after.size||before.mtimeMs!==after.mtimeMs||current.isSymbolicLink()||current.dev!==after.dev||current.ino!==after.ino||createHash('sha256').update(bytes).digest('hex')!==c.reviewProcess.pins.find(p=>p.path===f)?.sha256)deny();const raw=JSON.parse(bytes),e=raw.enrichment;if(!raw.preparation||e?.company_id!==binding.companyId||e.applicant_slug!==c.applicantSlug||e.root_issue_id!==c.rootIssueId||e.root_project_id!==c.rootProjectId||raw.case_project_id!==c.projectId||raw.producer?.agent_id!==c.producer.agentId||raw.producer?.principal_id!==c.producer.principalId||raw.reviewer?.agent_id!==c.reviewer.agentId||raw.reviewer?.principal_id!==c.reviewer.principalId)deny();}catch{deny();}finally{await handle?.close();}
++ const scope=freeze({companyId:binding.companyId,projectId:c.projectId,issueId:c.rootIssueId,portfolioRootIssueId:c.rootIssueId,producerAgentId:c.producer.agentId,reviewerAgentId:c.reviewer.agentId,producerPrincipalId:c.producer.principalId,reviewerPrincipalId:c.reviewer.principalId,wholePacketReview:true}),stdio=stdioFactory(c.reviewProcess,{caseWork:true}),prefix='paperclip-runner:create-task:'+c.rootIssueId+':case:';
++ function caseId(issue){if(issue?.companyId!==binding.companyId||issue.projectId!==c.projectId||issue.parentId!==c.rootIssueId||issue.id===c.rootIssueId||issue.originKind!=='manual'||typeof issue.originId!=='string'||!issue.originId.startsWith(prefix))return null;const key=issue.originId.slice(prefix.length);return /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(key)?key:null;}
++ function actualScope(s,input){if(!caseId(input?.issue)||!exact(s,Object.keys(scope))||Object.keys(scope).some(k=>k==='issueId'?s[k]!==input.issue.id:s[k]!==scope[k]))deny();return s;}
++ async function fresh(s,input){actualScope(s,input);const f=await native.getFacts(binding,input),p=f?.plugin,a=f?.actor,r=f?.run,i=f?.issue,root=f?.root,assignment=f?.assignment;
++  if(p?.id!==binding.expectedPluginId||p.key!=='netrxn.inertia'||p.status!=='ready'||p.enabled===false||hash(p.config?.nativeCaseWork)!==hash(c)||!caseId(i)||i.id!==input.issue.id||i.hiddenAt||i.assigneeAgentId!==c.producer.agentId||!root||root.id!==c.rootIssueId||root.companyId!==binding.companyId||root.projectId!==c.rootProjectId||root.hiddenAt||['done','cancelled'].includes(root.status)||a?.id!==c.reviewer.agentId||a.companyId!==binding.companyId||a.role!=='general'||!['idle','running'].includes(a.status)||a.adapterType!=='paperclip_runner'||a.adapterConfig?.provider!=='codex'||a.adapterConfig?.engine!=='cli'||a.adapterConfig?.disableCommandExecution!==true||a.adapterConfig?.codexPermissionMode!=='never'||a.adapterConfig?.dangerouslyBypassApprovalsAndSandbox!==false||a.adapterConfig?.dangerouslyBypassSandbox===true||Object.hasOwn(a.adapterConfig,'args')||Object.hasOwn(a.adapterConfig,'extraArgs')||r?.id!==input.actor?.runId||r.agentId!==a.id||r.companyId!==binding.companyId||r.nativeIssueId!==i.id||r.runtimeMode!=='native'||r.status!=='running'||r.finishedAt||r.contextSnapshot?.nativeReviewInteractionId!==input.interaction?.id||r.contextSnapshot?.nativeReviewDecisionId!==input.assignment?.sourceDecision?.id)deny();
++  const policy=a.adapterConfig.nativeFunding;if(policy?.version!==1||policy.role!=='worker'||policy.portfolioRootIssueId!==c.rootIssueId||!policy.projectIds?.includes(c.projectId)||!policy.projectIds?.includes(c.rootProjectId)||!policy.issueIds?.includes(c.rootIssueId))deny();
++  const facts={issue:i,actor:input.actor,interaction:assignment?.interaction,assignment};nativeDomainReviewAssignment(s,facts,{allowResolved:true});
++  if(assignment.interaction.id!==input.interaction.id||assignment.sourceDecision.id!==input.assignment.sourceDecision.id||assignment.sourceRun.id!==input.assignment.sourceRun.id||assignment.sourceRun.agentId!==input.assignment.sourceRun.agentId)deny();return{...f,facts,key:caseId(i)};
++ }
++ async function decide(s,input,tool,args={},options={}){if(!names.includes(tool))deny();await fresh(s,input);const result=await native.decideTool({companyId:binding.companyId,actor:{actorType:'agent',actorId:c.reviewer.agentId,agentId:c.reviewer.agentId},runContext:{heartbeatRunId:input.actor.runId,issueId:input.issue.id,projectId:c.projectId},request:{toolName:tool,providerType:'paperclip_plugin',arguments:args,sideEffecting:tool!==names[0]},consumeRateLimit:options.consumeRateLimit===true});await fresh(s,input);return result?.allowed===true&&result.decision==='allow';}
++ async function current(s,input){const f=await fresh(s,input);for(const name of names)if(!await decide(s,input,name))deny();return f;}
++ async function callbacks(s,input){await current(s,input);return{
++  async context(signal){signal?.throwIfAborted();const f=await current(s,input);signal?.throwIfAborted();return{company_id:binding.companyId,applicant_slug:c.applicantSlug,project_id:c.projectId,issue_id:f.issue.id,root_issue_id:c.rootIssueId,root_project_id:c.rootProjectId,agent_id:c.reviewer.agentId,principal_id:c.reviewer.principalId,run_id:input.actor.runId,role:'reviewer',case_binding_id:f.key};},
++  async nativeAssignment(signal){signal?.throwIfAborted();const f=await current(s,input);signal?.throwIfAborted();return{company_id:binding.companyId,project_id:c.projectId,issue_id:f.issue.id,interaction_id:f.assignment.interaction.id,decision_id:f.assignment.sourceDecision.id,producer_agent_id:f.assignment.sourceRun.agentId,producer_run_id:f.assignment.sourceRun.id,reviewer_agent_id:c.reviewer.agentId,reviewer_run_id:input.actor.runId};},
++  async caseTask(request,signal){signal?.throwIfAborted();const f=await current(s,input);if(!exact(request,['case_binding_id'])||request.case_binding_id!==f.key)deny();signal?.throwIfAborted();return{company_id:binding.companyId,project_id:c.projectId,issue_id:f.issue.id,parent_id:c.rootIssueId,assignee_agent_id:c.producer.agentId,origin_kind:f.issue.originKind,origin_id:f.issue.originId,hidden:Boolean(f.issue.hiddenAt),status:f.issue.status,active_run_id:input.actor.runId,root_hidden:Boolean(f.root.hiddenAt),root_status:f.root.status};}
++ };}
++ return Object.freeze({bindingHash:hash(c),scopes:[scope],preparationReviewEnabled:true,matches:issue=>!!caseId(issue),authorize:decide,
++  async readReviewContext(s,input){return stdio.call('context',{},await callbacks(s,input));},async admitReview(s,input,artifact){return stdio.call('admit',artifact,await callbacks(s,input));},async readReviewReceipt(s,input){return stdio.call('receipt',{},await callbacks(s,input));},
++  async acquireFence(s,input){const lease=await stdio.call('fence',{},await callbacks(s,input));return Object.freeze({...lease,async assertAlive(){await current(s,input);await lease.assertAlive();await current(s,input);}});}
++ });
++}
++export async function createNativeCaseReviewApplicationRuntime(db,binding){
++ const[{and,eq},s,{getNativeReviewAssignment},{assertNativeFundingContext},{toolAccessPolicyService}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db'),import('./native-review-participant.js'),import('./native-funding-policy.js'),import('../tool-access-policy.js')]);const policy=toolAccessPolicyService(db);
++ return createNativeCaseReviewRuntime({binding,native:{decideTool:input=>policy.decide(input),async getFacts(b,input){
++  const [plugin]=await db.select({id:s.plugins.id,key:s.plugins.pluginKey,status:s.plugins.status,enabled:s.pluginCompanySettings.enabled,config:s.pluginConfig.configJson}).from(s.plugins).innerJoin(s.pluginConfig,and(eq(s.pluginConfig.pluginId,s.plugins.id),eq(s.pluginConfig.companyId,b.companyId))).leftJoin(s.pluginCompanySettings,and(eq(s.pluginCompanySettings.pluginId,s.plugins.id),eq(s.pluginCompanySettings.companyId,b.companyId))).where(eq(s.plugins.id,b.expectedPluginId)).limit(1);
++  const [actor]=await db.select().from(s.agents).where(and(eq(s.agents.id,input.actor.agentId),eq(s.agents.companyId,b.companyId))).limit(1),[run]=await db.select().from(s.heartbeatRuns).where(and(eq(s.heartbeatRuns.id,input.actor.runId),eq(s.heartbeatRuns.companyId,b.companyId))).limit(1),[issue]=await db.select().from(s.issues).where(and(eq(s.issues.id,input.issue.id),eq(s.issues.companyId,b.companyId))).limit(1),[root]=await db.select().from(s.issues).where(and(eq(s.issues.id,b.nativeCaseWork.rootIssueId),eq(s.issues.companyId,b.companyId))).limit(1);
++  if(!actor||!run||!issue)deny();const nativeReview={nativeReviewInteractionId:input.interaction.id,nativeReviewDecisionId:input.assignment.sourceDecision.id},bound={companyId:b.companyId,agentId:actor.id,issueId:issue.id,runId:run.id,nativeReview,nativeFundingPolicy:{...actor.adapterConfig.nativeFunding,role:'reviewer',companyId:b.companyId,agentId:actor.id}};
++  assertNativeFundingContext(bound,{actor,run,issue});const assignment=await getNativeReviewAssignment(db,{...bound,contextSnapshot:nativeReview,actingRunId:run.id,allowResolvedByRunId:run.id});return{plugin,actor,run,issue,root,assignment};
++ }}});
++}
++/** Conservative first-slice boundary even before optional preparation is installed. */
++async function configuredCase(db,issue){
++ if(!issue||issue.originKind!=='manual'||typeof issue.originId!=='string'||!issue.originId.includes(':case:'))return false;
++ const[{and,eq},{plugins,pluginConfig}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);const rows=await db.select({config:pluginConfig.configJson}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,issue.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ return rows.some(row=>{const c=row.config?.nativeCaseWork,prefix='paperclip-runner:create-task:'+c?.rootIssueId+':case:';return c&&issue.projectId===c.projectId&&issue.parentId===c.rootIssueId&&issue.id!==c.rootIssueId&&issue.originId.startsWith(prefix)&&/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(issue.originId.slice(prefix.length));});
++}
++export async function assertNativeCaseProducerCompletion(db,{issue,toStatus}){
++ if(toStatus!=='done'||issue?.status==='done')return;const{nativeDomainReviewComposition:c}=await import('./native-domain-review-composition.mjs');if(c.isCaseBound(issue)){c.assertCompletion({issue,toStatus});return;}if(await configuredCase(db,issue))throw Error('native_domain_review_required_before_completion');
++}
++export async function assertNativeCaseReviewConfigured(db,issue){const{nativeDomainReviewComposition:c}=await import('./native-domain-review-composition.mjs');if(!c.isCaseBound(issue)&&await configuredCase(db,issue))throw Error('native_case_review_unconfigured');}
+--- /dev/null
++++ b/dist/services/native-runtime/native-case-review-router.mjs
+@@ -0,0 +1,13 @@
++/** Owning-host optional case routing; existing compositions retain every lifecycle/fence rule. */
++export function createNativeCaseReviewRouter(base,createComposition){
++ let runtime,composition;const select=issue=>runtime?.matches(issue)?composition:base;
++ return Object.freeze({
++  install:input=>base.install(input),
++  installCaseWork(value){if(runtime)throw Error('native_case_review_already_initialized');if(typeof value?.matches!=='function')throw Error('native_case_review_configuration_invalid');const candidate=createComposition();candidate.install(value);runtime=value;composition=candidate;},
++  assertReady(){base.assertReady();composition?.assertReady();},
++  assertCasePreparation(issue,bindingHash){if(!runtime?.matches(issue)||!composition.isBound(issue)||runtime.bindingHash!==bindingHash)throw Error("native_case_preparation_review_unconfigured_or_changed");},
++  isCaseBound:issue=>Boolean(runtime?.matches(issue)&&composition.isBound(issue)),
++  isBound:issue=>select(issue).isBound(issue),reviewArtifactSchema:issue=>select(issue).reviewArtifactSchema(issue),preparationReviewEnabled:issue=>select(issue).preparationReviewEnabled(issue),preparationItemSchema:issue=>select(issue).preparationItemSchema(issue),
++  recordPreparationReview:(input,artifact)=>select(input?.issue).recordPreparationReview(input,artifact),reviewContext:input=>select(input?.issue).reviewContext(input),admitReview:(input,artifact)=>select(input?.issue).admitReview(input,artifact),readReviewReceipt:(input,artifact)=>select(input?.issue).readReviewReceipt(input,artifact),assertCompletion:input=>select(input?.issue).assertCompletion(input),acquireResolution:input=>select(input?.issue).acquireResolution(input),
++ });
++}

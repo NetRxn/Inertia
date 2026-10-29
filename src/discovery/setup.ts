@@ -38,12 +38,16 @@ export async function registerConfiguredFundingDiscovery(
       continue;
     const c = raw as Record<string, unknown>;
     const fingerprint = discoveryHash(c);
+    if(c.portfolioRootIssueId!==undefined && (typeof c.portfolioRootIssueId!=="string" || !c.portfolioRootIssueId.trim() || c.issueId!==c.portfolioRootIssueId))throw Error("Invalid protected discovery portfolio template");
+    if(c.rootProjectId!==undefined && (typeof c.rootProjectId!=="string" || !c.rootProjectId.trim() || !c.portfolioRootIssueId))throw Error("Invalid protected discovery root project");
     const allowed = [
       "enabled",
       "key",
       "organizationId",
       "projectId",
       "issueId",
+      "portfolioRootIssueId",
+      "rootProjectId",
       "agentId",
       "urgentIssueId",
       "publicQueries",
@@ -72,6 +76,8 @@ export async function registerConfiguredFundingDiscovery(
       organizationId: c.organizationId as string,
       projectId: c.projectId as string,
       issueId: c.issueId as string,
+      ...(c.portfolioRootIssueId===undefined?{}:{portfolioRootIssueId:c.portfolioRootIssueId as string}),
+      ...(c.rootProjectId===undefined?{}:{rootProjectId:c.rootProjectId as string}),
       agentId: c.agentId as string,
       urgentIssueId: c.urgentIssueId as string,
       publicQueries: c.publicQueries as string[],
@@ -105,11 +111,12 @@ export async function registerConfiguredFundingDiscovery(
         !d.issueId.trim() ||
         typeof d.agentId !== "string" ||
         !d.agentId.trim() ||
-        d.issueId === binding.issueId ||
+        (!binding.portfolioRootIssueId && d.issueId === binding.issueId) ||
+        (binding.portfolioRootIssueId!==undefined && d.issueId!==binding.portfolioRootIssueId) ||
         d.agentId === binding.agentId
       )
         throw Error("Invalid independent diligence configuration");
-      if (typeof d.principalId !== "string" || typeof d.policyId !== "string")
+      if (typeof d.principalId !== "string" || d.principalId===c.principalId || typeof d.policyId !== "string")
         throw Error("Missing independent DFW principal mapping");
       await verifyDfwScope(d.process as unknown as DiscoveryProcessConfig, {
         organizationId: binding.organizationId,
