@@ -9,7 +9,7 @@ const {PaperclipRunnerToolAuthority}=await import(pathToFileURL(path.join(host,'
 const {createIsolatedCodexAppServerArgs,createSecuredCodexThreadParams}=await import(pathToFileURL(path.join(host,'vendor/paperclip-runner/drivers/codex/codex-security-config.js')));
 const ids={companyId:'11111111-1111-4111-8111-111111111111',agentId:'22222222-2222-4222-8222-222222222222',runId:'33333333-3333-4333-8333-333333333333',issueId:'44444444-4444-4444-8444-444444444444'};
 const policy={version:1,companyId:ids.companyId,agentId:ids.agentId,projectIds:['55555555-5555-4555-8555-555555555555']};
-const allowed=['get_task_context','get_task_history','search_tasks','list_projects','list_agents','get_agent','list_documents','read_document','list_document_revisions','create_task','reassign_task','set_dependencies','report_progress','write_document','request_human_input'].sort();
+const allowed=['continue_task','get_task_context','get_task_history','search_tasks','list_projects','list_agents','get_agent','list_documents','read_document','list_document_revisions','create_task','reassign_task','set_dependencies','report_progress','write_document','request_human_input'].sort();
 const boundary=await import(pathToFileURL(path.join(host,'services/native-runtime/native-coordinator-policy.js'))).catch(()=>null);
 test('pinned unauthenticated Codex accepts and reports command features disabled',{skip:process.env.QUALIFY_NATIVE_CODEX!=='1'},async()=>{
  const home=await fs.mkdtemp(path.join(os.tmpdir(),'no-auth-codex-'));try{
