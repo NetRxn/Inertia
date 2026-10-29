@@ -2,6 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { LanguageModel } from 'ai';
 import { createMockModel } from './mock-model';
+import { createAskJson, type AskJson } from '../org/llm';
 
 /** The assistant has no usable model; the chat route answers 503 with setup help. */
 export class ModelNotConfiguredError extends Error {}
@@ -56,4 +57,13 @@ export function getFastModel(env: Record<string, string | undefined> = process.e
 export function backgroundProviderOptions(env: Record<string, string | undefined> = process.env) {
   if (env.MEMBER_APP_MODEL_PROVIDER?.trim() !== 'openai-compatible' || env.MEMBER_APP_MODEL_THINKING?.trim() !== 'off') return undefined;
   return { memberApp: { thinking: { type: 'disabled' } } };
+}
+
+/**
+ * JSON asks for background work: the fast model, falling back to MEMBER_APP_MODEL
+ * when the fast one can't answer (a busy flash model shouldn't stop Find work).
+ */
+export function backgroundAskJson(env: Record<string, string | undefined> = process.env): AskJson {
+  const fallback = env.MEMBER_APP_FAST_MODEL?.trim() && env.MEMBER_APP_FAST_MODEL.trim() !== env.MEMBER_APP_MODEL?.trim() ? getModel(env) : undefined;
+  return createAskJson(getFastModel(env), backgroundProviderOptions(env), fallback);
 }

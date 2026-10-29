@@ -10,9 +10,8 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { getDb } from '../src/db/client';
 import { runMigrations } from '../src/db/migrate';
-import { backgroundProviderOptions, getFastModel } from '../src/assistant/model';
+import { backgroundAskJson } from '../src/assistant/model';
 import { addSource, fileToText } from '../src/org/ingest';
-import { createAskJson } from '../src/org/llm';
 import { ensureFounder } from '../src/org/members';
 import { saveBasics } from '../src/org/organization';
 import { regenerateProfile } from '../src/org/profile';
@@ -68,7 +67,7 @@ async function main() {
   }
   if (opts.profile) {
     console.log('Drafting the profile...');
-    const profile = await regenerateProfile(db, createAskJson(getFastModel(), backgroundProviderOptions()));
+    const profile = await regenerateProfile(db, backgroundAskJson());
     console.log(JSON.stringify({
       mission: profile.mission?.text,
       programs: profile.programs.map((l) => l.text),
