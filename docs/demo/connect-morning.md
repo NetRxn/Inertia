@@ -39,7 +39,7 @@ Moving from the compose stack's own Postgres or from PGlite? The data does not m
 2. Set `PAPERCLIP_URL`, `PAPERCLIP_API_KEY`, `PAPERCLIP_COMPANY_ID`, and optionally `PAPERCLIP_DEFAULT_AGENT_ID` (the CEO agent). When the app reaches Paperclip at an internal address (on the VPS, `http://host.docker.internal:3100`), also set `PAPERCLIP_PUBLIC_URL` to the address people open, so task links work.
 3. **Decide the access mode.** The default is `PAPERCLIP_ACCESS=read`: Inertia shows Paperclip's goals and issues, and keeps claims in its own log. **Find work, Pursue and answers then write nothing**, and they now say so instead of "try again". Set `PAPERCLIP_ACCESS=write` once you're happy for Inertia to create goals, projects and issues and to assign claims. The key carries its issuer's permissions, so issue it from a user with no more access than that.
 4. Restart, then run the check (below) or open Agents → Connections → **Check connections**. It lists goals, agents, the `human` label, where new agent tasks go, and the access mode.
-5. Organization → Members: paste each member's Paperclip user id, so their claims assign the issue to them.
+5. Organization → People: paste each member's Paperclip user id, so their claims assign the issue to them.
 6. In write mode, re-accept initiatives (Organization → Overview) so each becomes a Paperclip goal.
 
 ## 3. Buzz (about 15 minutes)
