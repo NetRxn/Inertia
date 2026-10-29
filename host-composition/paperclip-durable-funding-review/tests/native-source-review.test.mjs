@@ -54,3 +54,11 @@ test('batch dedup only consumes trusted source followup when prior native receip
  assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,payload:{issueId:'other'}},run:null},scope),false);
  assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,status:'queued'},run:null},scope),false);
 });
+
+// Creation content is persisted in originFingerprint; metadata corrections must not change existing child replay.
+test('frozen existing source-review child creation input remains byte-compatible',()=>{
+ const f=fixture(),a={kind:'case-work',role:'producer',issueId:'case',projectId:'Q',caseBindingId:'binding',companyId:'company'},value={proposal_hash:proposal,case_binding_id:'binding',producer_issue_id:'case',producer_run_id:'producer-run',record_id:'record'};
+ assert.deepEqual(source.sourceReviewTaskInput(a,{purpose:'source_review',proposalHash:proposal},value,f.rows[0].config.nativeCaseWork),{
+  idempotencyKey:'source-review:'+proposal,title:'Independent source review '+proposal.slice(0,12),description:'Review the exact source proposal '+proposal+' for case binding. Read source_context, then source_review accept/reject or source_settlement for independently confirmed source drift. This task does not approve a funding packet or submission.',projectId:'Q',assigneeActorId:'charlie',status:'todo'
+ });
+});
