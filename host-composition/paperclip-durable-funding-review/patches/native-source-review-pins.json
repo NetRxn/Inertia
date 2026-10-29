@@ -59,12 +59,12 @@
       "candidate_sha256": "0b567c98dc61e905191ee37ccd9793d2d4cffb4c7e5254bc1731565768ce1baa"
     },
     "dist/services/native-runtime/native-packet-artifact-handoff.mjs": {
-      "candidate_sha256": "00eb17e2e23ce4432af5c786bf5ca608254e21788cfa77dadad8abae8688991a"
+      "candidate_sha256": "8d368d4d478dde4d4ae80c4a7a6a96e50c2d4ad1834ad4704fba3f29f60b133d"
     },
     "dist/services/native-runtime/native-source-review.mjs": {
       "candidate_sha256": "df6c5a52673beec603884bb367aaf9b386d3fb7c10ef5b93b907bd00bfed05ab"
     }
   },
   "patch": "native-source-review.patch",
-  "patch_sha256": "66310cf8ca23b78656fa58926eb9a88f9aff35a307469919577c767631ab5897"
+  "patch_sha256": "d8cbf2877730a896ee1b12af68b8b3a753b8fba8da320366a42706a4534c3cb4"
 }

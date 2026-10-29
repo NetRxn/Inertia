@@ -1,6 +1,7 @@
 /** Reuses native registration; all bytes and names derive from current DFW output. */
 import {createHash} from 'node:crypto';
 const object=v=>v&&typeof v==='object'&&!Array.isArray(v),canonical=v=>object(v)?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':Array.isArray(v)?'['+v.map(canonical).join(',')+']':JSON.stringify(v),sha=v=>createHash('sha256').update(v).digest('hex'),deny=()=>{throw Error('native_packet_artifact_handoff_denied');};
+const typedFiles={sponsor_docx:['docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document']};
 const files={application_packet_markdown:['md','text/markdown'],application_packet_docx:['docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],packet_data:['json','application/json'],review:['json','application/json']};
 export const PACKET_ARTIFACT_DEFINITION=Object.freeze({name:'register_deliverable',description:'Attach one exact current DFW-rendered file to this case. The server retrieves bounded chunks, verifies the manifest and bytes, derives its filename and storage path, and invokes native file handoff. This is preparation only; it never accepts or submits the packet.',inputSchema:{type:'object',properties:{artifactKey:{type:'string',pattern:'^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'}},required:['artifactKey'],additionalProperties:false}});
 export async function readPacketArtifact(a,input,fetch,maxBytes){
@@ -21,7 +22,7 @@ export async function readPacketArtifact(a,input,fetch,maxBytes){
  if(sha(canonicalData)!==m.packet_data_hash)deny();
  const selected=input.artifactKey==='packet_data'?packet:await read(input.artifactKey);
  const current=await fetch('packet_artifacts',{});if(canonical(current)!==canonical(catalog))deny();
- const known=Object.hasOwn(files,input.artifactKey),[extension,contentType]=known?files[input.artifactKey]:['bin','application/octet-stream'];return{bytes:selected.bytes,manifestHash:catalog.manifest_hash,filename:input.artifactKey+'.'+extension,contentType,sha256:selected.descriptor.hash,byteSize:selected.bytes.length,artifactKey:input.artifactKey,originalFilenameKnown:false,contentTypeDerivedFrom:known?'canonical_artifact_key':'opaque_bytes',catalog};
+ const known=Object.hasOwn(files,input.artifactKey),knownType=Object.hasOwn(typedFiles,selected.descriptor.type),[extension,contentType]=known?files[input.artifactKey]:knownType?typedFiles[selected.descriptor.type]:['bin','application/octet-stream'];return{bytes:selected.bytes,manifestHash:catalog.manifest_hash,filename:input.artifactKey+'.'+extension,contentType,sha256:selected.descriptor.hash,byteSize:selected.bytes.length,artifactKey:input.artifactKey,originalFilenameKnown:false,contentTypeDerivedFrom:known?'canonical_artifact_key':knownType?'verified_artifact_type':'opaque_bytes',catalog};
 }
 export async function stagePacketArtifact(workspaceRoot,runId,artifact){
  const fs=await import('node:fs/promises'),path=await import('node:path');
