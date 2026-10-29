@@ -97,3 +97,10 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Sign out, with the tour link beside it. */
+.profileActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

@@ -1,6 +1,8 @@
 .container {
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
   align-items: center;
   justify-content: center;
   padding: var(--space-4);
@@ -85,4 +87,11 @@
 .button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+/* The quiet way into the story page, under the card. */
+.story {
+  font: var(--text-small);
+  color: var(--signal-text);
+  text-underline-offset: 3px;
 }

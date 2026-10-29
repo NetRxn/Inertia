@@ -1,0 +1,1070 @@
+/*
+ * The story page: a scroll-through of the idea, in place of a deck.
+ * Tokens and in- classes come from the design system; StoryMotion sets
+ * --scroll, --p, data-stage and .isIn (see StoryMotion.tsx).
+ */
+
+.page {
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Set by StoryMotion (--scroll) and inline per element (--i stagger, --sx/--sy/--ox/--oy bodies). */
+  --scroll: 0;
+  --i: 0;
+  --sx: 0;
+  --sy: 0;
+  --ox: 0;
+  --oy: 0;
+  --gutter: var(--space-4);
+  min-height: 100dvh;
+  background: var(--void);
+  color: var(--ink);
+  font: var(--text-body);
+  overflow-x: clip;
+}
+
+@media (min-width: 768px) {
+  .page {
+    --gutter: var(--space-12);
+  }
+}
+
+/* ---------- Chrome ---------- */
+
+.lights {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lights span {
+  position: absolute;
+  border-radius: var(--radius-pill);
+  filter: blur(90px);
+  opacity: 0.16;
+}
+
+.lightSignal {
+  width: 320px;
+  height: 260px;
+  top: 8%;
+  left: calc(50% - 420px);
+  background: var(--signal);
+}
+
+.lightIon {
+  width: 280px;
+  height: 240px;
+  top: 40%;
+  right: calc(50% - 460px);
+  background: var(--ion);
+}
+
+.lightTide {
+  width: 360px;
+  height: 280px;
+  bottom: -60px;
+  left: calc(50% - 160px);
+  background: var(--tide);
+}
+
+.progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 20;
+  background: var(--ion);
+  box-shadow: var(--halo-ion);
+  transform-origin: left center;
+  transform: scaleX(var(--scroll));
+}
+
+.bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--gutter);
+  background: color-mix(in srgb, var(--void) 72%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  backdrop-filter: blur(var(--blur-glass));
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-decoration: none;
+  font: 600 20px/1 var(--font-display);
+  letter-spacing: -0.035em;
+}
+
+.brandMark {
+  width: 28px;
+  height: 28px;
+}
+
+.markRing {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.markBody {
+  fill: var(--signal);
+}
+
+.markSat {
+  fill: var(--ion);
+}
+
+.chapters {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .chapters {
+    display: block;
+    position: fixed;
+    right: var(--space-6);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 15;
+  }
+
+  .chapters ol {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .chapters a {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    text-decoration: none;
+    color: var(--ink-muted);
+    font: var(--text-label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .chapters a::after {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    border: 1.5px solid var(--line-strong);
+    transition: background 160ms var(--ease), border-color 160ms var(--ease);
+  }
+
+  .chapters a span {
+    opacity: 0;
+    transform: translateX(4px);
+    transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+  }
+
+  .chapters a:hover span,
+  .chapters a:focus-visible span,
+  .chapters a[aria-current] span {
+    opacity: 1;
+    transform: none;
+  }
+
+  .chapters a[aria-current] {
+    color: var(--ink);
+  }
+
+  .chapters a[aria-current]::after {
+    background: var(--ion);
+    border-color: var(--ion);
+    box-shadow: var(--halo-ion);
+  }
+}
+
+/* ---------- Reveal (only once JS is running) ---------- */
+
+.page[data-motion="on"] [data-reveal] {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 640ms var(--ease), transform 640ms var(--ease);
+  transition-delay: calc(var(--i) * 80ms);
+}
+
+.page[data-motion="on"] [data-reveal]:global(.isIn) {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------- Shared type ---------- */
+
+.eyebrow,
+.num {
+  color: var(--ion-text);
+  margin-bottom: var(--space-3);
+}
+
+.title {
+  font: var(--text-display);
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+  margin-bottom: var(--space-4);
+  font-size: clamp(28px, 4.4vw, 44px);
+  line-height: 1.1;
+}
+
+.body {
+  color: var(--ink-muted);
+  font-size: 17px;
+  line-height: 27px;
+  max-width: 58ch;
+}
+
+.body + .body {
+  margin-top: var(--space-3);
+}
+
+.lede {
+  color: var(--ink-muted);
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.kind i {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--hue);
+  box-shadow: 0 0 10px -1px var(--hue);
+}
+
+.page [data-hue="signal"] { --hue: var(--signal); --hue-text: var(--signal-text); }
+.page [data-hue="ion"] { --hue: var(--ion); --hue-text: var(--ion-text); }
+.page [data-hue="pollen"] { --hue: var(--pollen); --hue-text: var(--pollen-text); }
+.page [data-hue="moss"] { --hue: var(--moss); --hue-text: var(--moss-text); }
+.page [data-hue="tide"] { --hue: var(--tide); --hue-text: var(--tide-text); }
+
+/* ---------- Layout ---------- */
+
+.chapter {
+  position: relative;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: clamp(96px, 16vh, 168px) var(--gutter);
+  display: grid;
+  gap: var(--space-12);
+}
+
+.copy {
+  max-width: 680px;
+}
+
+@media (min-width: 900px) {
+  .split {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+}
+
+/* ---------- 00 · Hero ---------- */
+
+.hero {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  gap: var(--space-8);
+  padding: 120px var(--gutter) 96px;
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: 1.15fr 1fr;
+    align-items: center;
+  }
+}
+
+.heroTitle {
+  font: var(--text-display-xl);
+  letter-spacing: var(--tracking-display-xl);
+  font-size: clamp(40px, 7vw, 84px);
+  line-height: 0.98;
+  margin-bottom: var(--space-6);
+  text-wrap: balance;
+}
+
+.heroAccent {
+  color: var(--signal-text);
+}
+
+.heroMark {
+  position: relative;
+  justify-self: center;
+  width: min(78vw, 440px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.heroMarkSvg {
+  width: 74%;
+  height: auto;
+  filter: drop-shadow(0 18px 40px rgba(240, 100, 58, 0.25));
+  overflow: visible;
+}
+
+.heroOrbitOuter,
+.heroOrbitInner {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+}
+
+.heroOrbitOuter {
+  inset: 0;
+  border-style: dashed;
+  animation: spin 90s linear infinite;
+}
+
+.heroOrbitOuter::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pollen);
+  box-shadow: var(--halo-pollen);
+}
+
+.heroOrbitInner {
+  inset: 14%;
+  border-color: var(--glass-edge);
+}
+
+.scrollCue {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-6);
+  transform: translateX(-50%);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.scrollCue svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: nudge 2.4s var(--ease) infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes nudge {
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+/* ---------- 01 · At rest ---------- */
+
+.drift {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  border: 1px dashed var(--line);
+}
+
+.driftCard {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  animation: wander 9s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i) * -1.7s);
+}
+
+.driftCard:nth-child(odd) {
+  animation-duration: 11s;
+  rotate: -1.2deg;
+}
+
+.driftCard:nth-child(3n) {
+  rotate: 1.4deg;
+}
+
+.driftCard strong {
+  font: var(--text-heading);
+}
+
+.driftNote {
+  color: var(--ink-muted);
+  font: var(--text-quote);
+}
+
+@keyframes wander {
+  from {
+    translate: -3px 2px;
+  }
+  to {
+    translate: 4px -3px;
+  }
+}
+
+/* ---------- 02 · A new force ---------- */
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-6);
+}
+
+.compareCard {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.compareSvg {
+  width: 100%;
+  max-height: 160px;
+  overflow: visible;
+}
+
+.compareCard figcaption {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.compareCard figcaption strong {
+  font: var(--text-title);
+  letter-spacing: var(--tracking-title);
+  margin-top: var(--space-2);
+}
+
+.compareCard figcaption span:last-child {
+  color: var(--ink-muted);
+}
+
+.blueRing {
+  fill: none;
+  stroke: var(--ion);
+  stroke-width: 1.5;
+}
+
+.blueBody {
+  fill: none;
+  stroke: var(--ion-text);
+  stroke-width: 1.5;
+}
+
+.blueSat {
+  fill: var(--ion);
+  filter: drop-shadow(0 0 6px var(--ion));
+}
+
+.stillRing {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+}
+
+.stillBody {
+  fill: var(--surface-raised);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+.stillSat {
+  fill: var(--line-strong);
+}
+
+.bridge {
+  font: var(--text-idea);
+  font-size: clamp(20px, 2.6vw, 26px);
+  line-height: 1.4;
+  max-width: 40ch;
+  padding-left: var(--space-6);
+  border-left: 2px solid var(--signal);
+}
+
+/* ---------- 03 · Gravity ---------- */
+
+.gravity {
+  --p: 1;
+  position: relative;
+  height: 320vh;
+}
+
+.gravitySticky {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 88px var(--gutter) var(--space-8);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-6);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .gravitySticky {
+    grid-template-columns: minmax(300px, 0.85fr) 1.15fr;
+    grid-template-rows: none;
+  }
+}
+
+.captions {
+  display: grid;
+}
+
+.caption {
+  grid-area: 1 / 1;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 420ms var(--ease), transform 420ms var(--ease);
+  pointer-events: none;
+}
+
+.gravity[data-stage="1"] .caption[data-step="1"],
+.gravity[data-stage="2"] .caption[data-step="2"],
+.gravity[data-stage="3"] .caption[data-step="3"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.stage {
+  --q: clamp(0, var(--p), 1);
+  position: relative;
+  justify-self: center;
+  width: min(84vw, 560px, 62dvh);
+  aspect-ratio: 1;
+  container-type: size;
+}
+
+.stageSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.orbitOuter,
+.orbitInner {
+  fill: none;
+  stroke-width: 0.35;
+  opacity: var(--q);
+}
+
+.orbitOuter {
+  stroke: var(--line-strong);
+  stroke-dasharray: 0.8 1.6;
+}
+
+.orbitInner {
+  stroke: var(--moss);
+}
+
+.stageSpin {
+  transform-origin: 0 0;
+  animation: spin 24s linear infinite;
+  opacity: var(--q);
+}
+
+.stageMoon {
+  fill: var(--pollen);
+}
+
+.planet {
+  fill: var(--tide);
+  transform: scale(calc(0.55 + var(--q) * 0.45));
+  transition: transform 120ms linear;
+}
+
+.planetBand {
+  fill: none;
+  stroke: var(--moss);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: calc(0.2 + var(--q) * 0.8);
+}
+
+.planetLabel {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 14cqmin);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  color: var(--tide-text);
+  opacity: var(--q);
+}
+
+/* Each body slides from its scattered spot (--sx, --sy) to its orbit (--ox, --oy). */
+.body3 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  transform: translate(-50%, -50%)
+    translate(
+      calc((var(--sx) * (1 - var(--q)) + var(--ox) * var(--q)) * 1cqmin),
+      calc((var(--sy) * (1 - var(--q)) + var(--oy) * var(--q)) * 1cqmin)
+    )
+    rotate(calc((1 - var(--q)) * var(--sx) * 0.3deg));
+  opacity: calc(0.55 + var(--q) * 0.45);
+}
+
+.bodyName {
+  font: 500 13px/16px var(--font-sans);
+}
+
+@media (max-width: 600px) {
+  .planetLabel {
+    display: none;
+  }
+
+  .body3 {
+    padding: 4px 7px;
+    scale: 0.82;
+  }
+
+  .bodyName {
+    font-size: 12px;
+  }
+}
+
+/* ---------- 04 · Realms ---------- */
+
+.realms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-6);
+}
+
+.realm {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+.realm img {
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--space-2);
+}
+
+.realm h3 {
+  font: var(--text-title);
+  letter-spacing: var(--tracking-title);
+}
+
+.realm > p:last-child {
+  color: var(--ink-muted);
+}
+
+.realmPeople {
+  background: var(--hearth);
+  border: 1px solid var(--hearth-edge);
+  border-radius: var(--radius-xl);
+}
+
+.realmPeople :global(.in-label) {
+  color: var(--signal-text);
+}
+
+.realmPeople blockquote {
+  font: var(--text-quote);
+  padding-top: var(--space-3);
+  border-top: 3px double var(--walnut);
+}
+
+.realmAgent :global(.in-label) {
+  color: var(--ion-text);
+}
+
+.realmAgent {
+  border-radius: var(--radius-md);
+}
+
+.monoLine {
+  font: var(--text-mono);
+  color: var(--ion-text);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--ion-wash);
+  border-radius: var(--radius-sm);
+  background: var(--ion-wash);
+}
+
+.realmOrg :global(.in-label) {
+  color: var(--tide-text);
+}
+
+.orgLine {
+  font: var(--text-heading);
+  color: var(--moss-text);
+}
+
+/* ---------- 05 · Ask ---------- */
+
+.askStage {
+  position: relative;
+  padding: var(--space-8) var(--space-4);
+  border-radius: var(--radius-xl);
+  display: grid;
+  place-items: center;
+}
+
+.askStage::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 200px;
+  left: 10%;
+  top: 10%;
+  border-radius: var(--radius-pill);
+  background: var(--signal);
+  filter: blur(60px);
+  opacity: 0.25;
+  z-index: -1;
+}
+
+/* ---------- 06 · Velocity ---------- */
+
+.chart {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+.chartSvg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.tick {
+  stroke: var(--line);
+  stroke-dasharray: 2 4;
+}
+
+.tickLabel {
+  font: var(--text-label);
+  font-size: 9px;
+  letter-spacing: var(--tracking-label);
+  fill: var(--ink-muted);
+  text-transform: uppercase;
+}
+
+.axis {
+  stroke: var(--line-strong);
+}
+
+.burst,
+.momentum {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.burst {
+  stroke: var(--line-strong);
+  stroke-width: 2.5;
+}
+
+.momentum {
+  stroke: var(--moss);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 4px 10px var(--moss-wash));
+}
+
+.momentumDot {
+  fill: var(--moss);
+}
+
+.page[data-motion="on"] .chart .burst,
+.page[data-motion="on"] .chart .momentum {
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.8s var(--ease) 200ms;
+}
+
+.page[data-motion="on"] .chart .momentum {
+  transition-delay: 900ms;
+}
+
+.page[data-motion="on"] .chart .momentumDot {
+  opacity: 0;
+  transition: opacity 400ms var(--ease) 2.4s;
+}
+
+.page[data-motion="on"] .chart:global(.isIn) .burst,
+.page[data-motion="on"] .chart:global(.isIn) .momentum {
+  stroke-dashoffset: 0;
+}
+
+.page[data-motion="on"] .chart:global(.isIn) .momentumDot {
+  opacity: 1;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin-top: var(--space-4);
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.legend i {
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.legendBurst {
+  background: var(--line-strong);
+}
+
+.legendMomentum {
+  background: var(--moss);
+}
+
+.loop {
+  display: grid;
+  gap: var(--space-8);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .loop {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.loopFigure {
+  position: relative;
+  justify-self: center;
+  width: min(80vw, 340px);
+}
+
+.loopFigure svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.loopRing {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+.loopSpin {
+  transform-origin: 150px 150px;
+  animation: spin 14s linear infinite;
+}
+
+.loopSat {
+  fill: var(--ion);
+  filter: drop-shadow(0 0 6px var(--ion));
+}
+
+.loopNode {
+  fill: var(--surface-raised);
+  stroke: var(--hue);
+  stroke-width: 3;
+}
+
+.loopCore {
+  fill: var(--tide);
+  opacity: 0.9;
+}
+
+.loopCenter {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding-inline: calc(50% - 46px);
+  font-size: 10px;
+  line-height: 14px;
+  color: var(--on-bright);
+  pointer-events: none;
+}
+
+.loopList {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.loopList li {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.loopList strong {
+  font: var(--text-heading);
+  font-size: 18px;
+}
+
+.loopList p {
+  color: var(--ink-muted);
+}
+
+/* ---------- 07 · Close ---------- */
+
+.close {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: var(--space-8);
+  padding: 120px var(--gutter);
+}
+
+.closeMark {
+  position: relative;
+  width: min(56vw, 240px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.closeMarkSvg {
+  width: 80%;
+  overflow: visible;
+}
+
+.closeHalo {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.closeHalo circle {
+  fill: none;
+  stroke: var(--moss);
+  stroke-width: 1.5;
+  stroke-dasharray: 604;
+  stroke-dashoffset: 604;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.page[data-motion="on"] .closeMark:global(.isIn) .closeHalo circle,
+.page:not([data-motion="on"]) .closeHalo circle {
+  stroke-dashoffset: 0;
+  filter: drop-shadow(0 0 10px var(--moss));
+  transition: stroke-dashoffset 2.4s var(--ease) 300ms;
+}
+
+.closeCopy {
+  display: grid;
+  justify-items: center;
+}
+
+.closeTitle {
+  font: var(--text-display-xl);
+  letter-spacing: var(--tracking-display-xl);
+  font-size: clamp(36px, 6vw, 72px);
+  line-height: 1;
+  margin-bottom: var(--space-6);
+  text-wrap: balance;
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+/* ---------- Reduced motion: fades only, no drift ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .heroOrbitOuter,
+  .scrollCue svg,
+  .driftCard,
+  .stageSpin,
+  .loopSpin {
+    animation: none;
+  }
+
+  .page[data-motion="on"] [data-reveal] {
+    transform: none;
+  }
+
+  .caption {
+    transform: none;
+  }
+}
