@@ -88,7 +88,8 @@ export async function GET(request: NextRequest) {
 
   // Set the session cookie
   const isProduction = process.env.NODE_ENV === 'production';
-  const response = NextResponse.redirect(new URL('/', request.url));
+  // The public base URL: behind a proxy, request.url is the server's own bind address.
+  const response = NextResponse.redirect(new URL('/', process.env.MEMBER_APP_BASE_URL || request.url));
 
   response.cookies.set({
     name: getSessionCookieName(),

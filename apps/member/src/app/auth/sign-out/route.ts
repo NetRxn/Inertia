@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
   }
 
   // Clear the cookie and redirect
-  const response = NextResponse.redirect(new URL('/login', request.url), { status: 303 });
+  // The public base URL: behind a proxy, request.url is the server's own bind address.
+  const response = NextResponse.redirect(new URL('/login', process.env.MEMBER_APP_BASE_URL || request.url), { status: 303 });
   response.cookies.delete(getSessionCookieName());
 
   return response;

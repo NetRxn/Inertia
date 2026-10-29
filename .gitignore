@@ -248,3 +248,6 @@ scripts/discovery-rehearsal/cold-fixture.json
 
 # Brainstorm companion scratch files
 .superpowers/
+
+# Docker Compose database dumps
+backups/
