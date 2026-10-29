@@ -69,7 +69,9 @@ function rejectionMessage(message:Record<string,unknown>,version:string,operatio
   }
   const caseSource=version==="dfw-native-case-work-v1"&&["source_context","source_links","source_capture","source_propose","source_receipt","source_review","source_settlement"].includes(operation);
   if(version==="dfw-general-enrichment-v1"||caseSource){
-    if(operation==="capture"&&authenticated&&keys(message,["type","ok","error","details"])&&message.error==="capture_failed"){
+    if(((version==="dfw-general-enrichment-v1"&&operation==="capture")||
+        (version==="dfw-native-case-work-v1"&&operation==="source_capture"))
+        &&authenticated&&keys(message,["type","ok","error","details"])&&message.error==="capture_failed"){
       const d=message.details;
       if(object(d)&&keys(d,["code","http_status"])&&
         ((d.code==="http_status"&&Number.isInteger(d.http_status)&&Number(d.http_status)>=400&&Number(d.http_status)<=599)||
