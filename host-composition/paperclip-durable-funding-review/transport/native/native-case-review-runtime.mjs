@@ -1,3 +1,4 @@
+import {reviewContextSelection} from './native-review-paging.mjs';
 /** Origin-bound adapter to the existing independent review/fence composition. No lifecycle. */
 import fs from'node:fs/promises';import{constants}from'node:fs';import{createHash}from'node:crypto';import{entityHash as hash}from'./native-entity-context.mjs';import{nativeDomainReviewAssignment}from'./native-domain-review.mjs';import{createNativeReviewStdio}from'./native-review-stdio.mjs';
 const deny=()=>{throw Error('native_case_review_scope_denied');},object=v=>v&&typeof v==='object'&&!Array.isArray(v),id=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\s\x00-\x1f\x7f]/.test(v),exact=(v,keys)=>object(v)&&Object.keys(v).sort().join()===keys.sort().join(),clone=v=>structuredClone(v),freeze=v=>{if(v&&typeof v==='object'){for(const c of Object.values(v))freeze(c);Object.freeze(v);}return v;};
@@ -31,7 +32,7 @@ export async function createNativeCaseReviewRuntime({binding,native,stdioFactory
   async caseTask(request,signal){signal?.throwIfAborted();const f=await current(s,input);if(!exact(request,['case_binding_id'])||request.case_binding_id!==f.key)deny();signal?.throwIfAborted();return{company_id:binding.companyId,project_id:c.projectId,issue_id:f.issue.id,parent_id:c.rootIssueId,assignee_agent_id:c.producer.agentId,origin_kind:f.issue.originKind,origin_id:f.issue.originId,hidden:Boolean(f.issue.hiddenAt),status:f.issue.status,active_run_id:input.actor.runId,root_hidden:Boolean(f.root.hiddenAt),root_status:f.root.status};}
  };}
  return Object.freeze({bindingHash:hash(c),scopes:[scope],preparationReviewEnabled:true,matches:issue=>!!caseId(issue),authorize:decide,
-  async readReviewContext(s,input){return stdio.call('context',{},await callbacks(s,input));},async admitReview(s,input,artifact){return stdio.call('admit',artifact,await callbacks(s,input));},async readReviewReceipt(s,input){return stdio.call('receipt',{},await callbacks(s,input));},
+  async readReviewContext(s,input,selection={}){const view=reviewContextSelection(selection),result=await stdio.call(view?'artifact_view':'context',view??{},await callbacks(s,input));await current(s,input);return result;},async admitReview(s,input,artifact){return stdio.call('admit',artifact,await callbacks(s,input));},async readReviewReceipt(s,input){return stdio.call('receipt',{},await callbacks(s,input));},
   async acquireFence(s,input){const lease=await stdio.call('fence',{},await callbacks(s,input));return Object.freeze({...lease,async assertAlive(){await current(s,input);await lease.assertAlive();await current(s,input);}});}
  });
 }

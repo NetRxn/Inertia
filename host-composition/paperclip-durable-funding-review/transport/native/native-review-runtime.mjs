@@ -1,3 +1,4 @@
+import {reviewContextSelection} from './native-review-paging.mjs';
 import {templateMatches} from './native-portfolio-scope.mjs';
 /** Trusted native/private adapter. Native services retain identity, grants and
  * lifecycle authority. No model-selected paths, credentials, routing or wakes.
@@ -91,7 +92,7 @@ export async function createNativeReviewRuntime({bindings,native,stdioFactory}={
   }
   return Object.freeze({preparationReviewEnabled:entries.some(e=>e.allCurrentTargets),scopes:Object.freeze(entries.map(e=>e.scope)),
     authorize:async(scope,input,toolName,args,options)=>decide(entry(scope),input,toolName,args,options),
-    async readReviewContext(scope,input){const e=entry(scope);return e.stdio.call('context',{},await callbacks(e,input));},
+    async readReviewContext(scope,input,selection={}){const e=entry(scope),view=reviewContextSelection(selection);if(view&&(e.privatePreparation||!e.scope.wholePacketReview))fail('native_domain_review_artifact_view_unavailable');const result=await e.stdio.call(view?'artifact_view':'context',view??{},await callbacks(e,input));await current(e,input);return result;},
     async admitReview(scope,input,artifact){const e=entry(scope);return e.stdio.call('admit',artifact,await callbacks(e,input));},
     async readReviewReceipt(scope,input){const e=entry(scope);return e.stdio.call('receipt',{},await callbacks(e,input));},
     async acquireFence(scope,input){

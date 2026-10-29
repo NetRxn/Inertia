@@ -1,3 +1,4 @@
+import {reviewContextSelection,packetArtifactView} from './native-review-paging.mjs';
 import{createNativeCaseReviewRouter}from'./native-case-review-router.mjs';
 import{preparationBinding,preparationArtifact,preparationReceipt,preparationItemSchema}from'./native-preparation-review.mjs';
 import{gapBinding,gapArtifact,gapReceipt}from'./native-gap-review.mjs';
@@ -56,14 +57,15 @@ export function createNativeDomainReviewComposition({required=false}={}) {
       const result=await installed.admitReview(scope,input,artifact);checkBinding(scope,input,result?.binding);
       if(!preparationReceipt(result,artifact))fail('native_preparation_receipt_mismatch');return result;
     },
-    async reviewContext(input){
+    async reviewContext(input,selection={}){
       assertReady();if(!isBound(input?.issue))return null;
       const scope=scopeFor(input.issue);
       nativeDomainReviewAssignment(scope,input);
-      if(await installed.authorize(scope,input,toolContext,{},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
-      const result=await installed.readReviewContext(scope,input);
+      const view=reviewContextSelection(selection);if(view&&!scope.wholePacketReview)fail('native_domain_review_artifact_view_unavailable');const args=view?{artifact_view:view}:{};
+      if(await installed.authorize(scope,input,toolContext,args,{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
+      const result=await installed.readReviewContext(scope,input,args);
       checkBinding(scope,input,result?.binding);
-      if(!result.context||typeof result.context!=='object'||Buffer.byteLength(JSON.stringify(result))>1024*1024)fail('native_domain_review_context_invalid');
+      if(Buffer.byteLength(JSON.stringify(result))>1024*1024||(view?!packetArtifactView(result,view):!result.context||typeof result.context!=='object'))fail('native_domain_review_context_invalid');
       return result;
     },
     async admitReview(input,artifact){
