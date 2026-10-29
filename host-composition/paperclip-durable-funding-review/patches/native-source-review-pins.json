@@ -1,0 +1,57 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/services/native-runtime/native-private-preparation.mjs": "a1822f27c5505f31f8d6a1480796055d66762917c53eed2014081abe3146c677",
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e",
+    "dist/services/native-runtime/native-entity-context.mjs": "b366ce5f6c5a36bfdb1c53b7ed0dc1311f98283c0be63659fb83049935ccf368"
+  },
+  "files": {
+    "dist/services/issues.js": {
+      "base_sha256": "398403ea0e6761f39cb44f9e1cbd062288e316e9b80581903ed84cc3a005edfc",
+      "candidate_sha256": "2f28cf44f57ed95bde15ac542e3906cc61922b0ccd2d661e19911b62c4f795e4"
+    },
+    "dist/services/native-runtime/assigned-mcp-tools.js": {
+      "base_sha256": "77cc7c6e604b5c7349ed020355b6bf8906d9b1be6fa4c8c3f809edb33ca76041",
+      "candidate_sha256": "4c2197bbf17deaff347c266a060b2f766e79421b2b7ee59d1e9cf535c480a2cf"
+    },
+    "dist/services/native-runtime/native-case-work-tools.mjs": {
+      "base_sha256": "3e52c84f67d82923a13bdbd9d62dd83ebde6ef44925236ff11cc850cc42d2bd3",
+      "candidate_sha256": "dddc735c4d19caba897a9391b4c02cfc91631ea097e283c7eda74ff85bc921d7"
+    },
+    "dist/services/native-runtime/native-session-executor.js": {
+      "base_sha256": "b82ff2c95a3a424f260b218faf0f62ef4c443a43336cfe1ab3dc78367289138d",
+      "candidate_sha256": "2fff957c75bb1bb63752d6570ee996b6917d95faec76b10eb4d8ba0220c2290f"
+    },
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "base_sha256": "5b1725936776ed758100fd9b7ff46be77df9a0ff546fed11e00b21b352eed19c",
+      "candidate_sha256": "42d2bb69456369ccda83d2142ab730d6be63a6368bf0075194dcf8b6faa8cab0"
+    },
+    "dist/services/native-runtime/status-decision-committer.js": {
+      "base_sha256": "3ddf8d135bde75519fb94330ca25380f6f4cf55edbe04e6cc4565f6162c8efd0",
+      "candidate_sha256": "5efddc5b70cb60563c6bdde0d02776de1462c2b725810f244ebd2d6bf40562e4"
+    },
+    "dist/services/plugin-tool-registry.js": {
+      "base_sha256": "5e01de6dacc298563ce8f184d43f02695b1a2e47d2dc4959a31abb1e52d49acf",
+      "candidate_sha256": "4fd9b2233a4982c244ea270f9f9eb04a61a6a65dbbfc921098117cca9e5710fc"
+    },
+    "dist/services/tool-gateway.js": {
+      "base_sha256": "d56e7ce2e610ca012df70ffda1526b3f95c79076fc1c7a0c383fe1c854626f45",
+      "candidate_sha256": "4be446d0b5d67b53f6ec872506c835f5a824731205e815f2846cc51125929d00"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-inertia-execution-policy.mjs": {
+      "candidate_sha256": "1ce0e0304ad4c50c744de783392eaa27e33f3d78ccefe99af83e5980e07c8e17"
+    },
+    "dist/services/native-runtime/native-source-review.mjs": {
+      "candidate_sha256": "6ba6afadb86827f6f2eec3b0ababd454ea3175eba0fce2ccb51233bb1b60fadd"
+    }
+  },
+  "patch": "native-source-review.patch",
+  "patch_sha256": "6a00773d6523ce01e6a3ce4b8e50a3f4680392b6167d503440c29db02785a94f"
+}
