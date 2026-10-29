@@ -83,7 +83,7 @@ function Item({ item }: { item: TimelineItem }) {
         {item.detail ? <p className={cardStyles.meta}>{item.detail}</p> : null}
         <div className={cardStyles.chips}>
           <time className="in-mono" dateTime={item.at}>{formatTime(item.at)}</time>
-          {item.initiative ? <span className="in-chip in-chip--moss">{item.initiative.title}</span> : null}
+          {item.initiative ? <span className="in-chip in-chip--moss">{item.initiative.title}</span> : item.project ? <span className="in-chip in-chip--tide">{item.project}</span> : null}
         </div>
       </div>
     </li>

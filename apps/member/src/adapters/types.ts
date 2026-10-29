@@ -1,3 +1,5 @@
+import type { FundingCase } from '../funding/cases';
+
 export type SourceRef = {
   kind:
     | 'meeting'
@@ -91,6 +93,8 @@ export interface AgentTask {
   initiativeId: string | null;
   title: string;
   agentName: string | null;
+  /** The engine's project it belongs to, when it says. */
+  project?: string | null;
   status: 'queued' | 'running' | 'blocked' | 'done';
   updatedAt: string;
   url: string | null;
@@ -115,6 +119,8 @@ export interface WorkSource {
   claim(taskId: string, memberExternalId: string): Promise<ClaimResult>;
   // The rest is optional: an engine that can't do these simply leaves them out.
   listAgentTasks?(): Promise<AgentTask[]>;
+  /** Grant cases the funding workflow is preparing in the engine, read-only. */
+  listFundingCases?(): Promise<FundingCase[]>;
   /** Agent tasks finished in the period, for the recap. */
   agentCompletionsBetween?(from: Date, to: Date): Promise<number>;
   createInitiative?(input: { title: string; summary: string; adopted: boolean }): Promise<{ id: string }>;

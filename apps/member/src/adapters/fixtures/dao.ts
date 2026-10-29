@@ -10,6 +10,7 @@ import type {
   FundingApplication,
   AgentTask,
 } from '../types';
+import type { FundingCase } from '../../funding/cases';
 
 export const FIXTURE_NOW = new Date('2026-10-24T15:00:00Z');
 
@@ -25,6 +26,8 @@ export interface FixtureData {
   applications: FundingApplication[];
   /** Agent work in the sample engine; optional so hand-built fixtures can leave it out. */
   agentTasks?: AgentTask[];
+  /** Grant cases the sample funding workflow is preparing. */
+  fundingCases?: FundingCase[];
 }
 
 /**
@@ -509,5 +512,11 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     opportunities,
     applications,
     agentTasks,
+    fundingCases: [
+      { id: 'case-1', title: 'Community Green Spaces grant', state: 'prepared', stateLabel: 'Prepared by agents', sourceUrl: 'https://grants.example.org/green-spaces', url: null, agentName: 'Grant Writer', updatedAt: relativeDate(-5 * HOUR) },
+      { id: 'case-2', title: 'Youth Digital Skills partner program', state: 'agent-review', stateLabel: 'In agent review', sourceUrl: 'https://grants.example.org/digital-skills', url: null, agentName: 'Diligence', updatedAt: relativeDate(-1 * DAY) },
+      { id: 'case-3', title: 'Neighborhood arts mini-grants', state: 'preparing', stateLabel: 'Being prepared', sourceUrl: 'https://grants.example.org/arts', url: null, agentName: 'Grant Writer', updatedAt: relativeDate(-2 * HOUR) },
+      { id: 'case-4', title: 'Open-source civic tools fund', state: 'queued', stateLabel: 'Queued', sourceUrl: 'https://grants.example.org/civic-tools', url: null, agentName: null, updatedAt: relativeDate(-3 * DAY) },
+    ],
   };
 }

@@ -2,6 +2,7 @@ import { asc, eq, inArray } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { members, workEvents } from '../db/schema';
 import type { AgentTask, ClaimResult, HumanTask, Initiative, NewTask, TaskKind, WorkSource } from './types';
+import { caseState, caseTitle, isFundingCase, officialSource, type FundingCase } from '../funding/cases';
 
 export type PaperclipConfig = {
   /** Base URL of the Paperclip server, e.g. https://paperclip.example.org */
@@ -36,6 +37,7 @@ export function paperclipConfig(env: Record<string, string | undefined>): Paperc
 type PcGoal = { id: string; title: string; description: string | null; level: string; status: 'planned' | 'active' | 'achieved' | 'cancelled' };
 type PcLabel = { id: string; name: string };
 type PcAgent = { id: string; name: string };
+type PcProject = { id: string; name?: string | null; goalId?: string | null; goalIds?: string[] };
 type PcIssue = {
   id: string;
   identifier: string | null;
@@ -50,6 +52,7 @@ type PcIssue = {
   labelIds?: string[];
   completedAt: string | null;
   updatedAt: string;
+  unblockDescriptor?: { owner?: { userId?: string; agentId?: string } | string | null; action?: string } | null;
 };
 
 /** How members map to Paperclip users. Defaults to the member's work user id in the app database. */
@@ -153,21 +156,22 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     return call<PcIssue[]>(`${company}/issues`);
   }
 
-  async function goalOf(issue: PcIssue, projectGoals: Map<string, string | null>): Promise<string | null> {
-    if (issue.goalId) return issue.goalId;
-    if (!issue.projectId) return null;
-    if (!projectGoals.has(issue.projectId)) {
-      try {
-        const project = await call<{ goalId?: string | null; goalIds?: string[] }>(`/api/projects/${encodeURIComponent(issue.projectId)}`);
-        projectGoals.set(issue.projectId, project.goalId ?? project.goalIds?.[0] ?? null);
-      } catch {
-        projectGoals.set(issue.projectId, null);
-      }
-    }
-    return projectGoals.get(issue.projectId) ?? null;
+  type ProjectInfo = { goalId: string | null; name: string | null };
+  type Projects = Map<string, ProjectInfo>;
+
+  /** The company's projects, read once per listing. An engine that can't list them leaves work ungrouped. */
+  async function listProjects(): Promise<Projects> {
+    const projects = await call<PcProject[]>(`${company}/projects`).catch(() => [] as PcProject[]);
+    return new Map(projects.map((p) => [p.id, { goalId: p.goalId ?? p.goalIds?.[0] ?? null, name: p.name?.trim() || null }]));
   }
 
-  async function toHumanTask(issue: PcIssue, projectGoals: Map<string, string | null>, localClaims: Map<string, string>): Promise<HumanTask> {
+  async function goalOf(issue: PcIssue, projects: Projects): Promise<string | null> {
+    if (issue.goalId) return issue.goalId;
+    if (!issue.projectId) return null;
+    return projects.get(issue.projectId)?.goalId ?? null;
+  }
+
+  async function toHumanTask(issue: PcIssue, projects: Projects, localClaims: Map<string, string>): Promise<HumanTask> {
     const description = issue.description ?? '';
     const kind = description.match(KIND_PREFIX)?.[1]?.toLowerCase() as TaskKind | undefined;
     const minutes = description.match(MINUTES)?.[1];
@@ -175,7 +179,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     const done = issue.status === 'done';
     return {
       id: issue.id,
-      initiativeId: (await goalOf(issue, projectGoals)) ?? '',
+      initiativeId: (await goalOf(issue, projects)) ?? '',
       title: issue.title,
       kind,
       estimateMinutes: minutes ? Number(minutes) : null,
@@ -207,29 +211,47 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     },
 
     async listHumanTasks(): Promise<HumanTask[]> {
-      const [labelId, issues] = await Promise.all([ensureHumanLabel(), listIssues()]);
-      const projectGoals = new Map<string, string | null>();
+      const [labelId, issues, projects] = await Promise.all([ensureHumanLabel(), listIssues(), listProjects()]);
       const tasks = issues.filter((i) => i.status !== 'cancelled' && isHuman(i, labelId));
       const localClaims = (await mapping.inertiaClaims?.(tasks.filter((i) => !i.assigneeUserId).map((i) => i.id))) ?? new Map<string, string>();
-      return Promise.all(tasks.map((i) => toHumanTask(i, projectGoals, localClaims)));
+      return Promise.all(tasks.map((i) => toHumanTask(i, projects, localClaims)));
     },
 
     async listAgentTasks(): Promise<AgentTask[]> {
-      const [labelId, issues, agents] = await Promise.all([ensureHumanLabel(), listIssues(), call<PcAgent[]>(`${company}/agents`).catch(() => [] as PcAgent[])]);
+      const [labelId, issues, agents, projects] = await Promise.all([ensureHumanLabel(), listIssues(), call<PcAgent[]>(`${company}/agents`).catch(() => [] as PcAgent[]), listProjects()]);
       const names = new Map(agents.map((a) => [a.id, a.name]));
-      const projectGoals = new Map<string, string | null>();
       const work = issues.filter((i) => i.status !== 'cancelled' && !isHuman(i, labelId) && !i.assigneeUserId);
       return Promise.all(
         work.map(async (i) => ({
           id: i.id,
-          initiativeId: await goalOf(i, projectGoals),
+          initiativeId: await goalOf(i, projects),
           title: i.title,
+          project: i.projectId ? projects.get(i.projectId)?.name ?? null : null,
           agentName: i.assigneeAgentId ? names.get(i.assigneeAgentId) ?? 'An agent' : null,
           status: agentStatus(i.status),
           updatedAt: i.completedAt ?? i.updatedAt,
           url: issueUrl(i),
         })),
       );
+    },
+
+    async listFundingCases(): Promise<FundingCase[]> {
+      const [issues, agents] = await Promise.all([listIssues(), call<PcAgent[]>(`${company}/agents`).catch(() => [] as PcAgent[])]);
+      const names = new Map(agents.map((a) => [a.id, a.name]));
+      return issues.flatMap((i) => {
+        const state = isFundingCase(i.description) ? caseState(i) : null;
+        if (!state) return [];
+        return [{
+          id: i.id,
+          title: caseTitle(i.title),
+          state: state.state,
+          stateLabel: state.label,
+          sourceUrl: officialSource(i.description),
+          url: issueUrl(i),
+          agentName: i.assigneeAgentId ? names.get(i.assigneeAgentId) ?? null : null,
+          updatedAt: i.completedAt ?? i.updatedAt,
+        }];
+      });
     },
 
     async completionsBetween(from, to) {

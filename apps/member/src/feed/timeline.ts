@@ -31,6 +31,8 @@ export type TimelineItem = {
   detail: string | null;
   /** Null reads as general work. */
   initiative: { id: string; title: string } | null;
+  /** The engine's project, for agent work outside the organization's initiatives. */
+  project?: string | null;
   href: string | null;
   source: SourceRef;
 };
@@ -76,7 +78,7 @@ function events(data: TimelineInput): TimelineItem[] {
 
   for (const task of data.agentTasks) {
     const kind = task.status === 'done' ? 'agent-done' : task.status === 'blocked' ? 'agent-blocked' : task.status === 'queued' ? 'agent-queued' : 'agent-started';
-    items.push({ id: `${kind}:${task.id}`, kind, at: task.updatedAt, actor: { kind: 'agent', name: task.agentName }, title: task.title, detail: null, initiative: initiativeOf(task.initiativeId), href: task.url, source: { kind: 'task', id: task.id, title: task.title, ...(task.url ? { url: task.url } : {}) } });
+    items.push({ id: `${kind}:${task.id}`, kind, at: task.updatedAt, actor: { kind: 'agent', name: task.agentName }, title: task.title, detail: null, initiative: initiativeOf(task.initiativeId), project: task.project ?? null, href: task.url, source: { kind: 'task', id: task.id, title: task.title, ...(task.url ? { url: task.url } : {}) } });
   }
 
   for (const meeting of data.meetings) {

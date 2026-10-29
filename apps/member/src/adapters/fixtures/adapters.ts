@@ -46,6 +46,10 @@ export function createFixtureAdapters(data?: FixtureData): Adapters {
   const work: WorkSource = {
     engine: { name: 'Paperclip (sample)', url: null, readOnly: true },
 
+    async listFundingCases() {
+      return [...(fixtureData.fundingCases ?? [])];
+    },
+
     async listAgentTasks() {
       return [...(fixtureData.agentTasks ?? [])];
     },

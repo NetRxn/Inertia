@@ -97,4 +97,12 @@ describe('buildTimeline', () => {
     }), { limit: 10 });
     expect(items[0]).toMatchObject({ at: at(10), detail: 'Vote open until Fri, Oct 30' });
   });
+
+  it('names the engine project for agent work outside the initiatives', () => {
+    const { items } = buildTimeline(input({
+      agentTasks: [{ id: 'a-1', initiativeId: 'g-root', title: 'FUTO Grants', agentName: 'Codex Preprod Beta', project: 'Shared organization knowledge', status: 'blocked', updatedAt: at(21), url: null }],
+    }), { limit: 10 });
+    expect(items[0]).toMatchObject({ initiative: null, project: 'Shared organization knowledge' });
+  });
 });
+

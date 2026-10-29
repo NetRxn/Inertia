@@ -5,7 +5,8 @@ import { getDb } from '../../../../db/client';
 import { isAdmin } from '../../../../org/members';
 import { pursuedOpportunities } from '../../../../work/pursue';
 import { PursueButton } from '../../../../components/PursueButton';
-import { formatDay } from '../../../../components/cards/format';
+import { ago, formatDay } from '../../../../components/cards/format';
+import type { FundingCase } from '../../../../funding/cases';
 import { ACTIONABLE_ROUTES, deadlineLabel, deadlineTime, routeLabel, safeHttpUrl } from '../../../../funding/funding';
 import cardStyles from '../../../../components/cards/cards.module.css';
 import styles from '../../sections.module.css';
@@ -96,6 +97,45 @@ function OpportunityRow({ opportunity, application, canPursue, pursued }: { oppo
   );
 }
 
+const CASE_CHIP: Record<FundingCase['state'], string> = {
+  prepared: 'in-chip--moss',
+  'needs-person': 'in-chip--signal',
+  'agent-review': 'in-chip--tide',
+  preparing: 'in-chip--tide',
+  waiting: 'in-chip--pollen',
+  queued: '',
+};
+// Prepared cases first, then the ones that need a person, then the rest by recency.
+const CASE_ORDER: FundingCase['state'][] = ['prepared', 'needs-person', 'agent-review', 'preparing', 'waiting', 'queued'];
+
+function CaseRow({ fundingCase, now }: { fundingCase: FundingCase; now: Date }) {
+  const sourceUrl = safeHttpUrl(fundingCase.sourceUrl);
+  const caseUrl = safeHttpUrl(fundingCase.url);
+  return (
+    <li id={`case-${fundingCase.id}`} className={`${cardStyles.stack} ${styles.target}`}>
+      <div className={cardStyles.chips}>
+        <span className={`in-chip ${CASE_CHIP[fundingCase.state]}`}>{fundingCase.stateLabel}</span>
+        <span className="in-mono">updated {ago(fundingCase.updatedAt, now)}</span>
+      </div>
+      <h3 className={cardStyles.itemTitle}>{fundingCase.title}</h3>
+      {fundingCase.state === 'prepared' ? <p className={cardStyles.meta}>Ready for a member to check. Nothing is sent without a person.</p> : null}
+      {fundingCase.agentName ? <p className={cardStyles.meta}>With {fundingCase.agentName}</p> : null}
+      <p className={cardStyles.chips}>
+        {sourceUrl ? (
+          <a href={sourceUrl} className={cardStyles.textLink} target="_blank" rel="noopener noreferrer">
+            Official page<span className="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        ) : null}
+        {caseUrl ? (
+          <a href={caseUrl} className={cardStyles.textLink} target="_blank" rel="noopener noreferrer">
+            Open the case<span className="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        ) : null}
+      </p>
+    </li>
+  );
+}
+
 function Group({ id, label, empty, children }: { id: string; label: string; empty: string; children: React.ReactNode[] }) {
   return (
     <section className={`in-glass ${cardStyles.card}`} aria-labelledby={id}>
@@ -114,10 +154,12 @@ export async function FundingContent() {
   // After the dynamic access above, so the page keeps a static shell.
   const now = new Date();
   const adapters = getAdapters();
-  const [opportunities, applications] = await Promise.all([
+  const [opportunities, applications, cases] = await Promise.all([
     adapters.funding.listOpportunities(),
     adapters.funding.listApplications(),
+    adapters.work.listFundingCases ? adapters.work.listFundingCases().catch(() => [] as FundingCase[]) : Promise.resolve([] as FundingCase[]),
   ]);
+  const sortedCases = [...cases].sort((a, b) => CASE_ORDER.indexOf(a.state) - CASE_ORDER.indexOf(b.state) || b.updatedAt.localeCompare(a.updatedAt));
 
   const programs = new Map(opportunities.map((o) => [o.id, o.program]));
   const applicationFor = new Map(applications.map((a) => [a.opportunityId, a]));
@@ -142,6 +184,11 @@ export async function FundingContent() {
       <Group id="funding-waiting" label="Waiting for members" empty="No application is waiting on members right now.">
         {applicationRows(waiting)}
       </Group>
+      {adapters.work.listFundingCases ? (
+        <Group id="funding-cases" label={`Grants the agents are preparing · ${cases.length}`} empty="The agents aren't preparing any grant cases right now.">
+          {sortedCases.map((c) => <CaseRow key={c.id} fundingCase={c} now={now} />)}
+        </Group>
+      ) : null}
       <Group id="funding-apply" label="Apply now" empty="Nothing the DAO can apply for right now.">
         {opportunityRows(applyNow)}
       </Group>

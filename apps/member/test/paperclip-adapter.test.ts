@@ -12,6 +12,7 @@ function fakePaperclip() {
     goals: [{ id: 'g-hack', title: 'HackFW 2026', description: null, level: 'company', status: 'active' }, { id: 'g-team', title: 'Team goal', description: null, level: 'team', status: 'active' }] as Record<string, unknown>[],
     issues: [] as Record<string, unknown>[],
     agents: [{ id: 'a-ceo', name: 'CEO' }],
+    projects: [] as Record<string, unknown>[],
   };
   let n = 0;
   const fetchImpl = (async (input: string | URL, init?: RequestInit) => {
@@ -25,7 +26,8 @@ function fakePaperclip() {
     if (p === '/api/companies/c1/labels' && method === 'POST') { const l = { id: `l${++n}`, name: body.name }; state.labels.push(l); return json(l, 201); }
     if (p === '/api/companies/c1/goals' && method === 'GET') return json(state.goals);
     if (p === '/api/companies/c1/goals' && method === 'POST') { const g = { id: `g${++n}`, ...body }; state.goals.push(g); return json(g, 201); }
-    if (p === '/api/companies/c1/projects' && method === 'POST') return json({ id: `p${++n}`, ...body }, 201);
+    if (p === '/api/companies/c1/projects' && method === 'GET') return json(state.projects);
+    if (p === '/api/companies/c1/projects' && method === 'POST') { const pr = { id: `p${++n}`, ...body }; state.projects.push(pr); return json(pr, 201); }
     if (p === '/api/companies/c1/agents') return json(state.agents);
     if (p === '/api/companies/c1/issues' && method === 'GET') return json(state.issues);
     if (p === '/api/companies/c1/issues' && method === 'POST') {
@@ -164,6 +166,31 @@ describe('Paperclip read-only', () => {
     const work = createPaperclipWorkSource({ ...config, url: 'https://pc.example.org' }, { fetchImpl: pc.fetchImpl, mapping });
     expect(work.engine?.url).toBe('https://paperclip.inertia.ing');
     expect((await work.listAgentTasks!())[0].url).toBe('https://paperclip.inertia.ing/INE/issues/INE-53');
+  });
+
+  it('names the project agent work belongs to, and finds its goal through the project', async () => {
+    const pc = fakePaperclip();
+    pc.state.projects.push({ id: 'p-know', name: 'Shared organization knowledge', goalId: 'g-root' });
+    pc.state.issues.push({ id: 'i9', identifier: 'INE-74', title: 'FUTO Grants', description: '', status: 'blocked', goalId: null, projectId: 'p-know', assigneeAgentId: 'a-ceo', assigneeUserId: null, labels: [], completedAt: null, updatedAt: '2026-10-29T23:13:00Z' });
+    const work = createPaperclipWorkSource({ url: 'https://pc.example.org', apiKey: 'key', companyId: 'c1', humanLabel: 'human', defaultAgentId: null, readOnly: true }, { fetchImpl: pc.fetchImpl, mapping });
+    expect(await work.listAgentTasks!()).toEqual([expect.objectContaining({ title: 'FUTO Grants', initiativeId: 'g-root', project: 'Shared organization knowledge', status: 'blocked' })]);
+  });
+
+  it('lists the funding workflow’s grant cases with their state, reading only', async () => {
+    const pc = fakePaperclip();
+    const brief = (url: string) => `Prepare preliminary funding case binding x from official source ${url}. Use funding_case_work.`;
+    pc.state.issues.push(
+      { id: 'i1', identifier: 'INE-74', title: 'FUTO Grants', description: brief('https://futo.tech/grants'), status: 'blocked', goalId: 'g-root', projectId: null, assigneeAgentId: 'a-ceo', assigneeUserId: null, labels: [], completedAt: null, updatedAt: '2026-10-29T23:13:00Z', unblockDescriptor: { owner: { agentId: 'a-beta' }, action: 'Independently review the corrected source proposal' } },
+      { id: 'i2', identifier: 'INE-75', title: 'Digital Freedom Fund Grants', description: brief('https://digitalfreedomfund.org/grants/'), status: 'in_progress', goalId: 'g-root', projectId: null, assigneeAgentId: null, assigneeUserId: null, labels: [], completedAt: null, updatedAt: '2026-10-29T22:00:00Z' },
+      { id: 'i3', identifier: 'INE-54', title: 'Reconcile scout results', description: 'Continue INTERNAL funding discovery reconciliation', status: 'done', goalId: 'g-root', projectId: null, assigneeAgentId: null, assigneeUserId: null, labels: [], completedAt: '2026-10-29T20:00:00Z', updatedAt: '2026-10-29T20:00:00Z' },
+    );
+    const config = paperclipConfig({ PAPERCLIP_URL: 'http://paperclip:3101', PAPERCLIP_PUBLIC_URL: 'https://paperclip.inertia.ing', PAPERCLIP_API_KEY: 'key', PAPERCLIP_COMPANY_ID: 'c1' })!;
+    const work = createPaperclipWorkSource({ ...config, url: 'https://pc.example.org' }, { fetchImpl: pc.fetchImpl, mapping });
+    expect(await work.listFundingCases!()).toEqual([
+      { id: 'i1', title: 'FUTO Grants', state: 'agent-review', stateLabel: 'In agent review', sourceUrl: 'https://futo.tech/grants', url: 'https://paperclip.inertia.ing/INE/issues/INE-74', agentName: 'CEO', updatedAt: '2026-10-29T23:13:00Z' },
+      { id: 'i2', title: 'Digital Freedom Fund Grants', state: 'preparing', stateLabel: 'Being prepared', sourceUrl: 'https://digitalfreedomfund.org/grants/', url: 'https://paperclip.inertia.ing/INE/issues/INE-75', agentName: null, updatedAt: '2026-10-29T22:00:00Z' },
+    ]);
+    expect(pc.calls.filter((c) => c.method !== 'GET')).toEqual([]);
   });
 
   it('treats a missing label as no human tasks rather than creating it', async () => {
