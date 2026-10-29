@@ -62,3 +62,32 @@ it('advertises the one-off sponsor identity and notice fields accepted by the cu
  const {caseWorkTool}=await import('../../src/case-work/host.js');const definitions:any=caseWorkTool.parametersSchema.$defs;
  expect(definitions.FieldAssertion.properties.field.enum).toEqual(expect.arrayContaining(['status','close_date','funder_sector']));
 });
+
+it('pages only the exact bound source proposal with a stable context hash',async()=>{
+ const f=fixture();await f.invoke('source_propose',sourceProposal);
+ await f.invoke('source_context',{view:'proposal',proposal_hash:proposal,offset:0,limit:32000},true);
+ await f.invoke('source_context',{view:'proposal',proposal_hash:proposal,context_hash:contextHash,offset:32000,limit:8000},true);
+ expect(f.calls.at(-1).params).toEqual({view:'proposal',proposal_hash:proposal,context_hash:contextHash,offset:32000,limit:8000});
+ const before=f.calls.length;
+ for(const params of[
+  {view:'proposal',proposal_hash:proposal,offset:1},
+  {view:'proposal',proposal_hash:proposal,context_hash:'bad',offset:0},
+  {view:'proposal',proposal_hash:proposal,offset:-1},
+  {view:'proposal',proposal_hash:proposal,offset:0.5},
+  {view:'proposal',proposal_hash:proposal,offset:null},
+  {view:'proposal',proposal_hash:proposal,limit:null},
+  {view:'proposal',proposal_hash:proposal,limit:0},
+  {view:'proposal',proposal_hash:proposal,limit:32001},
+  {view:'proposal',proposal_hash:proposal,limit:2.5},
+  {view:'proposal',proposal_hash:proposal,offset:0,record_id:'foreign'},
+  {view:'record',offset:0},
+  {view:'contract',context_hash:contextHash},
+ ])await expect(f.invoke('source_context',params,true)).rejects.toThrow();
+ expect(f.calls).toHaveLength(before);
+ const {caseWorkTool}=await import('../../src/case-work/host.js');const schema:any=caseWorkTool.parametersSchema;
+ const views=schema.oneOf.find((row:any)=>row.properties.operation.const==='source_context').properties.parameters.oneOf;
+ const page=views.find((row:any)=>row.properties.view.const==='proposal');
+ expect(page.properties.limit.maximum).toBe(32000);expect(page.properties.context_hash.pattern).toBe('^[a-f0-9]{64}$');
+ expect(page.anyOf).toEqual([{properties:{offset:{const:0}}},{required:['context_hash']}]);
+ expect(views[0].properties.offset).toBeUndefined();
+});

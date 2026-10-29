@@ -56,3 +56,25 @@ it('rejects candidate reservation reattributed to a different original source ca
 });
 
 it('saves proposed planning assumptions only through the current producer case without factual authority',async()=>{const f=fixture();f.binding.reviewer={agentId:'charlie',principalId:'c'};const p={workspace_hash:'a'.repeat(64),assumption:{key:'request-plan',value:'10000',units:'USD',currency:'USD',commitment:'proposed',rationale:'Proposed delivery envelope supported by current sponsor range.',source_evidence_ids:['sponsor-range']}};const result=await f.invoke('save_assumption',p,beta('a'));expect(result.data.case_binding_id).toBe('binding-a');expect(result.data.business_complete).toBe(false);expect(result.data.native_review_guidance.queued).toBe(false);await expect(f.invoke('save_assumption',p,scan)).rejects.toThrow(/role denied/);for(const extra of[{assumption:{...p.assumption,commitment:'actual'}},{assumption:{...p.assumption,value:10000}},{assumption:{...p.assumption,source_evidence_ids:[]}},{company_id:'foreign'}])await expect(f.invoke('save_assumption',{...p,...extra},beta('a'))).rejects.toThrow(/Invalid case assumption/);expect(f.calls).toHaveLength(1);expect(f.calls[0].actor.case_binding_id).toBe('binding-a');expect(f.docs.size).toBe(0);});
+
+
+describe("committed researcher reservation with dependent Coordinator",()=>{
+ it("returns the saved candidate and deferred notification while the real dependency remains blocked; replay reuses the document",async()=>{
+  const f=fixture(),original=f.binding.bridge.call;f.rows[0].status="blocked";
+  f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:"one-off-source",source_candidate_record_id:"candidate-record"});
+  let attempts=0;f.ctx.issues.requestWakeup=async()=>{attempts++;throw new Error("Issue is blocked by unresolved blockers");};
+  for(let n=0;n<2;n++){
+   const result=await f.invoke("reserve_candidate",{record_id:"candidate-record",record_hash:"a".repeat(64)},scan);
+   expect(result.data).toMatchObject({case_binding_id:"binding-a",business_complete:false,preliminary:true,coordinator_notification:{state:"deferred",reason:"unresolved_blockers"},create_task:{idempotencyKey:"case:binding-a",assigneeActorId:"beta"}});
+   expect(result.data.coordinator_notification.queued).toBeUndefined();
+  }
+  expect(f.docs.size).toBe(1);expect(f.comments).toHaveLength(1);expect(attempts).toBe(2);expect(f.rows[0].status).toBe("blocked");expect(f.rows[1].status).toBe("in_progress");
+ });
+ it("preserves all unexpected wake errors after the durable checkpoint",async()=>{
+  for(const error of[new Error("permission denied"),new Error("Issue has no assigned agent to wake"),new Error("Issue is blocked by unresolved blockers: unexpected detail"),"Issue is blocked by unresolved blockers"]){
+   const f=fixture();f.ctx.issues.requestWakeup=async()=>{throw error;};
+   await expect(f.invoke("reserve_case",{record_id:"record",record_hash:"a".repeat(64)},scan)).rejects.toBe(error);
+   expect(f.docs.size).toBe(1);
+  }
+ });
+});

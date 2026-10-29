@@ -32,7 +32,7 @@ const caseParametersSchema={oneOf:[
 const emptyCaseParameters={type:"object",properties:{},additionalProperties:false} as const;
 const sourcePageProperties={offset:{type:"integer",minimum:0},limit:{type:"integer",minimum:1,maximum:50},context_hash:hashSchema} as const;
 const sourceOperationParameters={
- source_context:{oneOf:[{type:"object",properties:{view:{type:"string",enum:["record","contract"]}},additionalProperties:false},{type:"object",properties:{view:{const:"proposal"},proposal_hash:hashSchema},required:["view","proposal_hash"],additionalProperties:false}]},
+ source_context:{oneOf:[{type:"object",properties:{view:{type:"string",enum:["record","contract"]}},additionalProperties:false},{type:"object",description:"Oversized proposals return delivery:paged with canonical_json_ascii text. Follow next_offset through EOF with the same proposal_hash and context_hash, concatenate every text page, verify the full UTF-8 SHA-256, then JSON.parse once before independent review.",properties:{view:{const:"proposal"},proposal_hash:hashSchema,context_hash:hashSchema,offset:{type:"integer",minimum:0},limit:{type:"integer",minimum:1,maximum:32000}},required:["view","proposal_hash"],anyOf:[{properties:{offset:{const:0}}},{required:["context_hash"]}],additionalProperties:false}]},
  source_links:{type:"object",properties:sourcePageProperties,additionalProperties:false},
  source_capture:{type:"object",properties:{url:{type:"string",minLength:1,maxLength:2000}},required:["url"],additionalProperties:false},
  source_propose:domainSourceParameters.source_propose,
@@ -62,7 +62,8 @@ function parameters(op:string,p:Record<string,unknown>){
   const exact=(allowed:string[])=>Object.keys(p).every(k=>allowed.includes(k));
   if(op==="source_context"){
    const view=p.view??"record";
-   if(!exact(["view","proposal_hash"])||!["record","proposal","contract"].includes(String(view))||(view==="proposal")!==Object.hasOwn(p,"proposal_hash")||view==="proposal"&&!digest(p.proposal_hash))throw Error("Invalid case source context");return;
+   const proposal=view==="proposal";
+   if(!exact(proposal?["view","proposal_hash","context_hash","offset","limit"]:["view"])||!["record","proposal","contract"].includes(String(view))||proposal!==Object.hasOwn(p,"proposal_hash")||proposal&&!digest(p.proposal_hash)||p.context_hash!==undefined&&!digest(p.context_hash)||p.offset!==undefined&&(!Number.isSafeInteger(p.offset)||Number(p.offset)<0)||p.limit!==undefined&&(!Number.isSafeInteger(p.limit)||Number(p.limit)<1||Number(p.limit)>32000)||Number(p.offset??0)>0&&!digest(p.context_hash))throw Error("Invalid case source context");return;
   }
   if(op==="source_links"){
    if(!exact(["offset","limit","context_hash"])||!Number.isSafeInteger(p.offset??0)||Number(p.offset??0)<0||!Number.isSafeInteger(p.limit??20)||Number(p.limit??20)<1||Number(p.limit??20)>50||p.context_hash!==undefined&&!digest(p.context_hash))throw Error("Invalid case source links");return;
@@ -174,8 +175,17 @@ export function registerCaseWork(ctx:Pick<PluginContext,"tools"|"issues">,bindin
     // Generic native wakeup is at-least-once. Retry after a lost reply; native
     // create_task's stable case key, not this notification, deduplicates tasks.
     await current();
-    await ctx.issues.requestWakeup(b.rootIssueId,b.companyId,{reason:"funding_case_identified",contextSource:"inertia.case-work",idempotencyKey:"case-identified:"+value.case_binding_id+":"+String(value.revision_hash??"initial"),actorAgentId:run.agentId,actorRunId:run.runId});
-    return{...value,create_task:task,native_source_issue_id:initial.issue.id};
+    let coordinatorNotification: {state:"deferred";reason:"unresolved_blockers"}|undefined;
+    try{
+     await ctx.issues.requestWakeup(b.rootIssueId,b.companyId,{reason:"funding_case_identified",contextSource:"inertia.case-work",idempotencyKey:"case-identified:"+value.case_binding_id+":"+String(value.revision_hash??"initial"),actorAgentId:run.agentId,actorRunId:run.runId});
+    }catch(error){
+     // Native dependency admission remains authoritative. The source and native
+     // checkpoint already committed; an expected dependency hold is not a failed
+     // reservation. Replay retries the same notification without changing work.
+     if(!(error instanceof Error)||error.message!=="Issue is blocked by unresolved blockers")throw error;
+     coordinatorNotification={state:"deferred",reason:"unresolved_blockers"};
+    }
+    return{...value,create_task:task,native_source_issue_id:initial.issue.id,...(coordinatorNotification?{coordinator_notification:coordinatorNotification}:{})};
    }
    if(op==="source_propose"){
     if(role!=="producer"||!digest(value.proposal_hash)||value.state!=="awaiting_independent_review"||value.producer_issue_id!==initial.issue.id||value.producer_run_id!==run.runId||!identifier(value.record_id)||!object(value.review_task)||value.review_task.idempotencyKey!=="source-review:"+value.proposal_hash||value.review_task.parentIssueId!==initial.issue.id||value.review_task.projectId!==b.projectId||value.review_task.assigneeAgentId!==b.reviewer!.agentId)throw Error("Source proposal handoff mismatch");
