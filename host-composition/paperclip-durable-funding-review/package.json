@@ -58,6 +58,8 @@
     "test:native-source-review-contract": "node --test tests/native-case-work-tools.test.mjs tests/native-source-review.test.mjs tests/native-source-review-contract-installer.test.mjs",
     "test:composed-native-pins": "node --test tests/composed-native-pins.test.mjs",
     "apply-native-coordinator-continuation": "node scripts/apply-native-coordinator-continuation.mjs",
-    "test:native-coordinator-continuation": "node --test tests/native-coordinator-continuation.test.mjs tests/native-coordinator-continuation-installer.test.mjs"
+    "test:native-coordinator-continuation": "node --test tests/native-coordinator-continuation.test.mjs tests/native-coordinator-continuation-installer.test.mjs",
+    "apply-native-scout-deadline": "node scripts/apply-native-scout-deadline.mjs",
+    "test:native-scout-deadline-installer": "node --test tests/native-scout-deadline-installer.test.mjs"
   }
 }
