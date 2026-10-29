@@ -1,0 +1,69 @@
+--- a/dist/routes/agents.js
++++ b/dist/routes/agents.js
+@@ -1,3 +1,4 @@
++import { updateAgentPermissionGrants } from '../services/native-agent-permission-grants.mjs';
+ import { addNativeDiscoveryToolGrants } from "../services/native-discovery-tool-grants.mjs";
+ import { getNativeReviewRetryState } from "../services/native-runtime/native-review-retry.mjs";
+ import { aiConnectionRouterService, poolMemberRuntimeConfig } from "../services/ai-connection-router.js";
+@@ -4136,6 +4137,13 @@
+         if (!decision.allowed) throw forbidden(decision.explanation, authorizationDeniedDetails(decision));
+         res.json(await access.restrictAgentToolUse({companyId: existing.companyId, agentId: existing.id, actor: req.actor, body: req.body}));
+     });
++    router.patch("/agents/:id/permission-grants", async (req, res) => {
++        assertBoard(req);
++        const existing = await getAccessibleResource(req, res, svc.getById(req.params.id), "Agent not found");
++        if (!existing) return;
++        assertCompanyAccess(req, existing.companyId);
++        res.json(await updateAgentPermissionGrants(db, {companyId: existing.companyId, agentId: existing.id, actor: req.actor, body: req.body}));
++    });
+     router.patch("/agents/:id/permissions", validate(updateAgentPermissionsSchema), async (req, res) => {
+         const id = req.params.id;
+         const existing = await getAccessibleResource(req, res, svc.getById(id), "Agent not found");
+--- /dev/null
++++ b/dist/services/native-agent-permission-grants.mjs
+@@ -0,0 +1,45 @@
++/** Normal board permission management for an existing company agent, including held maintenance. */
++import{createHash}from'node:crypto';import{and,eq}from'drizzle-orm';
++import{agents,companies,companyMemberships,principalPermissionGrants}from'@paperclipai/db';
++import{updateMemberPermissionsSchema}from'@paperclipai/shared';
++import{badRequest,conflict,forbidden,notFound}from'../errors.js';
++import{authorizationService}from'./authorization.js';
++import{logActivity,publishActivity}from'./activity-log.js';
++const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
++const digest=v=>createHash('sha256').update(canonical(v)).digest('hex');
++const stamp=v=>new Date(v).toISOString();
++export function agentPermissionGrantsFingerprint({companyId,agentId,membership,grants}){
++ return digest({version:1,companyId,agentId,membershipId:membership.id,membershipStatus:membership.status,grants:grants.map(g=>({id:g.id,permissionKey:g.permissionKey,scope:g.scope??null,updatedAt:stamp(g.updatedAt)})).sort((a,b)=>a.id.localeCompare(b.id))});
++}
++export async function updateAgentPermissionGrants(db,{companyId,agentId,actor,body}){
++ if(actor?.type!=='board'||typeof actor.userId!=='string'||!actor.userId.trim())throw forbidden('Identified board permission manager required');
++ if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).sort().join()!=='expectedGrantsFingerprint,grants'||typeof body.expectedGrantsFingerprint!=='string'||!/^[a-f0-9]{64}$/.test(body.expectedGrantsFingerprint))throw badRequest('Exact grants and current fingerprint required');
++ const parsed=updateMemberPermissionsSchema.safeParse({grants:body.grants});
++ if(!parsed.success||new Set(parsed.data.grants.map(g=>g.permissionKey)).size!==parsed.data.grants.length)throw badRequest('Unique valid permission grants required');
++ const publications=[];
++ const result=await db.transaction(async tx=>{
++  const [company]=await tx.select().from(companies).where(eq(companies.id,companyId)).for('update');
++  if(!company||!['active','paused'].includes(company.status))throw conflict('Existing active or held company required');
++  const [agent]=await tx.select().from(agents).where(and(eq(agents.id,agentId),eq(agents.companyId,companyId))).for('update');
++  if(!agent)throw notFound('Company agent not found');
++  if(!['active','idle','running','paused','error'].includes(agent.status)||Object.hasOwn(agent.metadata??{},'paperclipBuiltInAgent'))throw forbidden('Protected or unavailable agent permission grants');
++  const [membership]=await tx.select().from(companyMemberships).where(and(eq(companyMemberships.companyId,companyId),eq(companyMemberships.principalType,'agent'),eq(companyMemberships.principalId,agentId))).for('update');
++  if(!membership)throw notFound('Existing agent membership required');
++  if(membership.status!=='active')throw forbidden('Active agent membership required');
++  const [manager]=await tx.select().from(companyMemberships).where(and(eq(companyMemberships.companyId,companyId),eq(companyMemberships.principalType,'user'),eq(companyMemberships.principalId,actor.userId))).for('update');
++  await tx.select().from(principalPermissionGrants).where(and(eq(principalPermissionGrants.companyId,companyId),eq(principalPermissionGrants.principalType,'user'),eq(principalPermissionGrants.principalId,actor.userId),eq(principalPermissionGrants.permissionKey,'users:manage_permissions'))).for('update');
++  const decision=await authorizationService(tx).decide({actor,action:'users:manage_permissions',resource:{type:'company',companyId}});
++  if(!decision.allowed)throw forbidden('Current company permission-management authority required');
++  const where=and(eq(principalPermissionGrants.companyId,companyId),eq(principalPermissionGrants.principalType,'agent'),eq(principalPermissionGrants.principalId,agentId));
++  const before=await tx.select().from(principalPermissionGrants).where(where).for('update');
++  const fingerprint=agentPermissionGrantsFingerprint({companyId,agentId,membership,grants:before});
++  if(fingerprint!==body.expectedGrantsFingerprint)throw conflict('Agent permission grants changed');
++  await tx.delete(principalPermissionGrants).where(where);
++  const grants=parsed.data.grants.length?await tx.insert(principalPermissionGrants).values(parsed.data.grants.map(g=>({companyId,principalType:'agent',principalId:agentId,permissionKey:g.permissionKey,scope:g.scope??null,grantedByUserId:actor.userId}))).returning():[];
++  const next=agentPermissionGrantsFingerprint({companyId,agentId,membership,grants});
++  const actorSnapshot={type:'board',userId:actor.userId,source:actor.source??null,membershipId:manager?.id??null,membershipRole:manager?.membershipRole??null,isInstanceAdmin:actor.isInstanceAdmin===true};
++  await logActivity(tx,{companyId,actorType:'user',actorId:actor.userId,action:'agent.permission_grants_updated',entityType:'agent',entityId:agentId,details:{version:1,membershipId:membership.id,actor:actorSnapshot,expectedGrantsFingerprint:fingerprint,grantsFingerprint:next,beforeGrants:before.map(g=>({permissionKey:g.permissionKey,scope:g.scope??null})),afterGrants:grants.map(g=>({permissionKey:g.permissionKey,scope:g.scope??null}))}},publications);
++  return{companyId,agentId,membershipId:membership.id,grants,grantsFingerprint:next};
++ });
++ for(const publication of publications)publishActivity(publication);return result;
++}
