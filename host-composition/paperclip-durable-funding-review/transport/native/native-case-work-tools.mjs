@@ -1,3 +1,4 @@
+import {CASE_DOCUMENT_DEFINITIONS} from './native-case-document-read.mjs';
 import {selectSourceReviewAdmission,SOURCE_REVIEW_CREATE_DEFINITION} from './native-source-review.mjs';
 import{nativeDomainReviewComposition}from'./native-domain-review-composition.mjs';
 /** Opt-in current public case tools. Existing enrichment/meeting paths delegate unchanged. */
@@ -62,7 +63,7 @@ export async function taskProjectDefinitions(binding,context){
  const tools=(await binding.assignedMcpTools.definitionsFresh('standard')).filter(t=>wanted.includes(t.name));
  if(tools.length!==wanted.length||new Set(tools.map(t=>t.name)).size!==wanted.length)deny();
  await context();
- const result=structuredClone(tools);
+ const result=[...structuredClone(tools),...structuredClone(CASE_DOCUMENT_DEFINITIONS)];
  if(binding.nativeTaskProjectAdmission.kind==='source-review'){
   const proposalHash=binding.nativeTaskProjectAdmission.proposalHash;
   if(typeof proposalHash!=='string'||!/^[a-f0-9]{64}$/.test(proposalHash))deny();

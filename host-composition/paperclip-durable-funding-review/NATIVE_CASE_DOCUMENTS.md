@@ -1,0 +1,9 @@
+# Scoped native funding task documents
+
+Admitted case-work Alpha/Beta and source-review Charlie get standard list_documents/read_document on their current task or visible same-company/project-authorized ancestors through the configured portfolio root. Normal issue:read uses the current agent/run/responsible user. Fresh role/config/assignment and assigned tool/grant ceilings are checked before and after. Current document/revision shape is unchanged. Isolated public Scout receives no private context. No filesystem reader, arbitrary API, write, submission or fact-verification authority is added. Co documents and assigned immutable skill APIs stay unchanged. Tool contract v18 rotates v17 retained declarations.
+
+Tests: missing role catalogs RED3; scoped catalog/ancestry/internal routing GREEN13; existing case-tool unit GREEN6; installer/composition GREEN15; actual SDK/PostgreSQL GREEN1 for Beta own/root and Charlie parent/root reads, normal authorization, real tool-policy/grant revoke/restore, reassignment/ancestor-project denial, sibling/hidden/path denial and changed local/remote fingerprints. Component proof is not combined business acceptance.
+
+INE53 internal reconciliation belongs in the existing research project, not public discovery. Existing-selector test proves normal project routing selects the existing internal Alpha case/enrichment role. Preserve task/root/owner, all1475 scan rows and prior Scout results. Root owns any normal operator move/recovery. This slice does not clear technical or human holds.
+
+Overlay native-case-documents:3 exact replacements plus1 helper; historical pins unchanged. Composed40files/15 exact supersessions. Pins8c02b3d9d745430db819752223a44efed4ce7134f60c865f0b598026a2b06368; patchd475b9f216e2f9c34a80e668e62fa39bafa4fba7e22da6271127167ae57c4c85. No VPS/config/provider/live-state action performed by author.
