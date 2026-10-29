@@ -79,11 +79,20 @@ export async function taskProjectDefinitions(binding,context){
  }
  return result;
 }
+/** Decode only this freshly admitted case tool's real dispatcher envelope.
+ * Registry pluginId is the logical key, never the installation UUID.
+ * No model arguments or unwrapped/nested lookalikes are accepted here. */
+export function caseWorkToolResult(value){
+ if(!object(value)||Object.keys(value).sort().join()!=='pluginId,result,toolName'||value.pluginId!=='netrxn.inertia'||value.toolName!=='funding_case_work')deny();
+ const result=value.result;
+ if(!object(result)||Object.keys(result).some(key=>!['content','data'].includes(key))||!object(result.data)||Object.hasOwn(result,'content')&&typeof result.content!=='string')deny();
+ return structuredClone(result);
+}
 export async function executeTaskProjectTool(binding,call,context){
  const a=binding.nativeTaskProjectAdmission;
  if(!['case-work','source-review'].includes(a?.kind))return base.executeTaskProjectTool(binding,call,context);
  if(!isTaskProjectTool(binding,call.tool)||!binding.assignedMcpTools?.has(call.tool))deny();
  if(call.tool===CASE_PROJECTED_TOOL&&!((a.role==='researcher'&&['reserve_case','reserve_candidate'].includes(call.arguments?.operation))||(a.role==='producer'&&['context','checkpoint','prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk','source_context','source_links','source_capture','source_propose','source_receipt'].includes(call.arguments?.operation))||(a.kind==='source-review'&&['source_context','source_review','source_receipt','source_settlement'].includes(call.arguments?.operation))))deny();
  if(a.kind==='source-review'&&(call.arguments?.parameters?.proposal_hash!==a.proposalHash||(call.arguments?.operation==='source_context'&&call.arguments?.parameters?.view!=='proposal')))deny();
- await taskProjectDefinitions(binding,context);if(call.tool===CASE_PROJECTED_TOOL&&a.role==='producer'&&['prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk'].includes(call.arguments?.operation))nativeDomainReviewComposition.assertCasePreparation((await context()).issue,a.bindingHash);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;
+ await taskProjectDefinitions(binding,context);if(call.tool===CASE_PROJECTED_TOOL&&a.role==='producer'&&['prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk'].includes(call.arguments?.operation))nativeDomainReviewComposition.assertCasePreparation((await context()).issue,a.bindingHash);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return call.tool===CASE_PROJECTED_TOOL?caseWorkToolResult(result):result;
 }
