@@ -1,8 +1,10 @@
 # Inertia demo readiness — October 30 morning
 
+**Primary current status:** [persistent critical-path chart](critical-path/index.html), with every row linked to its closure plan and warning where no clean plan exists. The dated snapshot below is preserved evidence, not the current status ledger. Final demo walkthrough review remains the last step.
+
 Snapshot: **2026-10-29 16:22:18 CDT normal startup proof**, plus subsequent root-reported activation/continuation acceptance. This is a documentation snapshot, not a live monitor. [Operator snapshot](OPERATOR-SNAPSHOT.md) · [Visual proof map](architecture/index.html) · [Walkthrough and claim matrix](DEMO-WALKTHROUGH.md).
 
-**Current demonstration status: normal UI/API and scheduler restored.** Image **2d8d252b**, plugin READY, HTTP200 and 42 native guards/22 transitions passed target checks with original normal boot46a, production NODE_ENV, authenticated/public mode. Cloudflare/tunnel/auth protections remain unchanged; this is not a dev sandbox. Root subsequently activated the company and disabled drain. The existing NSF case accepted ordinary status-only continuation with the same Beta/responsible identity (v26 to v27); actual native admission/new work remains pending in this snapshot.
+**Dated normal-startup observation: UI/API and scheduler restored.** Image **2d8d252b**, plugin READY, HTTP200 and 42 native guards/22 transitions passed target checks with original normal boot46a, production NODE_ENV, authenticated/public mode. Cloudflare/tunnel/auth protections remain unchanged; this is not a dev sandbox. Root subsequently activated the company and disabled drain. The existing NSF case accepted ordinary status-only continuation with the same Beta/responsible identity (v26 to v27); actual native admission/new work remains pending in this snapshot.
 
 **Portfolio fanout remains unproved.** Coordinator child limit0 has not been saved. Its owner configuration PATCH returned422 `ai_connection_default_missing`; investigation traced a PostgreSQL JSONB key-order versus schema-normalization comparison falsely treating an unchanged connection as changed. A narrow repair/route proof is in progress. This is separate from the now-restored startup, and it does not authorize changing provider identity or bypassing the guard.
 
