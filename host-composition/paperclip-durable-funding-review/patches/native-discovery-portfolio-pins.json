@@ -1,0 +1,20 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/services/native-runtime/native-discovery-policy.mjs": {
+      "base_sha256": "0a614a7da138e530aa0adf0d3fcbd4166a20a68fa69fe119253dd79055c48f6b",
+      "candidate_sha256": "6a477f97a2b04f28960498d4858130f780dc63d443aaf784850d0eb8ceeea8b7"
+    }
+  },
+  "newFiles": {},
+  "patch": "native-discovery-portfolio.patch",
+  "patch_sha256": "13f1e25ded3500d1a3563b0e25486c91f3573a983bf3cd64c9df60f355c7d5aa",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  }
+}

@@ -1,3 +1,5 @@
+import{validateNativeCaseReviewBinding,createNativeCaseReviewApplicationRuntime}from'./native-case-review-runtime.mjs';
+import {templateMatches,scopeForIssue} from './native-portfolio-scope.mjs';
 /** Owning-server initialization only. No model route, listener or lifecycle controller. */
 import fs from 'node:fs/promises';
 import {constants} from 'node:fs';
@@ -10,15 +12,16 @@ const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
 const exact=(v,keys)=>object(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
 const freeze=v=>{if(v&&typeof v==='object'){for(const c of Object.values(v))freeze(c);Object.freeze(v);}return v;};
 function validate(registry){
-  if(!exact(registry,['version','bindings'])||registry.version!==1||!Array.isArray(registry.bindings)||registry.bindings.length!==1)fail();
+  if(!(exact(registry,['version','bindings'])||exact(registry,['version','bindings','caseWork']))||registry.version!==1||!Array.isArray(registry.bindings)||registry.bindings.length!==1)fail();
+  if(registry.caseWork!==undefined){validateNativeCaseReviewBinding(registry.caseWork);createNativeReviewStdio(registry.caseWork.nativeCaseWork.reviewProcess,{caseWork:true});}
   for(const b of registry.bindings){
-    if(!exact(b,['scope','reviewerPolicy','process','host'])||!exact(b.host,['expectedPluginId','publicDrafting']))fail();
+    if(!exact(b,['scope','reviewerPolicy','process','host'])||!(exact(b.host,['expectedPluginId','publicDrafting'])||exact(b.host,['expectedPluginId','privatePreparation'])))fail();
     const p=b.reviewerPolicy,s=b.scope;
-    if(!exact(p,['version','role','projectIds','issueIds'])||p.version!==1||p.role!=='reviewer'||JSON.stringify(p.projectIds)!==JSON.stringify([s?.projectId])||JSON.stringify(p.issueIds)!==JSON.stringify([s?.issueId]))fail();
+    if(!exact(p,['version','role','projectIds','issueIds',...(s?.portfolioRootIssueId?['portfolioRootIssueId']:[])])||p.portfolioRootIssueId!==s?.portfolioRootIssueId||p.version!==1||p.role!=='reviewer'||!(s?.portfolioRootIssueId?Array.isArray(p.projectIds)&&p.projectIds.length>=1&&p.projectIds.length<=16&&p.projectIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.projectIds).size===p.projectIds.length&&p.projectIds.includes(s.projectId):JSON.stringify(p.projectIds)===JSON.stringify([s?.projectId]))||!(s?.portfolioRootIssueId?Array.isArray(p.issueIds)&&p.issueIds.length<=16&&p.issueIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.issueIds).size===p.issueIds.length&&p.issueIds.includes(s.issueId):JSON.stringify(p.issueIds)===JSON.stringify([s?.issueId])))fail();
     // Producer and reviewer are distinct pinned protocols, not interchangeable.
     // Construction validates the reviewer process without launching a child.
-    createNativeReviewStdio(b.process);
-    createNativeReviewHostAdmissionPolicy({scope:s,expectedPluginId:b.host.expectedPluginId,publicDrafting:b.host.publicDrafting,applicantSlug:b.host.publicDrafting?.applicantSlug,matchId:b.host.publicDrafting?.matchId});
+    createNativeReviewStdio(b.process,{privatePreparation:b.host.privatePreparation!==undefined});
+    createNativeReviewHostAdmissionPolicy({scope:s,expectedPluginId:b.host.expectedPluginId,...b.host,applicantSlug:(b.host.privatePreparation??b.host.publicDrafting)?.applicantSlug,matchId:(b.host.privatePreparation??b.host.publicDrafting)?.matchId});
   }
   return registry;
 }
@@ -45,17 +48,24 @@ export async function createNativeReviewApplicationRuntime(db,bindings){
   const [{and,eq},{agents,heartbeatRuns,issues},{getNativeReviewAssignment},{assertNativeFundingContext},{toolAccessPolicyService},{createNativeReviewHostAdmission},{createNativeReviewRuntime}]=await Promise.all([
     import('drizzle-orm'),import('@paperclipai/db'),import('./native-review-participant.js'),import('./native-funding-policy.js'),import('../tool-access-policy.js'),import('./native-review-host-admission.mjs'),import('./native-review-runtime.mjs'),
   ]);
-  const checks=await Promise.all(bindings.map(b=>createNativeReviewHostAdmission(db,{scope:b.scope,...b.host,applicantSlug:b.host.publicDrafting.applicantSlug,matchId:b.host.publicDrafting.matchId})));
+  const checks=await Promise.all(bindings.map(b=>createNativeReviewHostAdmission(db,{scope:b.scope,...b.host,applicantSlug:(b.host.privatePreparation??b.host.publicDrafting).applicantSlug,matchId:(b.host.privatePreparation??b.host.publicDrafting).matchId})));
   const policy=toolAccessPolicyService(db);
   const getIssue=async(issueId,companyId)=>(await db.select().from(issues).where(and(eq(issues.id,issueId),eq(issues.companyId,companyId))).limit(1))[0];
   return createNativeReviewRuntime({bindings,stdioFactory:createNativeReviewStdio,native:{
-    assertHostAdmission(scope,input){const i=bindings.findIndex(b=>b.scope.companyId===scope.companyId&&b.scope.issueId===scope.issueId);return i<0?false:checks[i](scope,input);},
+    assertHostAdmission(scope,input){const i=bindings.findIndex(b=>templateMatches(scope,b.scope));return i<0?false:checks[i](scope,input);},
     async assertCurrentReviewer(binding){
       const [actor]=await db.select().from(agents).where(and(eq(agents.id,binding.agentId),eq(agents.companyId,binding.companyId))).limit(1);
       const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId),eq(heartbeatRuns.agentId,binding.agentId))).limit(1);
       const issue=await getIssue(binding.issueId,binding.companyId);
       if(!actor||!run||run.finishedAt||!issue)throw Error('native_funding_scope_revoked');
       assertNativeFundingContext(binding,{actor,run,issue});
+      if(bindings.some(b=>b.host.privatePreparation!==undefined&&scopeForIssue(b.scope,issue))){
+        const {readPrivatePreparation,privateExecutionMetadata,privateDigest}=await import('./native-private-preparation.mjs');
+        const actualReview=await getNativeReviewAssignment(db,{...binding,contextSnapshot:binding.nativeReview,actingRunId:binding.runId,allowResolvedByRunId:binding.runId});
+        if(!actualReview)throw Error('private_review_assignment_unavailable');
+        const admission=await readPrivatePreparation(db,binding,actor.adapterConfig.nativeFunding,binding.nativeReview,{actor,run,issue,privateReviewResolved:['accepted','rejected'].includes(actualReview.interaction.status)});
+        if(!admission||privateDigest(run.runnerProfileJson?.privatePreparationExecution)!==privateDigest(privateExecutionMetadata(admission)))throw Error('private_review_provider_isolation_unavailable');
+      }
     },
     getIssue,getReviewAssignment:p=>getNativeReviewAssignment(db,p),decideTool:p=>policy.decide(p),
   }});
@@ -65,5 +75,6 @@ export async function initializeNativeReviewApplication(db,registry){
   const {nativeDomainReviewComposition}=await import('./native-domain-review-composition.mjs');
   const runtime=await createNativeReviewApplicationRuntime(db,registry.bindings);
   nativeDomainReviewComposition.install(runtime);
+  if(registry.caseWork!==undefined)nativeDomainReviewComposition.installCaseWork(await createNativeCaseReviewApplicationRuntime(db,registry.caseWork));
   nativeDomainReviewComposition.assertReady();
 }

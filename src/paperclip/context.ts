@@ -35,15 +35,15 @@ export async function assertNativeTaskRun(ctx:Pick<PluginContext,"issues">,bindi
   await validateNativeTaskRun(ctx,binding,run,signal);
 }
 /** Reuses native parent/child ancestry, not a new delegation or permission system. */
-export async function resolveNativeDescendantTask(ctx:Pick<PluginContext,"issues">,binding:{companyId:string;projectId:string;rootIssueId:string;allowedAgentIds:string[];authorize:()=>Promise<boolean>},run:ToolRunContext):Promise<string|null> {
+export async function resolveNativeDescendantTask(ctx:Pick<PluginContext,"issues">,binding:{companyId:string;projectId:string;rootIssueId:string;rootProjectId?:string;allowedAgentIds:string[];authorize:()=>Promise<boolean>},run:ToolRunContext):Promise<string|null> {
   const b=binding;
   if(run.companyId!==b.companyId || run.projectId!==b.projectId || !b.allowedAgentIds.includes(run.agentId) || !text(run.runId))return null;
   await admitted(b);
   const tree=await ctx.issues.getSubtree(b.rootIssueId,b.companyId,{includeRoot:true,includeActiveRuns:true,includeAssignees:true});
   const root=tree.issues.find(i=>i.id===b.rootIssueId);
   if(tree.rootIssueId!==b.rootIssueId || tree.companyId!==b.companyId || tree.issues.length>10000 || new Set(tree.issueIds).size!==tree.issueIds.length ||
-    !root || root.companyId!==b.companyId || root.projectId!==b.projectId)throw Error("Native source ancestry unavailable");
-  if(["done","cancelled"].includes(root.status))return null;
+    !root || root.companyId!==b.companyId || root.projectId!==(b.rootProjectId??b.projectId))throw Error("Native source ancestry unavailable");
+  if(root.hiddenAt || ["done","cancelled"].includes(root.status))return null;
   const candidates=tree.issues.filter(i=>i.companyId===b.companyId && i.projectId===b.projectId && i.assigneeAgentId===run.agentId && ["todo","in_progress","blocked"].includes(i.status) && tree.issueIds.includes(i.id) &&
     tree.activeRuns?.[i.id]?.some(r=>r.id===run.runId && r.issueId===i.id && r.agentId===run.agentId && r.status==="running" && r.finishedAt===null));
   if(!candidates.length)return null;
@@ -52,7 +52,7 @@ export async function resolveNativeDescendantTask(ctx:Pick<PluginContext,"issues
   if(!agent || agent.id!==run.agentId || !["idle","running"].includes(agent.status))throw Error("Native source assignee unavailable");
   const candidate=candidates[0]!,seen=new Set<string>();let current:typeof candidate|undefined=candidate;
   while(current && !seen.has(current.id)) {
-    if(current.companyId!==b.companyId || current.projectId!==b.projectId || !tree.issueIds.includes(current.id))throw Error("Native source ancestry unavailable");
+    if(current.companyId!==b.companyId || current.projectId!==(current.id===b.rootIssueId?(b.rootProjectId??b.projectId):b.projectId) || !tree.issueIds.includes(current.id))throw Error("Native source ancestry unavailable");
     if(current.id===b.rootIssueId){await admitted(b);return candidate.id;}
     seen.add(current.id);current=tree.issues.find(i=>i.id===current!.parentId);
   }

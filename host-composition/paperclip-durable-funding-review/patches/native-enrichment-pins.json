@@ -1,0 +1,29 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/services/native-runtime/native-session-executor.js": {
+      "base_sha256": "96a4a1b9432343be3f09503e9966db8d20a18821db15914b48261e4ada1d1c6a",
+      "candidate_sha256": "40e5bcaadabfada41d99e783dfcc7f188e20aa21f9f5e10b148491c176cfc118"
+    },
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "base_sha256": "a832dc99cef539f533d1d13e20f8b283d90a829e722bfa15c950563cd967ed15",
+      "candidate_sha256": "adbec5d13be5222b8f3d66124d573c7df1cd9a6eeca798654040745706475460"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-enrichment-tools.mjs": {
+      "source": "transport/native/native-enrichment-tools.mjs",
+      "candidate_sha256": "d74feb5d9908a6ae6e483a2c6d14ff5b26d4d136999ec148051b743690d31ffa"
+    }
+  },
+  "patch": "native-enrichment.patch",
+  "patch_sha256": "9879f1a07f0bd4c1eed9d634772fefd483621ca1746704b6451ca64e9fa3eb66",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  }
+}

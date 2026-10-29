@@ -1,0 +1,22 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/routes/issues.js": {
+      "base_sha256": "c28bec8f282a3bd56ae55de7059834b4ad05ed31107f0f20c1c20171251e13f2",
+      "candidate_sha256": "a1c7c8e580b1e0c47b199f0d4939992fdb119a0e845714d294f6b690b471e834"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-unused-cleanup-recovery.mjs": {
+      "candidate_sha256": "918f6dcc21d2d54c991a3d2ad80e709a5f46a91a5b9fb3fb5eda7503338103b2"
+    }
+  },
+  "unchangedGuards": {},
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "patch": "native-unused-cleanup-recovery.patch",
+  "patch_sha256": "0e986825cb6c64c891b6f2d93c23947f63dd60916d0b3f5fde34793e74ad5404"
+}

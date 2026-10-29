@@ -1,0 +1,18 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch": "controlled-target-http.patch",
+  "patch_sha256": "c8cc1e8d7d44471c67a10a68ca685e0298d11e405d538d8d0c3459a17cc1e622",
+  "files": {
+    "dist/services/plugin-host-services.js": {
+      "base_sha256": "9eb7981530436f3f5c6beb8b7680aebd69f3a9a2b1f551d533e0e029f48193b9",
+      "candidate_sha256": "40e0bb0dd8c53743fbea964aa7afc36e606cd07330029b5d47552b140f42b852"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/controlled-target-http.mjs": {
+      "source": "transport/native/controlled-target-http.mjs",
+      "candidate_sha256": "ed7eb76767329d9504c916f7925d1ff8296c849914e6bf59bb2c5a8b888b2643"
+    }
+  }
+}

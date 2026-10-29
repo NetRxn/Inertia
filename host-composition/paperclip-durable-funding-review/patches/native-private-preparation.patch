@@ -1,0 +1,543 @@
+--- a/dist/services/heartbeat.js
++++ b/dist/services/heartbeat.js
+@@ -1,3 +1,4 @@
++import {privateSessionIsolation,privateDigest} from "./native-runtime/native-private-preparation.mjs";
+ import { getNativeReviewRetryState } from "./native-runtime/native-review-retry.mjs";
+ import { retryIdempotentDatabaseOperation } from "../database-retry.js";
+ import { prepareConnectionInstructionDelivery } from "./connection-instructions.js";
+@@ -17311,7 +17312,9 @@
+                     // normalized session. Find the newest exact-session authority instead.
+                     // Rows that already acquired provider authority are progress barriers,
+                     // even when they do not contain a usable checkpoint.
+-                    const previousNativeRun = requestedNativeSessionId &&
++                    const inertiaExecutionIsolation=await privateSessionIsolation(db,{companyId:agent.companyId,agentId:agent.id,issueId:issueRef.id,runId:run.id},parseObject(agent.adapterConfig).nativeFunding,parseObject(agent.adapterConfig).nativeCoordinator);
++                    if(persistedNativeExecutionInput && (inertiaExecutionIsolation || persistedRunnerProfile.inertiaExecutionIsolation) && (!inertiaExecutionIsolation || privateDigest(persistedRunnerProfile.inertiaExecutionIsolation)!==privateDigest(inertiaExecutionIsolation) || persistedNativeExecutionInput.session.normalizedSessionId!==inertiaExecutionIsolation.sessionId || run.nativeSessionId!==inertiaExecutionIsolation.sessionId))throw Error("private_context_requires_fresh_admission");
++                    const previousNativeRun = !inertiaExecutionIsolation && requestedNativeSessionId &&
+                         isUnusedNativeSessionBootstrap(run, nativeBootstrapHasProviderEvidence)
+                         ? await findNativeSessionResumeRun(db, {
+                             companyId: agent.companyId,
+@@ -17328,7 +17331,8 @@
+                                 (run.nativeSessionId ?? resumableTaskSessionId)
+                             ? previousNativeRun.runnerInstanceId
+                             : (run.runnerInstanceId ?? randomUUID());
+-                    let nativeSessionId = run.nativeSessionId ?? resumableTaskSessionId ?? randomUUID();
++                    let nativeSessionId = inertiaExecutionIsolation?.sessionId ?? run.nativeSessionId ?? resumableTaskSessionId ?? randomUUID();
++                    if(inertiaExecutionIsolation&&!persistedNativeExecutionInput)nativeRunnerInstanceId=randomUUID();
+                     let nativeResumeCheckpoint = null;
+                     const agentLifecyclePolicy = parseObject(agent.adapterConfig).lifecycleMode === "warm"
+                         ? {
+@@ -17576,7 +17580,9 @@
+                         const backendDescriptor = await describeRunnerdNativeSessionBackend(buildExecution({
+                             normalizedSessionId: nativeSessionId, resumedSession: previousNativeRun !== null,
+                         }));
+-                        const nativeExecutionWithCheckpoint = buildNativeExecutionWithCheckpoint({
++                        const nativeExecutionWithCheckpoint = inertiaExecutionIsolation
++                            ? {execution:buildExecution({normalizedSessionId:nativeSessionId,resumedSession:false}),checkpoint:null,normalizedSessionId:nativeSessionId}
++                            : buildNativeExecutionWithCheckpoint({
+                             previousRun: previousNativeRun,
+                             normalizedSessionId: nativeSessionId,
+                             executionTargetKind: executionTarget?.kind ?? "local",
+@@ -17679,6 +17685,7 @@
+                                         },
+                                     }
+                                     : {}),
++                                ...(inertiaExecutionIsolation?{inertiaExecutionIsolation}:{}),
+                                 nativeExecutionInput: lockedProfile.nativeExecutionInput ?? nativeExecution,
+                                 nativeToolContractFingerprint: nativeToolContractFingerprintForTarget(executionTarget?.kind ?? "local"),
+                                 ...(lockedProfile.sessionCheckpoint != null
+--- /dev/null
++++ b/dist/services/native-runtime/native-private-preparation.mjs
+@@ -0,0 +1,97 @@
++/** Default-off private native admission. Identity/config/grants never come from tool arguments. */
++import {createHash} from 'node:crypto';
++const object=v=>v&&typeof v==='object'&&!Array.isArray(v),text=v=>typeof v==='string'&&v.length>0&&v.length<=200;
++const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':object(v)?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
++export const privateDigest=v=>createHash('sha256').update(canonical(v)).digest('hex');
++export const PRIVATE_TOOL='netrxn.inertia:funding_private_preparation';
++const deny=()=>{throw Error('native_private_preparation_denied');};
++export function privateToolName(){const sanitize=v=>v.replace(/[^a-zA-Z0-9_]+/g,'_').replace(/^_+|_+$/g,'');const i=PRIVATE_TOOL.lastIndexOf(':');return `app_${sanitize(PRIVATE_TOOL.slice(0,i)).slice(0,20)}_${sanitize(PRIVATE_TOOL.slice(i+1)).slice(-26)}_${createHash('sha256').update(PRIVATE_TOOL).digest('hex').slice(0,12)}`;}
++export const PRIVATE_PROJECTED_TOOL=privateToolName();
++export function selectPrivatePreparation(rows,binding,policy,nativeReview,context,root){
++ const candidates=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.config?.privatePreparation?.enabled===true);
++ if(!candidates.length)return null;if(candidates.length!==1)deny();
++ const row=candidates[0],c=row.config.privatePreparation,a=context.actor,i=context.issue,r=context.run;
++ if(i.projectId!==c.projectId||![c.producer?.agentId,c.reviewer?.agentId].includes(binding.agentId))return null;
++ const role=nativeReview?'reviewer':'producer',actor=c[role],resolved=Boolean(nativeReview&&context.privateReviewResolved===true);
++ const normalized=p=>object(p)&&Array.isArray(p.projectIds)&&Array.isArray(p.issueIds)?{...p,projectIds:[...p.projectIds].sort(),issueIds:[...p.issueIds].sort()}:p;
++ if(row.status!=='ready'||row.companyId!==binding.companyId||row.settingsPresent&&row.enabled!==true
++  ||!text(c.policyRevision)||!text(c.applicantSlug)||!text(c.matchId)||!actor||actor.agentId!==binding.agentId
++  ||c.producer?.agentId===c.reviewer?.agentId||c.producer?.principalId===c.reviewer?.principalId
++  ||c.producer?.issueId!==c.portfolioRootIssueId||c.reviewer?.issueId!==c.portfolioRootIssueId
++  ||!policy||privateDigest(normalized(policy))!==privateDigest(normalized(a.adapterConfig?.nativeFunding))||!['worker',role].includes(policy.role)||policy.portfolioRootIssueId!==c.portfolioRootIssueId||!policy.projectIds?.includes(c.projectId)||!policy.issueIds?.includes(c.portfolioRootIssueId)
++  ||a.id!==binding.agentId||a.companyId!==binding.companyId||a.role!=='general'||a.adapterType!=='paperclip_runner'||['paused','terminated','pending_approval','error'].includes(a.status)
++  ||a.adapterConfig?.provider!=='codex'||a.adapterConfig?.engine!=='cli'||a.adapterConfig?.disableCommandExecution!==true||a.adapterConfig?.codexPermissionMode!=='never'||a.adapterConfig?.dangerouslyBypassApprovalsAndSandbox!==false||a.adapterConfig?.dangerouslyBypassSandbox===true||a.adapterConfig?.nativeCoordinator!==undefined||Object.hasOwn(a.adapterConfig,'args')||Object.hasOwn(a.adapterConfig,'extraArgs')
++  ||!root||root.id!==c.portfolioRootIssueId||root.companyId!==binding.companyId||root.projectId!==c.projectId||root.hiddenAt||['done','cancelled'].includes(root.status)
++  ||i.id!==binding.issueId||i.id===root.id||i.parentId!==root.id||i.companyId!==binding.companyId||i.hiddenAt||i.workMode!=='standard'||!resolved&&(i.executionRunId!==binding.runId||i.status!==(nativeReview?'in_review':'in_progress'))||!nativeReview&&i.assigneeAgentId!==binding.agentId
++  ||r.id!==binding.runId||r.companyId!==binding.companyId||r.agentId!==binding.agentId||r.nativeIssueId!==binding.issueId||r.runtimeMode!=='native'||r.status!=='running'||r.finishedAt)deny();
++ return Object.freeze({version:1,kind:'private-preparation',role,companyId:binding.companyId,projectId:c.projectId,issueId:i.id,rootIssueId:root.id,agentId:binding.agentId,runId:binding.runId,bindingHash:privateDigest(c),policyRevision:c.policyRevision,principalId:actor.principalId});
++}
++export function privateExecutionMetadata(a){if(a?.kind!=='private-preparation'||!['producer','reviewer'].includes(a.role))deny();return{version:1,companyId:a.companyId,projectId:a.projectId,issueId:a.issueId,rootIssueId:a.rootIssueId,agentId:a.agentId,runId:a.runId,bindingHash:a.bindingHash,webSearch:'disabled',historyReuse:false};}
++export async function readPrivatePreparation(db,binding,policy,nativeReview,context){
++ const [{and,eq},{plugins,pluginCompanySettings,pluginConfig,agents,issues,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ if(!context){[context]=await db.select({actor:agents,issue:issues,run:heartbeatRuns}).from(heartbeatRuns).innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId)).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);}
++ if(!context)deny();
++ const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,settingsId:pluginCompanySettings.id,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ const c=rows.find(r=>r.config?.privatePreparation?.enabled===true)?.config.privatePreparation;
++ if(!c)return null;
++ const[root]=await db.select().from(issues).where(and(eq(issues.id,c.portfolioRootIssueId),eq(issues.companyId,binding.companyId))).limit(1);
++ return selectPrivatePreparation(rows.map(r=>({...r,settingsPresent:r.settingsId!=null})),binding,policy??context.actor.adapterConfig?.nativeFunding,nativeReview,context,root);
++}
++export async function privateGatewayMetadata(db,session){
++ const[{and,eq},{heartbeatRuns,agents}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,session.runId),eq(heartbeatRuns.companyId,session.companyId))).limit(1);
++ const[a]=await db.select().from(agents).where(and(eq(agents.id,session.agentId),eq(agents.companyId,session.companyId))).limit(1);
++ if(!run||!a)deny();
++ const admission=await readPrivatePreparation(db,{companyId:session.companyId,agentId:session.agentId,runId:session.runId,issueId:run.nativeIssueId},a.adapterConfig?.nativeFunding,null);
++ const expected=privateExecutionMetadata(admission);
++ if(privateDigest(run.runnerProfileJson?.privatePreparationExecution)!==privateDigest(expected))deny();
++ return expected;
++}
++export async function privateDefinitions(binding,context){await context();const tools=(await binding.assignedMcpTools?.definitionsFresh('standard')??[]).filter(t=>t.name===PRIVATE_PROJECTED_TOOL);if(tools.length!==1)deny();await context();return tools;}
++export async function executePrivateTool(binding,call,context){if(call.tool!==PRIVATE_PROJECTED_TOOL||!binding.assignedMcpTools?.has(call.tool))deny();await privateDefinitions(binding,context);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;}
++export function isolationSessionId(binding,mode,bindingHash){
++ const bytes=createHash('sha1').update(Buffer.from('6ba7b8119dad11d180b400c04fd430c8','hex')).update(canonical(['inertia-private-context-v1',binding.companyId,binding.agentId,binding.issueId,binding.runId,mode,bindingHash])).digest();
++ bytes[6]=(bytes[6]&15)|80;bytes[8]=(bytes[8]&63)|128;const h=bytes.subarray(0,16).toString('hex');return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
++}
++export async function privateSessionIsolation(db,binding,policy,coordinator){
++ const[{and,eq,sql,inArray,desc},{plugins,pluginConfig,pluginCompanySettings,agents,issues,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[context]=await db.select({actor:agents,issue:issues,run:heartbeatRuns}).from(heartbeatRuns).innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId)).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);if(!context)deny();
++ const rows=await db.select({status:plugins.status,config:pluginConfig.configJson,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ const enabled=rows.filter(r=>r.status==='ready'&&r.enabled!==false&&r.config?.privatePreparation?.enabled===true);if(enabled.length>1)deny();const cfg=enabled[0]?.config.privatePreparation;
++ const[history]=await db.select({profile:heartbeatRuns.runnerProfileJson}).from(heartbeatRuns).where(and(eq(heartbeatRuns.companyId,binding.companyId),sql`${heartbeatRuns.runnerProfileJson}->'inertiaExecutionIsolation' IS NOT NULL`,inArray(sql`${heartbeatRuns.runnerProfileJson}->'inertiaExecutionIsolation'->>'mode'`,['private','coordinator-private']),coordinator?inArray(sql`${heartbeatRuns.runnerProfileJson}->'inertiaExecutionIsolation'->>'privateProjectId'`,coordinator.projectIds):eq(heartbeatRuns.agentId,binding.agentId))).orderBy(desc(heartbeatRuns.createdAt)).limit(1);
++ const past=history?.profile?.inertiaExecutionIsolation;
++ let mode,hash,privateProjectId,rootIssueId;
++ if(coordinator||past?.mode==='coordinator-private'){
++  const visible=cfg&&coordinator?.projectIds?.includes(cfg.projectId)||past?.mode==='private'||past?.mode==='coordinator-private';
++  if(!visible&&!past)return null;
++  mode=visible?'coordinator-private':'public';hash=cfg&&visible?privateDigest(cfg):past.bindingHash;privateProjectId=cfg&&visible?cfg.projectId:past.privateProjectId;rootIssueId=cfg&&visible?cfg.portfolioRootIssueId:past.rootIssueId;
++ }else{
++  const mapped=cfg&&[cfg.producer?.agentId,cfg.reviewer?.agentId].includes(binding.agentId);
++  if(!mapped&&!past)return null;
++  privateProjectId=mapped?cfg.projectId:past.privateProjectId;rootIssueId=mapped?cfg.portfolioRootIssueId:past.rootIssueId;hash=mapped?privateDigest(cfg):past.bindingHash;
++  mode=context.issue.projectId===privateProjectId?'private':'public';
++ }
++ const descriptor={version:1,mode,companyId:binding.companyId,agentId:binding.agentId,issueId:binding.issueId,projectId:context.issue.projectId,privateProjectId,rootIssueId,bindingHash:hash,sessionId:isolationSessionId(binding,mode,hash),webSearch:mode==='public'?'unchanged':'disabled',historyReuse:false};
++ return Object.freeze(descriptor);
++}
++export async function admittedIsolation(db,execution){
++ const[{and,eq},{heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,execution.binding.runId),eq(heartbeatRuns.companyId,execution.binding.companyId))).limit(1);
++ const expected=await privateSessionIsolation(db,execution.binding,execution.provider.nativeFundingPolicy,execution.provider.nativeCoordinatorPolicy),stored=run?.runnerProfileJson?.inertiaExecutionIsolation;
++ if(!expected&&!stored)return null;
++ if(!expected||!stored||privateDigest(expected)!==privateDigest(stored)||run.nativeSessionId!==stored.sessionId||execution.session.normalizedSessionId!==stored.sessionId||run.runnerProfileJson.nativeExecutionInput?.session?.normalizedSessionId!==stored.sessionId)throw Error('private_context_requires_fresh_admission');
++ return stored;
++}
++export async function assertCoordinatorPrivateIsolation(db,binding,context){
++ const p=binding.nativeCoordinatorPolicy;if(!p)return;
++ const expected=await privateSessionIsolation(db,binding,null,{version:p.version,projectIds:p.projectIds});if(!expected)return;
++ const stored=context.run.runnerProfileJson?.inertiaExecutionIsolation;
++ if(!stored||privateDigest(expected)!==privateDigest(stored)||context.run.nativeSessionId!==stored.sessionId||context.run.runnerProfileJson?.nativeExecutionInput?.session?.normalizedSessionId!==stored.sessionId)throw Error('coordinator_private_context_requires_fresh_admission');
++}
++export async function markPrivateExecution(db,binding,admission){
++ const[{and,eq},{heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId),eq(heartbeatRuns.agentId,binding.agentId),eq(heartbeatRuns.status,'running'))).limit(1);if(!run)deny();
++ const receipt=admission.role==='producer'?privateExecutionMetadata(admission):{version:1,companyId:admission.companyId,projectId:admission.projectId,issueId:admission.issueId,rootIssueId:admission.rootIssueId,agentId:admission.agentId,runId:admission.runId,bindingHash:admission.bindingHash,webSearch:'disabled',historyReuse:false};
++ await db.update(heartbeatRuns).set({runnerProfileJson:{...(run.runnerProfileJson??{}),privatePreparationExecution:receipt}}).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId),eq(heartbeatRuns.status,'running')));
++ return receipt;
++}
+--- a/dist/services/native-runtime/native-review-application.mjs
++++ b/dist/services/native-runtime/native-review-application.mjs
+@@ -1,4 +1,4 @@
+-import {templateMatches} from './native-portfolio-scope.mjs';
++import {templateMatches,scopeForIssue} from './native-portfolio-scope.mjs';
+ /** Owning-server initialization only. No model route, listener or lifecycle controller. */
+ import fs from 'node:fs/promises';
+ import {constants} from 'node:fs';
+@@ -13,13 +13,13 @@
+ function validate(registry){
+   if(!exact(registry,['version','bindings'])||registry.version!==1||!Array.isArray(registry.bindings)||registry.bindings.length!==1)fail();
+   for(const b of registry.bindings){
+-    if(!exact(b,['scope','reviewerPolicy','process','host'])||!exact(b.host,['expectedPluginId','publicDrafting']))fail();
++    if(!exact(b,['scope','reviewerPolicy','process','host'])||!(exact(b.host,['expectedPluginId','publicDrafting'])||exact(b.host,['expectedPluginId','privatePreparation'])))fail();
+     const p=b.reviewerPolicy,s=b.scope;
+     if(!exact(p,['version','role','projectIds','issueIds',...(s?.portfolioRootIssueId?['portfolioRootIssueId']:[])])||p.portfolioRootIssueId!==s?.portfolioRootIssueId||p.version!==1||p.role!=='reviewer'||!(s?.portfolioRootIssueId?Array.isArray(p.projectIds)&&p.projectIds.length>=1&&p.projectIds.length<=16&&p.projectIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.projectIds).size===p.projectIds.length&&p.projectIds.includes(s.projectId):JSON.stringify(p.projectIds)===JSON.stringify([s?.projectId]))||!(s?.portfolioRootIssueId?Array.isArray(p.issueIds)&&p.issueIds.length<=16&&p.issueIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.issueIds).size===p.issueIds.length&&p.issueIds.includes(s.issueId):JSON.stringify(p.issueIds)===JSON.stringify([s?.issueId])))fail();
+     // Producer and reviewer are distinct pinned protocols, not interchangeable.
+     // Construction validates the reviewer process without launching a child.
+-    createNativeReviewStdio(b.process);
+-    createNativeReviewHostAdmissionPolicy({scope:s,expectedPluginId:b.host.expectedPluginId,publicDrafting:b.host.publicDrafting,applicantSlug:b.host.publicDrafting?.applicantSlug,matchId:b.host.publicDrafting?.matchId});
++    createNativeReviewStdio(b.process,{privatePreparation:b.host.privatePreparation!==undefined});
++    createNativeReviewHostAdmissionPolicy({scope:s,expectedPluginId:b.host.expectedPluginId,...b.host,applicantSlug:(b.host.privatePreparation??b.host.publicDrafting)?.applicantSlug,matchId:(b.host.privatePreparation??b.host.publicDrafting)?.matchId});
+   }
+   return registry;
+ }
+@@ -46,7 +46,7 @@
+   const [{and,eq},{agents,heartbeatRuns,issues},{getNativeReviewAssignment},{assertNativeFundingContext},{toolAccessPolicyService},{createNativeReviewHostAdmission},{createNativeReviewRuntime}]=await Promise.all([
+     import('drizzle-orm'),import('@paperclipai/db'),import('./native-review-participant.js'),import('./native-funding-policy.js'),import('../tool-access-policy.js'),import('./native-review-host-admission.mjs'),import('./native-review-runtime.mjs'),
+   ]);
+-  const checks=await Promise.all(bindings.map(b=>createNativeReviewHostAdmission(db,{scope:b.scope,...b.host,applicantSlug:b.host.publicDrafting.applicantSlug,matchId:b.host.publicDrafting.matchId})));
++  const checks=await Promise.all(bindings.map(b=>createNativeReviewHostAdmission(db,{scope:b.scope,...b.host,applicantSlug:(b.host.privatePreparation??b.host.publicDrafting).applicantSlug,matchId:(b.host.privatePreparation??b.host.publicDrafting).matchId})));
+   const policy=toolAccessPolicyService(db);
+   const getIssue=async(issueId,companyId)=>(await db.select().from(issues).where(and(eq(issues.id,issueId),eq(issues.companyId,companyId))).limit(1))[0];
+   return createNativeReviewRuntime({bindings,stdioFactory:createNativeReviewStdio,native:{
+@@ -57,6 +57,13 @@
+       const issue=await getIssue(binding.issueId,binding.companyId);
+       if(!actor||!run||run.finishedAt||!issue)throw Error('native_funding_scope_revoked');
+       assertNativeFundingContext(binding,{actor,run,issue});
++      if(bindings.some(b=>b.host.privatePreparation!==undefined&&scopeForIssue(b.scope,issue))){
++        const {readPrivatePreparation,privateExecutionMetadata,privateDigest}=await import('./native-private-preparation.mjs');
++        const actualReview=await getNativeReviewAssignment(db,{...binding,contextSnapshot:binding.nativeReview,actingRunId:binding.runId,allowResolvedByRunId:binding.runId});
++        if(!actualReview)throw Error('private_review_assignment_unavailable');
++        const admission=await readPrivatePreparation(db,binding,actor.adapterConfig.nativeFunding,binding.nativeReview,{actor,run,issue,privateReviewResolved:['accepted','rejected'].includes(actualReview.interaction.status)});
++        if(!admission||privateDigest(run.runnerProfileJson?.privatePreparationExecution)!==privateDigest(privateExecutionMetadata(admission)))throw Error('private_review_provider_isolation_unavailable');
++      }
+     },
+     getIssue,getReviewAssignment:p=>getNativeReviewAssignment(db,p),decideTool:p=>policy.decide(p),
+   }});
+--- a/dist/services/native-runtime/native-review-host-admission.mjs
++++ b/dist/services/native-runtime/native-review-host-admission.mjs
+@@ -46,11 +46,14 @@
+  * The complete original publicDrafting object, including process pins, is hashed.
+  * Native participant authorization is a separate mandatory runtime check.
+  */
+-export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting}={}){
++export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting,privatePreparation}={}){
+   if(!id(expectedPluginId)||!(keys(scope,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'],scopeKeys)&&(scope.wholePacketReview===undefined||scope.wholePacketReview===true))||scopeKeys.some(k=>!id(scope[k]))||scope.portfolioRootIssueId!==undefined&&(scope.portfolioRootIssueId!==scope.issueId||scope.wholePacketReview!==true)||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
+   const pinned=Object.freeze({...scope});
+-  if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(publicDrafting,pinned)||publicDrafting.applicantSlug!==applicantSlug||publicDrafting.matchId!==matchId)invalid();
+-  const initial=fingerprint(publicDrafting);
++  const privateMode=privatePreparation!==undefined;
++  const adapt=c=>{if(!privateMode)return c;if(!object(c)||!id(c.policyRevision))return null;const{policyRevision,...rest}=c;return{...rest,nativeAttention:true};};
++  const configured=privateMode?privatePreparation:publicDrafting;
++  if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(adapt(configured),pinned)||configured.applicantSlug!==applicantSlug||configured.matchId!==matchId)invalid();
++  const initial=fingerprint(configured);
+   return (rows,requestedScope,input)=>{
+     if(!keys(requestedScope,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'],scopeKeys)||(requestedScope.wholePacketReview===true)!==(pinned.wholePacketReview===true)||requestedScope.wholePacketReview!==undefined&&requestedScope.wholePacketReview!==true||!templateMatches(requestedScope,pinned)||!scopeForIssue(pinned,input?.issue)
+       ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==requestedScope.issueId||input.issue.projectId!==pinned.projectId
+@@ -62,7 +65,7 @@
+       if(!id(row.settingsId)||row.settingsPluginId!==row.pluginId||row.settingsCompanyId!==pinned.companyId||row.enabled!==true)return false;
+     }else if(row.settingsPluginId!=null||row.settingsCompanyId!=null||row.enabled!=null)return false;
+     const config=row.configJson;
+-    try{return config?.nativeFundingToolPreapproval===true&&validDrafting(config.publicDrafting,pinned)&&fingerprint(config.publicDrafting)===initial;}
++    try{return config?.nativeFundingToolPreapproval===true&&validDrafting(adapt(privateMode?config.privatePreparation:config.publicDrafting),pinned)&&fingerprint(privateMode?config.privatePreparation:config.publicDrafting)===initial;}
+     catch{return false;}
+   };
+ }
+--- a/dist/services/native-runtime/native-review-runtime.mjs
++++ b/dist/services/native-runtime/native-review-runtime.mjs
+@@ -29,12 +29,14 @@
+       const expected=b.process.pins?.find(p=>p.path===file)?.sha256;
+       if(createHash('sha256').update(bytes).digest('hex')!==expected)throw Error();
+       config=JSON.parse(bytes.toString('utf8'));
+-      const ns=config.native_scope;
++      const privateMode=config.private_preparation_enabled===true;
++      if(privateMode&&(config.actor_role!=="reviewer"||!nonempty(config.policy_revision)||!scope.portfolioRootIssueId))throw Error();
++      const ns=privateMode?{company_id:config.company_id,project_id:config.cycle?.project_id,issue_id:config.cycle?.portfolio_root_issue_id,producer_agent_id:config.cycle?.producer?.agent_id,producer_principal_id:config.cycle?.producer?.principal_id,reviewer_agent_id:config.cycle?.reviewer?.agent_id,reviewer_principal_id:config.cycle?.reviewer?.principal_id}:config.native_scope;
+       for(const [key,value] of Object.entries({company_id:scope.companyId,project_id:scope.projectId,issue_id:scope.issueId,producer_agent_id:scope.producerAgentId,producer_principal_id:scope.producerPrincipalId,reviewer_agent_id:scope.reviewerAgentId,reviewer_principal_id:scope.reviewerPrincipalId}))if(ns?.[key]!==value)throw Error();
+       if((config.whole_packet_review===true)!==(scope.wholePacketReview===true))throw Error();
+-      if(config.company_id!==scope.companyId||!nonempty(config.applicant_slug)||!nonempty(config.match_id)||ns.target_type!=='sponsor_answer'||!nonempty(ns.target_key))throw Error();
++      if(config.company_id!==scope.companyId||!nonempty(config.applicant_slug)||!nonempty(config.match_id)||!privateMode&&(ns.target_type!=='sponsor_answer'||!nonempty(ns.target_key)))throw Error();
+     }catch{fail('native_domain_review_runtime_configuration_invalid');}
+-    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),allCurrentTargets:config.all_current_targets===true,gapPlanReview:config.gap_plan_review===true,applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
++    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),privatePreparation:config.private_preparation_enabled===true,policyRevision:config.policy_revision,allCurrentTargets:config.private_preparation_enabled===true||config.all_current_targets===true,gapPlanReview:config.gap_plan_review===true,applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process),{privatePreparation:config.private_preparation_enabled===true})}));
+   }
+   function entry(scope){const e=entries.find(e=>templateMatches(scope,e.scope));if(!e)fail('native_domain_review_scope_unavailable');return e.scope.portfolioRootIssueId?{...e,scope:Object.freeze({...scope})}:e;}
+   async function hostAdmission(e,input){
+@@ -59,6 +61,7 @@
+     const assignment=await native.getReviewAssignment({...binding,contextSnapshot:binding.nativeReview,actingRunId:binding.runId,allowResolvedByRunId:binding.runId});
+     const facts={issue,interaction:assignment?.interaction,actor:{agentId:binding.agentId,runId:binding.runId},assignment};
+     nativeDomainReviewAssignment(e.scope,facts,{allowResolved:['accepted','rejected'].includes(facts.interaction?.status)});
++    if(e.privatePreparation&&(facts.interaction.id!==input.interaction?.id||facts.assignment.sourceDecision.id!==input.assignment?.sourceDecision?.id||facts.assignment.sourceRun.id!==input.assignment?.sourceRun?.id||facts.assignment.sourceRun.agentId!==input.assignment?.sourceRun?.agentId))fail('private_review_assignment_changed');
+     await hostAdmission(e,input);
+     return facts;
+   }
+@@ -75,6 +78,14 @@
+     await current(e,input);
+     return {
+       async context(signal){signal?.throwIfAborted();await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,applicant_slug:e.applicantSlug,match_id:e.matchId,principal_id:e.scope.reviewerPrincipalId,run_id:input.actor.runId,role:'reviewer',...(e.scope.portfolioRootIssueId?{issue_id:e.scope.issueId,portfolio_root_issue_id:e.scope.portfolioRootIssueId}:{})};},
++      ...(e.privatePreparation?{async privateAuthorization(request,signal){
++        signal?.throwIfAborted();const f=await current(e,input),s=request.scope,a=request.actor;
++        const expected={company_id:e.scope.companyId,project_id:e.scope.projectId,issue_id:e.scope.issueId,root_issue_id:e.scope.portfolioRootIssueId,applicant_slug:e.applicantSlug,source_run_id:f.assignment.sourceRun.id,producer_agent_id:e.scope.producerAgentId,producer_principal_id:e.scope.producerPrincipalId,reviewer_agent_id:e.scope.reviewerAgentId,reviewer_principal_id:e.scope.reviewerPrincipalId,policy_revision:e.policyRevision,permitted_audiences:['public','internal','restricted']};
++        const actor={company_id:e.scope.companyId,project_id:e.scope.projectId,issue_id:e.scope.issueId,root_issue_id:e.scope.portfolioRootIssueId,agent_id:e.scope.reviewerAgentId,principal_id:e.scope.reviewerPrincipalId,run_id:input.actor.runId,role:'reviewer'};
++        const{privateDigest}=await import('./native-private-preparation.mjs');
++        if(!s||!nonempty(s.match_id)||Object.keys(s).length!==Object.keys(expected).length+1||Object.entries(expected).some(([k,v])=>privateDigest(s[k])!==privateDigest(v))||privateDigest(a)!==privateDigest(actor)||request.scope_hash!==privateDigest(s)||request.actor_hash!==privateDigest(a))fail('private_review_scope_denied');
++        await current(e,input);return{authorized:true,scope_hash:request.scope_hash,actor_hash:request.actor_hash};
++      }}:{}),
+       async nativeAssignment(signal){signal?.throwIfAborted();const f=await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,project_id:f.issue.projectId,issue_id:f.issue.id,interaction_id:f.interaction.id,decision_id:f.assignment.sourceDecision.id,producer_agent_id:f.assignment.sourceRun.agentId,producer_run_id:f.assignment.sourceRun.id,reviewer_agent_id:e.scope.reviewerAgentId,reviewer_run_id:input.actor.runId};},
+     };
+   }
+--- a/dist/services/native-runtime/native-review-stdio.mjs
++++ b/dist/services/native-runtime/native-review-stdio.mjs
+@@ -69,14 +69,14 @@
+   throw error('native_review_configuration','Invalid native review process configuration');
+  return freeze(c);
+ }
+-export function createNativeReviewStdio(config){
+- const c=configuration(config);
++export function createNativeReviewStdio(config,{privatePreparation=false}={}){
++ const c=configuration(config),protocolVersion=privatePreparation?"dfw-private-preparation-v1":VERSION;
+  return Object.freeze({async call(op,params,callbacks){
+   if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)||preparationArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
+   if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
+   const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
+-  const input=JSON.stringify({version:VERSION,op,params})+'\n';if(Buffer.byteLength(input)>128*1024)throw error('native_review_request','Native review request too large');
++  const input=JSON.stringify({version:protocolVersion,op,params})+'\n';if(Buffer.byteLength(input)>128*1024)throw error('native_review_request','Native review request too large');
+   check();
+   for(const pin of c.pins){
+    check();const metadata=await lstat(pin.path);check();
+@@ -84,12 +84,12 @@
+    if(createHash('sha256').update(await readFile(pin.path)).digest('hex')!==pin.sha256)throw error('native_review_pins','Native review pin mismatch');check();
+   }
+   if(!(await stat(c.cwd)).isDirectory())throw error('native_review_configuration','Native review cwd is not a directory');check();
+-  return new NativeReviewSession(c,op,input,callbacks,deadline).initial.promise;
++  return new NativeReviewSession(c,op,input,callbacks,deadline,privatePreparation).initial.promise;
+  }});
+ }
+ class NativeReviewSession {
+- constructor(c,op,input,callbacks,deadline){
+-  Object.assign(this,{c,op,callbacks,deadline,params:freeze(JSON.parse(input).params),sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
++ constructor(c,op,input,callbacks,deadline,privatePreparation){
++  Object.assign(this,{c,op,callbacks,deadline,privatePreparation,privateCount:0,params:freeze(JSON.parse(input).params),sequence:0,commandSequence:0,contextCount:0,nativeCount:0,bytes:0,diagnostics:0,buffer:Buffer.alloc(0),phase:'initial',busy:false,closed:false,resultSeen:false,initialResolved:false,terminated:false});
+   this.initial=deferred();this.controller=new AbortController();this.closeWait=deferred();
+   this.child=spawn(c.executable,c.args,{cwd:c.cwd,shell:false,detached:process.platform!=='win32',stdio:['pipe','pipe','pipe'],env:{PATH:'/usr/bin:/bin',HOME:'/nonexistent',LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONNOUSERSITE:'1'}});
+   this.timer=setTimeout(()=>this.fail('native_review_timeout','Native review timed out; outcome unconfirmed'),Math.max(1,deadline-Date.now()));
+@@ -155,13 +155,18 @@
+  async frame(line){
+   if(this.failure)return;if(this.busy||this.resultSeen)return this.fail('native_review_protocol','Native review protocol violation; outcome unconfirmed');
+   let m;try{m=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(line));if(!object(m))throw Error();}catch{return this.fail('native_review_frame','Native review invalid frame; outcome unconfirmed');}
+-  if(m.type==='context'||m.type==='native_assignment'){
+-   if(!keys(m,['type','id'])||!Number.isSafeInteger(m.id)||m.id!==this.sequence+1||m.id>MAX_CALLBACKS||(this.phase==='ready'&&this.pending?.kind!=='assert_alive'))return this.fail('native_review_callback','Native review invalid callback; outcome unconfirmed');
++  if(m.type==='context'||m.type==='native_assignment'||m.type==='private_authorization'&&this.privatePreparation){
++   if(!(m.type==='private_authorization'?keys(m,['type','id','scope','actor','scope_hash','actor_hash']):keys(m,['type','id']))||!Number.isSafeInteger(m.id)||m.id!==this.sequence+1||m.id>MAX_CALLBACKS||(this.phase==='ready'&&this.pending?.kind!=='assert_alive'))return this.fail('native_review_callback','Native review invalid callback; outcome unconfirmed');
+    this.sequence++;this.busy=true;
+    try{
+     if(m.type==='context'){
+      const value=await this.trustedCallback(signal=>this.callbacks.context(signal));if(!validContext(value)||(this.context&&!same(value,this.context)))throw Error();
+      this.context=freeze(structuredClone(value));this.contextCount++;this.send({type:'context',id:m.id,context:this.context});
++    }else if(m.type==='private_authorization'){
++     if(!this.contextCount||!this.nativeCount||typeof this.callbacks.privateAuthorization!=='function')throw Error();
++     const value=await this.trustedCallback(signal=>this.callbacks.privateAuthorization(m,signal));
++     if(!keys(value,['authorized','scope_hash','actor_hash'])||value.authorized!==true||value.scope_hash!==m.scope_hash||value.actor_hash!==m.actor_hash)throw Error();
++     this.privateCount++;this.send({type:'private_authorization',id:m.id,...value});
+     }else{
+      if(!this.contextCount)throw Error();const value=await this.trustedCallback(signal=>this.callbacks.nativeAssignment(signal));
+      if(!validAssignment(value)||value.company_id!==this.context.company_id||value.reviewer_run_id!==this.context.run_id||(this.assignment&&!same(value,this.assignment)))throw Error();
+@@ -179,13 +184,13 @@
+     // the pinned child exits0 with no further/trailing frames or protocol error.
+     this.resultSeen=true;this.terminalRejection=error('native_review_validation',rejected.message,false);this.terminalRejection.validationRejected=true;this.child.stdin.end();return;
+    }
+-   if(!keys(m,['type','ok','result'])||m.ok!==true||!object(m.result)||!this.contextCount||!this.nativeCount)return this.fail('native_review_result','Native review invalid result; outcome unconfirmed');
++   if(!keys(m,['type','ok','result'])||m.ok!==true||!object(m.result)||!this.contextCount||!this.nativeCount||this.privatePreparation&&!this.privateCount)return this.fail('native_review_result','Native review invalid result; outcome unconfirmed');
+    if(this.op!=='fence'&&!this.validSuccess(m.result))return this.fail('native_review_result','Native review misbound result; outcome unconfirmed');
+    if(this.op==='fence'&&(!this.pending||this.pending.kind!=='release'||!keys(m.result,['released'])||m.result.released!==true))return this.fail('native_review_protocol','Native review unexpected final result; outcome unconfirmed');
+    this.resultSeen=true;this.finalResult=m.result;this.child.stdin.end();return;
+   }
+   if(m.type==='fence_ready'){
+-   if(this.op!=='fence'||this.phase!=='initial'||!keys(m,['type','result'])||!this.contextCount||!this.nativeCount||!this.validReady(m.result))return this.fail('native_review_fence','Native review invalid fence binding; outcome unconfirmed');
++   if(this.op!=='fence'||this.phase!=='initial'||!keys(m,['type','result'])||!this.contextCount||!this.nativeCount||this.privatePreparation&&!this.privateCount||!this.validReady(m.result))return this.fail('native_review_fence','Native review invalid fence binding; outcome unconfirmed');
+    this.ready=freeze(structuredClone(m.result));this.phase='ready';clearTimeout(this.timer);this.initialResolved=true;this.initial.resolve(this.lease());return;
+   }
+   if(m.type==='fence_alive'){
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -1,3 +1,4 @@
++import {readPrivatePreparation,privateSessionIsolation,admittedIsolation,markPrivateExecution,privateDigest} from "./native-private-preparation.mjs";
+ import {readTaskProjectAdmission} from "./native-enrichment-tools.mjs";
+ import { readNativeDiscoveryAdmission } from "./native-discovery-policy.mjs";
+ import { publicScoutProjection, assertPublicScoutWorkspace } from "../../vendor/paperclip-runner/drivers/public-scout-projection.mjs";
+@@ -5412,6 +5413,8 @@
+             throw new Error("native_session_supervisor_busy");
+         }
+         executingNativeOwnerScopes.set(ownerScope, ownerToken);
++        const privateIsolation = await admittedIsolation(input.db,input.execution);
++        input={...input,privateIsolation};preparedInput=input;
+         await retireSupersededWarmNativeSessions(ownerScope, nativeSessionScopeKey(input.execution));
+         if (!input.useRunnerd) {
+             return await executePaperclipNativeSessionWithinScope(input);
+@@ -8130,8 +8133,11 @@
+     // reach the host's HTTP origin (which may be private or loopback-only).
+     const rawFundingPolicy = input.execution.provider.nativeFundingPolicy;
+     const effectiveFundingPolicy = rawFundingPolicy?.role === "worker" ? {...rawFundingPolicy,role:nativeReview?"reviewer":"producer"} : rawFundingPolicy;
+-    const nativeTaskProjectAdmission = await readTaskProjectAdmission(input.db,input.execution.binding,rawFundingPolicy,nativeReview);
+-    const nativeDiscoveryAdmission = nativeTaskProjectAdmission ? null : await readNativeDiscoveryAdmission(input.db, input.execution.binding, effectiveFundingPolicy, nativeReview);
++    const nativePrivatePreparationAdmission=await readPrivatePreparation(input.db,input.execution.binding,rawFundingPolicy,nativeReview);
++    if(nativePrivatePreparationAdmission && (input.privateIsolation?.mode!=="private" || input.privateIsolation.bindingHash!==nativePrivatePreparationAdmission.bindingHash))throw Error("private_provider_isolation_unavailable");
++    if(nativePrivatePreparationAdmission) await markPrivateExecution(input.db,input.execution.binding,nativePrivatePreparationAdmission);
++    const nativeTaskProjectAdmission = nativePrivatePreparationAdmission ? null : await readTaskProjectAdmission(input.db,input.execution.binding,rawFundingPolicy,nativeReview);
++    const nativeDiscoveryAdmission = nativePrivatePreparationAdmission || nativeTaskProjectAdmission ? null : await readNativeDiscoveryAdmission(input.db, input.execution.binding, effectiveFundingPolicy, nativeReview);
+     const publicScout = nativeDiscoveryAdmission?.role === "scout" ? publicScoutProjection(nativeDiscoveryAdmission) : null;
+     if (publicScout) assertPublicScoutWorkspace(input.execution.workspace.cwd);
+     const relayAssignedMcp = (remoteTarget !== null || nativeTaskProjectAdmission || nativeDiscoveryAdmission || effectiveFundingPolicy?.role === "producer") && input.execution.provider.kind === "codex";
+@@ -8154,7 +8160,7 @@
+             gatewayPublicId: assignedGatewayPublicId,
+             bearerToken: assignedMcpToken,
+             workMode: input.execution.task.workMode,
+-            ...(!nativeTaskProjectAdmission && !nativeDiscoveryAdmission && effectiveFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
++            ...(!nativePrivatePreparationAdmission && !nativeTaskProjectAdmission && !nativeDiscoveryAdmission && effectiveFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
+         })
+         : undefined;
+     const coordinator = input.execution.provider.nativeCoordinatorPolicy;
+@@ -8162,6 +8168,7 @@
+     if (funding && (coordinator || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never" || !nativeTaskProjectAdmission && !nativeDiscoveryAdmission && (funding.role === "reviewer") !== Boolean(nativeReview))) throw Error("native_funding_execution_denied");
+     if (coordinator && (nativeReview || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
+     const authority = new PaperclipRunnerToolAuthority(input.db, {
++        ...(nativePrivatePreparationAdmission ? {nativePrivatePreparationAdmission} : {}),
+         ...(nativeTaskProjectAdmission ? {nativeTaskProjectAdmission} : {}),
+         ...(nativeDiscoveryAdmission ? {nativeDiscoveryAdmission} : {}),
+         ...(coordinator ? {nativeCoordinatorPolicy:{...coordinator,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
+@@ -9397,7 +9404,7 @@
+     }) : null;
+     if (grokCredential)
+         effectiveRunnerEnvironmentBase = grokCredential.environment;
+-    if (relayAssignedMcp || funding?.role === "reviewer") {
++    if (relayAssignedMcp || funding?.role === "reviewer" || input.privateIsolation?.mode === "coordinator-private") {
+         // Native funding reviewers use only the assigned native review authority.
+         // Never deliver a duplicate legacy HTTP MCP endpoint or its bearer token.
+         delete effectiveRunnerEnvironmentBase.PAPERCLIP_NATIVE_MCP_NAME;
+@@ -9517,6 +9524,7 @@
+         opencodeRuntimeDirectory: resolve(resolvePaperclipInstanceRoot(), "runtime", "paperclip-runner", "opencode"),
+         acpxRuntimeDirectory: resolve(resolvePaperclipInstanceRoot(), "runtime", "paperclip-runner", "acpx"),
+         codexTransportFactory: (recoveryContext) => createRunnerdCodexTransport({
++            privatePreparation: input.privateIsolation && input.privateIsolation.mode!=="public" ? {kind:"inertia-private-preparation-v1",bindingHash:input.privateIsolation.bindingHash,runId:input.execution.binding.runId,sessionId:input.privateIsolation.sessionId} : null,
+             publicScout,
+             authorizePublicScout: publicScout ? () => authority.definitions() : undefined,
+             onSpawn: input.onSpawn,
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1,3 +1,4 @@
++import {readPrivatePreparation,privateDigest,privateDefinitions,executePrivateTool,assertCoordinatorPrivateIsolation} from "./native-private-preparation.mjs";
+ import {taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-enrichment-tools.mjs";
+ import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { NATIVE_REVIEW_ARTIFACT_SCHEMA } from "./native-review-artifact-schema.mjs";
+@@ -116,6 +117,7 @@
+         }
+     }
+     definitions() {
++        if(this.binding.nativePrivatePreparationAdmission?.role==="producer")return privateDefinitions(this.binding,()=>this.#boundContext());
+         if (this.binding.nativeTaskProjectAdmission) return (async()=>{
+             const tools=await taskProjectDefinitions(this.binding,()=>this.#boundContext());
+             if(this.binding.nativeCoordinatorPolicy) tools.push(...CAPABILITY_SEMANTIC_TOOL_CATALOG.filter(t=>NATIVE_COORDINATOR_TOOLS.includes(t.operationId)).map(t=>({name:t.operationId,description:t.description + (["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? " Coordinator may inspect targetTaskId only within server-configured projects; ownership and writes remain bound to the current task." : ""),inputSchema:["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? {...t.inputSchema,properties:{...t.inputSchema.properties,targetTaskId:{type:"string",format:"uuid",description:"Optional task in the server-authorized project scope; omission reads the current task."}}} : t.inputSchema})));
+@@ -213,6 +215,11 @@
+         return tools.map(tool => structuredClone(tool));
+     }
+     async execute(call) {
++        if(this.binding.nativeCoordinatorPolicy){await this.#boundContext();const result=await this.#executePrivateGuarded(call);await this.#boundContext();return result;}
++        return this.#executePrivateGuarded(call);
++    }
++    async #executePrivateGuarded(call) {
++        if(this.binding.nativePrivatePreparationAdmission?.role==="producer")return executePrivateTool(this.binding,call,()=>this.#boundContext());
+         if(this.binding.nativeTaskProjectAdmission && (!this.binding.nativeCoordinatorPolicy || isTaskProjectTool(this.binding,call.tool))) return executeTaskProjectTool(this.binding,call,()=>this.#boundContext());
+         if (isDiligenceDocumentTool(this.binding, call.tool)) return readDiligenceDocuments(this.binding, call, () => this.#boundContext(), documentService(this.db));
+         if (this.binding.nativeDiscoveryAdmission) return executeDiscoveryTool(this.binding, call, () => this.#boundContext());
+@@ -781,6 +788,13 @@
+             }
+         }
+         assertNativeCoordinatorContext(this.binding, row);
++        await assertCoordinatorPrivateIsolation(this.db,this.binding,row);
++        if(this.binding.nativePrivatePreparationAdmission){
++          const actualPrivateReview=this.binding.nativeReview?await getNativeReviewAssignment(this.db,{...this.binding,contextSnapshot:this.binding.nativeReview,allowResolvedByRunId:this.binding.runId}):null;
++          if(this.binding.nativeReview&&!actualPrivateReview)throw Error("private_review_assignment_unavailable");
++          const privateNow=await readPrivatePreparation(this.db,this.binding,row.actor.adapterConfig.nativeFunding,this.binding.nativeReview,{...row,privateReviewResolved:Boolean(actualPrivateReview&&["accepted","rejected"].includes(actualPrivateReview.interaction.status))});
++          if(!privateNow||privateDigest(privateNow)!==privateDigest(this.binding.nativePrivatePreparationAdmission))throw Error("native_private_preparation_revoked");
++        }
+         if(this.binding.nativeTaskProjectAdmission) await assertFreshTaskProject(this.db,this.binding,row);
+         else if (this.binding.nativeDiscoveryAdmission) await assertFreshNativeDiscovery(this.db, this.binding, row);
+         else assertNativeFundingContext(this.binding, row);
+@@ -1778,6 +1792,7 @@
+             throw new Error("paperclip_runner_tool_binding_not_authorized");
+         }
+         assertNativeCoordinatorContext(this.binding, context);
++        await assertCoordinatorPrivateIsolation(tx,this.binding,context);
+         assertNativeFundingContext(this.binding, context);
+         return context;
+     }
+--- a/dist/services/tool-gateway.js
++++ b/dist/services/tool-gateway.js
+@@ -1,3 +1,4 @@
++import {privateGatewayMetadata,PRIVATE_TOOL} from "./native-runtime/native-private-preparation.mjs";
+ import { resolveFundingExecutionPolicy } from "./native-runtime/funding-execution-policy.js";
+ import { composeConnectionInstructions } from "./connection-instructions.js";
+ import { isInsufficientConnectionScope, INSUFFICIENT_CONNECTION_SCOPE_MESSAGE } from "./connection-permission-errors.js";
+@@ -7657,6 +7658,7 @@
+                             runId: session.runId,
+                             companyId: session.companyId,
+                             projectId: session.projectId ?? "",
++                            ...(tool.name===PRIVATE_TOOL?{privatePreparationExecution:await privateGatewayMetadata(db,session)}:{}),
+                         }, fundingExecutionPolicy), executionTimeoutMs)
+                         : await runWithTimeout(executeBuiltinTool(session, tool, effectiveParameters, invocationId), executionTimeoutMs);
+                 const resultValidation = validateToolContent({
+--- a/dist/vendor/paperclip-runner/drivers/runtime-context-materializer.js
++++ b/dist/vendor/paperclip-runner/drivers/runtime-context-materializer.js
+@@ -241,6 +241,7 @@
+     }
+ }
+ export async function prepareIsolatedCodexHome(input) {
++    if(input.privatePreparation && (input.privatePreparation.kind!=="inertia-private-preparation-v1"||input.context!==null||input.nativeMcp))throw Error("private_home_projection_denied");
+     if (input.publicScout) {
+         assertPublicScoutProjection(input.publicScout);
+         if (input.context !== null || input.nativeMcp) throw Error("public_scout_private_context_denied");
+@@ -252,7 +253,7 @@
+         // Codex shell snapshots serialize the provider process environment. The
+         // native runner injects short-lived provider and MCP bindings, so a
+         // snapshot would turn ephemeral credentials into durable session state.
+-        ...(input.publicScout ? ['web_search = "live"', ""] : []),
++        ...(input.privatePreparation ? ['web_search = "disabled"', ""] : input.publicScout ? ['web_search = "live"', ""] : []),
+         "[features]",
+         "shell_snapshot = false",
+         "",
+--- a/dist/vendor/paperclip-runner/live/runnerd-codex-transport.js
++++ b/dist/vendor/paperclip-runner/live/runnerd-codex-transport.js
+@@ -2452,6 +2452,11 @@
+         }
+         if (method === "initialize")
+             return { user: {} };
++    if(this.options.privatePreparation){
++        if(this.options.privatePreparation.kind!=="inertia-private-preparation-v1"||!/^[a-f0-9]{64}$/.test(this.options.privatePreparation.bindingHash))throw Error("private_projection_denied");
++        if(this.options.privatePreparation.sessionId!==this.options.prpIdentity?.normalizedSessionId)throw Error("private_continuity_unqualified");
++        if(method==="thread/start")params={...params,config:{...record(params.config),web_search:"disabled"}};
++    }
+     if (this.options.publicScout) {
+         assertPublicScoutProjection(this.options.publicScout);
+         if (["thread/resume", "turn/steer"].includes(method)) throw Error("public_scout_continuity_unqualified");
+@@ -3272,7 +3277,7 @@
+             });
+         }
+         const provider = this.options.provider ?? "codex";
+-        const sourceRuntimeContext = this.options.publicScout ? null : (this.options.runtimeContext ?? null);
++        const sourceRuntimeContext = this.options.publicScout || this.options.privatePreparation ? null : (this.options.runtimeContext ?? null);
+         const runtimeContext = this.options.runnerRuntimeContext ?? sourceRuntimeContext;
+         const localRuntimeContextPath = resolve(this.#root, "runtime-context.json");
+         const runtimeContextPath = this.options.runnerFilesystemRoot
+@@ -3291,6 +3296,7 @@
+         if (provider === "codex") {
+             await prepareIsolatedCodexHome({
+                 context: sourceRuntimeContext,
++                privatePreparation: this.options.privatePreparation,
+                 publicScout: this.options.publicScout,
+                 codexHome: localCodexHome,
+                 sourceCodexHome: this.options.sourceCodexHome ??
+@@ -3773,7 +3779,7 @@
+         this.#durableTurnId = identity.turnId;
+         this.#eventIdentity = structuredClone(identity);
+         const provider = this.options.provider ?? "codex";
+-        const sourceRuntimeContext = this.options.publicScout ? null : (this.options.runtimeContext ?? null);
++        const sourceRuntimeContext = this.options.publicScout || this.options.privatePreparation ? null : (this.options.runtimeContext ?? null);
+         const runtimeContext = this.options.runnerRuntimeContext ?? sourceRuntimeContext;
+         const localRuntimeContextPath = resolve(this.#root, "runtime-context.json");
+         const runtimeContextPath = this.options.runnerFilesystemRoot
+@@ -3964,6 +3970,7 @@
+             await releaseMaterializedNativeRuntimeSkills(resolve(localCodexHome, "skills"));
+             await prepareIsolatedCodexHome({
+                 context: sourceRuntimeContext,
++                privatePreparation: this.options.privatePreparation,
+                 publicScout: this.options.publicScout,
+                 codexHome: localCodexHome,
+                 sourceCodexHome: this.options.sourceCodexHome ??
+@@ -4199,6 +4206,7 @@
+             .filter((item) => item.type !== "skill")
+             .map((item) => (typeof item.text === "string" ? item.text : ""))
+             .join("\n");
++        if(this.options.privatePreparation && (input.some(item=>item.type==="skill")||this.options.privatePreparation.sessionId!==this.options.prpIdentity?.normalizedSessionId))throw Error("private_continuity_unqualified");
+         if (this.options.publicScout) {
+         await this.options.authorizePublicScout();
+         if (input.some(item => item.type === "skill") || this.options.resumeProviderSession || this.options.adoptExistingRunner) throw Error("public_scout_continuity_unqualified");

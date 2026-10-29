@@ -1,0 +1,7 @@
+/** Actual domain-generated sponsor attachment, not an extension-only byte fixture. */
+import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs/promises';import{readPacketArtifact}from'../transport/native/native-packet-artifact-handoff.mjs';
+test('verified sponsor_docx descriptor preserves actual generated DOCX bytes and native MIME',async()=>{
+ const path=process.env.INERTIA_DFW_SPONSOR_FIXTURE;assert(path,'explicit actual DFW sponsor export required');const f=JSON.parse(await fs.readFile(path,'utf8')),a={kind:'case-work',role:'producer',companyId:f.catalog.manifest.scope.company_id,issueId:f.catalog.manifest.scope.issue_id,caseBindingId:f.catalog.case_binding_id};
+ const fetch=async(op,p)=>{if(op==='packet_artifacts')return f.catalog;const page=f.chunks[p.artifact_key].find(row=>row.offset===p.offset);assert(page);assert.equal(p.manifest_hash,page.manifest_hash);assert(page.end-page.offset<=p.limit);return page;};
+ const result=await readPacketArtifact(a,{artifactKey:f.selected.key},fetch,10*1024*1024);assert.equal(result.filename,f.selected.key+'.docx');assert.equal(result.contentType,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');assert.equal(result.sha256,f.selected.hash);assert.equal(result.bytes.subarray(0,2).toString(),'PK');assert.equal(result.contentTypeDerivedFrom,'verified_artifact_type');assert(f.document_text.includes(f.expected));
+});

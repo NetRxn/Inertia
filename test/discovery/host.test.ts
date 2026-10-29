@@ -406,3 +406,18 @@ it("canonicalizes Python observation timestamps before sending public urgent tra
   expect(result.data.humanDeliveryConfigured).toBe(true);
   expect(result.data.humanDeliveryReceipts[0].state).toBe("accepted");
 });
+it("native portfolio discovery follows fresh child ancestry without taking lifecycle ownership",async()=>{
+ const f=fixture();f.config.portfolioRootIssueId="objective";f.config.rootProjectId="funding-project";
+ const root:any={id:"objective",companyId:"company",projectId:"funding-project",status:"in_progress",assigneeAgentId:"coordinator"};
+ const child:any={id:"research-one",parentId:"objective",companyId:"company",projectId:"project",status:"in_progress",assigneeAgentId:"agent",executionRunId:"run"};
+ f.ctx.issues.get=async(id:string)=>id===root.id?root:child;
+ f.ctx.issues.getSubtree=async(id:string,companyId:string)=>({rootIssueId:id,companyId,issueIds:[root.id,child.id],issues:[root,child],activeRuns:{[child.id]:[{id:f.run.runId,issueId:child.id,agentId:"agent",status:"running",finishedAt:null}]},assignees:{agent:{id:"agent",status:"running"}}});
+ f.ctx.issues.assertCheckoutOwner=async()=>{throw Error("No portfolio checkout mutation");};
+ await f.tools.get("funding-discovery-context")({binding:"dao"},f.run);
+ await f.tools.get("funding-discovery-submit")({binding:"dao",urls:["https://example.org/program"]},f.run);
+ expect(f.wakeups).toEqual([]);expect([...f.documents.values()].some(d=>d.issueId==="research-one")).toBe(true);
+ child.id="research-two";f.run.runId="run-two";child.executionRunId="run-two";
+ await f.tools.get("funding-discovery-context")({binding:"dao"},f.run);
+ root.hiddenAt=new Date();await expect(f.tools.get("funding-discovery-context")({binding:"dao"},f.run)).rejects.toThrow();delete root.hiddenAt;
+ child.parentId="foreign";await expect(f.tools.get("funding-discovery-context")({binding:"dao"},f.run)).rejects.toThrow();
+});

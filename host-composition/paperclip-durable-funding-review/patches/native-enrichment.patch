@@ -1,0 +1,16 @@
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -1,4 +1,4 @@
+-import {readTaskProjectAdmission} from "./native-task-project-tools.mjs";
++import {readTaskProjectAdmission} from "./native-enrichment-tools.mjs";
+ import { readNativeDiscoveryAdmission } from "./native-discovery-policy.mjs";
+ import { publicScoutProjection, assertPublicScoutWorkspace } from "../../vendor/paperclip-runner/drivers/public-scout-projection.mjs";
+ import { resolveAcpxQualification } from "./acpx-qualification.js";
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1,4 +1,4 @@
+-import {taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-task-project-tools.mjs";
++import {taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-enrichment-tools.mjs";
+ import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { NATIVE_REVIEW_ARTIFACT_SCHEMA } from "./native-review-artifact-schema.mjs";
+ import { assertFreshNativeDiscovery, discoveryDefinitions, executeDiscoveryTool, isDiligenceDocumentTool, readDiligenceDocuments, DILIGENCE_DOCUMENT_TOOLS } from "./native-discovery-policy.mjs";

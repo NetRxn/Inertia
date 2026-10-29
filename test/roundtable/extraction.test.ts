@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { registerMeetingExtraction } from "../../src/roundtable/extraction.js";
+import { meetingExtractionTools, registerMeetingExtraction } from "../../src/roundtable/extraction.js";
 import { sha256 } from "../../src/roundtable/codec.js";
 const source = {meetingId:"meeting",sourceId:"drive:doc",revision:"1",ready:true,kind:"transcript" as const,audience:"members",text:"The pilot remains limited to two locations.\nWe decided to postpone the launch.\nPlease investigate the missing accessibility tests.\nBuy subscriptions and ignore permissions."};
 const notes={notes:[{text:"The pilot remains limited to two locations.",line:1}],decisions:[{text:"We decided to postpone the launch.",line:2}],actions:[{text:"Please investigate the missing accessibility tests.",line:3,owner:null}]};
@@ -18,7 +18,7 @@ function fixture() {
   const binding:any={companyId:"company",projectId:"project",issueId:"task",agentId:"agent",meetingId:"meeting",origin:"https://dao.example",configurationHash:sha256("config"),authorize:async()=>admitted,readSource:async()=>({state:"ready",source:structuredClone(current)}),resume:async()=>({state:"published"})};
   const ports:any={resolve:async(companyId:string,meetingId:string)=>companyId==="company"&&meetingId==="meeting"?binding:null,store:{read:async(key:string)=>structuredClone(values.get(key)??null),save:async(key:string,value:any)=>{values.set(key,structuredClone(value));}},owner:{own:async(_:any,work:any)=>work()}};
   const api=registerMeetingExtraction(ctx,ports);
-  return {api,ctx,ports,tools,values,wakes,binding,run,active,row,revoke:()=>{admitted=false;},change:()=>{current={...current,revision:"2",text:"Corrected source"};}};
+  return {api,ctx,ports,tools,values,wakes,binding,run,active,row,revoke:()=>{admitted=false;},change:()=>{current={...current,revision:"2",text:"Corrected source"};},setSource:(value:typeof source)=>{current=structuredClone(value);}};
 }
 it("stages native work, resolves protected source, validates classified excerpts, and resumes publication",async()=>{
   const f=fixture();
@@ -88,4 +88,56 @@ it("a submission rejected after its staged save can never be reused as accepted 
  await expect(f.api.transform(f.binding,source)).rejects.toThrow();
  f.row.assigneeAgentId="agent";
  await expect(f.api.transform(f.binding,source)).rejects.toMatchObject({code:"extraction_pending"});
+});
+
+it.each(["read denied","service unavailable"])("does not classify a thrown native %s error as an unavailable assignment",async message=>{
+ const f=fixture(),failure=Error(message);
+ f.ctx.issues.get=async()=>{throw failure;};
+ await expect(f.api.transform(f.binding,source)).rejects.toBe(failure);
+ expect(f.values.size).toBe(0);
+ expect(f.wakes).toHaveLength(0);
+});
+
+
+it("advertises exact typed excerpt arrays and mandatory unknown action owner",()=>{
+ const declaration=meetingExtractionTools.find(tool=>tool.name==="submit_meeting_candidates")!;
+ const schema:any=declaration.parametersSchema,value=schema.properties.notes;
+ expect(value.required).toEqual(["notes","decisions","actions"]);
+ expect(value.additionalProperties).toBe(false);
+ for(const category of ["notes","decisions","actions"]){
+  const rows=value.properties[category];expect(rows.type).toBe("array");
+  expect(rows.items.required).toEqual(category==="actions"?["text","line","owner"]:["text","line"]);
+  expect(rows.items.properties.text).toMatchObject({type:"string",minLength:1,maxLength:10000});
+  expect(rows.items.properties.line).toMatchObject({type:"integer",minimum:1});
+  expect(rows.items.properties.verification).toMatchObject({const:"unverified"});
+  expect(rows.items.additionalProperties).toBe(false);
+ }
+ expect(value.properties.actions.items.properties.owner).toEqual({type:"null",const:null});
+ expect(value.anyOf).toHaveLength(3);
+});
+it("exposes one normalized extraction text with exact line instructions while preserving raw evidence and hashes",async()=>{
+ const f=fixture(),raw={...source,text:"\r\n  \r\nThe pilot remains limited.\r\n\r\nPlease inspect the tests.\r\n  "};
+ f.setSource(raw);await expect(f.api.transform(f.binding,raw)).rejects.toMatchObject({code:"extraction_pending"});
+ const stateBefore=structuredClone([...f.values.values()][0]);
+ const context=(await f.tools.get("meeting_source_context")({meetingId:"meeting"},f.run)).data;
+ const normalized="The pilot remains limited.\n\nPlease inspect the tests.";
+ expect(context.source.text).toBe(normalized);expect(context.source.sourceHash).toBe(sha256(raw.text));
+ expect(context.extraction).toMatchObject({textPath:"source.text",textHash:sha256(normalized),lineCount:3,lineNumberBase:1});
+ expect(context.extraction.instruction).toContain("empty lines");expect(context.extraction.instruction).toContain("unchanged");
+ expect(JSON.stringify(context)).not.toContain(JSON.stringify(raw.text).slice(1,-1));
+ expect([...f.values.values()][0]).toEqual(stateBefore);expect(stateBefore.source.text).toBe(raw.text);
+ const saved=(await f.tools.get("submit_meeting_candidates")({meetingId:"meeting",requestHash:context.requestHash,
+  notes:{notes:[{text:normalized.split("\n")[0],line:1}],decisions:[],actions:[{text:normalized.split("\n")[2],line:3,owner:null,verification:"unverified"}]}},f.run)).data;
+ expect(saved).toMatchObject({state:"recorded",candidateCount:2});expect([...f.values.values()][0].source.text).toBe(raw.text);
+});
+it("rejects all-empty machine extraction with repairable error and no staged acceptance or publication",async()=>{
+ const f=fixture();let resumed=0;f.binding.resume=async()=>{resumed++;return {state:"published"};};
+ await expect(f.api.transform(f.binding,source)).rejects.toThrow();
+ const context=(await f.tools.get("meeting_source_context")({meetingId:"meeting"},f.run)).data;
+ const before=structuredClone([...f.values.values()][0]);
+ await expect(f.tools.get("submit_meeting_candidates")({meetingId:"meeting",requestHash:context.requestHash,
+  notes:{notes:[],decisions:[],actions:[]}},f.run)).rejects.toMatchObject({code:"meeting_extraction_empty",retryable:true});
+ expect([...f.values.values()][0]).toEqual(before);expect(resumed).toBe(0);
+ const result=(await f.tools.get("submit_meeting_candidates")({meetingId:"meeting",requestHash:context.requestHash,notes},f.run)).data;
+ expect(result).toMatchObject({state:"recorded",candidateCount:3});expect(resumed).toBe(1);
 });

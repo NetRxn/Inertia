@@ -1,0 +1,20 @@
+--- a/dist/services/native-runtime/native-discovery-policy.mjs
++++ b/dist/services/native-runtime/native-discovery-policy.mjs
+@@ -18,7 +18,7 @@
+ export function selectNativeDiscoveryAdmission(rows,binding,policy,context,nativeReview){
+  if(!policy)return null;
+  const candidates=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.config?.fundingDiscovery?.enabled===true&&
+-  ([r.config.fundingDiscovery.issueId,r.config.fundingDiscovery.diligence?.issueId].includes(binding.issueId)||r.config.fundingDiscovery.portfolioRootIssueId!==undefined&&r.config.fundingDiscovery.portfolioRootIssueId===policy.portfolioRootIssueId&&r.config.fundingDiscovery.agentId===binding.agentId&&r.config.fundingDiscovery.projectId===context.issue.projectId&&!nativeReview));
++  ([r.config.fundingDiscovery.issueId,r.config.fundingDiscovery.diligence?.issueId].includes(binding.issueId)||r.config.fundingDiscovery.portfolioRootIssueId!==undefined&&r.config.fundingDiscovery.portfolioRootIssueId===policy.portfolioRootIssueId&&[r.config.fundingDiscovery.agentId,r.config.fundingDiscovery.diligence?.agentId].includes(binding.agentId)&&r.config.fundingDiscovery.projectId===context.issue.projectId&&!nativeReview));
+  if(candidates.length===0)return null;
+  if(candidates.length!==1||nativeReview)return denied();
+  const row=candidates[0],c=row.config.fundingDiscovery;
+@@ -28,7 +28,7 @@
+   ||c.publicQueries.some(q=>typeof q!=='string'||!q.trim()||q.length>500||/[\x00-\x1f]/.test(q)))denied();
+  const portfolio=c.portfolioRootIssueId!==undefined;
+  if(c.rootProjectId!==undefined&&(!portfolio||!id(c.rootProjectId)))denied();
+- if(portfolio&&(!id(c.portfolioRootIssueId)||c.issueId!==c.portfolioRootIssueId||policy.portfolioRootIssueId!==c.portfolioRootIssueId
++ if(portfolio&&(!id(c.portfolioRootIssueId)||c.issueId!==c.portfolioRootIssueId||c.diligence&&c.diligence.issueId!==c.portfolioRootIssueId||policy.portfolioRootIssueId!==c.portfolioRootIssueId
+   ||!policy.issueIds.includes(c.portfolioRootIssueId)||binding.issueId===c.portfolioRootIssueId||context.issue.parentId!==c.portfolioRootIssueId
+   ||context.issue.status!=='in_progress'||!context.rootIssue||context.rootIssue.id!==c.portfolioRootIssueId
+   ||context.rootIssue.companyId!==binding.companyId||context.rootIssue.projectId!==(c.rootProjectId??c.projectId)||!policy.projectIds.includes(c.rootProjectId??c.projectId)||context.rootIssue.hiddenAt||['done','cancelled'].includes(context.rootIssue.status)))denied();
