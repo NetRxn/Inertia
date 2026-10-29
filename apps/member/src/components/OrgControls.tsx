@@ -7,6 +7,7 @@ import {
   checkIntegrations,
   clearIntegrationSettings,
   saveModelSettings,
+  saveOrganizationBasics,
   saveTelegramSettings,
   decideInitiative,
   draftProfile,
@@ -326,6 +327,25 @@ export function TelegramSettings({ current, canStoreKeys }: { current: { chatIds
       <div className={styles.row}>
         <button className="in-btn in-btn--primary" disabled={pending || !canStoreKeys || (!token.trim() && !current.hasToken)}>{pending ? 'Checking…' : 'Save Telegram'}</button>
         {current.saved && <button type="button" className="in-btn in-btn--quiet" disabled={pending} onClick={() => run(() => clearIntegrationSettings('telegram'))}>Use the server&apos;s settings</button>}
+        <Notice message={message} />
+      </div>
+    </form>
+  );
+}
+
+/** The organization's name and website, as everyone sees them. */
+export function OrganizationBasics({ name: savedName, website: savedWebsite }: { name: string; website: string }) {
+  const { pending, message, run } = useAction();
+  const [name, setName] = useState(savedName);
+  const [website, setWebsite] = useState(savedWebsite);
+  return (
+    <form className={styles.stack} onSubmit={(e: FormEvent) => { e.preventDefault(); run(() => saveOrganizationBasics({ name, website }).then((r) => (r.ok ? { ok: true, message: 'Saved.' } : r))); }}>
+      <div className={styles.row}>
+        <input className={styles.input} aria-label="Organization name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
+        <input className={styles.input} aria-label="Website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" inputMode="url" />
+      </div>
+      <div className={styles.row}>
+        <button className="in-btn in-btn--primary" disabled={pending || !name.trim()}>{pending ? 'Saving…' : 'Save'}</button>
         <Notice message={message} />
       </div>
     </form>

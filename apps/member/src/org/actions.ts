@@ -38,6 +38,9 @@ function refresh() {
 export async function saveOrganizationBasics(input: { name?: string; website?: string; description?: string }): Promise<ActionResult> {
   try {
     const member = await requireAdminMember();
+    if (input.name !== undefined && !input.name.trim()) return { ok: false, error: 'The organization needs a name.' };
+    // The website is shown as a link, so only web addresses.
+    if (input.website?.trim() && !/^https?:\/\/[^\s]+$/i.test(input.website.trim())) return { ok: false, error: 'The website should start with https://.' };
     const db = getDb();
     const before = await getOrganization(db);
     const org = await saveBasics(db, input);

@@ -12,6 +12,7 @@ import {
   GovernanceToggle,
   InitiativeChoice,
   InviteMember,
+  OrganizationBasics,
   MemberControls,
   ReadGithub,
   ReadWebsite,
@@ -40,7 +41,7 @@ const TABS: { tab: Tab; label: string; intro: string; adminOnly?: boolean }[] = 
   { tab: 'calendar', label: 'Calendar', intro: 'What’s coming up.' },
   { tab: 'docs', label: 'Docs', intro: 'Meeting notes, shared files and your drafts.' },
   { tab: 'data', label: 'Data', intro: 'Everything Inertia has read, and where it came from.' },
-  { tab: 'settings', label: 'Settings', intro: 'Governance and setup.', adminOnly: true },
+  { tab: 'settings', label: 'Settings', intro: 'Name, governance, the library and setup.', adminOnly: true },
 ];
 // Old tab names from links and bookmarks.
 const ALIASES: Record<string, Tab> = { profile: 'overview', members: 'people', integrations: 'data' };
@@ -204,6 +205,10 @@ async function SettingsTab() {
   const org = await getOrganization(getDb());
   return (
     <div className={cardStyles.feed}>
+      <section className={`in-glass ${cardStyles.card}`}>
+        <h2 className={`in-label ${cardStyles.eyebrow}`}>Organization</h2>
+        <OrganizationBasics name={org?.name ?? ''} website={org?.website ?? ''} />
+      </section>
       <section className={`in-glass ${cardStyles.card}`}>
         <h2 className={`in-label ${cardStyles.eyebrow}`}>Governance</h2>
         <GovernanceToggle enabled={org?.governanceEnabled ?? false} />
