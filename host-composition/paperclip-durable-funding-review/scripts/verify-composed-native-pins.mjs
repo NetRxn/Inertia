@@ -4,7 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
-const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging','native-coordinator-child-capacity','native-reconciliation-isolation','native-ai-binding-comparison','native-coordinator-server-capacity'];
+const overlays=['native-review-paging','native-agent-permission-grants','native-source-review-contract','native-coordinator-continuation','native-scout-deadline','native-case-result-envelope','native-source-receipt-envelope','native-case-documents','native-current-track-owner','native-source-context-paging','native-coordinator-child-capacity','native-reconciliation-isolation','native-ai-binding-comparison','native-coordinator-server-capacity','native-coordinator-structural-recovery'];
 // This is one explicitly reviewed metadata supersession, not a general last-writer-wins rule.
 const contractFile='dist/services/native-runtime/native-case-work-tools.mjs';
 const predecessor='56a31978d149429f7c626374b31710c4fe906afb7daa9c92b83308fe27dc200f';
@@ -31,6 +31,7 @@ async function safeRead(root,file){
  return fs.readFile(current);
 }
 const serverCapacityTransitions={"dist/services/native-runtime/native-coordinator-policy.js":{"base_sha256":"fde3c25c95835b1f0ab329ffc4e80fbc6bef4e98ccaaa940ac20032c8e916868","candidate_sha256":"8f76a2b29b1d9e24c27616d71b778ff1ba375ac9d031b026d9261452f36ad09f"},"dist/services/native-runtime/paperclip-runner-tool-authority.js":{"base_sha256":"34e2981aca364586b692e001999b172965e18778e82d24c9630fcb3e1fcd1f63","candidate_sha256":"2449ceca2332e558883ee2031d4d5f01a07a21c09411f26929d2bfe690ea7800"}};
+const structuralRecoveryTransitions={"dist/services/recovery/service.js":{"base_sha256":"06d5feba39fec523c3fbd3d1c9db40d1aa13eef8f0d283e280ba7f1da80a96ca","candidate_sha256":"7103efafa5f4f81637bfda81f4bc75d27b6721b9ab77fedb9246af54716996bb"}};
 export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
  if(![serverRoot,patchesRoot].every(value=>typeof value==='string'&&path.isAbsolute(value)))throw Error('explicit_native_source_roots_required');
  const server=await fs.realpath(serverRoot),patches=await fs.realpath(patchesRoot),pins=[];
@@ -53,10 +54,12 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
  const isolation=pins[11];if(Object.keys(isolation.files).length!==1||Object.keys(isolation.newFiles).length||Object.entries(reconciliationTransitions).some(([file,value])=>isolation.files[file]?.base_sha256!==value.base_sha256||isolation.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_reconciliation_isolation_lineage_denied');
  const bindingPin=pins[12];if(Object.keys(bindingPin.files).length!==1||Object.keys(bindingPin.newFiles).length||Object.entries(aiBindingTransitions).some(([file,value])=>bindingPin.files[file]?.base_sha256!==value.base_sha256||bindingPin.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_ai_binding_lineage_denied');
  const serverCapacity=pins[13];if(Object.keys(serverCapacity.files).length!==2||Object.keys(serverCapacity.newFiles).length||Object.entries(serverCapacityTransitions).some(([file,value])=>serverCapacity.files[file]?.base_sha256!==value.base_sha256||serverCapacity.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_server_capacity_lineage_denied');
+ const structuralRecovery=pins[14];if(Object.keys(structuralRecovery.files).length!==1||Object.keys(structuralRecovery.newFiles).length||Object.entries(structuralRecoveryTransitions).some(([file,value])=>structuralRecovery.files[file]?.base_sha256!==value.base_sha256||structuralRecovery.files[file]?.candidate_sha256!==value.candidate_sha256))throw Error('native_structural_recovery_lineage_denied');
  const packageInfo=JSON.parse(await safeRead(server,'package.json')),build=JSON.parse(await safeRead(server,'dist/build-info.json'));
  const expected=new Map();let supersededFiles=0;
  for(let i=0;i<pins.length;i++){
   const pin=pins[i];
+  if(i===14)for(const[file,value]of Object.entries(structuralRecoveryTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
   if(i===11)for(const[file,value]of Object.entries(reconciliationTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
   if(i===8)for(const[file,value]of Object.entries(currentTrackTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
   if(i===3)for(const [file,value]of Object.entries(continuationTransitions))if(!expected.has(file))expected.set(file,value.base_sha256);
@@ -80,13 +83,14 @@ export async function verifyComposedNativePins({serverRoot,patchesRoot}={}){
     const reconciliationContract=i===11&&reconciliationTransitions[file]?.base_sha256===previous&&reconciliationTransitions[file]?.candidate_sha256===digest;
     const aiBindingContract=i===12&&aiBindingTransitions[file]?.base_sha256===previous&&aiBindingTransitions[file]?.candidate_sha256===digest;
     const serverCapacityContract=i===13&&serverCapacityTransitions[file]?.base_sha256===previous&&serverCapacityTransitions[file]?.candidate_sha256===digest;
-    if(!serverCapacityContract&&!aiBindingContract&&!reconciliationContract&&!childCapacityContract&&!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
+    const structuralRecoveryContract=i===14&&structuralRecoveryTransitions[file]?.base_sha256===previous&&structuralRecoveryTransitions[file]?.candidate_sha256===digest;
+    if(!structuralRecoveryContract&&!serverCapacityContract&&!aiBindingContract&&!reconciliationContract&&!childCapacityContract&&!sourceContextPagingContract&&!currentTrackContract&&!sourceContract&&!continuationContract&&!scoutContract&&!caseResultContract&&!sourceReceiptContract&&!caseDocumentContract)throw Error('native_pin_lineage_conflict: '+file);
     supersededFiles++;
    }
    expected.set(file,digest);
   }
  }
- if(supersededFiles!==25)throw Error('native_contract_lineage_denied');
+ if(supersededFiles!==26)throw Error('native_contract_lineage_denied');
  for(const [file,digest] of expected)if(sha(await safeRead(server,file))!==digest)throw Error('native_pin_drift: '+file);
  return {overlays:[...overlays],verifiedFiles:expected.size,supersededFiles,providerStarted:false,databaseStarted:false};
 }
