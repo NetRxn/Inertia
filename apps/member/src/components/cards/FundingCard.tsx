@@ -27,7 +27,7 @@ export function FundingCard({
               <span className="in-mono">{plural(application.decisionsNeeded.length, 'decision')}</span>
             </div>
             <h3 className={styles.itemTitle}>
-              <a href={`/funding#application-${application.id}`} className={styles.textLink}>
+              <a href={`/org?tab=funding#application-${application.id}`} className={styles.textLink}>
                 {application.title}
               </a>
             </h3>
@@ -41,7 +41,7 @@ export function FundingCard({
               <span className="in-mono">{deadlineLabel(opportunity.deadline)}</span>
             </div>
             <h3 className={styles.itemTitle}>
-              <a href={`/funding#opportunity-${opportunity.id}`} className={styles.textLink}>
+              <a href={`/org?tab=funding#opportunity-${opportunity.id}`} className={styles.textLink}>
                 {opportunity.program}
               </a>
             </h3>

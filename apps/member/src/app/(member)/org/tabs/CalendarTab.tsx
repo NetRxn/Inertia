@@ -1,10 +1,9 @@
-import { Suspense } from 'react';
-import { getAdapters } from '../../../adapters';
-import type { DaoEvent } from '../../../adapters/types';
-import { requireMember } from '../../../identity/session';
-import { formatDay, formatTime } from '../../../components/cards/format';
-import cardStyles from '../../../components/cards/cards.module.css';
-import styles from '../sections.module.css';
+import { getAdapters } from '../../../../adapters';
+import type { DaoEvent } from '../../../../adapters/types';
+import { requireMember } from '../../../../identity/session';
+import { formatDay, formatTime } from '../../../../components/cards/format';
+import cardStyles from '../../../../components/cards/cards.module.css';
+import styles from '../../sections.module.css';
 
 const UPCOMING_LIMIT = 50;
 
@@ -27,7 +26,7 @@ function byDay(events: DaoEvent[]): { day: string; events: DaoEvent[] }[] {
   return groups;
 }
 
-async function CalendarContent() {
+export async function CalendarContent() {
   await requireMember();
   // After the dynamic access above, so the page keeps a static shell.
   const events = await getAdapters().events.listUpcoming(new Date(), UPCOMING_LIMIT);
@@ -67,16 +66,3 @@ async function CalendarContent() {
 }
 
 /** Upcoming DAO events, grouped by day. */
-export default function CalendarPage() {
-  return (
-    <>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Calendar</h1>
-        <p className={cardStyles.meta}>What&apos;s coming up across the DAO.</p>
-      </header>
-      <Suspense fallback={<p className="in-mono">Loading…</p>}>
-        <CalendarContent />
-      </Suspense>
-    </>
-  );
-}

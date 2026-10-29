@@ -147,8 +147,8 @@ describe('funding on the home feed', () => {
     expect(html).toContain('Program o1');
     expect(html).toContain('Up to $25,000');
     expect(html).toContain('Confirm the match amount');
-    expect(html).toContain('href="/funding#opportunity-o1"');
-    expect(html).toContain('href="/funding#application-a1"');
+    expect(html).toContain('href="/org?tab=funding#opportunity-o1"');
+    expect(html).toContain('href="/org?tab=funding#application-a1"');
     expect(html).not.toContain('javascript:');
   });
 });

@@ -88,10 +88,10 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
       ) : (
         <p className="in-ask__why">
           Nothing waiting for you. See{' '}
-          <Link href="/work" className={styles.textLink}>
-            Work
-          </Link>{' '}
-          for things you could take on.
+          <Link href="/#your-work" className={styles.textLink}>
+            what you could help with
+          </Link>
+          .
         </p>
       )}
     </section>

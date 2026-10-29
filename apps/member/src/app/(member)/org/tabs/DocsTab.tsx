@@ -1,16 +1,15 @@
-import { Suspense } from 'react';
-import { getAdapters } from '../../../adapters';
-import type { Meeting } from '../../../adapters/types';
-import { getDb } from '../../../db/client';
-import { members } from '../../../db/schema';
-import { listDocuments, type Document } from '../../../documents/documents';
-import { requireMember } from '../../../identity/session';
-import { listShares } from '../../../shares/shares';
-import type { ShareSummary } from '../../../feed/build-feed';
-import { HashDetails } from '../../../components/HashDetails';
-import { ago, firstName, formatDay, plural } from '../../../components/cards/format';
-import cardStyles from '../../../components/cards/cards.module.css';
-import styles from '../sections.module.css';
+import { getAdapters } from '../../../../adapters';
+import type { Meeting } from '../../../../adapters/types';
+import { getDb } from '../../../../db/client';
+import { members } from '../../../../db/schema';
+import { listDocuments, type Document } from '../../../../documents/documents';
+import { requireMember } from '../../../../identity/session';
+import { listShares } from '../../../../shares/shares';
+import type { ShareSummary } from '../../../../feed/build-feed';
+import { HashDetails } from '../../../../components/HashDetails';
+import { ago, firstName, formatDay, plural } from '../../../../components/cards/format';
+import cardStyles from '../../../../components/cards/cards.module.css';
+import styles from '../../sections.module.css';
 
 const MEETING_LIMIT = 20;
 const FILE_LIMIT = 50;
@@ -113,7 +112,7 @@ function Draft({ doc }: { doc: Document }) {
   );
 }
 
-async function DocsContent() {
+export async function DocsContent() {
   const member = await requireMember();
   const now = new Date();
   const db = getDb();
@@ -181,16 +180,3 @@ async function DocsContent() {
 }
 
 /** Meeting notes, files members shared, and this member's own assistant drafts. */
-export default function DocsPage() {
-  return (
-    <>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Docs</h1>
-        <p className={cardStyles.meta}>Meeting notes, shared files and your drafts.</p>
-      </header>
-      <Suspense fallback={<p className="in-mono">Loading…</p>}>
-        <DocsContent />
-      </Suspense>
-    </>
-  );
-}

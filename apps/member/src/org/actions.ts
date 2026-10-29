@@ -29,7 +29,7 @@ async function requireAdminMember() {
 }
 
 function refresh() {
-  for (const path of ['/', '/org', '/org/data', '/org/members', '/work', '/setup']) revalidatePath(path);
+  for (const path of ['/', '/org', '/agents', '/setup']) revalidatePath(path);
 }
 
 /** Saves the name, website and description from setup or the Profile page. */
@@ -228,7 +228,7 @@ export async function pursueFunding(opportunityId: string): Promise<ActionResult
     if (!opportunity) return { ok: false, error: 'That opportunity is gone. Refresh?' };
     const { pursueOpportunity } = await import('../work/pursue');
     const result = await pursueOpportunity(getDb(), adapters, backgroundAskJson(), opportunity, member.id);
-    for (const path of ['/funding', '/work']) revalidatePath(path);
+    for (const path of ['/org', '/']) revalidatePath(path);
     refresh();
     if (result.already) return { ok: true, message: 'Already being pursued. See Work.' };
     const people = result.plan.tasks.filter((t) => t.lane === 'human').length;

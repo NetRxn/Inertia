@@ -16,22 +16,22 @@ const DRAG_TO_CLOSE_PX = 80;
 function sourceHref(ref: SourceRef): string | null {
   switch (ref.kind) {
     case 'meeting':
-      return `/docs#meeting-${ref.id}`;
+      return `/org?tab=docs#meeting-${ref.id}`;
     case 'proposal':
-      return ref.url ?? '/votes';
+      return ref.url ?? '/org?tab=governance';
     case 'task':
     case 'initiative':
-      return '/work';
+      return '/#your-work';
     case 'share':
-      return '/work?tab=ideas';
+      return '/?show=shared';
     case 'document':
-      return `/docs#doc-${ref.id}`;
+      return `/org?tab=docs#doc-${ref.id}`;
     case 'event':
-      return '/calendar';
+      return '/org?tab=calendar';
     case 'opportunity':
-      return `/funding#opportunity-${ref.id}`;
+      return `/org?tab=funding#opportunity-${ref.id}`;
     case 'application':
-      return `/funding#application-${ref.id}`;
+      return `/org?tab=funding#application-${ref.id}`;
     case 'source':
       return `/org?tab=data#source-${ref.id}`;
     case 'chat':

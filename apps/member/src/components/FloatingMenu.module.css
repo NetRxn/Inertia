@@ -14,11 +14,16 @@
 }
 
 .link {
-  display: grid;
-  place-items: center;
-  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 44px;
   height: 44px;
+  padding-inline: var(--space-4);
   border-radius: var(--radius-pill);
+  font: var(--text-small);
+  text-decoration: none;
   color: var(--ink-muted);
   transition: background 160ms cubic-bezier(.2, .8, .2, 1), color 160ms cubic-bezier(.2, .8, .2, 1);
 }
@@ -46,20 +51,18 @@
   box-shadow: inset 0 0 0 1px var(--glass-edge);
 }
 
-.link[aria-current="page"]::after {
-  content: "";
-  position: absolute;
-  bottom: 5px;
-  width: 4px;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--ink);
-}
+/* Home sits in the middle; on narrow phones only Home keeps its word. */
+@media (max-width: 420px) {
+  .link:not([data-home]) span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 
-@media (max-width: 359px) {
-  .link {
-    width: 40px;
-    height: 40px;
+  .link:not([data-home]) {
+    padding-inline: var(--space-3);
   }
 }
 

@@ -1,17 +1,13 @@
 import { Suspense, use } from 'react';
 import Link from 'next/link';
-import { getAdapters } from '../../../adapters';
 import { getDb } from '../../../db/client';
 import { requireMember } from '../../../identity/session';
 import { listSources } from '../../../org/ingest';
-import { integrationCards } from '../../../org/integrations';
 import { isAdmin, listMembers } from '../../../org/members';
 import { getOrganization } from '../../../org/organization';
 import { sourcesSearchedForWork } from '../../../work/suggest';
 import type { Citation, ProfileLine } from '../../../org/profile-types';
 import {
-  AddToInertia,
-  CheckConnections,
   FindWork,
   GovernanceToggle,
   InitiativeChoice,
@@ -23,20 +19,31 @@ import {
   SourceVisibility,
 } from '../../../components/OrgControls';
 import cardStyles from '../../../components/cards/cards.module.css';
-import workStyles from '../work/work.module.css';
+import sectionStyles from '../sections.module.css';
+import { SectionTabs } from '../../../components/SectionTabs';
+import { FundingContent } from './tabs/FundingTab';
+import { CalendarContent } from './tabs/CalendarTab';
+import { DocsContent } from './tabs/DocsTab';
+import { VotesContent } from './tabs/GovernanceTab';
+import { ProfileContent } from './tabs/MyProfileTab';
 import styles from './org.module.css';
 
-// Allow blocking route for searchParams access, as on Work.
+// Allow blocking route for searchParams access.
 export const instant = false;
 
-type Tab = 'profile' | 'members' | 'data' | 'integrations' | 'settings';
-const TABS: { tab: Tab; label: string; adminOnly?: boolean }[] = [
-  { tab: 'profile', label: 'Profile' },
-  { tab: 'members', label: 'Members' },
-  { tab: 'data', label: 'Data' },
-  { tab: 'integrations', label: 'Integrations' },
-  { tab: 'settings', label: 'Settings', adminOnly: true },
+type Tab = 'overview' | 'people' | 'funding' | 'governance' | 'calendar' | 'docs' | 'data' | 'settings';
+const TABS: { tab: Tab; label: string; intro: string; adminOnly?: boolean }[] = [
+  { tab: 'overview', label: 'Overview', intro: 'Who we are and what we’re working on.' },
+  { tab: 'people', label: 'People', intro: 'Everyone here, and your own profile.' },
+  { tab: 'funding', label: 'Funding', intro: 'Grants the agents found and checked at the official source, and the applications they’re preparing.' },
+  { tab: 'governance', label: 'Governance', intro: 'How the organization decides.' },
+  { tab: 'calendar', label: 'Calendar', intro: 'What’s coming up.' },
+  { tab: 'docs', label: 'Docs', intro: 'Meeting notes, shared files and your drafts.' },
+  { tab: 'data', label: 'Data', intro: 'Everything Inertia has read, and where it came from.' },
+  { tab: 'settings', label: 'Settings', intro: 'Governance and setup.', adminOnly: true },
 ];
+// Old tab names from links and bookmarks.
+const ALIASES: Record<string, Tab> = { profile: 'overview', members: 'people', integrations: 'data' };
 
 function Sources({ citations }: { citations: Citation[] }) {
   const titles = Array.from(new Set(citations.map((c) => c.title)));
@@ -60,7 +67,7 @@ function Lines({ title, lines }: { title: string; lines: ProfileLine[] }) {
   );
 }
 
-async function ProfileTab({ admin }: { admin: boolean }) {
+async function OverviewTab({ admin }: { admin: boolean }) {
   const org = await getOrganization(getDb());
   if (!org?.profile) {
     return (
@@ -101,7 +108,6 @@ async function ProfileTab({ admin }: { admin: boolean }) {
         </ul>
       </section>
       <Lines title="What we do" lines={profile.programs} />
-      <Lines title="People" lines={profile.people} />
       <Lines title="Lately" lines={profile.recent} />
       {admin && <RedraftProfile />}
       {org.profileGeneratedAt && <p className={cardStyles.meta}>Drafted {org.profileGeneratedAt.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })} from what members shared.</p>}
@@ -109,10 +115,13 @@ async function ProfileTab({ admin }: { admin: boolean }) {
   );
 }
 
-async function MembersTab({ admin, selfId }: { admin: boolean; selfId: string }) {
-  const rows = (await listMembers(getDb())).filter((m) => m.status === 'active');
+async function PeopleTab({ admin, selfId }: { admin: boolean; selfId: string }) {
+  const [rows, org] = await Promise.all([listMembers(getDb()).then((all) => all.filter((m) => m.status === 'active')), getOrganization(getDb())]);
   return (
     <div className={cardStyles.feed}>
+      <div id="me">
+        <ProfileContent />
+      </div>
       {admin && (
         <section className={`in-glass ${cardStyles.card}`}>
           <h2 className={`in-label ${cardStyles.eyebrow}`}>Add someone</h2>
@@ -134,6 +143,19 @@ async function MembersTab({ admin, selfId }: { admin: boolean; selfId: string })
           ))}
         </ul>
       </section>
+      <Lines title="Mentioned in what Inertia read" lines={org?.profile?.people ?? []} />
+    </div>
+  );
+}
+
+function GovernanceTab() {
+  return (
+    <div className={cardStyles.feed}>
+      <section className={`in-glass ${cardStyles.card}`}>
+        <h2 className={`in-label ${cardStyles.eyebrowTide}`}>Coming with Vocdoni</h2>
+        <p className={cardStyles.body}>Proposals, votes and the rules your agents follow will live here once Vocdoni is connected. Until then, vote in Robert&apos;s Rules as usual.</p>
+      </section>
+      <VotesContent />
     </div>
   );
 }
@@ -148,7 +170,7 @@ async function DataTab({ admin }: { admin: boolean }) {
     <div className={cardStyles.feed}>
       <section className={`in-glass ${cardStyles.card}`}>
         <h2 className={`in-label ${cardStyles.eyebrow}`}>Add to Inertia</h2>
-        <AddToInertia />
+        <p className={cardStyles.meta}>Add notes, transcripts and links from <Link className={cardStyles.textLink} href="/">Home</Link>.</p>
         {admin && <ReadWebsite current={org?.website ?? null} />}
         {admin && <ReadGithub />}
       </section>
@@ -178,51 +200,6 @@ async function DataTab({ admin }: { admin: boolean }) {
   );
 }
 
-async function IntegrationsTab({ admin }: { admin: boolean }) {
-  const sources = await listSources(getDb());
-  const cards = integrationCards(process.env, getAdapters(), {
-    sources: sources.length,
-    meetings: sources.filter((s) => s.kind === 'meeting').length,
-    chatExports: sources.filter((s) => s.kind === 'chat-export').length,
-    repositories: sources.filter((s) => s.origin?.startsWith('https://github.com/')).length,
-    buzzDigests: sources.filter((s) => s.kind === 'chat-export' && s.title.startsWith('Buzz:')).length,
-    telegramDigests: sources.filter((s) => s.kind === 'chat-export' && s.title.startsWith('Telegram')).length,
-  });
-  const groups: { status: 'connected' | 'available' | 'planned'; label: string }[] = [
-    { status: 'connected', label: 'Connected' },
-    { status: 'available', label: 'Ready to connect' },
-    { status: 'planned', label: 'Coming next' },
-  ];
-  return (
-    <div className={cardStyles.feed}>
-      {admin && (
-        <section className={`in-glass ${cardStyles.card}`}>
-          <h2 className={`in-label ${cardStyles.eyebrow}`}>Test the connections</h2>
-          <CheckConnections />
-        </section>
-      )}
-      {groups.map((g) => {
-        const items = cards.filter((c) => c.status === g.status);
-        return items.length ? (
-          <section key={g.status} className={`in-glass ${cardStyles.card}`}>
-            <h2 className={`in-label ${cardStyles.eyebrow}`}>{g.label}</h2>
-            <ul className={cardStyles.rows}>
-              {items.map((c) => (
-                <li key={c.id}>
-                  <p className={cardStyles.itemTitle}>{c.name} <span className={cardStyles.meta}>· {c.direction}</span></p>
-                  <p className={cardStyles.body}>{c.what}</p>
-                  <p className={cardStyles.meta}>{c.how}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null;
-      })}
-      <p className={cardStyles.meta}>Anything can plug in: an integration only says what it reads or writes, how it connects, and who may see what it brings in. Everything it brings is treated as information, never as instructions.</p>
-    </div>
-  );
-}
-
 async function SettingsTab() {
   const org = await getOrganization(getDb());
   return (
@@ -243,30 +220,35 @@ async function OrgContent({ tab }: { tab: Tab }) {
   const member = await requireMember();
   const admin = isAdmin(member);
   const org = await getOrganization(getDb());
+  const shown = TABS.filter((t) => admin || !t.adminOnly);
+  const current = shown.find((t) => t.tab === tab) ?? shown[0];
   return (
     <>
-      <header className={workStyles.header}>
-        <h1 className={workStyles.title}>{org?.name ?? 'Organization'}</h1>
-        <p className={cardStyles.meta}>Who we are, who&apos;s here, what Inertia knows and what it&apos;s connected to.</p>
+      <header className={sectionStyles.header}>
+        <h1 className={sectionStyles.title}>{org?.name ?? 'Organization'}</h1>
+        <p className={cardStyles.meta}>{current.intro}</p>
       </header>
-      <nav className={`${workStyles.tabs} ${styles.scrollTabs}`} aria-label="Organization sections">
-        {TABS.filter((t) => admin || !t.adminOnly).map((t) => (
-          <Link key={t.tab} href={t.tab === 'profile' ? '/org' : `/org?tab=${t.tab}`} aria-current={tab === t.tab ? 'page' : undefined} className={workStyles.tab}>{t.label}</Link>
-        ))}
-      </nav>
-      {tab === 'profile' && <ProfileTab admin={admin} />}
-      {tab === 'members' && <MembersTab admin={admin} selfId={member.id} />}
-      {tab === 'data' && <DataTab admin={admin} />}
-      {tab === 'integrations' && <IntegrationsTab admin={admin} />}
-      {tab === 'settings' && admin && <SettingsTab />}
+      <SectionTabs
+        label="Organization sections"
+        tabs={shown.map((t) => ({ href: t.tab === 'overview' ? '/org' : `/org?tab=${t.tab}`, label: t.label, current: t.tab === current.tab }))}
+      />
+      {current.tab === 'overview' && <OverviewTab admin={admin} />}
+      {current.tab === 'people' && <PeopleTab admin={admin} selfId={member.id} />}
+      {current.tab === 'funding' && <FundingContent />}
+      {current.tab === 'governance' && <GovernanceTab />}
+      {current.tab === 'calendar' && <CalendarContent />}
+      {current.tab === 'docs' && <DocsContent />}
+      {current.tab === 'data' && <DataTab admin={admin} />}
+      {current.tab === 'settings' && <SettingsTab />}
     </>
   );
 }
 
-/** The organization: profile, members, data, integrations and settings. */
+/** The organization: overview, people, funding, governance, calendar, docs, data and settings. */
 export default function OrgPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const params = use(searchParams);
-  const tab: Tab = TABS.some((t) => t.tab === params.tab) ? (params.tab as Tab) : 'profile';
+  const name = params.tab && (ALIASES[params.tab] ?? params.tab);
+  const tab: Tab = TABS.some((t) => t.tab === name) ? (name as Tab) : 'overview';
   return (
     <Suspense fallback={<p className="in-mono">Loading…</p>}>
       <OrgContent tab={tab} />

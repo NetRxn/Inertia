@@ -1,15 +1,14 @@
-import { Suspense } from 'react';
-import { getAdapters } from '../../../adapters';
-import type { FundingApplication, FundingOpportunity } from '../../../adapters/types';
-import { requireMember } from '../../../identity/session';
-import { getDb } from '../../../db/client';
-import { isAdmin } from '../../../org/members';
-import { pursuedOpportunities } from '../../../work/pursue';
-import { PursueButton } from '../../../components/PursueButton';
-import { formatDay } from '../../../components/cards/format';
-import { ACTIONABLE_ROUTES, deadlineLabel, deadlineTime, ROUTE_LABELS, safeHttpUrl } from '../../../funding/funding';
-import cardStyles from '../../../components/cards/cards.module.css';
-import styles from '../sections.module.css';
+import { getAdapters } from '../../../../adapters';
+import type { FundingApplication, FundingOpportunity } from '../../../../adapters/types';
+import { requireMember } from '../../../../identity/session';
+import { getDb } from '../../../../db/client';
+import { isAdmin } from '../../../../org/members';
+import { pursuedOpportunities } from '../../../../work/pursue';
+import { PursueButton } from '../../../../components/PursueButton';
+import { formatDay } from '../../../../components/cards/format';
+import { ACTIONABLE_ROUTES, deadlineLabel, deadlineTime, ROUTE_LABELS, safeHttpUrl } from '../../../../funding/funding';
+import cardStyles from '../../../../components/cards/cards.module.css';
+import styles from '../../sections.module.css';
 
 const STAGE_LABELS: Record<FundingApplication['stage'], string> = {
   drafting: 'Agents drafting',
@@ -106,7 +105,7 @@ function Group({ id, label, empty, children }: { id: string; label: string; empt
   );
 }
 
-async function FundingContent() {
+export async function FundingContent() {
   const member = await requireMember();
   const canPursue = isAdmin(member);
   const pursued = await pursuedOpportunities(getDb());
@@ -160,19 +159,3 @@ async function FundingContent() {
 }
 
 /** The grant finder's results. Read-only: agents prepare, members confirm in the funding system. */
-export default function FundingPage() {
-  return (
-    <>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Funding</h1>
-        <p className={cardStyles.meta}>
-          Grants and other funding the DAO&apos;s agents have found and checked at the official source, and the
-          applications they&apos;re preparing.
-        </p>
-      </header>
-      <Suspense fallback={<p className="in-mono">Loading…</p>}>
-        <FundingContent />
-      </Suspense>
-    </>
-  );
-}

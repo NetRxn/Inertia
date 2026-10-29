@@ -1,10 +1,9 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
-import { requireMember } from '../../../identity/session';
-import cardStyles from '../../../components/cards/cards.module.css';
-import styles from '../sections.module.css';
+import { requireMember } from '../../../../identity/session';
+import cardStyles from '../../../../components/cards/cards.module.css';
+import styles from '../../sections.module.css';
 
-async function ProfileContent() {
+export async function ProfileContent() {
   const member = await requireMember();
 
   return (
@@ -31,15 +30,3 @@ async function ProfileContent() {
 }
 
 /** The member's name and email, the way out, and the short tour of the idea. */
-export default function ProfilePage() {
-  return (
-    <>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Profile</h1>
-      </header>
-      <Suspense fallback={<p className="in-mono">Loading…</p>}>
-        <ProfileContent />
-      </Suspense>
-    </>
-  );
-}

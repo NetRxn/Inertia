@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
       },
       { fetchPreview: previewFetcher() },
     );
-    revalidatePath('/work');
+    revalidatePath('/');
     revalidatePath('/');
     return NextResponse.json({ share }, { status: 201 });
   } catch (error) {
@@ -125,7 +125,7 @@ export async function DELETE(request: NextRequest) {
   if (result === 'forbidden') {
     return NextResponse.json({ error: 'You can only delete your own posts.' }, { status: 403 });
   }
-  revalidatePath('/work');
+  revalidatePath('/');
   revalidatePath('/');
   return NextResponse.json({ ok: true });
 }
