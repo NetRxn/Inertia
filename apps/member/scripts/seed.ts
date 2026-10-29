@@ -5,6 +5,7 @@ import { syncMembers } from '../src/identity/sync';
 import { getAdapters } from '../src/adapters';
 import { shares, members } from '../src/db/schema';
 import { eq } from 'drizzle-orm';
+import { seedDemoOrganization } from './seed-demo-org';
 
 async function seed() {
   console.log('Running migrations...');
@@ -64,6 +65,8 @@ async function seed() {
   } else {
     console.log(`Shares already exist (${existingShares.length} found), skipping creation`);
   }
+
+  await seedDemoOrganization(db);
 
   console.log('Seed completed successfully!');
 }

@@ -44,6 +44,16 @@ export function createFixtureAdapters(data?: FixtureData): Adapters {
 
   // Work source adapter
   const work: WorkSource = {
+    engine: { name: 'Paperclip (sample)', url: null, readOnly: true },
+
+    async listAgentTasks() {
+      return [...(fixtureData.agentTasks ?? [])];
+    },
+
+    async agentCompletionsBetween(from: Date, to: Date) {
+      return (fixtureData.agentTasks ?? []).filter((t) => t.status === 'done' && new Date(t.updatedAt) >= from && new Date(t.updatedAt) < to).length;
+    },
+
     async listInitiatives(): Promise<Initiative[]> {
       return [...fixtureData.initiatives];
     },

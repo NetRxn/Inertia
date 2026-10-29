@@ -8,6 +8,7 @@ import type {
   DaoEvent,
   FundingOpportunity,
   FundingApplication,
+  AgentTask,
 } from '../types';
 
 export const FIXTURE_NOW = new Date('2026-10-24T15:00:00Z');
@@ -22,6 +23,8 @@ export interface FixtureData {
   events: DaoEvent[];
   opportunities: FundingOpportunity[];
   applications: FundingApplication[];
+  /** Agent work in the sample engine; optional so hand-built fixtures can leave it out. */
+  agentTasks?: AgentTask[];
 }
 
 /**
@@ -479,6 +482,22 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     },
   ];
 
+  // What the agents are doing. One task sits under the agents' own root goal,
+  // which isn't an initiative, so it reads as general work.
+  const agentTask = (id: string, initiativeId: string | null, title: string, agentName: string, status: AgentTask['status'], offsetMs: number): AgentTask =>
+    ({ id, initiativeId, title, agentName, status, updatedAt: relativeDate(offsetMs), url: null });
+  const agentTasks: AgentTask[] = [
+    agentTask('agent-1', 'init-garden', 'Draft the Green Spaces budget narrative', 'Grant Writer', 'done', -2 * HOUR),
+    agentTask('agent-2', 'init-garden', 'Check the site lease against the grant rules', 'Diligence', 'blocked', -5 * HOUR),
+    agentTask('agent-3', 'init-garden', 'Collect letters of support templates', 'Grant Writer', 'running', -1 * HOUR),
+    agentTask('agent-4', 'init-coding', 'Find volunteer mentors in the meetup lists', 'Scout', 'done', -1 * DAY - 3 * HOUR),
+    agentTask('agent-5', 'init-coding', 'Draft the parent permission form', 'Scout', 'running', -30 * 60 * 1000),
+    agentTask('agent-6', 'init-treasury', 'Compare treasury policies from three DAOs', 'Researcher', 'done', -2 * DAY),
+    agentTask('agent-7', 'init-treasury', 'Summarize comments on the policy draft', 'Researcher', 'queued', -3 * HOUR),
+    agentTask('agent-8', 'init-root', 'Index this week’s meeting notes', 'Coordinator', 'done', -6 * HOUR),
+    agentTask('agent-9', 'init-root', 'Scan new grant listings', 'Coordinator', 'done', -3 * DAY),
+  ];
+
   return {
     members,
     proposals,
@@ -489,5 +508,6 @@ export function defaultFixture(anchor: Date = FIXTURE_NOW): FixtureData {
     events,
     opportunities,
     applications,
+    agentTasks,
   };
 }
