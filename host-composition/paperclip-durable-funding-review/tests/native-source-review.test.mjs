@@ -43,3 +43,14 @@ test('only a committed exact source-review wake receives active-owner followup s
  for(const change of[f=>f.intent.requestedByActorId='agent',f=>f.intent.payload.completedChildIssueId='sibling',f=>f.intent.reason='issue_status_changed',f=>f.effect.targetId='other',f=>f.effect.effectKind='notify_owner',f=>f.decision.applicationState='proposed',f=>f.decision.runId='other',f=>f.child.originId='manual-unrelated',f=>f.settlement.details.receiptHash='forged',f=>f.settlement.details.receipt.producer.agent_id='other']){const changed=structuredClone(facts);change(changed);assert.equal(source.isCommittedSourceReviewWake(changed,scope),false);}
  assert.equal(source.isCommittedSourceReviewWake(facts,{...scope,intentId:'forged-marker'}),false);
 });
+test('batch dedup only consumes trusted source followup when prior native receipt is durably pending',()=>{
+ assert.equal(typeof source.isDurableNativeStatusFollowup,'function');const scope={companyId:'company',agentId:'beta',issueId:'case'},wake={id:'receipt',companyId:'company',agentId:'beta',requestedByActorType:'system',requestedByActorId:'native-status-wake-dispatch:intent',status:'deferred_issue_execution',runId:null,payload:{issueId:'case'}};
+ assert.equal(source.isDurableNativeStatusFollowup({wake,run:null},scope),true);
+ const queued={id:'next',companyId:'company',agentId:'beta',status:'queued',contextSnapshot:{issueId:'case'}};
+ assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,status:'queued',runId:'next'},run:queued},scope),true);
+ for(const status of['skipped','cancelled','failed'])assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,status,runId:'next'},run:queued},scope),false);
+ for(const status of['running','succeeded','failed'])assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,status:'coalesced',runId:'next'},run:{...queued,status}},scope),false);
+ assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,requestedByActorType:'agent'},run:null},scope),false);
+ assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,payload:{issueId:'other'}},run:null},scope),false);
+ assert.equal(source.isDurableNativeStatusFollowup({wake:{...wake,status:'queued'},run:null},scope),false);
+});
