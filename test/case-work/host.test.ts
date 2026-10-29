@@ -39,3 +39,18 @@ it("advertises separate case context views so summary paging cannot be mistaken 
  expect(f.calls.map(call=>call.params)).toEqual([{}, {view:"history",offset:0,limit:100}]);
  for(const op of["prepare","workspace","render","packet"]){const branch=schema.oneOf.find((row:any)=>row.properties.operation.const===op);expect(branch.properties.parameters).toMatchObject({type:"object",additionalProperties:false,properties:{}});}
 });
+it('reserves a one-off candidate only through the configured researcher and preserves its preliminary source identities',async()=>{
+ const f=fixture(),original=f.binding.bridge.call;
+ f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:'one-off-source',source_candidate_record_id:'candidate-record'});
+ const result=await f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},scan);
+ expect(result.data).toMatchObject({preliminary:true,one_off_source_id:'one-off-source',source_candidate_record_id:'candidate-record',business_complete:false});expect(f.calls[0].actor.role).toBe('researcher');expect(f.docs.size).toBe(1);expect(f.wakes[0].issueId).toBe('root');
+ await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},beta('a'))).rejects.toThrow(/role denied/);
+ await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64),agent_id:'co'},scan)).rejects.toThrow();
+});
+it('withholds candidate reservation lacking the one-off source identity contract',async()=>{
+ const f=fixture();await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},scan)).rejects.toThrow(/candidate reservation/);expect(f.docs.size).toBe(0);
+});
+it('rejects candidate reservation reattributed to a different original source candidate',async()=>{
+ const f=fixture(),original=f.binding.bridge.call;f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:'one-off-source',source_candidate_record_id:'different-candidate'});
+ await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},scan)).rejects.toThrow(/candidate reservation/);expect(f.docs.size).toBe(0);
+});

@@ -58,3 +58,7 @@ it('withholds source review output after native assignment changes during the do
  const original=f.binding.bridge.call;f.binding.bridge.call=async(...args)=>{const value=await original(...args);f.rows[2].assigneeAgentId='other';return value;};
  await expect(f.invoke('source_review',{proposal_hash:proposal,decision:'accept',findings:[]},true)).rejects.toThrow();
 });
+it('advertises the one-off sponsor identity and notice fields accepted by the current domain',async()=>{
+ const {caseWorkTool}=await import('../../src/case-work/host.js');const definitions:any=caseWorkTool.parametersSchema.$defs;
+ expect(definitions.FieldAssertion.properties.field.enum).toEqual(expect.arrayContaining(['status','close_date','funder_sector']));
+});

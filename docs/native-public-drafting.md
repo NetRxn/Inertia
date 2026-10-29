@@ -12,6 +12,13 @@ running execution on each trusted callback. Caller parameters cannot choose a
 record, case, actor, project, root or process path. The legacy `publicDrafting`
 adapter described below is a separate configured path.
 
+Alpha may reserve a newly observed source candidate with
+`reserve_candidate({record_id,record_hash,scan_hash?})` under the same configured
+researcher scope as `reserve_case`. The response preserves the original candidate
+ID, separate materialized one-off source ID and preliminary state. The normal
+Coordinator creates the case task; this operation never impersonates Coordinator
+or admits eligibility/readiness.
+
 Beta reads `source_context` with `{}` for its current reserved record or
 `{view:"contract"}` for the exact domain-owned operation and field schemas. It can
 page `source_links({offset?,limit?,context_hash?})`, capture an admitted official
@@ -43,9 +50,16 @@ and continues `prepare`, `workspace`, typed `save`, gap progress, `render` and
 Partial research/draft checkpoints never complete the case.
 
 Beta's `packet_artifacts({})` returns the existing exact DFW packet projection:
-manifest/hash, canonical packet data, and descriptor-bound base64 bytes. The host
-verifies company/case, manifest/data hashes and each descriptor/byte size and
-hash. This operation accepts no manifest, artifact path or file selector.
+manifest/hash and artifact descriptors. The host verifies the exact company,
+case and manifest hash. `packet_artifact_chunk({manifest_hash,artifact_key,offset,limit?})`
+returns up to 196,608 bytes (default 131,072), bound to that current manifest.
+It rechecks native authority for every call and validates exact offsets, lengths,
+continuation and canonical base64. EOF returns an empty chunk and null continuation.
+Native reconstructs each artifact and verifies its final descriptor hash, checks
+canonical packet_data against the manifest and rechecks the current catalog.
+Transport responses are bounded; no aggregate 768 KiB or 4 MiB packet cap is
+introduced. The configured native attachment limit remains applicable.
+Neither operation accepts an arbitrary path.
 The bounded native `register_deliverable({artifactKey})` composition consumes
 these verified bytes and owns actual native attachment/work-product creation.
 A server path, returned base64 payload, registration request or saved review

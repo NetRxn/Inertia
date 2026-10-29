@@ -7,6 +7,10 @@ export const sourceDefinitions={
         "enum": [
           "title",
           "sponsor",
+          "status",
+          "close_date",
+          "funder_sector",
+          "cycle_model",
           "description",
           "eligible_applicant_types",
           "geography",
