@@ -1,0 +1,9 @@
+# Server-only Coordinator child capacity
+
+The operator childIssueLimit field is validated by the native configuration parser, but it is server policy, not a runner provider protocol field. The prior implementation serialized it into nativeCoordinatorPolicy; actual resolvePaperclipRunnerNativeProviderInput → buildNativeExecutionInput → strict vendor parser rejected before the runner/provider started. Reproduced in native-child-capacity-native.test.mjs against the unmodified predecessor.
+
+This two-runtime-file overlay keeps the serialized policy exactly `{version,projectIds}`. Under the existing native mutation locks, authority validates the current actor config and passes only its current childIssueLimit through the existing server-only Symbol to createChild. No model JSON override, new permission, wire schema expansion, history hiding, or identity change. Operator reductions apply immediately; project/role/config validity revocation remains enforced.
+
+Actual network-free PostgreSQL fixture: real provider-profile/strict-input constructor accepts limit0 without serializing it; 26 original children +13 new cases; same-key replay makes no duplicates; absent limit25 denies; model override cannot increase it; current operator reduction denies; finite40 concurrent requests create one and reject one; changed project scope denies. Provider not started. This is native creation/admission proof, not a live portfolio business acceptance claim.
+
+Additive installer/composed qualification:42 files/25 exact supersessions,14 tests. Prior pin files immutable. New overlay: native-coordinator-server-capacity. Run the existing native-child-capacity-native.test.mjs using explicit `/qual/source` and `/qual/candidate` mounts in inertia-native-review:candidate-20261028. No production configuration mutation is performed by these tests or installer.
