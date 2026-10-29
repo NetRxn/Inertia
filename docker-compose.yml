@@ -1,0 +1,135 @@
+# Inertia member app: app + Postgres + Caddy (HTTPS), with optional extras.
+#
+#   cp deploy/compose.env.example .env                    # DOMAIN, POSTGRES_PASSWORD
+#   cp apps/member/.env.example apps/member/.env.production  # app settings
+#   docker compose up -d --build
+#
+# Optional profiles:
+#   docker compose run --rm tools                         # check every integration
+#   docker compose --profile connectors up -d             # Buzz/Telegram digests
+#
+# Only Caddy publishes ports. Postgres and the app stay on the internal network,
+# because Docker publishes ports past ufw.
+
+x-member-env: &member-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://inertia:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/inertia
+  MEMBER_APP_BASE_URL: https://${DOMAIN:-localhost}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: inertia
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: inertia
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inertia -d inertia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  member:
+    build:
+      context: ./apps/member
+      target: runner
+    restart: unless-stopped
+    env_file:
+      - path: ./apps/member/.env.production
+        required: false
+    environment: *member-env
+    volumes:
+      - member-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1),()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - member
+
+  # Nightly pg_dump into ${BACKUP_DIR}, keeping 14 days.
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - ${BACKUP_DIR:-./backups}:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          pg_dump -h postgres -U inertia inertia | gzip > /backups/inertia-$$(date +%F).sql.gz \
+            && echo "backup written: inertia-$$(date +%F).sql.gz"
+          find /backups -name 'inertia-*.sql.gz' -mtime +14 -delete
+          sleep 86400
+        done
+    depends_on:
+      # The app migrates on startup, so wait for it before the first dump.
+      member:
+        condition: service_healthy
+
+  # Scripts with the app's settings: check-integrations by default, or e.g.
+  #   docker compose run --rm tools npx tsx scripts/seed.ts
+  tools:
+    build:
+      context: ./apps/member
+      target: tools
+    profiles: [tools]
+    env_file:
+      - path: ./apps/member/.env.production
+        required: false
+    environment: *member-env
+    volumes:
+      - member-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Reads Buzz (and Telegram, if set) and posts digests to the app's ingest endpoint.
+  connectors:
+    build:
+      context: ./apps/member
+      target: tools
+    profiles: [connectors]
+    restart: unless-stopped
+    command: ["npx", "tsx", "scripts/connectors.ts"]
+    env_file:
+      - path: ./apps/member/.env.production
+        required: false
+    environment:
+      <<: *member-env
+      MEMBER_APP_BASE_URL: http://member:3000
+      CONNECTOR_STATE_FILE: data/connectors.json
+    volumes:
+      - member-data:/app/data
+    depends_on:
+      - member
+
+volumes:
+  pgdata:
+  member-data:
+  caddy-data:
+  caddy-config:
