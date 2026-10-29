@@ -18,9 +18,14 @@ declare global {
   var __memberAppAdaptersStartTime: Date | undefined;
 }
 
+/** Production runs on real data unless fixtures are asked for explicitly. */
+export function adapterMode(env: Record<string, string | undefined> = process.env): string {
+  return env.MEMBER_APP_ADAPTERS || (env.NODE_ENV === 'production' ? 'live' : 'fixture');
+}
+
 /**
  * Returns a process singleton of adapters.
- * Adapter mode is chosen by MEMBER_APP_ADAPTERS env var (default: 'fixture').
+ * Adapter mode is chosen by MEMBER_APP_ADAPTERS env var (default: 'live' in production, 'fixture' otherwise).
  * Fixture data is anchored at process start time.
  */
 export function getAdapters(): Adapters {
@@ -28,7 +33,7 @@ export function getAdapters(): Adapters {
     return globalThis.__memberAppAdapters;
   }
 
-  const mode = process.env.MEMBER_APP_ADAPTERS || 'fixture';
+  const mode = adapterMode();
 
   if (mode === 'fixture') {
     // Create fixtures anchored at process start

@@ -115,6 +115,28 @@ export async function requestLoginLink(
   }
 }
 
+/** How long an admin-issued sign-in link stays valid: long enough to reach someone by chat. */
+export const ISSUED_LINK_TTL_MS = 72 * 60 * 60 * 1000;
+
+/**
+ * Issues a one-time sign-in link for an active member, for an admin to send
+ * themselves while the app has no email delivery. Returns null for an unknown
+ * or inactive member. The link works once, like an emailed one.
+ */
+export async function issueSignInLink(
+  db: Db,
+  memberId: string,
+  opts: { baseUrl: string; now?: Date; ttlMs?: number }
+): Promise<{ url: string; expiresAt: Date } | null> {
+  const now = opts.now ?? new Date();
+  const [member] = await db.select().from(members).where(and(eq(members.id, memberId), eq(members.status, 'active')));
+  if (!member) return null;
+  const { token, hash } = generateToken();
+  const expiresAt = new Date(now.getTime() + (opts.ttlMs ?? ISSUED_LINK_TTL_MS));
+  await db.insert(loginTokens).values({ memberId: member.id, tokenHash: hash, expiresAt, createdAt: now });
+  return { url: `${opts.baseUrl.replace(/\/+$/, '')}/auth/verify?token=${token}`, expiresAt };
+}
+
 /**
  * Consumes a login token and creates a session if valid.
  * Returns the session token on success, or an error reason on failure.

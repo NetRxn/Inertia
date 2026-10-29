@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { getAdapters } from '../../adapters';
+import { adapterMode, getAdapters } from '../../adapters';
 import { requireMember } from '../../identity/session';
 import { getDb } from '../../db/client';
 import { listShares } from '../../shares/shares';
@@ -15,7 +15,7 @@ async function HomeFeed() {
   const member = await requireMember();
   const org = await getOrganization(getDb());
   // A fresh install starts with the setup conversation for admins.
-  if (!org?.setupCompletedAt && isAdmin(member) && process.env.MEMBER_APP_ADAPTERS === 'live') redirect('/setup');
+  if (!org?.setupCompletedAt && isAdmin(member) && adapterMode() === 'live') redirect('/setup');
   const now = new Date();
   const shares = (await listShares(getDb(), { limit: 3 })).map((share) => ({
     ...share,

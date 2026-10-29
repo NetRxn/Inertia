@@ -6,6 +6,7 @@ import styles from './login.module.css';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [byAdmin, setByAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
@@ -13,13 +14,15 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await fetch('/api/request-login', {
+      const response = await fetch('/api/request-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
+      const body = (await response.json().catch(() => ({}))) as { delivery?: string };
 
       // Always show the same response
+      setByAdmin(body.delivery === 'admin');
       setSubmitted(true);
     } catch (error) {
       console.error('Error requesting login link:', error);
@@ -33,7 +36,11 @@ export default function LoginPage() {
     return (
       <div className={styles.container}>
         <div className={styles.card}>
-          <p className={styles.message}>Check your email for a sign-in link.</p>
+          <p className={styles.message}>
+            {byAdmin
+              ? "Inertia doesn't send email yet. Ask an admin of your organization for your sign-in link; it works once."
+              : 'Check your email for a sign-in link.'}
+          </p>
         </div>
       </div>
     );

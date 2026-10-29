@@ -1,3 +1,4 @@
+import { adapterMode } from '../adapters';
 import type { Adapters } from '../adapters/types';
 
 export type IntegrationStatus = 'connected' | 'available' | 'planned';
@@ -17,11 +18,11 @@ export interface IntegrationCard {
  * integration only needs to say what it reads or writes and how it connects.
  */
 export function integrationCards(env: Record<string, string | undefined>, adapters: Pick<Adapters, 'work'>, counts: { sources: number; meetings: number; chatExports: number; repositories?: number; buzzDigests?: number; telegramDigests?: number }): IntegrationCard[] {
-  const live = env.MEMBER_APP_ADAPTERS === 'live';
+  const live = adapterMode(env) === 'live';
   const engine = adapters.work.engine?.name;
   const model = env.MEMBER_APP_MODEL_PROVIDER && env.MEMBER_APP_MODEL ? `${env.MEMBER_APP_MODEL}${env.MEMBER_APP_MODEL_BASE_URL?.includes('z.ai') ? ' (Z.ai)' : ''}` : null;
   return [
-    { id: 'paperclip', name: 'Paperclip', what: 'Agents and the work they do: initiatives, projects and tasks.', how: engine === 'Paperclip' ? 'Connected with a board API key. Human tasks carry the "human" label; claims assign the member.' : 'Set PAPERCLIP_URL, PAPERCLIP_API_KEY and PAPERCLIP_COMPANY_ID.', status: engine === 'Paperclip' ? 'connected' : 'available', direction: 'Reads and writes' },
+    { id: 'paperclip', name: 'Paperclip', what: 'Agents and the work they do: initiatives, projects and tasks.', how: engine === 'Paperclip' ? (adapters.work.engine?.readOnly ? 'Connected read-only: Inertia shows initiatives and tasks, and claims stay in Inertia. Set PAPERCLIP_ACCESS=write to create work and send answers back.' : 'Connected with a board API key. Human tasks carry the "human" label; claims assign the member.') : 'Set PAPERCLIP_URL, PAPERCLIP_API_KEY and PAPERCLIP_COMPANY_ID.', status: engine === 'Paperclip' ? 'connected' : 'available', direction: adapters.work.engine?.readOnly ? 'Reads' : 'Reads and writes' },
     { id: 'model', name: 'Language model', what: 'Reads what you share, drafts the profile, answers questions with sources.', how: model ? `Using ${model}.` : 'Set MEMBER_APP_MODEL_PROVIDER and MEMBER_APP_MODEL (Z.ai GLM, Anthropic or any OpenAI-compatible server).', status: model ? 'connected' : 'available', direction: 'Reads' },
     { id: 'uploads', name: 'Uploads and notes', what: 'Meeting transcripts, notes, documents and links anyone adds.', how: `${counts.sources} things read so far, ${counts.meetings} of them meetings.`, status: 'connected', direction: 'Reads' },
     { id: 'website', name: 'Website', what: 'Your public pages, read during setup or any time from Data.', how: 'Pages are fetched safely (public hosts only) and read as text.', status: 'connected', direction: 'Reads' },
