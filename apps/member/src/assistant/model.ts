@@ -2,6 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { LanguageModel } from 'ai';
 import { createMockModel } from './mock-model';
+import { createAskJson, type AskJson } from '../org/llm';
 
 /** The assistant has no usable model; the chat route answers 503 with setup help. */
 export class ModelNotConfiguredError extends Error {}
@@ -27,8 +28,12 @@ export function getModel(env: Record<string, string | undefined> = process.env):
 
   switch (provider) {
     case 'anthropic':
-      // The API key comes from ANTHROPIC_API_KEY, read by the provider.
-      return createAnthropic()(modelId);
+      // The key is ANTHROPIC_API_KEY (or MEMBER_APP_MODEL_API_KEY). MEMBER_APP_MODEL_BASE_URL is
+      // optional, for a gateway that speaks the Anthropic Messages API.
+      return createAnthropic({
+        apiKey: env.ANTHROPIC_API_KEY?.trim() || env.MEMBER_APP_MODEL_API_KEY?.trim() || undefined,
+        baseURL: env.MEMBER_APP_MODEL_BASE_URL?.trim() || undefined,
+      })(modelId);
     case 'openai-compatible': {
       const baseURL = env.MEMBER_APP_MODEL_BASE_URL?.trim();
       if (!baseURL) throw new ModelNotConfiguredError('MEMBER_APP_MODEL_BASE_URL is not set.');
@@ -40,8 +45,9 @@ export function getModel(env: Record<string, string | undefined> = process.env):
 }
 
 /**
- * A cheaper model for background work such as reading uploads, set with
- * MEMBER_APP_FAST_MODEL on the same provider. Falls back to MEMBER_APP_MODEL.
+ * A cheaper model for background work such as reading meetings and uploads, set with
+ * MEMBER_APP_FAST_MODEL on the same provider (e.g. claude-haiku-5-5 with anthropic).
+ * Falls back to MEMBER_APP_MODEL.
  */
 export function getFastModel(env: Record<string, string | undefined> = process.env): LanguageModel {
   const fast = env.MEMBER_APP_FAST_MODEL?.trim();
@@ -56,4 +62,13 @@ export function getFastModel(env: Record<string, string | undefined> = process.e
 export function backgroundProviderOptions(env: Record<string, string | undefined> = process.env) {
   if (env.MEMBER_APP_MODEL_PROVIDER?.trim() !== 'openai-compatible' || env.MEMBER_APP_MODEL_THINKING?.trim() !== 'off') return undefined;
   return { memberApp: { thinking: { type: 'disabled' } } };
+}
+
+/**
+ * JSON asks for background work: the fast model, falling back to MEMBER_APP_MODEL
+ * when the fast one can't answer (a busy flash model shouldn't stop Find work).
+ */
+export function backgroundAskJson(env: Record<string, string | undefined> = process.env): AskJson {
+  const fallback = env.MEMBER_APP_FAST_MODEL?.trim() && env.MEMBER_APP_FAST_MODEL.trim() !== env.MEMBER_APP_MODEL?.trim() ? getModel(env) : undefined;
+  return createAskJson(getFastModel(env), backgroundProviderOptions(env), fallback);
 }

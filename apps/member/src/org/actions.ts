@@ -3,21 +3,21 @@
 import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { getAdapters } from '../adapters';
-import { backgroundProviderOptions, getFastModel } from '../assistant/model';
+import { backgroundAskJson } from '../assistant/model';
 import { getDb } from '../db/client';
 import { issueSignInLink } from '../identity/auth';
 import { requireMember } from '../identity/session';
 import { addSource, hideSource, IngestError, restoreSource } from './ingest';
-import { createAskJson } from './llm';
 import { addMember, isAdmin, MemberError, removeMember, setRole, setWorkUser, type Role } from './members';
 import { completeSetup, getOrganization, saveBasics, saveProfile, setGovernance, updateInitiative } from './organization';
 import { regenerateProfile } from './profile';
 import { readWebsite } from './website';
+import { ReadOnlyWorkError } from '../work/read-only';
 
 export type ActionResult = { ok: true; message?: string; link?: string } | { ok: false; error: string };
 
 function fail(error: unknown, fallback: string): ActionResult {
-  if (error instanceof MemberError || error instanceof IngestError) return { ok: false, error: error.message };
+  if (error instanceof MemberError || error instanceof IngestError || error instanceof ReadOnlyWorkError) return { ok: false, error: error.message };
   console.error('[org]', error);
   return { ok: false, error: fallback };
 }
@@ -86,7 +86,7 @@ export async function addNote(input: { title: string; text: string; kind?: 'note
 export async function draftProfile(): Promise<ActionResult> {
   try {
     await requireAdminMember();
-    const profile = await regenerateProfile(getDb(), createAskJson(getFastModel(), backgroundProviderOptions()));
+    const profile = await regenerateProfile(getDb(), backgroundAskJson());
     refresh();
     return { ok: true, message: `Drafted ${profile.initiatives.length} initiatives.` };
   } catch (error) {
@@ -227,7 +227,7 @@ export async function pursueFunding(opportunityId: string): Promise<ActionResult
     const opportunity = (await adapters.funding.listOpportunities()).find((o) => o.id === opportunityId);
     if (!opportunity) return { ok: false, error: 'That opportunity is gone. Refresh?' };
     const { pursueOpportunity } = await import('../work/pursue');
-    const result = await pursueOpportunity(getDb(), adapters, createAskJson(getFastModel(), backgroundProviderOptions()), opportunity, member.id);
+    const result = await pursueOpportunity(getDb(), adapters, backgroundAskJson(), opportunity, member.id);
     for (const path of ['/funding', '/work']) revalidatePath(path);
     refresh();
     if (result.already) return { ok: true, message: 'Already being pursued. See Work.' };
@@ -243,7 +243,7 @@ export async function findWorkIn(sourceId: string): Promise<ActionResult> {
   try {
     const member = await requireAdminMember();
     const { suggestWorkFromSource } = await import('../work/suggest');
-    const result = await suggestWorkFromSource(getDb(), getAdapters(), createAskJson(getFastModel(), backgroundProviderOptions()), sourceId, member.id);
+    const result = await suggestWorkFromSource(getDb(), getAdapters(), backgroundAskJson(), sourceId, member.id);
     refresh();
     if (result.already) return { ok: true, message: 'Already read for work. See Work.' };
     if (!result.created) return { ok: true, message: 'Nothing actionable found in this one.' };

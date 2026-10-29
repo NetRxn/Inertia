@@ -74,6 +74,9 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
+      <a href="/story" className={styles.story}>
+        New here? Take the short tour
+      </a>
     </div>
   );
 }

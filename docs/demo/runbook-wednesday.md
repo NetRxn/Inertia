@@ -111,7 +111,7 @@ Both Kyle and John are DAO members. **Kyle presents the app; John runs the grant
 
 ## Known limits (say them, don't hide them)
 
-- Audio files aren't transcribed in the app yet. `apps/member/scripts/transcribe.py` transcribes a recording locally with open-source Whisper (`pip install faster-whisper`, ffmpeg) into a `.transcript.md` to drop into Data. Its audio conversion and output are checked; the Whisper step itself hasn't been run end to end yet (model downloads were blocked in the build environment), so try it once on a short clip first.
+- Audio files aren't transcribed in the app yet. `apps/member/scripts/transcribe.py` transcribes a recording locally with open-source Whisper (`pip install faster-whisper`, ffmpeg) into a `.transcript.md`; `--post` sends it straight to Data, and a Meet/Zoom `.vtt` or `.txt` transcript skips Whisper. Its audio conversion, output and sending are checked; the Whisper step itself hasn't been run end to end yet (model downloads were blocked in the build environment), so try it once on a short clip first. See [connect-morning.md](connect-morning.md#4-meetings-recording--transcript--tasks).
 - Live Telegram bot: Kyle's piece; chat exports (.json) work today.
 - Funding comes from a grant finder export file until its live feed is connected.
 - Without Paperclip configured, work lives in process memory: tasks are lost on restart (kept initiatives come back).

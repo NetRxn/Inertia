@@ -157,6 +157,15 @@ describe('Paperclip read-only', () => {
     expect(pc.calls.filter((c) => c.method !== 'GET')).toEqual([]);
   });
 
+  it('links people to the public Paperclip under the company prefix', async () => {
+    const pc = fakePaperclip();
+    pc.state.issues.push({ id: 'i9', identifier: 'INE-53', title: 'Scout grants', description: '', status: 'todo', goalId: 'g-hack', projectId: null, assigneeAgentId: 'a-ceo', assigneeUserId: null, labels: [], completedAt: null, updatedAt: '2026-10-27T10:00:00Z' });
+    const config = paperclipConfig({ PAPERCLIP_URL: 'http://inertia-paperclip-native-db-1:3101', PAPERCLIP_PUBLIC_URL: 'https://paperclip.inertia.ing/', PAPERCLIP_API_KEY: 'key', PAPERCLIP_COMPANY_ID: 'c1' })!;
+    const work = createPaperclipWorkSource({ ...config, url: 'https://pc.example.org' }, { fetchImpl: pc.fetchImpl, mapping });
+    expect(work.engine?.url).toBe('https://paperclip.inertia.ing');
+    expect((await work.listAgentTasks!())[0].url).toBe('https://paperclip.inertia.ing/INE/issues/INE-53');
+  });
+
   it('treats a missing label as no human tasks rather than creating it', async () => {
     const pc = fakePaperclip();
     const work = createPaperclipWorkSource({ url: 'https://pc.example.org', apiKey: 'key', companyId: 'c1', humanLabel: 'human', defaultAgentId: null, readOnly: true }, { fetchImpl: pc.fetchImpl, mapping });

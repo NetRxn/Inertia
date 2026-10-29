@@ -17,19 +17,37 @@ export function extractJson(text: string): unknown {
   return JSON.parse(body.slice(start, end + 1));
 }
 
-export function createAskJson(model: LanguageModel, providerOptions?: SharedV4ProviderOptions): AskJson {
+/**
+ * With a fallback, a call the first model can't answer at all (overloaded, unavailable)
+ * is sent once to the fallback instead, e.g. from a busy fast model to the main one.
+ */
+export function createAskJson(model: LanguageModel, providerOptions?: SharedV4ProviderOptions, fallback?: LanguageModel): AskJson {
   return async ({ system, prompt, schema, maxOutputTokens = 4000 }) => {
     let lastError: unknown;
+    let current = model;
+    let canFallBack = Boolean(fallback);
     for (let attempt = 0; attempt < 2; attempt++) {
       // Streamed, so long replies survive proxies that cut idle requests.
       const result = streamText({
-        model,
+        model: current,
         providerOptions,
         system: `${system}\n\nReply with one JSON object only, no other text.`,
         prompt: attempt ? `${prompt}\n\nYour previous reply was not valid JSON for the requested shape. Reply with the JSON object only.` : prompt,
         maxOutputTokens,
+        // Failures reach us through result.text below; skip the SDK's default stack dump.
+        onError: () => {},
       });
-      const text = await result.text;
+      let text: string;
+      try {
+        text = await result.text;
+      } catch (error) {
+        if (!canFallBack || !fallback) throw error;
+        console.warn('[model] Background model failed; trying the main model.', error instanceof Error ? error.message : error);
+        canFallBack = false;
+        current = fallback;
+        attempt--;
+        continue;
+      }
       try {
         return schema.parse(extractJson(text));
       } catch (error) {

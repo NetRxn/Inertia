@@ -60,4 +60,12 @@ describe('finding work in a source', () => {
     const { source } = await addSource(db, { kind: 'note', title: 'Note', content: 'Someone should update the website.' });
     await expect(suggestWorkFromSource(db, { work: createMemoryWorkSource() }, (async () => ({})) as unknown as AskJson, source.id, kyle.id)).rejects.toThrow(/Keep at least one initiative/);
   });
+
+  it('says how to turn on writing when Paperclip is read-only', async () => {
+    const [kyle] = await db.insert(members).values({ externalId: 'm-kyle', email: 'k@example.org', displayName: 'Kyle', role: 'admin' }).returning();
+    const { source } = await addSource(db, { kind: 'note', title: 'Note', content: 'Someone should update the website.' });
+    const { createTask: _createTask, ...readOnly } = createMemoryWorkSource();
+    const work = { ...readOnly, engine: { name: 'Paperclip', url: null, readOnly: true } };
+    await expect(suggestWorkFromSource(db, { work }, (async () => ({})) as unknown as AskJson, source.id, kyle.id)).rejects.toThrow(/PAPERCLIP_ACCESS=write/);
+  });
 });

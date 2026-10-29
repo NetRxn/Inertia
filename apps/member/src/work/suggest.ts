@@ -7,6 +7,7 @@ import { getSource } from '../org/ingest';
 import type { AskJson } from '../org/llm';
 import { getOrganization } from '../org/organization';
 import { recordWorkEvent } from './events';
+import { requireWritableEngine } from './read-only';
 
 const KINDS = ['creative', 'outreach', 'review', 'real-world'] as const;
 /** How much of a source the model reads at once. */
@@ -69,7 +70,7 @@ export async function suggestWorkFromSource(db: Db, adapters: Pick<Adapters, 'wo
   const source = await getSource(db, sourceId);
   if (!source || source.status !== 'active') throw new Error('That source is not available.');
   const engine = adapters.work;
-  if (!engine.createTask) throw new Error('The work engine cannot create tasks.');
+  requireWritableEngine(engine);
   const org = await getOrganization(db);
   const initiatives = (org?.profile?.initiatives ?? []).filter((i) => i.status === 'accepted' && i.workId);
   if (!initiatives.length) throw new Error('Keep at least one initiative first, so work has somewhere to go.');

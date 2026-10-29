@@ -7,6 +7,7 @@ import { searchPassages, type PassageHit } from '../org/ingest';
 import type { AskJson } from '../org/llm';
 import { getOrganization, saveProfile, updateInitiative } from '../org/organization';
 import { recordWorkEvent } from './events';
+import { requireWritableEngine } from './read-only';
 
 const GRANT_INITIATIVE = 'Pursue grant funding strategy';
 const KINDS = ['creative', 'outreach', 'review', 'real-world'] as const;
@@ -102,7 +103,7 @@ export async function pursueOpportunity(
   const pursued = await pursuedOpportunities(db);
   if (pursued.has(opportunity.id)) return { projectId: pursued.get(opportunity.id)!, created: 0, plan: { brief: '', tasks: [] }, already: true };
   const engine = adapters.work;
-  if (!engine.createTask) throw new Error('The work engine cannot create tasks.');
+  requireWritableEngine(engine);
 
   const hits = await searchPassages(db, `${opportunity.program} ${opportunity.summary}`, 10);
   const plan = await askJson({ system: SYSTEM, prompt: `${opportunityBlock(opportunity)}\n\n${excerptBlocks(hits) || '(The organization has shared nothing related yet.)'}`, schema: planSchema, maxOutputTokens: 4000 });

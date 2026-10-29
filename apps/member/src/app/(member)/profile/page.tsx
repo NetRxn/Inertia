@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { requireMember } from '../../../identity/session';
 import cardStyles from '../../../components/cards/cards.module.css';
 import styles from '../sections.module.css';
@@ -17,16 +18,19 @@ async function ProfileContent() {
         <dt>Email</dt>
         <dd>{member.email}</dd>
       </dl>
-      <form action="/auth/sign-out" method="POST">
+      <form action="/auth/sign-out" method="POST" className={styles.profileActions}>
         <button type="submit" className="in-btn in-btn--secondary">
           Sign out
         </button>
+        <Link href="/story" className="in-btn in-btn--quiet">
+          What is Inertia?
+        </Link>
       </form>
     </section>
   );
 }
 
-/** The member's name and email, and the way out. */
+/** The member's name and email, the way out, and the short tour of the idea. */
 export default function ProfilePage() {
   return (
     <>

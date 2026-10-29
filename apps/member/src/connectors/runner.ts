@@ -4,7 +4,8 @@ import { buzzConfig, queryBuzz, type BuzzConfig } from './buzz';
 import { DigestBuffer, postDigest, type Digest } from './digest';
 import { pollTelegram, telegramConfig, type TelegramConfig } from './telegram';
 
-export type ConnectorState = { telegramOffset: number; buzzSince: number; pending: Digest[] };
+/** buzzSeen: ids of the messages already read at buzzSince, since the relay returns that second again. */
+export type ConnectorState = { telegramOffset: number; buzzSince: number; buzzSeen?: string[]; pending: Digest[] };
 
 export type RunnerDeps = {
   fetchImpl?: typeof fetch;
@@ -91,11 +92,19 @@ export function createRunner(config: RunnerConfig, deps: RunnerDeps = {}) {
       if (config.buzz && now().getTime() - lastBuzz >= config.buzzPollSeconds * 1000) {
         lastBuzz = now().getTime();
         try {
-          const { lines, newest } = await queryBuzz(config.buzz, state.buzzSince, fetchImpl);
+          const read = await queryBuzz(config.buzz, state.buzzSince, fetchImpl);
+          // The newest second is read again next time, so skip what was already read in it,
+          // even after a delivery emptied the buffer.
+          const seen = new Set(state.buzzSeen ?? []);
+          const lines = read.lines.filter((l) => !seen.has(l.messageId));
           lines.forEach((l) => buzzBuffer.add(l));
-          // Re-read the newest second next time; the buffer drops repeats by message id.
-          if (newest > state.buzzSince) {
-            state.buzzSince = newest;
+          const atNewest = lines.filter((l) => Math.floor(l.at.getTime() / 1000) === read.newest).map((l) => l.messageId);
+          if (read.newest > state.buzzSince) {
+            state.buzzSince = read.newest;
+            state.buzzSeen = atNewest;
+            await writeState(state);
+          } else if (atNewest.length) {
+            state.buzzSeen = [...seen, ...atNewest];
             await writeState(state);
           }
           if (lines.length) log(`buzz: ${lines.length} message${lines.length === 1 ? '' : 's'}`);
