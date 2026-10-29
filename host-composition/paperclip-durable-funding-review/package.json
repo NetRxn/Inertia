@@ -51,6 +51,8 @@
     "apply-native-discovery-profile": "node scripts/apply-native-discovery-profile.mjs",
     "test:native-discovery-profile": "node --test tests/native-discovery-profile.test.mjs tests/native-discovery-installer.test.mjs",
     "apply-native-review-paging": "node scripts/apply-native-review-paging.mjs",
-    "test:native-review-paging": "node --test tests/native-review-paging.test.mjs tests/native-review-paging-installer.test.mjs"
+    "test:native-review-paging": "node --test tests/native-review-paging.test.mjs tests/native-review-paging-installer.test.mjs",
+    "apply-native-agent-permission-grants": "node scripts/apply-native-agent-permission-grants.mjs",
+    "test:native-agent-permission-grants": "node --test tests/native-agent-permission-grants-installer.test.mjs"
   }
 }
