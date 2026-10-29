@@ -6,6 +6,8 @@ import type { AgentTask, ClaimResult, HumanTask, Initiative, NewTask, TaskKind, 
 export type PaperclipConfig = {
   /** Base URL of the Paperclip server, e.g. https://paperclip.example.org */
   url: string;
+  /** Where people open Paperclip, when the app reaches it at an internal address. Defaults to url. */
+  publicUrl?: string;
   /** A board API key for the company. */
   apiKey: string;
   companyId: string;
@@ -27,7 +29,8 @@ export function paperclipConfig(env: Record<string, string | undefined>): Paperc
   const apiKey = env.PAPERCLIP_API_KEY?.trim();
   const companyId = env.PAPERCLIP_COMPANY_ID?.trim();
   if (!url || !apiKey || !companyId) return null;
-  return { url: url.replace(/\/+$/, ''), apiKey, companyId, humanLabel: env.PAPERCLIP_HUMAN_LABEL?.trim() || 'human', defaultAgentId: env.PAPERCLIP_DEFAULT_AGENT_ID?.trim() || null, readOnly: env.PAPERCLIP_ACCESS?.trim() !== 'write' };
+  const publicUrl = env.PAPERCLIP_PUBLIC_URL?.trim().replace(/\/+$/, '');
+  return { url: url.replace(/\/+$/, ''), ...(publicUrl ? { publicUrl } : {}), apiKey, companyId, humanLabel: env.PAPERCLIP_HUMAN_LABEL?.trim() || 'human', defaultAgentId: env.PAPERCLIP_DEFAULT_AGENT_ID?.trim() || null, readOnly: env.PAPERCLIP_ACCESS?.trim() !== 'write' };
 }
 
 type PcGoal = { id: string; title: string; description: string | null; level: string; status: 'planned' | 'active' | 'achieved' | 'cancelled' };
@@ -105,6 +108,12 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
   const fetchImpl = deps.fetchImpl ?? fetch;
   const mapping = deps.mapping ?? dbMapping;
   const base = config.url.replace(/\/+$/, '');
+  const site = config.publicUrl?.replace(/\/+$/, '') || base;
+  /** Paperclip opens an issue under its company prefix, which leads its identifier: /INE/issues/INE-53. */
+  const issueUrl = (issue: PcIssue) => {
+    const prefix = issue.identifier?.match(/^([A-Za-z0-9]+)-\d+$/)?.[1];
+    return prefix ? `${site}/${prefix}/issues/${issue.identifier}` : `${site}/issues/${issue.identifier ?? issue.id}`;
+  };
   const company = `/api/companies/${encodeURIComponent(config.companyId)}`;
   let humanLabelId: Promise<string | null> | null = null;
 
@@ -183,7 +192,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
     status === 'done' ? 'done' : status === 'blocked' ? 'blocked' : status === 'in_progress' || status === 'in_review' ? 'running' : 'queued';
 
   const source: WorkSource = {
-    engine: { name: 'Paperclip', url: base, readOnly: config.readOnly },
+    engine: { name: 'Paperclip', url: site, readOnly: config.readOnly },
 
     async listInitiatives(): Promise<Initiative[]> {
       const goals = await call<PcGoal[]>(`${company}/goals`);
@@ -218,7 +227,7 @@ export function createPaperclipWorkSource(config: PaperclipConfig, deps: { fetch
           agentName: i.assigneeAgentId ? names.get(i.assigneeAgentId) ?? 'An agent' : null,
           status: agentStatus(i.status),
           updatedAt: i.completedAt ?? i.updatedAt,
-          url: `${base}/issues/${i.identifier ?? i.id}`,
+          url: issueUrl(i),
         })),
       );
     },
