@@ -1,0 +1,95 @@
+/* A feed of what happened, grouped by day. Each item says who, what, and for which initiative. */
+
+.days {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.day {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.items {
+  display: grid;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-lg);
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.item:first-child {
+  border-top: 0;
+}
+
+.badge:global(.in-avatar) {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+}
+
+.badge[data-actor='member'] {
+  background: var(--moss-wash);
+  color: var(--moss-text);
+}
+
+.badge[data-actor='agent'] {
+  background: var(--tide-wash);
+  color: var(--tide-text);
+}
+
+.badge[data-actor='connector'] {
+  background: var(--ion-wash);
+  color: var(--ion-text);
+}
+
+.badge[data-actor='organization'] {
+  background: var(--pollen-wash);
+  color: var(--pollen-text);
+}
+
+.badge svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.text {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.line {
+  overflow-wrap: anywhere;
+}
+
+.title {
+  color: var(--ink);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+a.title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.more {
+  justify-self: center;
+}
+
+.empty {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+}

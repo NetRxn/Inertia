@@ -1,0 +1,62 @@
+/* The one segmented tab bar: Agents, Organization and Home's filters. Centered; scrolls when it overflows. */
+
+.tabs {
+  display: flex;
+  justify-content: safe center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float);
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: 1 0 auto;
+  padding: var(--space-3) var(--space-4);
+  font: var(--text-body);
+  color: var(--ink-muted);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  border-radius: var(--radius-sm);
+  transition: all 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.tab:hover {
+  color: var(--ink);
+  background: var(--glass-strong);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.tab[aria-current='page'] {
+  color: var(--ink);
+  background: var(--surface);
+  font-weight: 500;
+}
+
+/* Small pills for filtering a feed. */
+.chips {
+  composes: tabs;
+  justify-content: flex-start;
+  padding: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.chips .tab {
+  flex: 0 0 auto;
+  padding: var(--space-2) var(--space-3);
+  font: var(--text-small);
+}
