@@ -139,6 +139,7 @@ export function registerCaseWork(ctx:Pick<PluginContext,"tools"|"issues">,bindin
    }});
    await current();
    if(!object(value)||value.business_complete!==false||!identifier(value.case_binding_id)||role!=="researcher"&&value.case_binding_id!==initial.context.case_binding_id)throw Error("Case work receipt changed");
+   if(sourceOperations.includes(op)&&params.proposal_hash!==undefined&&value.proposal_hash!==params.proposal_hash)throw Error("Case source result proposal changed");
    if(role==="researcher"){
     const task={idempotencyKey:"case:"+value.case_binding_id,title:"Research funding case "+value.case_binding_id,description:"Save incremental current-source research and draft checkpoints through funding_case_work. This task remains open while agent work remains. Partial checkpoint success is not business completion or final application acceptance. Binding "+value.case_binding_id+".",projectId:b.projectId,assigneeActorId:b.producer.agentId,status:"todo"};
     const key="case-identification-"+value.case_binding_id+"-"+String(value.revision_hash??discoveryHash(value));

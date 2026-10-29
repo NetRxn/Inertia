@@ -48,3 +48,13 @@ it('advertises the actual domain field, passage and sponsor-requirement schemas 
  expect(params.properties.fields.items.$ref).toBe('#/$defs/FieldAssertion');
  expect(params.additionalProperties).toBe(false);
 });
+it('rejects a source result for a different proposal even within the same native case',async()=>{
+ const f=fixture();await f.invoke('source_propose',sourceProposal);
+ const original=f.binding.bridge.call;f.binding.bridge.call=async(...args)=>({...await original(...args) as any,proposal_hash:'f'.repeat(64)});
+ await expect(f.invoke('source_receipt',{proposal_hash:proposal},true)).rejects.toThrow(/proposal/);
+});
+it('withholds source review output after native assignment changes during the domain operation',async()=>{
+ const f=fixture();await f.invoke('source_propose',sourceProposal);
+ const original=f.binding.bridge.call;f.binding.bridge.call=async(...args)=>{const value=await original(...args);f.rows[2].assigneeAgentId='other';return value;};
+ await expect(f.invoke('source_review',{proposal_hash:proposal,decision:'accept',findings:[]},true)).rejects.toThrow();
+});
