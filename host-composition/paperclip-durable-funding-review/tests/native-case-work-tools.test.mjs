@@ -7,3 +7,22 @@ test('case catalog/execution fresh-checks exact single gateway tool and role ope
 
 test('ordinary Beta review task remains on existing enrichment route',()=>{const f=fixture();f.context.issue.originId='paperclip-runner:create-task:root:ordinary-review';assert.equal(selectCaseWorkAdmission(f.rows,f.binding,f.policy,null,f.context,f.root,null),null);});
 test('new typed preparation requires an exact configured owning-native review guard before MCP writes',async()=>{const f=fixture(),admission=selectCaseWorkAdmission(f.rows,f.binding,f.policy,null,f.context,f.root,null);let calls=0;const binding={nativeTaskProjectAdmission:admission,assignedMcpTools:{definitionsFresh:async()=>[{name:CASE_PROJECTED_TOOL}],has:n=>n===CASE_PROJECTED_TOOL,execute:async()=>{calls++;return{business_complete:false};}}};await assert.rejects(()=>executeTaskProjectTool(binding,{tool:CASE_PROJECTED_TOOL,arguments:{operation:'workspace',parameters:{}}},async()=>f.context));assert.equal(calls,0);});
+
+// Synthetic gateway metadata: no application database or current business data.
+test('source reviewer advertises only exact bound proposal calls and preserves producer metadata',async()=>{
+ const proposalHash='a'.repeat(64),raw={name:CASE_PROJECTED_TOOL,description:'Read source_context view contract for full domain schemas.',inputSchema:{type:'object',properties:{operation:{enum:['prepare','source_context','source_review']}}}},original=structuredClone(raw);
+ const assignedMcpTools={definitionsFresh:async()=>[raw],has:n=>n===CASE_PROJECTED_TOOL,execute:async call=>call.arguments};
+ const admission=Object.freeze({kind:'source-review',role:'reviewer',proposalHash,bindingHash:'frozen-policy',adapterHash:'frozen-adapter'}),before=JSON.stringify(admission);
+ const binding={nativeTaskProjectAdmission:admission,assignedMcpTools},context=async()=>({});
+ const [tool]=await taskProjectDefinitions(binding,context);
+ assert.match(tool.description,/view.*proposal/);assert.doesNotMatch(tool.description,/view contract/);
+ assert.deepEqual(tool.inputSchema.properties.operation.enum,['source_context','source_review','source_receipt','source_settlement']);
+ for(const branch of tool.inputSchema.oneOf){assert.equal(branch.properties.parameters.properties.proposal_hash.const,proposalHash);assert.equal(branch.properties.parameters.additionalProperties,false);}
+ const proposal=tool.inputSchema.oneOf.find(b=>b.properties.operation.const==='source_context');
+ assert.equal(proposal.properties.parameters.properties.view.const,'proposal');assert.deepEqual(proposal.properties.parameters.required,['view','proposal_hash']);
+ for(const parameters of [{},{view:'contract'},{view:'proposal',proposal_hash:'b'.repeat(64)}])await assert.rejects(()=>executeTaskProjectTool(binding,{tool:CASE_PROJECTED_TOOL,arguments:{operation:'source_context',parameters}},context),/native_case_work_scope_denied/);
+ const exact={operation:'source_context',parameters:{view:'proposal',proposal_hash:proposalHash}};
+ assert.deepEqual(await executeTaskProjectTool(binding,{tool:CASE_PROJECTED_TOOL,arguments:exact},context),exact);
+ assert.deepEqual(raw,original);assert.equal(JSON.stringify(admission),before);
+ const producer={nativeTaskProjectAdmission:{kind:'case-work',role:'producer'},assignedMcpTools};assert.deepEqual(await taskProjectDefinitions(producer,context),[original]);
+});
