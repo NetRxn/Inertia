@@ -1,8 +1,10 @@
 # Inertia demo readiness — October 30 morning
 
-Snapshot: **2026-10-29 16:01:56 CDT maintenance restoration proof**, updated at 16:06 CDT. This is a documentation snapshot, not a fresh health probe. Read [progress](OPERATOR-SNAPSHOT.md) first if it is newer. [Visual proof map](architecture/index.html) · [Walkthrough and claim matrix](DEMO-WALKTHROUGH.md).
+Snapshot: **2026-10-29 16:22:18 CDT normal startup proof**, plus subsequent root-reported activation/continuation acceptance. This is a documentation snapshot, not a live monitor. [Operator snapshot](OPERATOR-SNAPSHOT.md) · [Visual proof map](architecture/index.html) · [Walkthrough and claim matrix](DEMO-WALKTHROUGH.md).
 
-**Current demonstration status: UI/API restored in maintenance mode.** The operator verified HTTP200, plugin READY, owner access and Viewer read200/write403 at 16:01:56 CDT. The scheduler is disabled, company paused and no executors/queued runs/pending wakes are present. Data/backups remain intact. Retained artifacts may be viewed with authorized access; a live autonomous walkthrough still requires normal scheduler postboot and execution proof.
+**Current demonstration status: normal UI/API and scheduler restored.** Image **2d8d252b**, plugin READY, HTTP200 and 42 native guards/22 transitions passed target checks with original normal boot46a, production NODE_ENV, authenticated/public mode. Cloudflare/tunnel/auth protections remain unchanged; this is not a dev sandbox. Root subsequently activated the company and disabled drain. The existing NSF case accepted ordinary status-only continuation with the same Beta/responsible identity (v26 to v27); actual native admission/new work remains pending in this snapshot.
+
+**Portfolio fanout remains unproved.** Coordinator child limit0 has not been saved. Its owner configuration PATCH returned422 `ai_connection_default_missing`; investigation traced a PostgreSQL JSONB key-order versus schema-normalization comparison falsely treating an unchanged connection as changed. A narrow repair/route proof is in progress. This is separate from the now-restored startup, and it does not authorize changing provider identity or bypassing the guard.
 
 Printable, visually checked exports: [intended architecture](architecture/big-picture.svg), [current proof map](architecture/current-proof-map.svg), [walkthrough](architecture/demo-walkthrough.svg), [three-page PDF](architecture/demo-guide.pdf). The architecture is the approved direction; maintenance mode is temporary recovery.
 
@@ -18,8 +20,8 @@ Printable, visually checked exports: [intended architecture](architecture/big-pi
 
 | Area | Current boundary | Next useful proof |
 | --- | --- | --- |
-| Availability | UI/API restored with scheduler disabled; normal funding execution remains offline | Fixed normal scheduler postboot, then actual authorized work |
-| Portfolio execution | 13 child attempts blocked by capacity; reviewed repair is source-qualified | Deploy qualified repair, explicitly configure Coordinator capacity, observe actual case creation/replay |
+| Availability | Normal scheduler/UI/API restored; company activated, drain off | Actual native admission and new useful case work |
+| Portfolio execution | Previous13 attempts hit capacity; repair live, but Coordinator0 PATCH422 not saved | Correct unchanged-connection comparison, save scoped capacity, observe actual case creation/replay |
 | Complete funding work | Brief exists; full portfolio and accepted application packets absent | Useful application material for each actionable opportunity, substantive review/correction, precise human decisions |
 | P1 Buzz | Member corpus works; Paperclip bridge remains controlled-only | Scoped corpus reader; separately prove real admitted bridge identity/pairing and an agreed canary |
 | P2 Gemini notes | Replay fix source-qualified; no actual production import/intake proof | App-owned authenticated readback/hash lookup, then exact one import and one native intake |
@@ -27,11 +29,11 @@ Printable, visually checked exports: [intended architecture](architecture/big-pi
 
 ## Source and runtime are different releases
 
-Last successful production execution used image **d887**, config **71d9**, registry **cff8**, compose **bc8**, boot **46a**, signup-disable flag **false**. The capacity image **d415** failed startup; rolling back to d887 also failed on the same historical reconciliation row. This is not evidence that the capacity parser caused the failure. Temporary maintenance boot **509** restored UI/API on d887, app **2dfe58**, with scheduler disabled; it does not establish normal execution readiness. Coordinator capacity `0` has **not** been applied in this snapshot.
+Current live startup: image **2d8d252b**, app **bb0e7bf33aeb**, original boot **46a**, scheduler **true**, config **71d9**, registry **cff8**, compose **bc8**, signup-disable flag **false**. Normal target health/plugin/security proof was observed16:22:18 CDT. Maintenance d887/boot509 is now historical. The earlier capacity d415 startup and d887 rollback both failed on the historical review-finalization row; the integrated startup repair is now deployed. Coordinator capacity0 is still not applied, so health alone does not establish fanout or completed business work.
 
 Source checked October 29 around 15:58 CDT: [DFW81](https://github.com/NetRxn/DFW-Gov-Fund/pull/81) `f475` is draft/open and mergeable; [Inertia135](https://github.com/NetRxn/Inertia/pull/135) `d206` is draft/open with a parent conflict; [136](https://github.com/NetRxn/Inertia/pull/136) `044b` is open and mergeable; [137](https://github.com/NetRxn/Inertia/pull/137) `19d` is open and mergeable against the stacked PR135 branch. All were unmerged at inspection. Exact-head checks: [PR136 root-package passed](https://github.com/NetRxn/Inertia/actions/runs/40944061450/job/123694646585); [DFW81 test failed](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40944009494/job/123694469764), underlying cause not established by its annotations. No checks were returned for PR135/137. Mergeability is not a CI or deployment pass. The nested local `Inertia/` checkout is stale and is not the delivery source.
 
-Startup reconciliation fix **2d4900d**, parent capacity **19d**, passed isolated full-server RED→GREEN with actual plugin READY, scheduler true and HTTP200. Independent checks reported 14/14 plus 42 guards/22 transitions. Exact stale-row settlement preserved the newer completed review and ledger; unreviewed completion remained denied. An integrated archive is being built. This is source/isolated proof, not a live release.
+Startup reconciliation fix **2d4900d**, parent capacity **19d**, passed isolated full-server RED-to-GREEN and subsequently target normal startup. Exact stale-row settlement preserved the newer completed review and ledger; unreviewed completion remained denied. Normal case execution, portfolio fanout and accepted funding material remain separate proof gates.
 
 ## Reproduce or recover without inventing a release
 

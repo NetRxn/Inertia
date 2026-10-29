@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-29T21:13:25+00:00",
-  "evidenceCutoff": "2026-10-29 16:01:56 CDT operator maintenance restoration proof",
+  "generatedAt": "2026-10-29T21:41:02+00:00",
+  "evidenceCutoff": "2026-10-29 16:22:18 CDT target normal startup, plus root-reported activation/continuation",
   "progressSha256": "cb58a50a2a44ed392ad4d105590b0f8a65739236a050a124135653afaf6d25e9",
-  "availability": "Paperclip UI/API restored in maintenance mode; scheduler disabled",
+  "availability": "Normal UI/API/scheduler restored; native admission and fanout pending",
   "source": "../OPERATOR-SNAPSHOT.md",
   "isLiveMonitor": false,
-  "operatorHandoffSha256": "f9cc10530ddfa14864d067a8bd0e4df9975eda6b43850da981b1afaf90227c32"
+  "operatorHandoffSha256": "d701db0c389a7e67ff0c440e00f3708d6044d09d1a39701d2a6642ec8c46a216"
 }

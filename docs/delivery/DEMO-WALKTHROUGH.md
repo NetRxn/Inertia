@@ -20,8 +20,8 @@ For October 30, use the [current readiness snapshot](CURRENT-DEMO-READINESS.md) 
 | Eight-field Markdown/DOCX brief | Recorded rendered output | One generated brief revision exists | Final application, budget, accepted packet or published attachment |
 | Signed bridge/replay fixture commands | Synthetic external I/O | Controlled transport/replay behavior | Real Buzz production participation or message delivery |
 | Notes replay correction | Source-qualified only | Local duplicate/lost-ack handling repaired | Actual notes import, DAO write or action intake completed |
-| Capacity repair | Source-qualified only | Reviewed native configurable limit repair exists | Applied `0`, live fanout or current merged release |
-| Scheduler-disabled UI maintenance | Operator-verified UI/API recovery,16:01:56 CDT | Authorized retained-artifact viewing is available | Agents running normally or workflow repaired |
+| Capacity repair | Integrated source live; configuration blocked | Configurable native limit repair deployed; Coordinator0 save rejected422 | Applied `0`, live fanout or merged-source acceptance |
+| Normal startup / continuation | Target UI/API/plugin/scheduler proof16:22:18 CDT; company activated and continuation accepted | Normal service restored; retained artifacts accessible | Native admission, successful fanout or completed case work |
 
 ## Presenter preflight
 
