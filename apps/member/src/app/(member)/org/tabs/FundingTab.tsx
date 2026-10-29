@@ -6,7 +6,7 @@ import { isAdmin } from '../../../../org/members';
 import { pursuedOpportunities } from '../../../../work/pursue';
 import { PursueButton } from '../../../../components/PursueButton';
 import { formatDay } from '../../../../components/cards/format';
-import { ACTIONABLE_ROUTES, deadlineLabel, deadlineTime, ROUTE_LABELS, safeHttpUrl } from '../../../../funding/funding';
+import { ACTIONABLE_ROUTES, deadlineLabel, deadlineTime, routeLabel, safeHttpUrl } from '../../../../funding/funding';
 import cardStyles from '../../../../components/cards/cards.module.css';
 import styles from '../../sections.module.css';
 
@@ -63,18 +63,20 @@ function OpportunityRow({ opportunity, application, canPursue, pursued }: { oppo
   return (
     <li id={`opportunity-${opportunity.id}`} className={`${cardStyles.stack} ${styles.target}`}>
       <div className={cardStyles.chips}>
-        <span className="in-chip in-chip--moss">{ROUTE_LABELS[opportunity.route]}</span>
+        <span className="in-chip in-chip--moss">{routeLabel(opportunity.route)}</span>
         <span className="in-mono">{deadlineLabel(opportunity.deadline)}</span>
       </div>
       <h3 className={cardStyles.itemTitle}>{opportunity.program}</h3>
-      <p className={cardStyles.meta}>{opportunity.sponsor}</p>
-      <p>{opportunity.summary}</p>
+      {opportunity.sponsor ? <p className={cardStyles.meta}>{opportunity.sponsor}</p> : null}
+      {opportunity.summary ? <p>{opportunity.summary}</p> : null}
       {opportunity.benefit || opportunity.effort ? (
         <p className="in-mono">{[opportunity.benefit, opportunity.effort && `effort · ${opportunity.effort}`].filter(Boolean).join(' · ')}</p>
       ) : null}
-      <p>
-        <b>Next step:</b> {opportunity.nextStep}
-      </p>
+      {opportunity.nextStep ? (
+        <p>
+          <b>Next step:</b> {opportunity.nextStep}
+        </p>
+      ) : null}
       <p className={cardStyles.chips}>
         {sourceUrl ? (
           <a href={sourceUrl} className={cardStyles.textLink} target="_blank" rel="noopener noreferrer">
@@ -126,7 +128,7 @@ export async function FundingContent() {
   const inProgress = applications.filter((a) => a.stage !== 'needs-members' && a.stage !== 'submitted');
   const submitted = applications.filter((a) => a.stage === 'submitted');
   const applyNow = opportunities
-    .filter((o) => ACTIONABLE_ROUTES.includes(o.route) && isOpen(o))
+    .filter((o) => o.route !== null && ACTIONABLE_ROUTES.includes(o.route) && isOpen(o))
     .sort((a, b) => due(a) - due(b));
   const later = opportunities.filter((o) => !applyNow.includes(o));
 

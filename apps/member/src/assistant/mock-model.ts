@@ -22,10 +22,22 @@ function streamOf(parts: LanguageModelV4StreamPart[]): ReadableStream<LanguageMo
   });
 }
 
+/** A fixed pursuit plan, so "Pursue this" can be rehearsed without a model. */
+const PURSUIT_PLAN = JSON.stringify({
+  brief: 'A scripted plan from the mock model: this opportunity looks like a fit; confirm eligibility before drafting.',
+  tasks: [
+    { title: 'Check eligibility against the official rules', description: 'Read the program page and list every requirement.', lane: 'agent' },
+    { title: 'Draft the project narrative', description: 'Use what members shared about this work.', lane: 'agent' },
+    { title: 'Confirm who signs as the applicant', description: 'Agents need a named person and entity before drafting the budget.', lane: 'human', kind: 'review', estimateMinutes: 10 },
+    { title: 'Ask a partner for a letter of support', description: 'Agents drafted the request; a member needs to send it.', lane: 'human', kind: 'outreach', estimateMinutes: 20 },
+  ],
+});
+
 /**
  * A scripted assistant for local runs and e2e (MEMBER_APP_MODEL_PROVIDER=mock).
  * Its first step looks up the latest meetings; its second answers from the
- * first source it read and cites it by title. It never calls a real model.
+ * first source it read and cites it by title. Asked to plan a funding
+ * opportunity, it returns a fixed plan. It never calls a real model.
  */
 export function createMockModel(): LanguageModelV4 {
   return {
@@ -37,6 +49,17 @@ export function createMockModel(): LanguageModelV4 {
       throw new Error('The scripted mock model only streams.');
     },
     async doStream({ prompt }) {
+      if (JSON.stringify(prompt).includes('<opportunity')) {
+        return {
+          stream: streamOf([
+            { type: 'stream-start', warnings: [] },
+            { type: 'text-start', id: 'mock-plan' },
+            { type: 'text-delta', id: 'mock-plan', delta: PURSUIT_PLAN },
+            { type: 'text-end', id: 'mock-plan' },
+            { type: 'finish', finishReason: { unified: 'stop', raw: undefined }, usage },
+          ]),
+        };
+      }
       const hasToolResult = prompt.some((message) => message.role === 'tool');
       if (!hasToolResult) {
         return {

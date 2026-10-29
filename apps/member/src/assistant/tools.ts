@@ -11,7 +11,7 @@ import type {
   Proposal,
   SourceRef,
 } from '../adapters/types';
-import { ROUTE_LABELS, safeHttpUrl } from '../funding/funding';
+import { routeLabel, safeHttpUrl } from '../funding/funding';
 import type { Db } from '../db/client';
 import { members } from '../db/schema';
 import type { ShareSummary } from '../feed/build-feed';
@@ -116,13 +116,13 @@ function opportunitySource(opportunity: FundingOpportunity): Source {
   return {
     ref: ref('opportunity', opportunity.id, opportunity.program, safeHttpUrl(opportunity.sourceUrl)),
     text: [
-      `Sponsor: ${opportunity.sponsor}`,
-      `Route: ${ROUTE_LABELS[opportunity.route]}`,
-      `Summary: ${opportunity.summary}`,
+      opportunity.sponsor ? `Sponsor: ${opportunity.sponsor}` : null,
+      `Route: ${routeLabel(opportunity.route)}`,
+      opportunity.summary ? `Summary: ${opportunity.summary}` : null,
       `Deadline: ${opportunity.deadline ?? 'none published'}`,
       opportunity.benefit ? `Benefit: ${opportunity.benefit}` : null,
       opportunity.effort ? `Effort: ${opportunity.effort}` : null,
-      `Next step: ${opportunity.nextStep}`,
+      opportunity.nextStep ? `Next step: ${opportunity.nextStep}` : null,
       `Checked at the official source: ${opportunity.observedAt}`,
     ]
       .filter((line): line is string => line !== null)

@@ -10,6 +10,7 @@ const VERB: Record<TimelineItem['kind'], string> = {
   'agent-done': 'finished',
   'agent-started': 'is working on',
   'agent-blocked': 'is stuck on',
+  'agent-queued': 'is lined up for',
   meeting: 'Meeting notes:',
   share: 'shared',
   proposal: 'Vote:',

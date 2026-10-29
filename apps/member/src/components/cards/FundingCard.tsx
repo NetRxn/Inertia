@@ -1,5 +1,5 @@
 import type { FundingApplication, FundingOpportunity } from '../../adapters/types';
-import { deadlineLabel, ROUTE_LABELS } from '../../funding/funding';
+import { deadlineLabel, routeLabel } from '../../funding/funding';
 import { plural } from './format';
 import styles from './cards.module.css';
 
@@ -37,7 +37,7 @@ export function FundingCard({
         {opportunities.map((opportunity) => (
           <li key={opportunity.id} className={styles.stack}>
             <div className={styles.chips}>
-              <span className="in-chip in-chip--moss">{ROUTE_LABELS[opportunity.route]}</span>
+              <span className="in-chip in-chip--moss">{routeLabel(opportunity.route)}</span>
               <span className="in-mono">{deadlineLabel(opportunity.deadline)}</span>
             </div>
             <h3 className={styles.itemTitle}>

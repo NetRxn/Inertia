@@ -180,15 +180,17 @@ export type FundingRoute = 'direct' | 'partner' | 'next-cycle' | 'monitor' | 'st
 
 export interface FundingOpportunity {
   id: string;
-  sponsor: string;
+  /** Null while the grant finder hasn't published it, as in its native catalog. */
+  sponsor: string | null;
   program: string;
-  route: FundingRoute;
-  summary: string;
+  /** Null until the opportunity is assessed for this organization. */
+  route: FundingRoute | null;
+  summary: string | null;
   /** An ISO timestamp for an exact cutoff, YYYY-MM-DD when only the day is known, null when unknown or rolling. */
   deadline: string | null;
   benefit: string | null; // e.g. "Up to $25,000"; unknown stays null
   effort: string | null;
-  nextStep: string;
+  nextStep: string | null;
   /** The official page the finding was validated against. */
   sourceUrl: string;
   /** When the grant finder last checked the source. */

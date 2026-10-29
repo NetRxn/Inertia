@@ -14,6 +14,11 @@ export const ROUTE_LABELS: Record<FundingRoute, string> = {
   'standing-benefit': 'Standing benefit',
 };
 
+/** A route, or that nobody has assessed one yet. */
+export function routeLabel(route: FundingRoute | null): string {
+  return route ? ROUTE_LABELS[route] : 'Not assessed yet';
+}
+
 /** Routes the DAO can act on now. The rest are for later or ongoing. */
 export const ACTIONABLE_ROUTES: FundingRoute[] = ['direct', 'partner'];
 
@@ -67,7 +72,7 @@ export function fundingHighlights(
 ): FundingHighlights | null {
   const nowMs = now.getTime();
   const soon = opportunities
-    .filter((o) => ACTIONABLE_ROUTES.includes(o.route))
+    .filter((o) => o.route !== null && ACTIONABLE_ROUTES.includes(o.route))
     .map((o) => ({ o, due: deadlineTime(o.deadline) }))
     .filter((x): x is { o: FundingOpportunity; due: number } => x.due !== null && x.due >= nowMs && x.due <= nowMs + HIGHLIGHT_WINDOW_MS)
     .sort((a, b) => a.due - b.due)

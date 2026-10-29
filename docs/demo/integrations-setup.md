@@ -75,6 +75,18 @@ There are two Buzz paths; use either or both.
 
 **b. Task threads ↔ Paperclip issues (Inertia Paperclip plugin).** The Buzz bridge in the root Inertia plugin mirrors a Buzz thread with a Paperclip issue (replies become comments, confirmation cards appear in the thread). In Paperclip's plugin settings for the company set `relayUrl`, `bridgePubkey`, `signingKeyRef` (a Paperclip secret), `bindings` (`channelId`, thread `rootId` → `companyId`, `issueId`) and `pairings` (member pubkey → Paperclip user). Start with `enabled: false`, check the mappings, then enable. Full details: [docs/operations.md](../operations.md).
 
+## 4. Grant finder → Funding, Home and Agents
+
+1. The member app reads grant finder opportunities from a JSON file: `MEMBER_APP_FUNDING_FILE=/path/to/funding.json`. Either shape works: `{ "opportunities": [...], "applications": [...] }`, or one page of the native catalog (`"schema": "inertia.member-funding-opportunities.v1"`, see `docs/member-funding-read.md`). Unassessed fields (route, sponsor, summary, next step) may be null; they show as *Not assessed yet*.
+2. Organization → Funding lists them. An admin clicks **Pursue this**: the model plans the work, and Inertia creates a project under the grant initiative (*Pursue grant funding strategy*, or an accepted initiative with "grant" or "funding" in its title) with agent tasks and 2–3 prepared asks for people.
+3. The asks show on **Home** under *You could help with*; the agent tasks show on **Agents** (lined up, working, stuck, done), both under the grant initiative.
+
+Needs: a model (Pursue plans with it) and a writable work engine: no Paperclip (in-memory) or `PAPERCLIP_ACCESS=write`. With Paperclip read-only, Pursue says how to turn writing on.
+
+Not yet connected: the app does not call the native catalog's HTTP route; that needs the member-app-to-native identity binding in `docs/member-funding-read.md`. Applications from the native workflow are not readable yet (the route answers 503 by design).
+
+Rehearsal without a model key: in development, `MEMBER_APP_MODEL_PROVIDER=mock` answers **Pursue this** with a fixed plan.
+
 ## Running the connectors
 
 ```sh

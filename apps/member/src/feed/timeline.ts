@@ -24,7 +24,7 @@ export type TimelineActor =
 export type TimelineItem = {
   /** `${kind}:${sourceId}`: stable for keys and paging. */
   id: string;
-  kind: 'task-done' | 'agent-done' | 'agent-started' | 'agent-blocked' | 'meeting' | 'share' | 'proposal' | 'funding' | 'incoming';
+  kind: 'task-done' | 'agent-done' | 'agent-started' | 'agent-blocked' | 'agent-queued' | 'meeting' | 'share' | 'proposal' | 'funding' | 'incoming';
   at: string;
   actor: TimelineActor;
   title: string;
@@ -75,8 +75,7 @@ function events(data: TimelineInput): TimelineItem[] {
   }
 
   for (const task of data.agentTasks) {
-    if (task.status === 'queued') continue;
-    const kind = task.status === 'done' ? 'agent-done' : task.status === 'blocked' ? 'agent-blocked' : 'agent-started';
+    const kind = task.status === 'done' ? 'agent-done' : task.status === 'blocked' ? 'agent-blocked' : task.status === 'queued' ? 'agent-queued' : 'agent-started';
     items.push({ id: `${kind}:${task.id}`, kind, at: task.updatedAt, actor: { kind: 'agent', name: task.agentName }, title: task.title, detail: null, initiative: initiativeOf(task.initiativeId), href: task.url, source: { kind: 'task', id: task.id, title: task.title, ...(task.url ? { url: task.url } : {}) } });
   }
 

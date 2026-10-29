@@ -6,7 +6,7 @@ import type { Db } from '../src/db/client';
 import { members } from '../src/db/schema';
 import { createFixtureAdapters, defaultFixture, FIXTURE_NOW } from '../src/adapters';
 import type { FundingApplication, FundingOpportunity, SourceRef } from '../src/adapters';
-import { deadlineLabel, deadlineTime, fundingHighlights, safeHttpUrl } from '../src/funding/funding';
+import { deadlineLabel, deadlineTime, fundingHighlights, routeLabel, safeHttpUrl } from '../src/funding/funding';
 import { buildFeed, type FeedCard } from '../src/feed/build-feed';
 import { cardQuestion } from '../src/feed/card-question';
 import { createAssistantTools } from '../src/assistant/tools';
@@ -189,3 +189,18 @@ describe('listFunding tool', () => {
     expect(collected.find((r) => r.id === 'o2')?.url).toBeUndefined();
   });
 });
+
+describe("the grant finder's native catalog", () => {
+  // As the native catalog publishes it: not yet assessed for this organization.
+  const unassessed: FundingOpportunity = {
+    id: 'native-1', sponsor: null, program: 'Synthetic public opportunity', route: null, summary: null,
+    deadline: '2026-11-20', benefit: null, effort: null, nextStep: null,
+    sourceUrl: 'https://example.org/fund', observedAt: '2026-10-25T12:00:00Z', initiativeId: null,
+  };
+
+  it('reads an unassessed opportunity as not assessed, and keeps it off the home highlights', () => {
+    expect(routeLabel(null)).toBe('Not assessed yet');
+    expect(fundingHighlights([unassessed], [], new Date('2026-11-01T00:00:00Z'))).toBeNull();
+  });
+});
+

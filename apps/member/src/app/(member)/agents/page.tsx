@@ -28,7 +28,7 @@ type Tab = 'activity' | 'connections';
 type Show = 'all' | 'work' | 'incoming';
 const SHOW: { show: Show; label: string; kinds?: TimelineItem['kind'][] }[] = [
   { show: 'all', label: 'All' },
-  { show: 'work', label: 'Agent work', kinds: ['agent-done', 'agent-started', 'agent-blocked'] },
+  { show: 'work', label: 'Agent work', kinds: ['agent-done', 'agent-started', 'agent-blocked', 'agent-queued'] },
   { show: 'incoming', label: 'Incoming data', kinds: ['incoming'] },
 ];
 
