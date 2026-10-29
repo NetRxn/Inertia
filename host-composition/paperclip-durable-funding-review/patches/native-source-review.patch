@@ -1,3 +1,22 @@
+--- a/dist/services/heartbeat.js
++++ b/dist/services/heartbeat.js
+@@ -1,3 +1,4 @@
++import {readCommittedSourceReviewWake} from "./native-runtime/native-source-review.mjs";
+ import {privateSessionIsolation,privateDigest} from "./native-runtime/native-private-preparation.mjs";
+ import { getNativeReviewRetryState } from "./native-runtime/native-review-retry.mjs";
+ import { retryIdempotentDatabaseOperation } from "../database-retry.js";
+@@ -21681,7 +21682,11 @@
+                 }
+             }
+             try {
++                const sourceReviewFollowup = issueId && candidate.reason === "issue_children_completed"
++                    ? await readCommittedSourceReviewWake(db, { companyId: candidate.companyId, agentId: candidate.agentId, issueId, intentId: candidate.id })
++                    : false;
+                 const wakeRun = await enqueueWakeup(candidate.agentId, {
++                    ...(sourceReviewFollowup ? { allowRunCoalescing: false } : {}),
+                     source: candidate.source,
+                     triggerDetail: (candidate.triggerDetail ??
+                         "system"),
 --- a/dist/services/issues.js
 +++ b/dist/services/issues.js
 @@ -1,3 +1,4 @@
@@ -230,7 +249,7 @@
          : undefined;
 --- /dev/null
 +++ b/dist/services/native-runtime/native-source-review.mjs
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,151 @@
 +/** Ordinary source critique is a separately owned child, never native packet attention. */
 +import {createHash} from 'node:crypto';
 +const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
@@ -353,6 +372,34 @@
 + const[{and,eq},{plugins,pluginConfig,pluginCompanySettings}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
 + const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
 + return selectCaseHistoryContinuation(rows,binding,context,input);
++}
++
++/** A completed source child is fresh input even when its producer turn is still alive.
++ * The marker alone is never authority: require the committer outbox, applied native
++ * decision/effect and the source-settlement audit to identify the exact child. */
++export function isCommittedSourceReviewWake(f,scope){
++ const w=f?.intent,p=f?.parent,c=f?.child,e=f?.effect,d=f?.decision,s=f?.settlement,r=s?.details?.receipt,a=s?.details?.admission;
++ if(!w||w.id!==scope.intentId||w.companyId!==scope.companyId||w.agentId!==scope.agentId||w.requestedByActorType!=='system'||w.requestedByActorId!=='native-status-committer'||w.source!=='automation'||w.triggerDetail!=='system'||w.reason!=='issue_children_completed'
++ ||w.payload?.issueId!==scope.issueId||w.payload?._paperclipWakeContext?.issueId!==scope.issueId||w.payload?._paperclipWakeContext?.source!=='native_status_decision'
++ ||!p||p.id!==scope.issueId||p.companyId!==scope.companyId||p.assigneeAgentId!==scope.agentId
++ ||!c||c.companyId!==scope.companyId||c.projectId!==p.projectId||c.parentId!==p.id||c.status!=='done'||c.hiddenAt||!sourceProposalHash(c,p.id)||w.payload.completedChildIssueId!==c.id||w.payload._paperclipWakeContext.completedChildIssueId!==c.id||w.idempotencyKey!==`issue_children_completed:${p.id}:${c.id}`
++ ||!e||e.companyId!==scope.companyId||e.issueId!==c.id||e.targetType!=='agent_wakeup_request'||e.targetId!==w.id||e.deliveryState!=='delivered'||!['parent_dependency_wake','parent_wake'].includes(e.effectKind)
++ ||!d||d.id!==e.decisionId||d.companyId!==scope.companyId||d.issueId!==c.id||d.applicationState!=='applied'||d.toStatus!=='done'
++ ||!s||!object(r)||!object(a)||s.companyId!==scope.companyId||s.entityId!==c.id||s.actorType!=='system'||s.actorId!=='inertia.source-review'||s.action!=='inertia.source_review_settled'||s.runId!==d.runId||s.details?.version!==1||s.details.receiptHash!==sourceHash(r)
++ ||a?.companyId!==scope.companyId||a.issueId!==c.id||a.producerIssueId!==p.id||a.proposalHash!==sourceProposalHash(c,p.id)
++ ||!['accepted','rejected','settled_source_drift'].includes(r?.state)||r.proposal_hash!==a.proposalHash||r.producer?.issue_id!==p.id||r.producer?.agent_id!==scope.agentId||r.reviewer?.issue_id!==c.id)return false;
++ return true;
++}
++export async function readCommittedSourceReviewWake(db,scope){
++ const[{and,eq,inArray},{agentWakeupRequests,issues,statusDecisionEffects,statusDecisions,activityLog}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[intent]=await db.select().from(agentWakeupRequests).where(and(eq(agentWakeupRequests.id,scope.intentId),eq(agentWakeupRequests.companyId,scope.companyId))).limit(1);
++ if(intent?.requestedByActorType!=='system'||intent.requestedByActorId!=='native-status-committer'||intent.reason!=='issue_children_completed')return false;
++ const childId=intent.payload?.completedChildIssueId;if(typeof childId!=='string')return false;
++ const[parent]=await db.select().from(issues).where(and(eq(issues.id,scope.issueId),eq(issues.companyId,scope.companyId))).limit(1);
++ const[child]=await db.select().from(issues).where(and(eq(issues.id,childId),eq(issues.companyId,scope.companyId))).limit(1);if(!sourceProposalHash(child,scope.issueId))return false;
++ const effects=await db.select({effect:statusDecisionEffects,decision:statusDecisions}).from(statusDecisionEffects).innerJoin(statusDecisions,and(eq(statusDecisions.id,statusDecisionEffects.decisionId),eq(statusDecisions.companyId,statusDecisionEffects.companyId))).where(and(eq(statusDecisionEffects.companyId,scope.companyId),eq(statusDecisionEffects.targetId,intent.id),eq(statusDecisionEffects.targetType,'agent_wakeup_request'),inArray(statusDecisionEffects.effectKind,['parent_dependency_wake','parent_wake']))).limit(4);
++ const settlements=await db.select().from(activityLog).where(and(eq(activityLog.companyId,scope.companyId),eq(activityLog.entityId,childId),eq(activityLog.action,'inertia.source_review_settled'),eq(activityLog.actorType,'system'),eq(activityLog.actorId,'inertia.source-review')));
++ return effects.some(({effect,decision})=>settlements.some(settlement=>isCommittedSourceReviewWake({intent,parent,child,effect,decision,settlement},scope)));
 +}
 --- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
 +++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
