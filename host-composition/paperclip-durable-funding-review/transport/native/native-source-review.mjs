@@ -81,7 +81,18 @@ async function sourceReviewFacts(db,binding,{completion=false}={}){
 export async function recordSourceReviewSettlement(db,binding,call,result){
  const a=binding.nativeTaskProjectAdmission;if(a?.kind!=='source-review'||!['source_review','source_settlement','source_receipt'].includes(call.arguments?.operation))return;
  const {admission,config}=await sourceReviewFacts(db,binding);if(sourceHash(admission)!==sourceHash(a))deny();
- const payload=result?.data;const value=call.arguments.operation==='source_receipt'?payload?.receipt:payload;
+ const payload=result?.data;let value=payload;
+ if(call.arguments.operation==='source_receipt'){
+  // The canonical domain receipt is immutable. This flag belongs to the stdio
+  // operation envelope; project it into the native ledger only after checking
+  // that neither the trusted envelope nor an explicit nested value contradicts it.
+  if(!object(payload)||payload.business_complete!==false)deny();
+  value=payload.receipt;
+  if(value!==null&&value!==undefined){
+   if(!object(value)||(Object.hasOwn(value,'business_complete')&&value.business_complete!==false))deny();
+   value={...value,business_complete:false};
+  }
+ }
  // Pending receipts have no terminal value and cannot authorize DONE.
  if(!value)return;
  const receipt=validateSourceReviewReceipt(a,config,value);
