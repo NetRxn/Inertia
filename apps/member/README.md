@@ -47,11 +47,12 @@ identity; redirects, response bytes and total time remain bounded.
 
 ## The chat assistant
 
-The chat runs on the Vercel AI SDK, so the provider is a setting. Put these in `.env.local`:
+The chat runs on the Vercel AI SDK, so the provider is a setting. The same setting drives the data processing: reading meeting transcripts and uploads, Find work, the organization profile and Pursue. Put these in `.env.local`:
 
 ```bash
 MEMBER_APP_MODEL_PROVIDER=anthropic
 MEMBER_APP_MODEL=claude-opus-5-5
+MEMBER_APP_FAST_MODEL=claude-haiku-5-5   # the data processing; falls back to MEMBER_APP_MODEL if it can't answer
 ANTHROPIC_API_KEY=...
 ```
 
@@ -100,7 +101,7 @@ For the Robert's Rules builder:
 
 ## Running it for a real organization (live mode)
 
-Set `MEMBER_APP_ADAPTERS=live` and `MEMBER_APP_FOUNDER_EMAIL`, plus a model (`.env.example` shows Z.ai GLM). The founder signs in and gets the setup conversation ("Tell me about your organization"). From there:
+Set `MEMBER_APP_ADAPTERS=live` and `MEMBER_APP_FOUNDER_EMAIL`, plus a model (`.env.example` shows Anthropic and Z.ai GLM; one setting covers the chat and the data processing). The founder signs in and gets the setup conversation ("Tell me about your organization"). From there:
 
 - **Organization** (`/org`): the cited profile and initiatives, members and roles, Data (anything anyone adds; Find work; Read GitHub), Integrations and Settings (governance).
 - **Work** (`/work`): a recap and the People and Agents lanes per initiative; **Needs you** to claim and answer.

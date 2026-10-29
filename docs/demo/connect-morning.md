@@ -79,10 +79,22 @@ Google Meet transcripts are Google Docs: File → Download → **Plain text (.tx
 
 **Not yet run here:** the Whisper model itself. Model downloads are blocked in this environment, so the audio conversion, transcript file and sending were checked with the model stubbed. Run it once on a short clip first; the default `small` model downloads about 500 MB on first use.
 
-## 5. Model
+## 5. Model: Anthropic for the chat and the data processing
 
-- `MEMBER_APP_MODEL_BASE_URL=https://api.z.ai/api/coding/paas/v4` for a Coding Plan key, `/api/paas/v4` for pay-as-you-go.
-- On 2026-10-29, `glm-4.7-flash` answered "overloaded" to every request while `glm-4.7` worked. Background work (profile, Find work, Pursue) now falls back from `MEMBER_APP_FAST_MODEL` to `MEMBER_APP_MODEL` when the fast model can't answer, and the check shows that as a warning, not a failure.
+One setting switches every model call: the chat, and the data processing (meeting transcripts and uploads, Find work, the profile, Pursue).
+
+```sh
+MEMBER_APP_MODEL_PROVIDER=anthropic
+MEMBER_APP_MODEL=claude-opus-5-5          # the chat
+MEMBER_APP_FAST_MODEL=claude-haiku-5-5    # the data processing
+ANTHROPIC_API_KEY=<key>
+```
+
+Leave `MEMBER_APP_MODEL_BASE_URL` and `MEMBER_APP_MODEL_THINKING` unset with Anthropic; the base URL is only for a gateway that speaks the Anthropic Messages API. If the fast model can't answer, the data processing falls back to `MEMBER_APP_MODEL`, and the check shows a warning instead of a failure. Whisper transcription stays local and uses no model key.
+
+Verified 2026-10-29 on the Anthropic code path: through an Anthropic-compatible gateway, a meeting transcript drafted the profile, and Find work made 7 tasks in 28 s. The connection check ran on the same path. A real Anthropic key wasn't available in the build environment, so run the check once with it.
+
+GLM stays available: `MEMBER_APP_MODEL_PROVIDER=openai-compatible`, `MEMBER_APP_MODEL_BASE_URL=https://api.z.ai/api/coding/paas/v4` (Coding Plan) or `/api/paas/v4`. On 2026-10-29 `glm-4.7-flash` was answering "overloaded" while `glm-4.7` worked.
 
 ## Check everything
 
