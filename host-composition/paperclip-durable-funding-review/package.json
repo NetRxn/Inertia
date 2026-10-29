@@ -62,6 +62,8 @@
     "apply-native-scout-deadline": "node scripts/apply-native-scout-deadline.mjs",
     "test:native-scout-deadline-installer": "node --test tests/native-scout-deadline-installer.test.mjs",
     "apply-native-case-result-envelope": "node scripts/apply-native-case-result-envelope.mjs",
-    "test:native-case-result-envelope-installer": "node --test tests/native-case-result-envelope-installer.test.mjs"
+    "test:native-case-result-envelope-installer": "node --test tests/native-case-result-envelope-installer.test.mjs",
+    "apply-native-source-receipt-envelope": "node scripts/apply-native-source-receipt-envelope.mjs",
+    "test:native-source-receipt-envelope-installer": "node --test tests/native-source-receipt-envelope-installer.test.mjs"
   }
 }
