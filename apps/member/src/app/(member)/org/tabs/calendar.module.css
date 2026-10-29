@@ -1,0 +1,122 @@
+/* The month calendar: a grid of days with tag dots, and the chosen day's list. */
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.month {
+  font: var(--text-heading);
+}
+
+.grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+  table-layout: fixed;
+}
+
+.grid th {
+  font: var(--text-small);
+  color: var(--ink-muted);
+  font-weight: 400;
+  padding-bottom: var(--space-1);
+}
+
+.grid td {
+  padding: 0;
+  vertical-align: top;
+}
+
+.cell {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-height: 64px;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--glass-strong);
+  color: var(--ink);
+  text-decoration: none;
+  font: var(--text-small);
+}
+
+.cell:hover {
+  outline: 1px solid var(--line-strong);
+}
+
+.cell[data-today] .number {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.cell[aria-current='date'] {
+  outline: 2px solid var(--moss);
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ink-muted);
+}
+
+.dot[data-tag='Meeting'],
+.dot[data-tag='Event'] {
+  background: var(--tide);
+}
+
+.dot[data-tag='Deadline'] {
+  background: var(--signal);
+}
+
+.dot[data-tag='Vote'] {
+  background: var(--pollen);
+}
+
+.dot[data-tag='Funding'] {
+  background: var(--moss);
+}
+
+.dot[data-tag='Task due'] {
+  background: var(--ion);
+}
+
+.more {
+  color: var(--ink-muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font: var(--text-small);
+  color: var(--ink-muted);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+@media (max-width: 480px) {
+  .cell {
+    min-height: 44px;
+    padding: var(--space-1);
+  }
+}

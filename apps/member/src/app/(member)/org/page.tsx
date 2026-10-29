@@ -39,7 +39,7 @@ const TABS: { tab: Tab; label: string; intro: string; adminOnly?: boolean }[] = 
   { tab: 'people', label: 'People', intro: 'Everyone here, and your own profile.' },
   { tab: 'funding', label: 'Funding', intro: 'Grants the agents found and checked at the official source, and the applications they’re preparing.' },
   { tab: 'governance', label: 'Governance', intro: 'How the organization decides.' },
-  { tab: 'calendar', label: 'Calendar', intro: 'What’s coming up.' },
+  { tab: 'calendar', label: 'Calendar', intro: 'Dates from meetings, votes, funding, tasks and what members shared.' },
   { tab: 'docs', label: 'Docs', intro: 'Key documents everyone can find, meeting notes, shared files and your drafts.' },
   { tab: 'data', label: 'Data', intro: 'Everything Inertia has read, and where it came from.' },
   { tab: 'settings', label: 'Settings', intro: 'Name, governance, the library and setup.', adminOnly: true },
@@ -226,7 +226,7 @@ async function SettingsTab() {
   );
 }
 
-async function OrgContent({ tab }: { tab: Tab }) {
+async function OrgContent({ tab, params }: { tab: Tab; params: { month?: string; day?: string } }) {
   const member = await requireMember();
   const admin = isAdmin(member);
   const org = await getOrganization(getDb());
@@ -246,7 +246,7 @@ async function OrgContent({ tab }: { tab: Tab }) {
       {current.tab === 'people' && <PeopleTab admin={admin} selfId={member.id} />}
       {current.tab === 'funding' && <FundingContent />}
       {current.tab === 'governance' && <GovernanceTab />}
-      {current.tab === 'calendar' && <CalendarContent />}
+      {current.tab === 'calendar' && <CalendarContent month={params.month} day={params.day} />}
       {current.tab === 'docs' && <DocsContent />}
       {current.tab === 'data' && <DataTab admin={admin} />}
       {current.tab === 'settings' && <SettingsTab />}
@@ -255,13 +255,13 @@ async function OrgContent({ tab }: { tab: Tab }) {
 }
 
 /** The organization: overview, people, funding, governance, calendar, docs, data and settings. */
-export default function OrgPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default function OrgPage({ searchParams }: { searchParams: Promise<{ tab?: string; month?: string; day?: string }> }) {
   const params = use(searchParams);
   const name = params.tab && (ALIASES[params.tab] ?? params.tab);
   const tab: Tab = TABS.some((t) => t.tab === name) ? (name as Tab) : 'overview';
   return (
     <Suspense fallback={<p className="in-mono">Loading…</p>}>
-      <OrgContent tab={tab} />
+      <OrgContent tab={tab} params={{ month: params.month, day: params.day }} />
     </Suspense>
   );
 }

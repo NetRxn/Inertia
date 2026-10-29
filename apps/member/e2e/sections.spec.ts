@@ -46,8 +46,17 @@ test.describe('Sections', () => {
 
     await tabs.getByRole('link', { name: 'Calendar' }).click();
     await expect(page).toHaveURL('/org?tab=calendar');
+    await expect(main.getByRole('table')).toBeVisible();
+    // The fixture's governance meeting is two days after the server started: open its month and day.
+    const meetingDay = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' })
+        .formatToParts(meetingDay)
+        .map((p) => [p.type, p.value]),
+    );
+    await page.goto(`/org?tab=calendar&month=${parts.year}-${parts.month}&day=${parts.day}`);
     await expect(main.getByRole('heading', { name: 'Monthly governance meeting' })).toBeVisible();
-    // Events sit under their day: the first group's heading is a day, like "Mon, Oct 26".
+    // Items sit under their day: the first group's heading is a day, like "Mon, Oct 26".
     await expect(main.getByRole('region').first().getByRole('heading', { level: 2 })).toHaveText(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
 
     await tabs.getByRole('link', { name: 'Docs' }).click();
