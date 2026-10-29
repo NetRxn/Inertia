@@ -2,7 +2,7 @@
 
 Updated 2026-10-27. Step-by-step order for a first live connection: [connect-morning.md](connect-morning.md). For the member app in `apps/member`. Every setting goes in `apps/member/.env.local` (see `.env.example`); nothing secret goes in git.
 
-**Test as you go:** `npx tsx scripts/check-integrations.ts` (or Organization → Integrations → **Check connections**, admins only). It tests the model, Paperclip, the ingest endpoint, the Telegram bot and Buzz with the current settings, changes nothing, and says what to fix.
+**Test as you go:** `npx tsx scripts/check-integrations.ts` (or Agents → Connections → **Check connections**, admins only). It tests the model, Paperclip, the ingest endpoint, the Telegram bot and Buzz with the current settings, changes nothing, and says what to fix.
 
 ```
             ┌──────────── member app (Inertia) ────────────┐
@@ -48,7 +48,7 @@ Tips:
    TELEGRAM_BOT_TOKEN=123456:ABC…
    TELEGRAM_CHAT_IDS=-100…      # optional: only these chats (the check shows what it reads)
    ```
-5. Set up delivery and run the connectors (below). Messages become one digest per chat per day in Organization → Data; the home page's *From the chat* card, the chat assistant and **Find work in this** all use them.
+5. Set up delivery and run the connectors (below). Messages become one digest per chat per day in Organization → Data; they show in the Agents feed under *Incoming data*, and the chat assistant and **Find work in this** use them.
 
 No bot yet? Telegram Desktop → the group → ⋮ → **Export chat history** → JSON, then drop the file in Data.
 
