@@ -92,7 +92,6 @@ export async function POST(request: NextRequest) {
       { fetchPreview: previewFetcher() },
     );
     revalidatePath('/');
-    revalidatePath('/');
     return NextResponse.json({ share }, { status: 201 });
   } catch (error) {
     if (error instanceof ShareValidationError) {

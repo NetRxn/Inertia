@@ -17,13 +17,14 @@ describe('Database', () => {
 
     const tableNames = result.rows.map(row => row.table_name);
 
-    // Exactly these 13 tables, plus the migration journal
+    // Exactly these 14 tables, plus the migration journal
     expect(tableNames).toEqual([
       '__drizzle_migrations',
       'conversations',
       'documents',
       'files',
       'integration_settings',
+      'library_documents',
       'loginTokens',
       'members',
       'messages',

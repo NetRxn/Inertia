@@ -360,3 +360,49 @@ export async function clearIntegrationSettings(id: 'model' | 'telegram'): Promis
     return fail(error, "Couldn't clear that.");
   }
 }
+
+/** Pins a library document to the top, or unpins it. */
+export async function pinLibraryDocument(id: string, pinned: boolean): Promise<ActionResult> {
+  try {
+    const member = await requireMember();
+    const { setLibraryPinned } = await import('../documents/library');
+    await setLibraryPinned(getDb(), member, id, pinned);
+    refresh();
+    return { ok: true };
+  } catch (error) {
+    return libraryFail(error, "Couldn't change that.");
+  }
+}
+
+/** Takes a document out of the library. */
+export async function removeFromLibrary(id: string): Promise<ActionResult> {
+  try {
+    const member = await requireMember();
+    const { removeLibraryDocument } = await import('../documents/library');
+    await removeLibraryDocument(getDb(), member, id);
+    refresh();
+    return { ok: true, message: 'Removed from the library.' };
+  } catch (error) {
+    return libraryFail(error, "Couldn't remove that.");
+  }
+}
+
+/** Who may add to the library: admins only, or every member. */
+export async function setLibraryEditors(editors: 'admins' | 'members'): Promise<ActionResult> {
+  try {
+    await requireAdminMember();
+    if (editors !== 'admins' && editors !== 'members') return { ok: false, error: 'Pick admins or every member.' };
+    const { organization } = await import('../db/schema');
+    await getDb().update(organization).set({ libraryEditors: editors, updatedAt: new Date() });
+    refresh();
+    return { ok: true, message: editors === 'members' ? 'Every member can add documents now.' : 'Only admins can add documents now.' };
+  } catch (error) {
+    return fail(error, "Couldn't save that.");
+  }
+}
+
+async function libraryFail(error: unknown, fallback: string): Promise<ActionResult> {
+  const { LibraryError } = await import('../documents/library');
+  if (error instanceof LibraryError) return { ok: false, error: error.message };
+  return fail(error, fallback);
+}

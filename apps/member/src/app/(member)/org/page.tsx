@@ -22,6 +22,7 @@ import {
 import cardStyles from '../../../components/cards/cards.module.css';
 import sectionStyles from '../sections.module.css';
 import { SectionTabs } from '../../../components/SectionTabs';
+import { LibraryEditorsSetting } from '../../../components/LibraryControls';
 import { FundingContent } from './tabs/FundingTab';
 import { CalendarContent } from './tabs/CalendarTab';
 import { DocsContent } from './tabs/DocsTab';
@@ -39,7 +40,7 @@ const TABS: { tab: Tab; label: string; intro: string; adminOnly?: boolean }[] = 
   { tab: 'funding', label: 'Funding', intro: 'Grants the agents found and checked at the official source, and the applications they’re preparing.' },
   { tab: 'governance', label: 'Governance', intro: 'How the organization decides.' },
   { tab: 'calendar', label: 'Calendar', intro: 'What’s coming up.' },
-  { tab: 'docs', label: 'Docs', intro: 'Meeting notes, shared files and your drafts.' },
+  { tab: 'docs', label: 'Docs', intro: 'Key documents everyone can find, meeting notes, shared files and your drafts.' },
   { tab: 'data', label: 'Data', intro: 'Everything Inertia has read, and where it came from.' },
   { tab: 'settings', label: 'Settings', intro: 'Name, governance, the library and setup.', adminOnly: true },
 ];
@@ -212,6 +213,10 @@ async function SettingsTab() {
       <section className={`in-glass ${cardStyles.card}`}>
         <h2 className={`in-label ${cardStyles.eyebrow}`}>Governance</h2>
         <GovernanceToggle enabled={org?.governanceEnabled ?? false} />
+      </section>
+      <section className={`in-glass ${cardStyles.card}`}>
+        <h2 className={`in-label ${cardStyles.eyebrow}`}>Library</h2>
+        <LibraryEditorsSetting editors={org?.libraryEditors ?? 'admins'} />
       </section>
       <section className={`in-glass ${cardStyles.card}`}>
         <h2 className={`in-label ${cardStyles.eyebrow}`}>Setup</h2>

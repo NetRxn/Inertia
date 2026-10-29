@@ -99,6 +99,8 @@ export const organization = memberAppSchema.table('organization', {
   profile: jsonb('profile').$type<OrgProfile>(),
   profileGeneratedAt: timestamp('profile_generated_at'),
   governanceEnabled: boolean('governance_enabled').notNull().default(false),
+  /** Who may add to the document library: admins only, or every member. */
+  libraryEditors: text('library_editors', { enum: ['admins', 'members'] }).notNull().default('admins'),
   setupCompletedAt: timestamp('setup_completed_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
@@ -143,6 +145,24 @@ export const workEvents = memberAppSchema.table('work_events', {
 });
 
 /**
+ * The organization's key documents (one-pagers, policies, brand), visible to
+ * every member. Each is an uploaded file or a link, never both.
+ */
+export const libraryDocuments = memberAppSchema.table('library_documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  description: text('description').notNull().default(''),
+  category: text('category', { enum: ['one-pager', 'policy', 'brand', 'finance', 'other'] }).notNull().default('other'),
+  fileId: uuid('file_id').references(() => files.id),
+  linkUrl: text('link_url'),
+  pinned: boolean('pinned').notNull().default(false),
+  addedBy: uuid('added_by').notNull().references(() => members.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  check('library_documents_file_or_link', sql`(${table.fileId} is null) <> (${table.linkUrl} is null)`),
+]);
+
+/**
  * Integration settings an admin saved in the app. They overlay the matching
  * environment variables; the secret is encrypted (src/settings/secrets.ts)
  * and never leaves the server.
@@ -156,6 +176,7 @@ export const integrationSettings = memberAppSchema.table('integration_settings',
 });
 
 export const schema = {
+  libraryDocuments,
   integrationSettings,
   members,
   loginTokens,

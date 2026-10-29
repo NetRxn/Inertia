@@ -3,6 +3,8 @@ import type { Meeting } from '../../../../adapters/types';
 import { getDb } from '../../../../db/client';
 import { members } from '../../../../db/schema';
 import { listDocuments, type Document } from '../../../../documents/documents';
+import { canEditLibrary, listLibrary } from '../../../../documents/library';
+import { Library } from '../../../../components/Library';
 import { requireMember } from '../../../../identity/session';
 import { listShares } from '../../../../shares/shares';
 import type { ShareSummary } from '../../../../feed/build-feed';
@@ -116,7 +118,9 @@ export async function DocsContent() {
   const member = await requireMember();
   const now = new Date();
   const db = getDb();
-  const [meetings, files, drafts, people] = await Promise.all([
+  const [library, canEdit, meetings, files, drafts, people] = await Promise.all([
+    listLibrary(db),
+    canEditLibrary(db, member),
     getAdapters().meetings.listMeetings(MEETING_LIMIT),
     listShares(db, { limit: FILE_LIMIT, withFile: true }),
     listDocuments(db, member.id),
@@ -127,6 +131,8 @@ export async function DocsContent() {
 
   return (
     <div className={styles.sections}>
+      <Library documents={library} canEdit={canEdit} />
+
       <section className={`in-glass ${cardStyles.card}`} aria-labelledby="docs-meetings">
         <h2 id="docs-meetings" className={`in-label ${cardStyles.eyebrow}`}>
           Meeting notes

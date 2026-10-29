@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { Db } from '../src/db/client';
-import { orgSources } from '../src/db/schema';
+import { members, orgSources } from '../src/db/schema';
+import { addLibraryDocument } from '../src/documents/library';
 import { addSource, setSummary } from '../src/org/ingest';
 import { completeSetup, getOrganization, saveBasics, saveProfile, setGovernance } from '../src/org/organization';
 import type { OrgProfile, ProposedInitiative } from '../src/org/profile-types';
@@ -72,6 +73,14 @@ const SOURCES: { kind: 'chat-export' | 'meeting' | 'document' | 'note'; title: s
   },
 ];
 
+/** Key documents, as links to example pages. */
+const LIBRARY = [
+  { title: 'Riverside Commons one-pager', description: 'Who we are and what we do, for partners and new members.', category: 'one-pager' as const, linkUrl: 'https://example.org/riverside/one-pager' },
+  { title: 'Treasury policy v2 (draft)', description: 'The policy members are voting on.', category: 'policy' as const, linkUrl: 'https://example.org/riverside/treasury-policy' },
+  { title: 'Code of conduct', description: 'How we treat each other at events and online.', category: 'policy' as const, linkUrl: 'https://example.org/riverside/conduct' },
+  { title: 'Brand kit', description: 'Logo, colors and photo guidelines.', category: 'brand' as const, linkUrl: 'https://example.org/riverside/brand' },
+];
+
 /** Adds the sample organization and incoming data, once. Leaves a real organization alone. */
 export async function seedDemoOrganization(db: Db): Promise<void> {
   const existing = await getOrganization(db);
@@ -92,5 +101,12 @@ export async function seedDemoOrganization(db: Db): Promise<void> {
     await setSummary(db, row.id, source.summary);
     await db.update(orgSources).set({ createdAt: new Date(now - source.ago) }).where(eq(orgSources.id, row.id));
   }
-  console.log(`  Added the profile, ${PROFILE.initiatives.length} initiatives and ${SOURCES.length} incoming sources`);
+
+  // A few key documents for the library, added as the first member (by email).
+  const [first] = await db.select({ id: members.id }).from(members).where(eq(members.status, 'active')).orderBy(asc(members.email)).limit(1);
+  if (first) {
+    const editor = { id: first.id, role: 'admin' };
+    for (const doc of LIBRARY) await addLibraryDocument(db, editor, doc);
+  }
+  console.log(`  Added the profile, ${PROFILE.initiatives.length} initiatives, ${SOURCES.length} incoming sources and ${first ? LIBRARY.length : 0} library documents`);
 }
