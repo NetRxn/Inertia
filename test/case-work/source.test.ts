@@ -80,8 +80,6 @@ it('pages only the exact bound source proposal with a stable context hash',async
   {view:'proposal',proposal_hash:proposal,limit:32001},
   {view:'proposal',proposal_hash:proposal,limit:2.5},
   {view:'proposal',proposal_hash:proposal,offset:0,record_id:'foreign'},
-  {view:'record',offset:0},
-  {view:'contract',context_hash:contextHash},
  ])await expect(f.invoke('source_context',params,true)).rejects.toThrow();
  expect(f.calls).toHaveLength(before);
  const {caseWorkTool}=await import('../../src/case-work/host.js');const schema:any=caseWorkTool.parametersSchema;
@@ -89,5 +87,18 @@ it('pages only the exact bound source proposal with a stable context hash',async
  const page=views.find((row:any)=>row.properties.view.const==='proposal');
  expect(page.properties.limit.maximum).toBe(32000);expect(page.properties.context_hash.pattern).toBe('^[a-f0-9]{64}$');
  expect(page.anyOf).toEqual([{properties:{offset:{const:0}}},{required:['context_hash']}]);
- expect(views[0].properties.offset).toBeUndefined();
+ expect(views[0].properties.offset.minimum).toBe(0);
+});
+
+it('supports bounded transport pages of record default and contract without changing inner source authority',async()=>{
+ const f=fixture();
+ for(const view of[undefined,'record','contract']){
+  const first={...(view?{view}:{}),offset:0,limit:32000};await f.invoke('source_context',first);
+  const next={...(view?{view}:{}),offset:32000,limit:16000,context_hash:contextHash};await f.invoke('source_context',next);
+  expect(f.calls.at(-1).params).toEqual(next);
+  for(const extra of[{offset:1},{offset:-1},{limit:null},{limit:32001},{context_hash:'bad'},{proposal_hash:proposal},{record_id:'foreign'}])await expect(f.invoke('source_context',{...(view?{view}:{}),...extra})).rejects.toThrow();
+ }
+ const {caseWorkTool}=await import('../../src/case-work/host.js');const schema:any=caseWorkTool.parametersSchema;
+ const params=schema.oneOf.find((row:any)=>row.properties.operation.const==='source_context').properties.parameters;
+ expect(params.description).toContain('INNER record.context_hash');expect(params.description).toContain('OUTER page.context_hash');
 });
