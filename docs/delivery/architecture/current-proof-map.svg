@@ -24,9 +24,9 @@
 <text x="59" y="534" font-family="Arial,sans-serif" font-size="13" font-weight="400" fill="#286587">RECORDED PRODUCTION + ISOLATED SCALE CHECK</text>
 <rect x="610" y="374" width="550" height="185" rx="12" fill="#ffffff" stroke="#dae2e9"/>
 <text x="629" y="407" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Rendered brief / retained output</text>
-<text x="629" y="440" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">One ~1,179-word content revision, eight typed fields; Markdown and</text>
-<text x="629" y="463.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">DOCX renders. Conditional pursuit/checklist brief, not an application</text>
-<text x="629" y="486.4" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">narrative, project, budget or final packet.</text>
+<text x="629" y="440" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Current NSF: eight-field pursuit brief, ~1,179 words, MD/DOCX; no final</text>
+<text x="629" y="463.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">packet. Legacy Carter program narratives and budget framework also</text>
+<text x="629" y="486.4" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">exist, unapproved/incomplete, with separate workflow history.</text>
 <text x="629" y="534" font-family="Arial,sans-serif" font-size="13" font-weight="400" fill="#286587">UNREVIEWED BRIEF / NOT SUBMISSION READY</text>
 <rect x="40" y="583" width="545" height="220" rx="12" fill="#ffffff" stroke="#dae2e9"/>
 <text x="59" y="616" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Normal startup / target verified</text>

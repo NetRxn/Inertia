@@ -30,3 +30,7 @@ For October 30, use the [current readiness snapshot](CURRENT-DEMO-READINESS.md) 
 - Locate the retained handoff, rejection/correction and rendered brief before presenting. Keep evidence timestamps visible. Missing access means skip the live step.
 - Use a harmless read question and existing artifacts. Do not send real Buzz messages, start notes imports, alter configuration, clear holds or submit funding during the demo.
 - Keep the original full mission: all actionable opportunities, P0 funding then P1 Buzz/P2 notes, general Coordinator, independent review and partner-owned member app. Demo selection does not redefine acceptance.
+
+## Historical backup, clearly labeled
+
+[Legacy Carter outputs](LEGACY-FUNDING-OUTPUTS.md) provide actual model-authored program narratives and a budget framework if useful on stage. Show their proposed/unapproved/incomplete status and older workflow dates. Do not attribute their review to Charlie. Park Place was owner-reported manually submitted, not Paperclip submission. This backup preserves prior work without changing current readiness or the full portfolio mission.

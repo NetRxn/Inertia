@@ -16,6 +16,8 @@ Printable, visually checked exports: [intended architecture](architecture/big-pi
 - **Bounded large-source reading:** an isolated 1.2 MB source and 182 journal pages passed qualification. The deployed d887 run subsequently read 36 pages successfully. Test scale and actual live observation are separate proofs.
 - **Rendered work exists:** one content revision was rendered through three successful calls into Markdown (9,900 bytes) and DOCX (40,453 bytes), eight typed fields and roughly 1,179 words. Native document `5e4fbb20…` retains the unreviewed brief/checkpoint. This is a conditional pursuit/checklist/organization-positioning brief; it is not an application narrative, project plan, budget or submission-ready packet. Native attachment/work-product publication and whole-packet approval remain unproven.
 
+**Legacy outputs also exist.** The older Carter domain workflow contains substantive model-authored program narratives and a budget framework, within a reported four packets/seven drafts. They are unapproved/incomplete; historical Alpha-to-Beta reviews are not current Charlie approval. See the [legacy inventory and backup-demo boundaries](LEGACY-FUNDING-OUTPUTS.md). The NSF brief limitation above applies to that current native artifact, not to all historical funding work. Park Place was owner-reported manually submitted, not submitted by Paperclip.
+
 ## What remains unavailable or unproved
 
 | Area | Current boundary | Next useful proof |
