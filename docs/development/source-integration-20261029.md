@@ -4,13 +4,15 @@
 
 | What you need | Exact branch and link |
 | --- | --- |
-| Current member app | [`claude/member-app-feed-redesign-cf004e`, `apps/member`](https://github.com/NetRxn/Inertia/tree/claude/member-app-feed-redesign-cf004e/apps/member), peer-owned PR #141 |
+| Integrated member app | [`develop`, `apps/member`](https://github.com/NetRxn/Inertia/tree/develop/apps/member), integrated by peer-owned PR #148; ongoing peer branch [`claude/member-app-feed-redesign-cf004e`](https://github.com/NetRxn/Inertia/tree/claude/member-app-feed-redesign-cf004e) / PR #141 |
 | Integrated plugin/native source | [`develop`](https://github.com/NetRxn/Inertia/tree/develop): `src/` and `host-composition/paperclip-durable-funding-review/` |
 | Funding domain | [DFW-Gov-Fund `main`, `government-funding-dfw`](https://github.com/NetRxn/DFW-Gov-Fund/tree/main/government-funding-dfw) |
 
-Use these direct links or select the exact branch in GitHub's branch dropdown above the file list. Local read-only navigation is `git fetch origin`, then `git log --oneline -5 origin/develop`; it does not switch or reset the peer checkout. The member app is still on its peer-owned stack.
+Use these direct links or select the exact branch in GitHub's branch dropdown above the file list. Local read-only navigation is `git fetch origin`, then `git log --oneline -5 origin/develop`; it does not switch or reset the peer checkout. The peer independently integrated the app/profile stack through PR #148; its ongoing branches and PR ownership remain peer-controlled.
 
 ## Current integrated source
+
+The peer independently merged the member-app and organization-profile stack through [PR #148](https://github.com/NetRxn/Inertia/pull/148) at `c48a1d1b29a64516807cf3780b86e95b4fe81240`. Both integrated app code and plugin/native code are now under `develop`. The closure note preserves that merge and changes only documentation; peer test/runtime claims retain their own scope.
 
 The frozen pair is integrated through [Inertia #147](https://github.com/NetRxn/Inertia/pull/147) and [DFW #84](https://github.com/NetRxn/DFW-Gov-Fund/pull/84):
 
@@ -41,7 +43,7 @@ The submission integration target is `develop`. Native/plugin source and demo do
 
 | Remaining PRs | Ownership or gate |
 | --- | --- |
-|70/74/75/86/105/116/118/120/125/141/142|Member-app/peer lane preserved; no unilateral merge, closure, retarget or active-checkout changes|
+|70/74/75/86/105/116/118/120/125/141/142|Historical peer/app inventory before owner merge #148. The peer controls current PR disposition; this cleanup did not close, retarget or change those PRs or their active checkout.|
 |51|Member-ingress full-HTTP/security qualification remains open|
 |81|Buzz scaffold installed-host/architecture qualification remains open|
 |85|Native receipt-bound actual PostgreSQL qualification remains open|

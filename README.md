@@ -2,7 +2,7 @@
 
 ## Find the right branch
 
-- **Member app / teammate work:** [`claude/member-app-feed-redesign-cf004e` → `apps/member`](https://github.com/NetRxn/Inertia/tree/claude/member-app-feed-redesign-cf004e/apps/member), tracked in [PR #141](https://github.com/NetRxn/Inertia/pull/141).
+- **Integrated member app:** [`develop` → `apps/member`](https://github.com/NetRxn/Inertia/tree/develop/apps/member), integrated by peer-owned [PR #148](https://github.com/NetRxn/Inertia/pull/148). The peer's ongoing branch is [`claude/member-app-feed-redesign-cf004e`](https://github.com/NetRxn/Inertia/tree/claude/member-app-feed-redesign-cf004e), tracked in [PR #141](https://github.com/NetRxn/Inertia/pull/141).
 - **Integrated plugin, funding and native source:** [`develop`](https://github.com/NetRxn/Inertia/tree/develop). Plugin code is in `src/`; native overlays are in `host-composition/paperclip-durable-funding-review/`.
 - **Funding domain:** [DFW-Gov-Fund `main` → `government-funding-dfw`](https://github.com/NetRxn/DFW-Gov-Fund/tree/main/government-funding-dfw).
 
