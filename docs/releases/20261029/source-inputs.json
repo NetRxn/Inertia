@@ -1,0 +1,133 @@
+{
+  "schema": "inertia-source-release-inputs-v1",
+  "scope": "Qualified integration source; DFW supervised beta/manual-submission boundary. Not full product/runtime/business acceptance.",
+  "tagConvention": {
+    "firstTags": [
+      "NetRxn/Inertia:v0.1.0",
+      "NetRxn/DFW-Gov-Fund:v3.4.1"
+    ],
+    "authority": "Declared package versions; DFW README explicitly makes pyproject.toml authoritative; no earlier remote tags/releases or mandatory bump found."
+  },
+  "sourceInputs": {
+    "inertia": {
+      "commit": "09001dc00c360ec0f9fb1923e820c8eaff3675d5",
+      "tree": "318a12ccb6fb0acbcbe470f4cbb6facfcfd81951",
+      "appTree": "760305c8999a091642aa188a7e1d338227a9fb49",
+      "nativeCompositionTree": "12941f249b31f3b76dccdc96bc47405b3d3a14c2",
+      "packageMetadataSha256": "a2b380f7ac0b0afafcf5b57740cc3c782ca186e0d6a8e5e35f2148210211d706",
+      "memberReaderSource": {
+        "apps/member/src/org/machine-reader.ts": "e62dd7b57aa24a2554b3b9a74f964a028aeb3eddd950b4749be58d491bb16534",
+        "apps/member/src/app/api/org/knowledge/route.ts": "4d1d843ba2f1324ed24c0ae864dbb041f7d3c14ba1c438011e93c8dccd9d753d"
+      }
+    },
+    "dfw": {
+      "commit": "6203f76988ce629f8c2f524ad9ea9bc6e380f7a2",
+      "tree": "b64cb8558b3c4a8b213b96ed50120ef8ac25d750",
+      "packageMetadataSha256": "284f8c9e43290124b8df77caa07cdc7699ad077abd8a52d06320cf5a3b4aafcf",
+      "distributionManifestSha256": "f6595ca8a2a6591988c633c7f077902636892535d8af920edbf185955740d941",
+      "nativeCycleSha256": "66798ce3eecf7a5953a0fe59cf37b2a101859b63478cc824496f2f8f6321041a",
+      "frozenB851AndLostClaimDfeAncestryVerified": true
+    }
+  },
+  "documentationInput": {
+    "commit": "27bbfef8d01da50c010c25cd83342dbdb8d6f13e",
+    "pr": 152,
+    "scope": "MVP/user/install/release/rollback guide; architecture HTML/SVG/PDF",
+    "pdfVisualQA": "passed by docs owner",
+    "htmlBrowserRendering": "not independently verified"
+  },
+  "qualification": {
+    "inertiaRoot": {
+      "node": "24.22.2",
+      "passed": 1326,
+      "explicitOptionalSkips": 12,
+      "exitCode": 0,
+      "packageFiles": 219,
+      "migrations": 9,
+      "privateFilesExcluded": true,
+      "candidateCI": 40986257291,
+      "candidate": "5a856abbc3ae9ec7d5fd6e6c1a78f1e0b4d78df6",
+      "mergedTreeEqualsCandidate": true,
+      "developCI": 40986610002
+    },
+    "memberApp": {
+      "sourceTree": "760305c8999a091642aa188a7e1d338227a9fb49",
+      "node": "24.22.2",
+      "next": "16.4.3",
+      "typecheck": "passed",
+      "unitPassed": 312,
+      "unhandledErrors": 0,
+      "unitExitCode": 0,
+      "productionBuildExitCode": 0,
+      "staticPages": 18,
+      "credentialsProvided": false,
+      "browserE2E": "not independently run",
+      "liveDeployment": "not qualified by this lane"
+    },
+    "dfw": {
+      "pythonPinned": "3.14.6",
+      "passed": 2292,
+      "explicitSkips": 6,
+      "exitCode": 0,
+      "candidate": "29b7b207f2bb00296285c299c032c4fd3162470b",
+      "mergedTreeEqualsCandidate": true,
+      "ci": 40983302798,
+      "fullCIStages": [
+        "locked install",
+        "live dependency audit",
+        "compileall",
+        "Ruff",
+        "mypy172",
+        "fullpytest",
+        "build",
+        "migration smoke"
+      ],
+      "sqliteCLI": {
+        "passed": true,
+        "integrity": "ok",
+        "tables": 54,
+        "temporaryOnly": true,
+        "disabledSchedules": true,
+        "credentialsProvided": false,
+        "logSha256": "7cd1f101172cba9fb506dad20ea67212041b7f223fbb153894cb24ba76ada503"
+      }
+    }
+  },
+  "publication": {
+    "inertiaTagTarget": "Exact accepted canonical merge commit of release/demo-20261029; annotated tag and external release receipt record final commit/tree/artifact hashes.",
+    "dfwTagTarget": "6203f76988ce629f8c2f524ad9ea9bc6e380f7a2",
+    "tagPushSideEffects": "No current workflows trigger on tags; no automatic CI/package publish/deploy proof.",
+    "immutableTags": true,
+    "demoDocsOwnership": "Human-owned DemoDocs remain untouched; this bundle does not claim human presentation acceptance."
+  },
+  "deploymentComparison": {
+    "operatorReportedReference": "c5, supplied by root",
+    "independentlyInspected": false,
+    "deployedImageDigest": null,
+    "deployedSourceManifest": null,
+    "taggedSourceManifest": {
+      "definition": "This file records immutable source inputs; final annotated tag and external publication receipt bind its containing commit and artifact hashes."
+    },
+    "parity": "NOT_ESTABLISHED",
+    "rule": "Source tags do not establish deployed-image/source parity; preserve a separate redacted operator manifest before any parity claim"
+  },
+  "deferred": [
+    "End-to-end production Notes acceptance",
+    "Real Paperclip Buzz bridge binding/pairing/delivery acceptance",
+    "Semantic exhaustion/revisit acceptance",
+    "Full actionable funding portfolio and final application/packet acceptance",
+    "Autonomous external submission",
+    "Independently verified runtime parity"
+  ],
+  "rollback": {
+    "inertiaPreFreshDocsQualifiedCheckpoint": "09001dc00c360ec0f9fb1923e820c8eaff3675d5",
+    "dfwPreviousQualifiedCheckpointRetainingLostClaimFix": "5847675b6f7148a06a74b27a02af6cbce87ad1b9",
+    "kind": "source rollback checkpoints only; not runtime rollback authorization"
+  },
+  "nativeCompatibility": {
+    "package": "paperclipai",
+    "version": "2026.1012.0",
+    "upstreamBuild": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+    "scope": "Pinned compatibility source baseline, not a newest-version or deployed-parity claim."
+  }
+}
