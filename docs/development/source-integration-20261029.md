@@ -1,5 +1,15 @@
 # Repository source integration — October 29, 2026
 
+## Teammate quick navigation
+
+| What you need | Exact branch and link |
+| --- | --- |
+| Current member app | [`claude/member-app-feed-redesign-cf004e`, `apps/member`](https://github.com/NetRxn/Inertia/tree/claude/member-app-feed-redesign-cf004e/apps/member), peer-owned PR #141 |
+| Integrated plugin/native source | [`develop`](https://github.com/NetRxn/Inertia/tree/develop): `src/` and `host-composition/paperclip-durable-funding-review/` |
+| Funding domain | [DFW-Gov-Fund `main`, `government-funding-dfw`](https://github.com/NetRxn/DFW-Gov-Fund/tree/main/government-funding-dfw) |
+
+Use these direct links or select the exact branch in GitHub's branch dropdown above the file list. Local read-only navigation is `git fetch origin`, then `git log --oneline -5 origin/develop`; it does not switch or reset the peer checkout. The member app is still on its peer-owned stack.
+
 The submission integration target is `develop`. Native/plugin source and demo documentation are integrated through [PR144](https://github.com/NetRxn/Inertia/pull/144) and [PR139](https://github.com/NetRxn/Inertia/pull/139). The source integration landed at `181ecc7ef83b6a622b5ba976fba3c3abc4c39a7e`; its tree exactly matches tested candidate `e18c9ce7f786f22c86cc062cf8bc82db09675905`.
 
 ## Evidence
@@ -33,6 +43,12 @@ On Node 24.22.2, the public aggregate with all private fixture variables unset p
 
 ## DFW dependency
 
-[DFW82](https://github.com/NetRxn/DFW-Gov-Fund/pull/82) at `dfe686aa702410995111c116defb0b16b91299f6` preserves the #79 → #80 → #81 source stack and prevents fallback regeneration after losing a concurrent claim to a newly parked case. Independent review and 2,274 local tests passed, 6 skipped; full Ruff/mypy (172 files)/compileall/manifest checks passed. Local Python 3.14.8 differs from pinned remote Python 3.14.6; [exact CI](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40977149722) remains the main-merge gate at this checkpoint.
+[DFW82](https://github.com/NetRxn/DFW-Gov-Fund/pull/82) at `dfe686aa702410995111c116defb0b16b91299f6` preserves the #79 → #80 → #81 source stack and prevents fallback regeneration after losing a concurrent claim to a newly parked case. Independent review and 2,274 local tests passed, 6 skipped; full Ruff/mypy (172 files)/compileall/manifest checks passed. [Exact pinned Python 3.14.6 CI](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40977149722) passed all checks, including 2,274 tests/6 skips, build and migration smoke. PR #82 merged to main `5847675b6f7148a06a74b27a02af6cbce87ad1b9`, whose tree equals tested `dfe686a`.
 
 Source integration does not establish runtime deployment, completed funding applications, real Buzz delivery, notes ingestion or human acceptance. The current mission remains a general Coordinator with P0 funding/P1 Buzz/P2 notes; full funding acceptance is the whole actionable portfolio.
+
+## Frozen paired follow-up
+
+The next reviewed pair is Inertia #146 at `78bd5fc038bab58cfab347663c6cfca2197d95de` and DFW #83 at `b85182e5f2a808d9ba1ffc10c469218de22ad2c7`. The domain adds bounded correction reasons and preserves a genuinely unknown deadline under independent review without erasing known deadlines. Integration candidates merge these heads onto current canonical branches, retaining DFW main's `dfe686a` lost-claim fix. Exact combined validation and merge outcomes are recorded separately.
+
+The operator-reported VPS c5 deployment is separate from Git integration. This source report does not establish develop/runtime parity.
