@@ -1,0 +1,142 @@
+{
+  "schema": "inertia-deployment-release-pin-v1",
+  "releaseVersion": "0.1.1",
+  "releaseTag": "v0.1.1",
+  "scope": "Qualified P0 member-app compatibility and organization-profile deployment; not final application approval or accepted P1/P2",
+  "qualifiedAt": "2026-10-30T04:44:37.264886+00:00",
+  "gitBinding": "The annotated tag and external publication receipt bind the accepted canonical commit containing this pin; no self-referential commit is embedded here.",
+  "sourceInputs": {
+    "orgProfilePR": 157,
+    "orgProfileCommit": "b1bf0a12a15211aca6acf61710ffee3ce8819724",
+    "qualifiedSourceCI": [
+      41002226840,
+      41046895721
+    ],
+    "memberEquivalentCanonicalCommit": "52cf8765106120a20893b544c33d43d35b2fd176",
+    "memberAppTree": "760305c8999a091642aa188a7e1d338227a9fb49",
+    "previousImmutableInertiaTag": "v0.1.0",
+    "dfwSourceReference": {
+      "tag": "v3.4.1",
+      "commit": "97ed317427e30633a4adcdb936ff7eb56a2b2e18",
+      "deployedWholeGitTreeParity": "NOT_ASSERTED; existing domain runtime/wheel retained by the sealed P0 composition"
+    }
+  },
+  "p0PaperclipDeployment": {
+    "imageDigest": "sha256:7224a6fa642844c5837b91b0c70437f32f3cc6a2c7699cb51cc802185e152d6d",
+    "pluginVersion": "0.1.1",
+    "sealedArchiveSha256": "c39ac7635523f6d31374d8250b024a031f99b51e1e642602b65127200ab162dc",
+    "packageArtifactSha256": "f5d0e62b469e74c9d4cdc203b34051ea958783acef11f6a661beb2d6c18a20ab",
+    "sourceManifestSha256": "324b5d1aa0a1e19883017582463456d86d4799c4830676f10a62492d489891b3",
+    "payloadManifestSha256": "30acd42a41bfc58dd56bdbe232f1515e11348cba9136448580efaadc3eedd266",
+    "composition": "Selective reviewed org-profile package over the existing custom runtime; not a wholesale image of develop. Native/domain/wheel/boot retained.",
+    "nativeGuards": 46,
+    "nativeSupersessions": 33,
+    "activation": {
+      "supportedAdminDisableEnable": true,
+      "migration009AppliedOnce": true,
+      "old8MigrationsPreserved": true,
+      "namedCapabilities": [
+        "ui.page.register",
+        "instance.settings.register"
+      ],
+      "uiSlots": [
+        "dao",
+        "task-trail",
+        "member-packet",
+        "integrations"
+      ],
+      "tools": 26,
+      "ready": true
+    },
+    "preservation": {
+      "configurationSha256": "a7831b69344e6e7a9f48c13952d1a7ea5be0784602045fb29f02703c85f5315f",
+      "registrySha256": "2b63f2d5d03548ec9a344eb3321444243452e93ac96db77e0002b3344d09a2df",
+      "bootSha256": "46a537419e0223200fd751a7ade0565100a0c0dc60a00b9dda90261c176b48b9",
+      "composeSha256": "bc8e5b6d7d627f965beffa6ed2396ec22ec62f8e084b40e55ee6134dcd7f317d",
+      "grantContentsPreserved": true,
+      "startupBookkeepingTimestampOnlyChanges": 2,
+      "databasesRecreated": false,
+      "queueIntentsPreserved": true,
+      "originalPythonPinsVerified": 196,
+      "postbootSecurityPassed": true
+    },
+    "rollbackImageDigest": "sha256:c12cfffcfb2c76428464c6f86ed04e018e9604c8995dfa76f2807a85af4e0682",
+    "doNotReplayHistoricalCutover": true
+  },
+  "memberDeployment": {
+    "imageDigest": "sha256:78b5f89b7525caf7fd14af06d68d499da34dca22e1c997e2b5928722adbae851",
+    "appTree": "760305c8999a091642aa188a7e1d338227a9fb49",
+    "observedSourceFilesMatched": 279,
+    "actualBuildCommit": "UNKNOWN; intended tracked app projection independently matched",
+    "externalDeployer": "UNKNOWN",
+    "historicalPreMigrationBackupReceipt": "UNKNOWN; historical documentation follow-up, not a functional acceptance gate",
+    "functionalProof": "Intended tracked app projection matched; reader returns admitted citations, missing/wrong tokens denied, Paperclip funding/agent reads passed, and production migration journal observed installed. Broader source tests/build are separate from target acceptance.",
+    "productionMigrations": [
+      "0002_integration_settings",
+      "0003_library"
+    ],
+    "unchangedByProfileCutover": true,
+    "laterPreProfileBackup": {
+      "databaseSha256": "2a52e3fd038be75094f59732f2be55b9a31a9c2da4830e65507dfcd0728fd15e",
+      "mountedDataSha256": "1cfdfbf8423d5238deca8a37aae0268fc9e3df826ecec6e72b7cc7f2e52ba8d6",
+      "catalogsVerified": true,
+      "databaseDumpTransactional": true,
+      "mountedDataTransactionallyConsistentWithDatabase": false,
+      "rowCountsChangedDuringBackup": false,
+      "offHostTransfer": false
+    }
+  },
+  "actualBusinessRegression": {
+    "purpose": "Preserve existing preliminary funding workflow during P0 deployment, not approve a final application",
+    "status": "succeeded",
+    "finalization": "committed",
+    "finishedAt": "2026-10-30T04:43:10.611+00:00",
+    "savedFieldsVerified": 18,
+    "renderArtifacts": [
+      {
+        "type": "preliminary_markdown",
+        "sha256": "1769943fbfaf3b8116c95df0870acc3b05a4f00cb17ddbb1559f91993eb56864",
+        "bytes": 33407,
+        "allSavedValuesPresent": true,
+        "paragraphs": null
+      },
+      {
+        "type": "preliminary_docx",
+        "sha256": "ebe6d05b8fb42d4a4c5fcdab997706093ca2d7ea4359e1c25731916b555d2229",
+        "bytes": 47135,
+        "allSavedValuesPresent": true,
+        "paragraphs": 112
+      }
+    ],
+    "independentOrganizationSearchSucceeded": true,
+    "preliminaryStatus": "UNREVIEWED",
+    "packetApprovalClaimed": false,
+    "companyRestoredActive": true,
+    "draining": false
+  },
+  "operatorEvidenceSha256": {
+    "P0-DEPLOYMENT-ACCEPTANCE.json": "b118493f483c321fa785f21976015616e91b2e8752f92ce804d34d8a44b7e544",
+    "rollout-metadata.json": "aac4b3a38bbad0c9dde65db8bf8b6c531b0e55381e032b3b9108cb5eb269c6aa",
+    "postboot-composition.json": "a3fb756e5337451ed20af57516116cbd828221eb929559b79b75cae4f7366725",
+    "independent-futo-p0-terminal.json": "afcbcf31c935cd7ecc2c5541e811556e37a0c1c0c369933dc672dcb047e9335f",
+    "archive-audit.json": "32ceacca3d6fb4d6c66c5003c83f7776960ee525f1ad7bd0e75796c49e392f36"
+  },
+  "laterRuntimeObservation": {
+    "observedAt": "2026-10-30T11:12:25.196977+00:00",
+    "imageDigest": "sha256:f47870c6561fe257f93914efda963af317e84c7a6fd0c9f7192917a80b84b062",
+    "rollbackImageDigest": "sha256:7224a6fa642844c5837b91b0c70437f32f3cc6a2c7699cb51cc802185e152d6d",
+    "sourceOverlay": "native3eff9169c0b904e28be7dabd96f7605495fad6d2 + selectivepluginbc3880acec980b219a780e548ef42db5eaad295e over qualified P0 package",
+    "nativeGuards": 47,
+    "nativeSupersessions": 42,
+    "actualCharlieBusinessAcceptance": "PENDING",
+    "scope": "Later P1 runtime overlay; not part of P0 business acceptance and not certified as accepted P1 by v0.1.1"
+  },
+  "limits": [
+    "Source approval is not application approval",
+    "Full portfolio/application acceptance and external submission not established",
+    "P1 Charlie business review and P2 ranked-shortlist acceptance remain separate",
+    "Notes/Buzz/exhaustion follow-up remains separate",
+    "Dependency advisories remain open; deployment qualification is not a blanket security audit"
+  ],
+  "secretsIncluded": false
+}
