@@ -23,7 +23,7 @@ The funding workflow follows a practical path:
 3. **Review and correct:** independently review source proposals and return corrections to the same case.
 4. **Read and decide:** inspect saved drafts and human-readable Markdown/DOCX artifacts, resolve missing facts and make the final decision.
 
-The demonstrated pilot created thirteen distinct case tasks, ran four case providers concurrently, and used scoped organization search in saved writing and artifact readback. A FUTO draft sample met the team's MVP quality bar. Independent source review was demonstrated; **source approval does not establish approval of an application, budget or final packet**.
+The demonstrated pilot created thirteen distinct case tasks, ran four case providers concurrently, and used scoped organization search in saved writing and artifact readback. Clean-primary rendering and version-bound editorial review have been demonstrated. Working mechanics alone do not establish that a draft is sponsor-ready. Independent source review was demonstrated; **source approval does not establish approval of an application, budget or final packet**.
 
 [Watch the recorded demo](https://youtu.be/s5NHieVPrN4) for the product walkthrough. See the [MVP guide](docs/guide/README.md) for scope and the [source integration record](docs/development/source-integration-20261029.md) for technical validation and provenance.
 
@@ -40,6 +40,8 @@ The Coordinator has also saved a ranked shortlist of three active opportunities 
 | Which commits and components were qualified? | [Source inputs](docs/releases/20261029/source-inputs.json) · [Integration evidence](docs/development/source-integration-20261029.md) |
 
 The [0.1.1 P0 release record](docs/releases/0.1.1/RELEASE_NOTES.md) documents the qualified deployment, exact image/source pins and provenance limits.
+
+The [clean-render deployment record](docs/releases/clean-application-20261030/README.md) separates verified runtime/publisher behavior from the application’s current consumer-review status.
 
 ## Source and local validation
 
