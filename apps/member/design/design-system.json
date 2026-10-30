@@ -1,0 +1,120 @@
+{
+  "v": 3,
+  "assetGroups": {
+    "Logos": {
+      "name": "Logos",
+      "tile": "l",
+      "order": [
+        "inertia-lockup-on-dark.svg",
+        "inertia-lockup-on-light.svg",
+        "inertia-mark-on-dark.svg",
+        "inertia-mark-on-light.svg",
+        "inertia-wordmark-on-dark.svg",
+        "inertia-wordmark-on-light.svg",
+        "inertia-realm-people-on-dark.svg",
+        "inertia-realm-people-on-light.svg",
+        "inertia-realm-agent-on-dark.svg",
+        "inertia-realm-agent-on-light.svg",
+        "inertia-realm-org-on-dark.svg",
+        "inertia-realm-org-on-light.svg"
+      ],
+      "files": {
+        "inertia-lockup-on-dark.svg": {
+          "name": "inertia-lockup-on-dark.svg",
+          "blob": "18afde0e865d27a1018199536f0f67f0",
+          "size": 2798,
+          "type": "image/svg+xml"
+        },
+        "inertia-lockup-on-light.svg": {
+          "name": "inertia-lockup-on-light.svg",
+          "blob": "777a9ead1fa8ea1a0eec26c7eaf0fe4e",
+          "size": 2798,
+          "type": "image/svg+xml"
+        },
+        "inertia-mark-on-dark.svg": {
+          "name": "inertia-mark-on-dark.svg",
+          "blob": "d9927dac31003507d8369bd5bcb1a8ee",
+          "size": 525,
+          "type": "image/svg+xml"
+        },
+        "inertia-mark-on-light.svg": {
+          "name": "inertia-mark-on-light.svg",
+          "blob": "bfc77ac9f3bd1fb856fb27b0d19b8f93",
+          "size": 525,
+          "type": "image/svg+xml"
+        },
+        "inertia-wordmark-on-dark.svg": {
+          "name": "inertia-wordmark-on-dark.svg",
+          "blob": "bb3da94c4f323f3a689633f46bbed2fd",
+          "size": 2314,
+          "type": "image/svg+xml"
+        },
+        "inertia-wordmark-on-light.svg": {
+          "name": "inertia-wordmark-on-light.svg",
+          "blob": "08336f5cecc494909288d0ff6e10199f",
+          "size": 2314,
+          "type": "image/svg+xml"
+        },
+        "inertia-realm-people-on-dark.svg": {
+          "name": "inertia-realm-people-on-dark.svg",
+          "blob": "884d42ad99bbf835f1ad8d7be4f589eb",
+          "size": 459,
+          "type": "image/svg+xml"
+        },
+        "inertia-realm-people-on-light.svg": {
+          "name": "inertia-realm-people-on-light.svg",
+          "blob": "892019bb2e58d931511e136b5924cb88",
+          "size": 459,
+          "type": "image/svg+xml"
+        },
+        "inertia-realm-agent-on-dark.svg": {
+          "name": "inertia-realm-agent-on-dark.svg",
+          "blob": "928e03b42d66d1d4247e8cecfb298bd7",
+          "size": 558,
+          "type": "image/svg+xml"
+        },
+        "inertia-realm-agent-on-light.svg": {
+          "name": "inertia-realm-agent-on-light.svg",
+          "blob": "ef92016d4decb4c7b861f1644e5269b8",
+          "size": 558,
+          "type": "image/svg+xml"
+        },
+        "inertia-realm-org-on-dark.svg": {
+          "name": "inertia-realm-org-on-dark.svg",
+          "blob": "7ac2154d587ffeeb7c959d46bb033d20",
+          "size": 540,
+          "type": "image/svg+xml"
+        },
+        "inertia-realm-org-on-light.svg": {
+          "name": "inertia-realm-org-on-light.svg",
+          "blob": "9121634668cbe322cde2c1fb3768f5c0",
+          "size": 540,
+          "type": "image/svg+xml"
+        }
+      }
+    }
+  },
+  "blobs": {},
+  "createdOnFiles": {
+    "at": "2026-10-21T04:33:20Z",
+    "v": 1
+  },
+  "docs": {
+    "readme": "project/README.md",
+    "sections": []
+  },
+  "groups": [
+    "Logos"
+  ],
+  "lastChange": {
+    "by": "Kyle",
+    "at": "2026-10-24T18:30:00Z",
+    "via": "Cowork",
+    "note": "v6: one motif \u2014 the orbit (body, path, satellite); new mark and lockup, three realm marks; atomic, planet, momentum and starburst marks retired"
+  },
+  "layout": "files",
+  "libraries": [],
+  "namespace": "Inertia",
+  "sections": {},
+  "title": "Inertia"
+}

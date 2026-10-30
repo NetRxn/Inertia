@@ -1,0 +1,115 @@
+# Inertia member app
+
+The place where FWTX DAO members see and touch Inertia. A verified member logs in with their email and gets a feed of what's happening in the DAO, the work that needs a person, a place to share ideas, and an assistant that answers questions about anything the DAO knows and cites where each answer came from.
+
+It's a self-contained Next.js app. Every outside system sits behind a TypeScript adapter, and v1 runs entirely on synthetic fixture data, so it can be built and tried before partner access exists. The app never keeps its own task or approval ledger, and Robert's Rules proposals are read-only.
+
+Design: [`docs/superpowers/specs/2026-10-24-member-app-design.md`](../../docs/superpowers/specs/2026-10-24-member-app-design.md). Plan: [`docs/superpowers/plans/2026-10-24-member-app.md`](../../docs/superpowers/plans/2026-10-24-member-app.md).
+
+## Setup
+
+Requires Node 24.11 or later. Run everything from `apps/member/`:
+
+```bash
+npm ci
+cp .env.example .env.local   # optional: every variable has a working default
+npm run seed                 # migrates the local PGlite database, syncs fixture members, adds sample shares and a sample organization with incoming data
+npm run dev                  # http://localhost:3000
+```
+
+The database lives in `data/pglite` (git-ignored). No Docker is needed. Set `DATABASE_URL` to use a real Postgres instead; the app's tables live in the `member_app` schema.
+
+## Logging in
+
+1. Open http://localhost:3000 and enter a fixture email, such as `ana@example.org`. Every fixture member is invented; the list is in `src/adapters/fixtures/dao.ts` (`pat@example.org` is the inactive one and can't log in).
+2. In development no mail is sent. The login link is printed in the dev server's console and written to `data/dev-mail/<email>.txt`.
+3. Open that link. It works once and expires after 15 minutes. Unknown emails get the same "check your email" response, and no link.
+
+**On a real install (no email yet).** Production runs in live mode and sends no email (`MEMBER_APP_MAILER=none`). People get in with one-time sign-in links that work for 3 days:
+
+- **First admin:** on the server, run `npx tsx scripts/sign-in-link.ts you@example.org`. On a fresh install that email becomes the first admin. The script prints the link, so treat the output like a password.
+- **Everyone else:** an admin adds them in Organization → Members and copies the link that appears. If a link was used or expired, use **Sign-in link** on that member's row to get a new one.
+- Someone who enters their email on the login page is told to ask an admin for their link. The page says the same thing whether or not the email belongs to a member.
+
+Directory sync revokes every outstanding login link when a member's normalized
+email or active status changes (including disappearance from the directory).
+Changing the email back or reactivating the member does not revive old links.
+Issuance, consumption and sync serialize on the member row. Existing sessions
+remain valid after an email change for the same active external member identity;
+inactive members are still denied on every session lookup. Sync does not transfer
+a session to another external identity.
+
+Share uploads keep the 10 MiB file limit. The route reads at most 10 MiB plus
+64 KiB for multipart framing and text before parsing, even without Content-Length,
+and refuses a larger file before allocating its arrayBuffer. Link previews use
+only a validated public address per hop while retaining the URL's Host/TLS
+identity; redirects, response bytes and total time remain bounded.
+
+## The chat assistant
+
+The chat runs on the Vercel AI SDK, so the provider is a setting. The same setting drives the data processing: reading meeting transcripts and uploads, Find work, the organization profile and Pursue. Put these in `.env.local`:
+
+```bash
+MEMBER_APP_MODEL_PROVIDER=anthropic
+MEMBER_APP_MODEL=claude-opus-5-5
+MEMBER_APP_FAST_MODEL=claude-haiku-5-5   # the data processing; falls back to MEMBER_APP_MODEL if it can't answer
+ANTHROPIC_API_KEY=...
+```
+
+Any OpenAI-compatible server (a local model, for example) works with `MEMBER_APP_MODEL_PROVIDER=openai-compatible`, `MEMBER_APP_MODEL_BASE_URL` and `MEMBER_APP_MODEL_API_KEY`. Without a provider, the rest of the app works and the chat says it isn't configured yet.
+
+The assistant reads through tools over the adapters and treats all meeting, chat and share text as data, never as instructions. `listFunding` reads the grant finder's opportunities and applications; members confirm or submit applications in the funding system, never through the app or the assistant. Its only tool that writes anything is `draftDocument`, which saves to the member's own drafts (Docs → My drafts, downloadable as Markdown).
+
+## Tests
+
+```bash
+npm run typecheck
+npm test          # Vitest
+npm run build
+npm run e2e       # Playwright; needs Chromium: npx playwright install chromium
+```
+
+E2E starts its own dev server on port 3100 with a fresh database, link previews off and a scripted mock model (`MEMBER_APP_MODEL_PROVIDER=mock`), so it needs no API key. Each spec logs in as members no other spec uses, because claims and shares persist for the run.
+
+## Adapters
+
+| Adapter | Real source (later) | Provides | Status |
+|---|---|---|---|
+| `MemberDirectory` | Robert's Rules member list | members: id, email, display name, active | Fixture only |
+| `ProposalSource` | Robert's Rules | proposals: title, status, dates, tallies, link | Fixture only |
+| `WorkSource` | Paperclip | initiatives, tasks needing a person, weekly completions, `claim` | Fixture only |
+| `MeetingSource` | Roundtable output / DAO Postgres | meetings: summary, decisions, open questions, action items | Fixture only |
+| `ChatSource` | Buzz via the bridge / DAO Postgres | threads and recent messages | Fixture only |
+| `EventSource` | To be decided | upcoming events | Fixture only |
+| `FundingSource` | The grant finder (DFW funding domain via Paperclip) | opportunities: sponsor, program, route, deadline, benefit, next step, official source; applications: stage, readiness, decisions members still need to make | Fixture only |
+
+The interfaces are in `src/adapters/types.ts`, and `MEMBER_APP_ADAPTERS` selects the set (only `fixture` exists). Nothing in the UI or the assistant knows which implementation is active.
+
+## Questions for partners
+
+These don't block the local build. For NetRxn:
+
+1. Should the member app live in `NetRxn/Inertia` (as `apps/member`) or in its own repo?
+2. Which Paperclip API should the app use to read tasks needing a person and to record a claim?
+3. Can the app have its own `member_app` schema and role on the DAO Postgres, and who provisions it?
+4. Can the app read meeting summaries and Buzz messages through the SQL knowledge tools?
+
+For the Robert's Rules builder:
+
+5. How can Inertia read the member list, and should login verify the email itself or delegate to Robert's Rules?
+6. Is there a way to read proposals and vote tallies?
+
+## Running it for a real organization (live mode)
+
+Set `MEMBER_APP_ADAPTERS=live` and `MEMBER_APP_FOUNDER_EMAIL`, plus a model (`.env.example` shows Anthropic and Z.ai GLM; one setting covers the chat and the data processing). The founder signs in and gets the setup conversation ("Tell me about your organization"). From there:
+
+The menu has three sections, Home in the middle:
+
+- **Home** (`/`): the member view. The initiatives (tap one to focus on it), your tasks and what you could help with (claim and answer here), what's coming up, Add to Inertia, and a feed of what members did, meetings, shares, votes and funding.
+- **Agents** (`/agents`): the technical view. Agents working, stuck and done this week, a feed of agent work and incoming data (Buzz, Telegram, meetings, uploads), and **Connections** (Paperclip and Buzz first, then every integration, and the connection check).
+- **Organization** (`/org`): Overview (the cited profile and initiatives), People (members and roles, with your own profile and sign-out), Funding (**Pursue this** turns a grant finder opportunity into a project with agent and human tasks), Governance (a placeholder until Vocdoni), Calendar, Docs, Data (anything anyone adds; Find work; Read GitHub) and Settings (governance).
+- Initiatives come from onboarding: the ones accepted there show on every screen, joined to Paperclip goals by id or title. Paperclip goals no accepted initiative claims (such as the agents' own root goal) don't show as initiatives; their work reads as general.
+- Old addresses (`/work`, `/votes`, `/funding`, `/calendar`, `/docs`, `/profile`) redirect to their new places.
+- Work runs in **Paperclip** when `PAPERCLIP_URL`, `PAPERCLIP_API_KEY` and `PAPERCLIP_COMPANY_ID` are set, otherwise in process memory. Paperclip is read-only unless `PAPERCLIP_ACCESS=write`: members see its initiatives and tasks, claims stay in Inertia's work log, and nothing is written back. A board key carries the permissions of the user who issued it, so issue it from a user with no more access than that.
+
+`scripts/setup-org.ts` does the setup steps from the command line for seeding. The demo runbook is in `docs/demo/runbook-wednesday.md`.

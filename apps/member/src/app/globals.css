@@ -1,0 +1,81 @@
+/*
+ * App-wide base styles. The tokens come from src/styles/tokens.css (generated from
+ * design/tokens.json) and the in- classes from design/components/bundle.css.
+ */
+
+/* next/font self-hosts the three families; the token stacks stay behind them as fallbacks. */
+:root {
+  --font-display: var(--font-schibsted), "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-schibsted), "Helvetica Neue", Arial, sans-serif;
+  --font-voice: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
+  --font-mono: var(--font-martian), "SF Mono", Menlo, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+}
+
+/* The bundle styles in-btn for <button>; links that navigate wear it too (Button README). */
+a.in-btn {
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* Focus: 2px ink ring, 2px offset, on every interactive element, in both themes. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Logos: -on-dark files on Night, -on-light files on Day (same rules as tokens.css). */
+.logo-day {
+  display: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="night"]) .logo-night {
+    display: none;
+  }
+  :root:not([data-theme="night"]) .logo-day {
+    display: inline;
+  }
+}
+
+:root[data-theme="day"] .logo-night {
+  display: none;
+}
+
+:root[data-theme="day"] .logo-day {
+  display: inline;
+}

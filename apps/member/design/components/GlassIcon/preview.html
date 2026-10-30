@@ -1,0 +1,29 @@
+<!-- @dsCard group="Foundations" height=200 subtitle="Transparent floating tiles, one per meaning" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>GlassIcon — preview</title>
+<style>
+  .stage { position: relative; height: 200px; overflow: hidden; }
+  .light { position: absolute; border-radius: var(--radius-pill); filter: blur(28px); opacity: .55; }
+  .l1 { background: var(--signal); width: 120px; height: 120px; left: 60px; top: 50px; }
+  .l2 { background: var(--ion); width: 140px; height: 100px; left: 330px; top: 70px; }
+  .l3 { background: var(--tide); width: 110px; height: 110px; left: 560px; top: 30px; }
+  .icons { position: relative; display: flex; gap: var(--space-8); align-items: center; justify-content: center; height: 100%; flex-wrap: wrap; }
+  .in-gicon:nth-child(2) { animation-delay: -1.6s; } .in-gicon:nth-child(3) { animation-delay: -3.1s; }
+  .in-gicon:nth-child(4) { animation-delay: -4.4s; } .in-gicon:nth-child(5) { animation-delay: -5.7s; } .in-gicon:nth-child(6) { animation-delay: -2.4s; }
+</style></head>
+<body>
+<div class="stage">
+  <div class="light l1"></div><div class="light l2"></div><div class="light l3"></div>
+  <div class="icons">
+    <span class="in-gicon in-gicon--signal" aria-label="Needs you"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/></svg></span>
+    <span class="in-gicon in-gicon--ion" aria-label="Agent"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><ellipse cx="12" cy="12" rx="10" ry="3.5" transform="rotate(-18 12 12)"/></svg></span>
+    <span class="in-gicon in-gicon--pollen" aria-label="Idea"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2v.2h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></span>
+    <span class="in-gicon in-gicon--moss" aria-label="Credit"><svg viewBox="0 0 24 24"><path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/></svg></span>
+    <span class="in-gicon in-gicon--tide" aria-label="Vote"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></span>
+    <span class="in-gicon in-gicon--ink" aria-label="Chat"><svg viewBox="0 0 24 24"><path d="M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/></svg></span>
+  </div>
+</div>
+<script></script>
+</body>
+</html>

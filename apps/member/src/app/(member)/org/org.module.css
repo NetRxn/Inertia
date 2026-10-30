@@ -1,0 +1,42 @@
+.mission {
+  font: var(--text-heading);
+  line-height: 1.45;
+}
+
+.sources {
+  display: block;
+  margin-top: var(--space-1);
+  font: var(--text-small);
+  color: var(--tide-text);
+}
+
+.initiative,
+.member {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.initiative[data-status='dismissed'],
+.member[data-status='hidden'] {
+  opacity: 0.55;
+}
+
+@media (max-width: 640px) {
+  .initiative,
+  .member {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Five sections don't fit a phone: scroll sideways instead of cutting off. */
+.scrollTabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.scrollTabs > a {
+  flex: 0 0 auto;
+}

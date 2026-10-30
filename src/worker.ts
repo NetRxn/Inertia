@@ -11,6 +11,7 @@ import {
   registerRoundtableJobs,
   type RoundtableStatus,
 } from "./roundtable/host.js";
+import { registerOrgProfile } from "./org/host.js";
 import {
   definePlugin,
   PLUGIN_RPC_ERROR_CODES,
@@ -86,6 +87,7 @@ export function createPlugin() {
       await registerConfiguredTrustedCentral(ctx);
       roundtableStatus = await registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
+      registerOrgProfile(ctx);
       registerOrganizationSearch(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {

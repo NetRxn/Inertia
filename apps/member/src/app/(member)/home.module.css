@@ -1,0 +1,42 @@
+.hero {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.lockup {
+  height: 28px;
+  width: auto;
+}
+
+.greeting {
+  font: var(--text-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.subtitle {
+  color: var(--ink-muted);
+}
+
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.add > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.add > summary::-webkit-details-marker {
+  display: none;
+}
+
+.add > summary::after {
+  content: ' +';
+}
+
+.add[open] > summary::after {
+  content: ' −';
+}

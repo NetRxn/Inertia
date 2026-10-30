@@ -245,3 +245,9 @@ scripts/cloud-rehearsal/host/node_modules
 runs-discovery-rehearsal-*/
 runs-funding-facts-native-*/
 scripts/discovery-rehearsal/cold-fixture.json
+
+# Brainstorm companion scratch files
+.superpowers/
+
+# Docker Compose database dumps
+backups/

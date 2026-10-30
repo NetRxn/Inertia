@@ -1,0 +1,300 @@
+import type { Db } from '../db/client';
+import { members, loginTokens, sessions } from '../db/schema';
+import { eq, and, gte, isNull } from 'drizzle-orm';
+import { randomBytes, createHash } from 'crypto';
+
+export interface Mailer {
+  sendLoginLink(to: string, url: string): Promise<void>;
+}
+
+interface RequestLoginLinkOptions {
+  baseUrl: string;
+  now?: Date;
+}
+
+interface ConsumeResult {
+  ok: true;
+  sessionToken: string;
+  memberId: string;
+}
+
+interface ConsumeFailure {
+  ok: false;
+  reason: 'invalid' | 'expired' | 'used' | 'inactive';
+}
+
+export type ConsumeLoginTokenResult = ConsumeResult | ConsumeFailure;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** How long a link someone requests by email stays valid. */
+export const EMAIL_LINK_TTL_MS = 60 * 60 * 1000;
+/** A session lasts this long after it was last used, then ends. */
+export const SESSION_TTL_MS = 90 * DAY_MS;
+/** Renew a session at most once a day, so reads don't write every time. */
+const SESSION_RENEW_AFTER_MS = DAY_MS;
+
+/**
+ * Generates a random token and returns both the token and its SHA-256 hash.
+ */
+function generateToken(): { token: string; hash: string } {
+  const token = randomBytes(32).toString('base64url');
+  const hash = createHash('sha256').update(token).digest('hex');
+  return { token, hash };
+}
+
+/**
+ * Computes the SHA-256 hash of a token.
+ */
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+/**
+ * Requests a login link for a member. Sends at most 5 links per member per rolling hour.
+ * Silently ignores unknown or inactive members.
+ */
+export async function requestLoginLink(
+  db: Db,
+  email: string,
+  mailer: Mailer,
+  opts: RequestLoginLinkOptions
+): Promise<void> {
+  const now = opts.now ?? new Date();
+  const lowercaseEmail = email.toLowerCase();
+
+  // Find the member
+  const [member] = await db
+    .select()
+    .from(members)
+    .where(and(eq(members.email, lowercaseEmail), eq(members.status, 'active')))
+    .limit(1);
+
+  if (!member) {
+    // Silently ignore unknown or inactive members
+    return;
+  }
+
+  // Rate limit check and insert in transaction (atomic)
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const { token, hash } = generateToken();
+  const expiresAt = new Date(now.getTime() + EMAIL_LINK_TTL_MS);
+
+  // Track whether a token was inserted so we only send mail after commit
+  let tokenInserted = false;
+
+  await db.transaction(async (tx) => {
+    // Lock the member's row to serialize concurrent rate-limit checks
+    // (prevents race where two requests both count 4 tokens and both insert)
+    const [currentMember] = await tx
+      .select()
+      .from(members)
+      .where(eq(members.id, member.id))
+      .for('update');
+
+    // The directory may have changed while this request waited for the lock.
+    if (!currentMember || currentMember.status !== 'active' || currentMember.email !== lowercaseEmail) return;
+
+    // Check rate limit: 5 per rolling hour
+    const recentTokens = await tx
+      .select()
+      .from(loginTokens)
+      .where(and(eq(loginTokens.memberId, member.id), gte(loginTokens.createdAt, oneHourAgo)));
+
+    if (recentTokens.length >= 5) {
+      // Rate limit exceeded, silently ignore
+      return;
+    }
+
+    // Store the token hash
+    await tx.insert(loginTokens).values({
+      memberId: member.id,
+      tokenHash: hash,
+      expiresAt,
+      createdAt: now,
+    });
+
+    tokenInserted = true;
+  });
+
+  // Send the login link only after transaction commits and only if a token was inserted
+  if (tokenInserted) {
+    const url = `${opts.baseUrl}/auth/verify?token=${token}`;
+    await mailer.sendLoginLink(lowercaseEmail, url);
+  }
+}
+
+/** How long an admin-issued sign-in link stays valid: long enough to reach someone by chat. */
+export const ISSUED_LINK_TTL_MS = 72 * 60 * 60 * 1000;
+
+/**
+ * Issues a one-time sign-in link for an active member, for an admin to send
+ * themselves while the app has no email delivery. Returns null for an unknown
+ * or inactive member. The link works once, like an emailed one.
+ */
+export async function issueSignInLink(
+  db: Db,
+  memberId: string,
+  opts: { baseUrl: string; now?: Date; ttlMs?: number }
+): Promise<{ url: string; expiresAt: Date } | null> {
+  const now = opts.now ?? new Date();
+  const [member] = await db.select().from(members).where(and(eq(members.id, memberId), eq(members.status, 'active')));
+  if (!member) return null;
+  const { token, hash } = generateToken();
+  const expiresAt = new Date(now.getTime() + (opts.ttlMs ?? ISSUED_LINK_TTL_MS));
+  await db.insert(loginTokens).values({ memberId: member.id, tokenHash: hash, expiresAt, createdAt: now });
+  return { url: `${opts.baseUrl.replace(/\/+$/, '')}/auth/verify?token=${token}`, expiresAt };
+}
+
+/**
+ * Says whether a sign-in link still works, without using it. The link page
+ * calls this on open, so a chat app fetching the link for a preview leaves it
+ * working; only the person's "Sign in" press consumes it.
+ */
+export async function checkLoginToken(
+  db: Db,
+  token: string,
+  now?: Date
+): Promise<{ ok: true; firstName: string } | ConsumeFailure> {
+  const currentTime = now ?? new Date();
+  const [loginToken] = await db.select().from(loginTokens).where(eq(loginTokens.tokenHash, hashToken(token))).limit(1);
+  if (!loginToken) return { ok: false, reason: 'invalid' };
+  if (loginToken.usedAt) return { ok: false, reason: 'used' };
+  if (loginToken.expiresAt < currentTime) return { ok: false, reason: 'expired' };
+  const [member] = await db.select().from(members).where(eq(members.id, loginToken.memberId)).limit(1);
+  if (!member || member.status !== 'active') return { ok: false, reason: 'inactive' };
+  return { ok: true, firstName: member.displayName.trim().split(/\s+/)[0] };
+}
+
+/**
+ * Consumes a login token and creates a session if valid.
+ * Returns the session token on success, or an error reason on failure.
+ * Uses atomic UPDATE to ensure single-use tokens even under concurrency.
+ */
+export async function consumeLoginToken(
+  db: Db,
+  token: string,
+  now?: Date
+): Promise<ConsumeLoginTokenResult> {
+  const currentTime = now ?? new Date();
+  const tokenHash = hashToken(token);
+
+  // Find the token
+  const [loginToken] = await db
+    .select()
+    .from(loginTokens)
+    .where(eq(loginTokens.tokenHash, tokenHash))
+    .limit(1);
+
+  if (!loginToken) {
+    return { ok: false, reason: 'invalid' };
+  }
+
+  // Check if expired
+  if (loginToken.expiresAt < currentTime) {
+    return { ok: false, reason: 'expired' };
+  }
+
+  return db.transaction(async (tx): Promise<ConsumeLoginTokenResult> => {
+    // Serialize with issuance and directory sync. A consumption that commits
+    // before an email change is an existing session; after it, the link is used.
+    const [member] = await tx
+      .select()
+      .from(members)
+      .where(eq(members.id, loginToken.memberId))
+      .limit(1)
+      .for('update');
+
+    if (!member || member.status !== 'active') {
+      return { ok: false, reason: 'inactive' };
+    }
+
+    // Atomically mark token as used (race-safe)
+    const updatedRows = await tx
+      .update(loginTokens)
+      .set({ usedAt: currentTime })
+      .where(and(eq(loginTokens.id, loginToken.id), isNull(loginTokens.usedAt)))
+      .returning();
+
+    if (updatedRows.length === 0) {
+      // Token was already used by another concurrent request
+      return { ok: false, reason: 'used' };
+    }
+
+    // Create session
+    const { token: sessionToken, hash: sessionHash } = generateToken();
+    const sessionExpiresAt = new Date(currentTime.getTime() + SESSION_TTL_MS);
+
+    await tx.insert(sessions).values({
+      memberId: member.id,
+      tokenHash: sessionHash,
+      expiresAt: sessionExpiresAt,
+      createdAt: currentTime,
+    });
+
+    return { ok: true, sessionToken, memberId: member.id };
+  });
+}
+
+/**
+ * Gets the member for a session token. Returns null for an unknown, expired,
+ * or inactive member. Updates lastSeenAt at most once per 5 minutes.
+ */
+export async function getMemberForSession(
+  db: Db,
+  sessionToken: string,
+  now?: Date
+): Promise<(typeof members.$inferSelect) | null> {
+  const currentTime = now ?? new Date();
+  const sessionHash = hashToken(sessionToken);
+
+  // Find the session
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.tokenHash, sessionHash))
+    .limit(1);
+
+  if (!session) {
+    return null;
+  }
+
+  // Check if expired
+  if (session.expiresAt < currentTime) {
+    return null;
+  }
+
+  // Get the member
+  const [member] = await db
+    .select()
+    .from(members)
+    .where(eq(members.id, session.memberId))
+    .limit(1);
+
+  if (!member || member.status !== 'active') {
+    return null;
+  }
+
+  // Sliding expiry: a session in use keeps going; one left alone for its full term ends.
+  const renewed = new Date(currentTime.getTime() + SESSION_TTL_MS);
+  if (renewed.getTime() - session.expiresAt.getTime() >= SESSION_RENEW_AFTER_MS) {
+    await db.update(sessions).set({ expiresAt: renewed }).where(eq(sessions.id, session.id));
+  }
+
+  // Update lastSeenAt if more than 5 minutes have passed
+  const fiveMinutesAgo = new Date(currentTime.getTime() - 5 * 60 * 1000);
+  if (!member.lastSeenAt || member.lastSeenAt < fiveMinutesAgo) {
+    await db.update(members).set({ lastSeenAt: currentTime }).where(eq(members.id, member.id));
+    // Return updated member
+    return { ...member, lastSeenAt: currentTime };
+  }
+
+  return member;
+}
+
+/**
+ * Signs out a session by deleting it.
+ */
+export async function signOut(db: Db, sessionToken: string): Promise<void> {
+  const sessionHash = hashToken(sessionToken);
+  await db.delete(sessions).where(eq(sessions.tokenHash, sessionHash));
+}

@@ -1,0 +1,6 @@
+# HTTPS in front of the member app. DOMAIN comes from .env; Caddy gets the
+# certificate itself (Let's Encrypt for a public name, a local CA for localhost).
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy member:3000
+}
