@@ -1,5 +1,7 @@
 # Release and rollback closeout
 
+[Project README](../../../README.md) · [Documentation index](../../guide/README.md)
+
 This procedure freezes qualified source. It does not deploy, change credentials/configuration, approve applications or publish a GitHub Release. Human owns DemoDocs; the designated operator owns any runtime change.
 
 ## Candidate and version convention

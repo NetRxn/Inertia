@@ -1,5 +1,7 @@
 # Install and qualify
 
+[Project README](../../README.md) · [Documentation index](README.md)
+
 This repository is source and qualification machinery, not a one-command production installation. Keep source preparation, package installation, native composition and target activation separate.
 
 ## Source checkout

@@ -1,5 +1,7 @@
 # Release and recovery
 
+[Project README](../../README.md) · [Documentation index](README.md)
+
 One designated operator changes the live VPS. This procedure summarizes the reviewed operating contract; it is not a copy-paste command to run an old incident script against a new target. Exact hashes, stage paths, composition and expected current image must be resolved from the current reviewed release receipt.
 
 ## Prepare the exact release
@@ -28,8 +30,12 @@ Stop and prove cessation of the failed app, select the preserved compatible imag
 
 ## Publish source and release tags
 
-Once the release owner accepts the exact integrated source and required checks, use the recorded version/tag policy. No earlier tags or GitHub releases exist: this source release establishes first tags `v0.1.0` for Inertia and `v3.4.1` for DFW, matching actual package metadata. See the [source release inputs and notes](../releases/20261029/RELEASE_NOTES.md). The plugin package version alone does not identify the combined native/domain/runtime deployment. Do not invent a new version number, tag a moving branch or imply that a source tag deploys the VPS.
+Once the release owner accepts the exact integrated source and required checks, use the recorded version/tag policy. The first annotated source tags are [Inertia `v0.1.0`](https://github.com/NetRxn/Inertia/tree/v0.1.0) and [DFW `v3.4.1`](https://github.com/NetRxn/DFW-Gov-Fund/tree/v3.4.1), matching package metadata. They preserve the accepted source commits; later documentation can advance without moving the tags. See the [source release inputs and notes](../releases/20261029/RELEASE_NOTES.md). The plugin package version alone does not identify the combined native/domain/runtime deployment. Do not invent a new version number, tag a moving branch or imply that a source tag deploys the VPS.
 
 Release notes must record the Inertia commit/tag, DFW commit/tag, native upstream and composition identity, artifact checksums, target image and deployment status, rollback compatibility, user-visible changes and known limits. State the current scope: useful ranked saved opportunities and readable proposed drafts; deferred Notes, real Buzz and exhaustion/revisit; no final Charlie whole-packet or external-submission claim. Keep secret values, private URLs and protected checkpoint contents out of public release notes.
 
 The Git integration lane owns merge/tag closeout; the live operator owns target proof. Both records must agree before claiming source/runtime parity. This documentation change runs no deployment, rollback or tagging command.
+
+## Known dependency follow-up
+
+The tagged DFW lock contains Mako 1.3.12. GitHub advisory [GHSA-5639-2j2p-m4mx](https://github.com/advisories/GHSA-5639-2j2p-m4mx) describes a Windows TemplateLookup drive-letter path-traversal vulnerability, patched in 1.4.2. The existing [dependency PR #41](https://github.com/NetRxn/DFW-Gov-Fund/pull/41) proposes the update. The release CI dependency audit passed, but the separate GitHub alert remains open; source qualification does not close it or establish runtime exploitability. Review the dependency update through its own checks before deployment.

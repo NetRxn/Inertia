@@ -1,20 +1,24 @@
 # Inertia MVP guide
 
+[Project README](../../README.md)
+
 Inertia helps an organization turn existing knowledge and objectives into accountable work. Paperclip coordinates tasks and review; the member app makes organization knowledge and work accessible. Funding is the current MVP workflow, with a general Coordinator rather than a grant-only product.
 
 - [Use Inertia](user-guide.md): find a case, inspect evidence and read proposed work.
-- [Architecture](architecture.html): who owns work, evidence, review and durable state.
+- [Architecture](architecture.svg): who owns work, evidence, review and durable state.
 - [Install and qualify](install.md): source setup, plugin packaging and native composition.
 - [Release and recover](release.md): exact-source checks, deployment, rollback and tags.
 - [Source integration](../development/source-integration-20261029.md): integrated branches and validation receipts.
 
+[Watch the demo](https://youtu.be/s5NHieVPrN4) · HackFW Open Forum track.
+
 ## What the MVP demonstrates
 
-Saved Alpha candidates reached the Coordinator and thirteen distinct Beta case tasks. Four case providers ran concurrently; later cases progressed while earlier cases awaited independent source review. Scoped organization search supplied source/passages/hashes to actual saved writing, with readback and Markdown/DOCX parity. The human accepted the FUTO draft sample's quality as sufficient for tomorrow; comparable examples are being checked separately.
+Saved Alpha candidates reached the Coordinator and thirteen distinct Beta case tasks. Four case providers ran concurrently; later cases progressed while earlier cases awaited independent source review. Scoped organization search supplied source/passages/hashes to actual saved writing, with readback and Markdown/DOCX parity. A FUTO draft sample met the team's MVP quality bar; that sample does not establish acceptance of the whole funding portfolio.
 
 Charlie independently rejected sources and returned corrections to the same case. FUTO source proposal `393f…` was accepted, completed its native source-review child and resumed Beta. **Source approval is not approval of the application draft, budget or final packet.** No final Charlie whole-packet approval or external submission is claimed.
 
-For tomorrow, useful output is a Coordinator-ranked handful of the strongest active saved opportunities and readable real agent-authored drafts. Full 1,475-record coverage is not an MVP gate. Missing legal/contact facts and final authority remain explicit; answerable proposed writing can proceed before those final decisions. The separate source-reconciliation audit is retained evidence, not a demand to restart the funding scan.
+The intended MVP outcome is a Coordinator-ranked shortlist of the strongest active saved opportunities and readable real agent-authored drafts. Individual case and draft evidence does not establish completed portfolio acceptance. Full 1,475-record coverage is not an MVP gate. Missing legal/contact facts and final authority remain explicit; answerable proposed writing can proceed before those final decisions. The separate source-reconciliation audit is retained evidence, not a demand to restart the funding scan.
 
 ## Deferred from this MVP
 
