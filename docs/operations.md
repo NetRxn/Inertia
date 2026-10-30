@@ -1,6 +1,6 @@
 # Run the connected Buzz–Paperclip loop
 
-> The live MVP guide and release scope are in [MVP guide](guide/README.md). This document describes the controlled Buzz bridge/fixture and connection contract; real Paperclip-Buzz participation is deferred from the current MVP.
+> The live MVP guide and release scope are in [MVP guide](https://github.com/NetRxn/Inertia/blob/develop/docs/guide/README.md). This document describes the controlled Buzz bridge/fixture and connection contract; real Paperclip-Buzz participation is deferred from the current MVP.
 
 ## Run the fixture
 
