@@ -98,6 +98,25 @@ async function checkBuzz(env: Record<string, string | undefined>, fetchImpl: typ
   }
 }
 
+/** Sign-in email: whether Resend accepts the key and has verified the sending domain. Sends nothing. */
+async function checkEmail(env: Record<string, string | undefined>, fetchImpl: typeof fetch): Promise<CheckResult> {
+  const key = env.RESEND_API_KEY?.trim();
+  const from = env.MEMBER_APP_MAIL_FROM?.trim();
+  if (!key || !from) return { name: 'Sign-in email', status: 'not set', detail: 'Set RESEND_API_KEY and MEMBER_APP_MAIL_FROM (e.g. Inertia <login@inertia.ing>) so members can get their own sign-in links. Until then an admin copies links from Organization → People.' };
+  const domain = from.match(/@([^>\s]+)/)?.[1]?.toLowerCase();
+  try {
+    const response = await fetchImpl('https://api.resend.com/domains', { headers: { authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(15_000) });
+    if (!response.ok) return { name: 'Sign-in email', status: 'failed', detail: `Resend answered ${response.status}; check RESEND_API_KEY.` };
+    const body = (await response.json()) as { data?: { name: string; status: string }[] };
+    const found = body.data?.find((d) => d.name.toLowerCase() === domain);
+    if (!found) return { name: 'Sign-in email', status: 'failed', detail: `${domain ?? 'The from address'} isn't a domain in this Resend account. Add it in Resend and its DNS records in Cloudflare.` };
+    if (found.status !== 'verified') return { name: 'Sign-in email', status: 'warning', detail: `${domain} is ${found.status} in Resend; add its DNS records in Cloudflare and wait for verification.` };
+    return { name: 'Sign-in email', status: 'ok', detail: `Sending from ${from} through Resend.` };
+  } catch (error) {
+    return { name: 'Sign-in email', status: 'failed', detail: message(error) };
+  }
+}
+
 function checkIngest(env: Record<string, string | undefined>): CheckResult {
   if (!env.MEMBER_APP_INGEST_TOKEN?.trim()) return { name: 'Ingest endpoint', status: 'not set', detail: 'Set MEMBER_APP_INGEST_TOKEN so connectors and other integrations can deliver to /api/org/ingest.' };
   if (!env.MEMBER_APP_BASE_URL?.trim()) return { name: 'Ingest endpoint', status: 'warning', detail: 'Token set; also set MEMBER_APP_BASE_URL so connectors know where the app is.' };
@@ -106,5 +125,5 @@ function checkIngest(env: Record<string, string | undefined>): CheckResult {
 
 /** Tests every integration with the current settings, without changing anything. */
 export async function checkConnections(env: Record<string, string | undefined> = process.env, fetchImpl: typeof fetch = fetch): Promise<CheckResult[]> {
-  return Promise.all([checkModel(env), checkPaperclip(env, fetchImpl), Promise.resolve(checkIngest(env)), checkTelegram(env, fetchImpl), checkBuzz(env, fetchImpl)]);
+  return Promise.all([checkModel(env), checkPaperclip(env, fetchImpl), checkEmail(env, fetchImpl), Promise.resolve(checkIngest(env)), checkTelegram(env, fetchImpl), checkBuzz(env, fetchImpl)]);
 }

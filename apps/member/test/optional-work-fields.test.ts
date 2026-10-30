@@ -9,7 +9,7 @@ import type { HumanTask, Initiative } from '../src/adapters';
 import { byPriority, taskKind } from '../src/work/initiatives';
 import { buildFeed, type FeedCard } from '../src/feed/build-feed';
 import { createAssistantTools } from '../src/assistant/tools';
-import { PrioritiesCard } from '../src/components/cards/PrioritiesCard';
+import { InitiativesStrip } from '../src/components/InitiativesStrip';
 import type { Member } from '../src/identity/session';
 
 /** An initiative from a source that only knows its id, title and status. */
@@ -83,20 +83,23 @@ describe('optional initiative and task fields', () => {
     expect(text).toContain('Kind: review');
   });
 
-  it('PrioritiesCard drops the progress arc, the "% along" chip and the status line when unknown', () => {
-    const html = renderToStaticMarkup(createElement(PrioritiesCard, { initiatives: [bare('x', 'Bare initiative')] }));
+  it('InitiativesStrip drops the progress bar and the status line when unknown', () => {
+    const html = renderToStaticMarkup(createElement(InitiativesStrip, { initiatives: [bare('x', 'Bare initiative')] }));
     expect(html).toContain('Bare initiative');
     expect(html).not.toContain('along');
     expect(html).not.toContain('NaN');
-    expect(html).not.toContain('stroke-dasharray');
     expect(html).not.toMatch(/<p[^>]*><\/p>/);
   });
 
-  it('PrioritiesCard still shows progress and status when the source has them', () => {
+  it('InitiativesStrip still shows progress and status when the source has them', () => {
     const initiative: Initiative = { ...bare('x', 'Ranked'), progress: 0.4, statusLabel: 'First session scheduled' };
-    const html = renderToStaticMarkup(createElement(PrioritiesCard, { initiatives: [initiative] }));
+    const html = renderToStaticMarkup(createElement(InitiativesStrip, { initiatives: [initiative] }));
     expect(html).toContain('40% along');
     expect(html).toContain('First session scheduled');
-    expect(html).toContain('stroke-dasharray');
+  });
+
+  it('InitiativesStrip marks initiatives awaiting a vote', () => {
+    const html = renderToStaticMarkup(createElement(InitiativesStrip, { initiatives: [{ ...bare('x', 'HackFW 2026'), awaitingVote: true, statusLabel: 'Awaiting vote' }] }));
+    expect(html).toContain('Awaiting vote');
   });
 });

@@ -31,7 +31,7 @@ export function ThisWeekCard({ top, openItems }: Props) {
       {openItems > 0 ? (
         <p className={styles.meta}>
           {plural(openItems, 'item')} still open in{' '}
-          <Link href="/work" className={styles.textLink}>
+          <Link href="/#your-work" className={styles.textLink}>
             Work
           </Link>
           .

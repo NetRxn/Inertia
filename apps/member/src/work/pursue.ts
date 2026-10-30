@@ -50,12 +50,12 @@ Plan the work as JSON: {"brief": "...", "tasks": [{"title", "description", "lane
 
 function opportunityBlock(o: FundingOpportunity): string {
   return [
-    `<opportunity sponsor="${o.sponsor}" program="${o.program}">`,
+    `<opportunity${o.sponsor ? ` sponsor="${o.sponsor}"` : ''} program="${o.program}">`,
     o.summary,
     o.benefit ? `Benefit: ${o.benefit}` : null,
     o.deadline ? `Deadline: ${o.deadline}` : 'Deadline: unknown',
     o.effort ? `Effort: ${o.effort}` : null,
-    `Next step: ${o.nextStep}`,
+    o.nextStep ? `Next step: ${o.nextStep}` : null,
     `Source: ${o.sourceUrl}`,
     '</opportunity>',
   ].filter(Boolean).join('\n');
@@ -105,11 +105,11 @@ export async function pursueOpportunity(
   const engine = adapters.work;
   requireWritableEngine(engine);
 
-  const hits = await searchPassages(db, `${opportunity.program} ${opportunity.summary}`, 10);
+  const hits = await searchPassages(db, [opportunity.program, opportunity.summary].filter(Boolean).join(' '), 10);
   const plan = await askJson({ system: SYSTEM, prompt: `${opportunityBlock(opportunity)}\n\n${excerptBlocks(hits) || '(The organization has shared nothing related yet.)'}`, schema: planSchema, maxOutputTokens: 4000 });
 
   const initiativeId = await grantInitiative(db, adapters);
-  const title = `${opportunity.program} (${opportunity.sponsor})`;
+  const title = opportunity.sponsor ? `${opportunity.program} (${opportunity.sponsor})` : opportunity.program;
   const projectId = engine.createProject
     ? (await engine.createProject({ initiativeId, title, description: `${plan.brief}\n\nOfficial page: ${opportunity.sourceUrl}` })).id
     : initiativeId;

@@ -3,6 +3,7 @@ import { buildFeed, type FeedCard, type ShareSummary } from '../src/feed/build-f
 import { createFixtureAdapters, defaultFixture, FIXTURE_NOW } from '../src/adapters';
 import type { Adapters } from '../src/adapters';
 import type { Member } from '../src/identity/session';
+import { mergeInitiatives } from '../src/work/org-initiatives';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -207,5 +208,22 @@ describe('buildFeed', () => {
 
     const cards = await buildFeed(createFixtureAdapters(defaultFixture(FIXTURE_NOW)), sam, shares, FIXTURE_NOW);
     expect(card(cards, 'recently-shared').shares.map((s) => s.id)).toEqual(['share-1', 'share-2', 'share-3']);
+  });
+
+  it('shows the organization’s initiatives, including ones awaiting a vote', async () => {
+    const adapters = createFixtureAdapters(defaultFixture(FIXTURE_NOW));
+    const initiatives = mergeInitiatives(
+      {
+        governanceEnabled: true,
+        profile: { mission: null, programs: [], people: [], recent: [], initiatives: [
+          { id: 'p-1', title: 'HackFW 2026', summary: '', citations: [], status: 'accepted', workId: null, adopted: false },
+        ] },
+      },
+      await adapters.work.listInitiatives(),
+    );
+    const cards = await buildFeed(adapters, sam, [], FIXTURE_NOW, initiatives);
+    expect(card(cards, 'priorities').initiatives).toEqual([
+      expect.objectContaining({ title: 'HackFW 2026', statusLabel: 'Awaiting vote', awaitingVote: true }),
+    ]);
   });
 });

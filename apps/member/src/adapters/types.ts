@@ -1,3 +1,5 @@
+import type { FundingCase } from '../funding/cases';
+
 export type SourceRef = {
   kind:
     | 'meeting'
@@ -59,6 +61,10 @@ export interface Initiative {
   progress?: number; // 0..1
   statusLabel?: string;
   priority?: number; // lower is more important
+  /** Where the app found it: the organization's profile, the work engine, or both. */
+  source?: 'organization' | 'engine' | 'both';
+  /** Accepted, but governance hasn't adopted it yet. */
+  awaitingVote?: boolean;
 }
 
 export type TaskKind = 'creative' | 'outreach' | 'review' | 'real-world';
@@ -87,6 +93,8 @@ export interface AgentTask {
   initiativeId: string | null;
   title: string;
   agentName: string | null;
+  /** The engine's project it belongs to, when it says. */
+  project?: string | null;
   status: 'queued' | 'running' | 'blocked' | 'done';
   updatedAt: string;
   url: string | null;
@@ -111,6 +119,8 @@ export interface WorkSource {
   claim(taskId: string, memberExternalId: string): Promise<ClaimResult>;
   // The rest is optional: an engine that can't do these simply leaves them out.
   listAgentTasks?(): Promise<AgentTask[]>;
+  /** Grant cases the funding workflow is preparing in the engine, read-only. */
+  listFundingCases?(): Promise<FundingCase[]>;
   /** Agent tasks finished in the period, for the recap. */
   agentCompletionsBetween?(from: Date, to: Date): Promise<number>;
   createInitiative?(input: { title: string; summary: string; adopted: boolean }): Promise<{ id: string }>;
@@ -176,15 +186,17 @@ export type FundingRoute = 'direct' | 'partner' | 'next-cycle' | 'monitor' | 'st
 
 export interface FundingOpportunity {
   id: string;
-  sponsor: string;
+  /** Null while the grant finder hasn't published it, as in its native catalog. */
+  sponsor: string | null;
   program: string;
-  route: FundingRoute;
-  summary: string;
+  /** Null until the opportunity is assessed for this organization. */
+  route: FundingRoute | null;
+  summary: string | null;
   /** An ISO timestamp for an exact cutoff, YYYY-MM-DD when only the day is known, null when unknown or rolling. */
   deadline: string | null;
   benefit: string | null; // e.g. "Up to $25,000"; unknown stays null
   effort: string | null;
-  nextStep: string;
+  nextStep: string | null;
   /** The official page the finding was validated against. */
   sourceUrl: string;
   /** When the grant finder last checked the source. */

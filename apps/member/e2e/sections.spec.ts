@@ -3,15 +3,21 @@ import { test, expect } from '@playwright/test';
 import { login } from './helpers';
 
 test.describe('Sections', () => {
-  test('each menu section loads', async ({ page }) => {
+  test('each Organization tab loads', async ({ page }) => {
     await login(page, 'alex@example.org');
     const menu = page.getByRole('navigation', { name: 'Sections' });
     const main = page.getByRole('main');
+    const tabs = main.getByRole('navigation', { name: 'Organization sections' });
 
-    await menu.getByRole('link', { name: 'Votes' }).click();
-    await expect(page).toHaveURL('/votes');
-    await expect(main.getByRole('heading', { level: 1, name: 'Votes' })).toBeVisible();
-    // Role queries skip hidden nodes; Next keeps the previous page (and its Robert's Rules card) hidden in the DOM.
+    await menu.getByRole('link', { name: 'Organization' }).click();
+    await expect(page).toHaveURL('/org');
+    await expect(main.getByRole('heading', { level: 1, name: 'Riverside Commons (sample)' })).toBeVisible();
+    await expect(tabs.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+
+    await tabs.getByRole('link', { name: 'Governance' }).click();
+    await expect(page).toHaveURL('/org?tab=governance');
+    await expect(main.getByText(/will live here once Vocdoni is connected/)).toBeVisible();
+    // Role queries skip hidden nodes; Next keeps the previous page hidden in the DOM.
     const open = main.getByRole('region', { name: 'Open now' });
     await expect(open.getByRole('heading', { name: 'Approve community garden grant application' })).toBeVisible();
     await expect(open.getByText('8 yes · 1 no · 2 abstain')).toBeVisible();
@@ -23,13 +29,8 @@ test.describe('Sections', () => {
       main.getByRole('region', { name: 'Closed' }).getByRole('heading', { name: 'Budget allocation for coding workshops' }),
     ).toBeVisible();
 
-    await menu.getByRole('link', { name: 'Work' }).click();
-    await expect(page).toHaveURL('/work');
-    await expect(main.getByRole('heading', { level: 1, name: 'Work' })).toBeVisible();
-
-    await menu.getByRole('link', { name: 'Funding' }).click();
-    await expect(page).toHaveURL('/funding');
-    await expect(main.getByRole('heading', { level: 1, name: 'Funding' })).toBeVisible();
+    await tabs.getByRole('link', { name: 'Funding' }).click();
+    await expect(page).toHaveURL('/org?tab=funding');
     const waiting = main.getByRole('region', { name: 'Waiting for members' });
     await expect(waiting.getByRole('heading', { name: 'Community garden: Green Spaces application' })).toBeVisible();
     await expect(waiting.getByText('Confirm the $3,000 in-kind match')).toBeVisible();
@@ -43,16 +44,23 @@ test.describe('Sections', () => {
       main.getByRole('region', { name: 'Later and ongoing' }).getByRole('heading', { name: 'Donated software credits' }),
     ).toBeVisible();
 
-    await menu.getByRole('link', { name: 'Calendar' }).click();
-    await expect(page).toHaveURL('/calendar');
-    await expect(main.getByRole('heading', { level: 1, name: 'Calendar' })).toBeVisible();
+    await tabs.getByRole('link', { name: 'Calendar' }).click();
+    await expect(page).toHaveURL('/org?tab=calendar');
+    await expect(main.getByRole('table')).toBeVisible();
+    // The fixture's governance meeting is two days after the server started: open its month and day.
+    const meetingDay = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' })
+        .formatToParts(meetingDay)
+        .map((p) => [p.type, p.value]),
+    );
+    await page.goto(`/org?tab=calendar&month=${parts.year}-${parts.month}&day=${parts.day}`);
     await expect(main.getByRole('heading', { name: 'Monthly governance meeting' })).toBeVisible();
-    // Events sit under their day: the first group's heading is a day, like "Mon, Oct 26".
+    // Items sit under their day: the first group's heading is a day, like "Mon, Oct 26".
     await expect(main.getByRole('region').first().getByRole('heading', { level: 2 })).toHaveText(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
 
-    await menu.getByRole('link', { name: 'Docs' }).click();
-    await expect(page).toHaveURL('/docs');
-    await expect(main.getByRole('heading', { level: 1, name: 'Docs' })).toBeVisible();
+    await tabs.getByRole('link', { name: 'Docs' }).click();
+    await expect(page).toHaveURL('/org?tab=docs');
     for (const section of ['Meeting notes', 'Shared files', 'My drafts']) {
       await expect(main.getByRole('heading', { level: 2, name: section })).toBeVisible();
     }
@@ -64,21 +72,32 @@ test.describe('Sections', () => {
     await expect(meeting.getByText('Submit grant application by October 30')).toBeVisible();
     await expect(main.getByRole('region', { name: 'My drafts' }).getByText(/^No drafts yet\./)).toBeVisible();
 
-    await menu.getByRole('link', { name: 'Profile' }).click();
-    await expect(page).toHaveURL('/profile');
-    await expect(main.getByRole('heading', { level: 1, name: 'Profile' })).toBeVisible();
+    await tabs.getByRole('link', { name: 'People' }).click();
+    await expect(page).toHaveURL('/org?tab=people');
     const you = main.getByRole('region', { name: 'You' });
     await expect(you.getByText('Alex Martinez')).toBeVisible();
     await expect(you.getByText('alex@example.org')).toBeVisible();
+    await expect(main.getByText('Dana Ortiz, branch librarian and coding nights host (not a member yet)')).toBeVisible();
 
     await menu.getByRole('link', { name: 'Home' }).click();
     await expect(page).toHaveURL('/');
     await expect(main.getByRole('heading', { level: 1, name: 'Welcome, Alex' })).toBeVisible();
   });
 
-  test('a meeting source link opens that meeting on Docs', async ({ page }) => {
+  test('the Organization tab bar is centered', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await login(page, 'alex@example.org');
+    await page.goto('/org?tab=people');
+    const nav = page.getByRole('navigation', { name: 'Organization sections' });
+    const column = page.getByRole('main');
+    const [navBox, columnBox] = [await nav.boundingBox(), await column.boundingBox()];
+    expect(Math.abs(navBox!.x + navBox!.width / 2 - (columnBox!.x + columnBox!.width / 2))).toBeLessThanOrEqual(2);
+  });
+
+  test('a meeting source link opens that meeting on Docs, from the old address too', async ({ page }) => {
     await login(page, 'alex@example.org');
     await page.goto('/docs#meeting-meeting-2');
+    await expect(page).toHaveURL('/org?tab=docs#meeting-meeting-2');
 
     const meeting = page.locator('#meeting-meeting-2');
     await expect(meeting).toHaveAttribute('open', '');
@@ -86,17 +105,16 @@ test.describe('Sections', () => {
     await expect(page.locator('#meeting-meeting-1')).not.toHaveAttribute('open', '');
   });
 
-  test('the home Funding card links to the application on the Funding page', async ({ page }) => {
+  test('an old Funding link opens the application in Organization', async ({ page }) => {
     await login(page, 'alex@example.org');
-    const card = page.getByRole('main').getByRole('region', { name: 'Funding' });
-    await card.getByRole('link', { name: 'Community garden: Green Spaces application' }).click();
-    await expect(page).toHaveURL('/funding#application-app-garden');
+    await page.goto('/funding#application-app-garden');
+    await expect(page).toHaveURL('/org?tab=funding#application-app-garden');
     await expect(page.locator('#application-app-garden').getByText('Upload the site lease letter')).toBeVisible();
   });
 
   test('sign out returns to /login and / redirects there', async ({ page }) => {
     await login(page, 'alex@example.org');
-    await page.goto('/profile');
+    await page.goto('/org?tab=people');
     await page.getByRole('button', { name: 'Sign out' }).click();
     await expect(page).toHaveURL('/login');
 

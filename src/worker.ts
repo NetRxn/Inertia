@@ -1,3 +1,4 @@
+import {registerOrganizationSearch} from './organization-search/host.js';
 import { registerObjectiveIntake, type ObjectiveIntakeStatus } from "./intake/host.js";
 import { registerConfiguredTrustedCentral } from "./central/setup.js";
 import { registerConfiguredPublicDrafting } from "./drafting/setup.js";
@@ -71,6 +72,7 @@ export function createPlugin() {
       roundtableStatus = registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
       registerOrgProfile(ctx);
+      registerOrganizationSearch(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
           const config = await ctx.config.get(company.id);

@@ -1,10 +1,9 @@
-import { Suspense } from 'react';
-import { getAdapters } from '../../../adapters';
-import type { Proposal } from '../../../adapters/types';
-import { requireMember } from '../../../identity/session';
-import { formatDay } from '../../../components/cards/format';
-import cardStyles from '../../../components/cards/cards.module.css';
-import styles from '../sections.module.css';
+import { getAdapters } from '../../../../adapters';
+import type { Proposal } from '../../../../adapters/types';
+import { requireMember } from '../../../../identity/session';
+import { formatDay } from '../../../../components/cards/format';
+import cardStyles from '../../../../components/cards/cards.module.css';
+import styles from '../../sections.module.css';
 
 const GROUPS: { status: Proposal['status']; label: string; empty: string }[] = [
   { status: 'open', label: 'Open now', empty: 'No votes are open right now.' },
@@ -46,7 +45,7 @@ function ProposalRow({ proposal }: { proposal: Proposal }) {
   );
 }
 
-async function VotesContent() {
+export async function VotesContent() {
   await requireMember();
   const source = getAdapters().proposals;
   if (source.connected === false) {
@@ -90,16 +89,3 @@ async function VotesContent() {
 }
 
 /** Robert's Rules proposals with their tallies. Read-only: voting happens there. */
-export default function VotesPage() {
-  return (
-    <>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Votes</h1>
-        <p className={cardStyles.meta}>Proposals in Robert&apos;s Rules. You vote there; this is the picture.</p>
-      </header>
-      <Suspense fallback={<p className="in-mono">Loading…</p>}>
-        <VotesContent />
-      </Suspense>
-    </>
-  );
-}

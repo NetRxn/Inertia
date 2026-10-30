@@ -26,8 +26,9 @@ export async function login(page: Page, email: string): Promise<void> {
 
   const loginUrl = await fs.readFile(mailFile, 'utf-8');
 
-  // Navigate to the login link
+  // Open the link: it only shows a Sign in button, so a chat preview can't use it up.
   await page.goto(loginUrl);
+  await page.getByRole('button', { name: 'Sign in' }).click();
 
   // Should be redirected to home page
   await page.waitForURL('/');

@@ -18,3 +18,25 @@
   color: var(--ink-muted);
 }
 
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.add > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.add > summary::-webkit-details-marker {
+  display: none;
+}
+
+.add > summary::after {
+  content: ' +';
+}
+
+.add[open] > summary::after {
+  content: ' −';
+}

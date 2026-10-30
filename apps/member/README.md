@@ -13,7 +13,7 @@ Requires Node 24.11 or later. Run everything from `apps/member/`:
 ```bash
 npm ci
 cp .env.example .env.local   # optional: every variable has a working default
-npm run seed                 # migrates the local PGlite database, syncs fixture members, adds sample shares
+npm run seed                 # migrates the local PGlite database, syncs fixture members, adds sample shares and a sample organization with incoming data
 npm run dev                  # http://localhost:3000
 ```
 
@@ -103,9 +103,13 @@ For the Robert's Rules builder:
 
 Set `MEMBER_APP_ADAPTERS=live` and `MEMBER_APP_FOUNDER_EMAIL`, plus a model (`.env.example` shows Anthropic and Z.ai GLM; one setting covers the chat and the data processing). The founder signs in and gets the setup conversation ("Tell me about your organization"). From there:
 
-- **Organization** (`/org`): the cited profile and initiatives, members and roles, Data (anything anyone adds; Find work; Read GitHub), Integrations and Settings (governance).
-- **Work** (`/work`): a recap and the People and Agents lanes per initiative; **Needs you** to claim and answer.
-- **Funding** (`/funding`): **Pursue this** turns a grant finder opportunity into a project with agent and human tasks.
+The menu has three sections, Home in the middle:
+
+- **Home** (`/`): the member view. The initiatives (tap one to focus on it), your tasks and what you could help with (claim and answer here), what's coming up, Add to Inertia, and a feed of what members did, meetings, shares, votes and funding.
+- **Agents** (`/agents`): the technical view. Agents working, stuck and done this week, a feed of agent work and incoming data (Buzz, Telegram, meetings, uploads), and **Connections** (Paperclip and Buzz first, then every integration, and the connection check).
+- **Organization** (`/org`): Overview (the cited profile and initiatives), People (members and roles, with your own profile and sign-out), Funding (**Pursue this** turns a grant finder opportunity into a project with agent and human tasks), Governance (a placeholder until Vocdoni), Calendar, Docs, Data (anything anyone adds; Find work; Read GitHub) and Settings (governance).
+- Initiatives come from onboarding: the ones accepted there show on every screen, joined to Paperclip goals by id or title. Paperclip goals no accepted initiative claims (such as the agents' own root goal) don't show as initiatives; their work reads as general.
+- Old addresses (`/work`, `/votes`, `/funding`, `/calendar`, `/docs`, `/profile`) redirect to their new places.
 - Work runs in **Paperclip** when `PAPERCLIP_URL`, `PAPERCLIP_API_KEY` and `PAPERCLIP_COMPANY_ID` are set, otherwise in process memory. Paperclip is read-only unless `PAPERCLIP_ACCESS=write`: members see its initiatives and tasks, claims stay in Inertia's work log, and nothing is written back. A board key carries the permissions of the user who issued it, so issue it from a user with no more access than that.
 
 `scripts/setup-org.ts` does the setup steps from the command line for seeding. The demo runbook is in `docs/demo/runbook-wednesday.md`.

@@ -6,8 +6,10 @@ import { createMemoryWorkSource } from '../src/adapters/memory-work';
 import type { FundingOpportunity } from '../src/adapters/types';
 import { addSource } from '../src/org/ingest';
 import type { AskJson } from '../src/org/llm';
-import { getOrganization, saveBasics } from '../src/org/organization';
 import { pursueOpportunity, pursuedOpportunities } from '../src/work/pursue';
+import { listOrgInitiatives } from '../src/work/org-initiatives';
+import { buildTimeline } from '../src/feed/timeline';
+import { getOrganization, saveBasics, saveProfile, setGovernance } from '../src/org/organization';
 
 let db: Db;
 beforeAll(async () => { db = (await createTestDb()) as Db; });
@@ -62,4 +64,60 @@ describe('pursuing an opportunity', () => {
     expect(again.already).toBe(true);
     expect(prompts).toHaveLength(1);
   });
+
+  it('shows the grant project on Home and Agents, beside the initiatives from onboarding', async () => {
+    const [kyle] = await db.insert(members).values({ externalId: 'm-kyle', email: 'k@example.org', displayName: 'Kyle', role: 'admin' }).returning();
+    await saveBasics(db, { name: 'FWTX DAO' });
+    // Onboarding accepted one initiative; governance is on.
+    await saveProfile(db, { mission: null, programs: [], people: [], recent: [], initiatives: [
+      { id: 'p-hack', title: 'HackFW 2026', summary: '', citations: [], status: 'accepted', workId: null, adopted: true },
+    ] });
+    await setGovernance(db, true);
+    const work = createMemoryWorkSource(() => new Date('2026-10-28T12:00:00Z'));
+    const askJson = (async ({ schema }) => schema.parse({
+      brief: 'Fits our workshops.',
+      tasks: [
+        { title: 'Check eligibility', lane: 'agent' },
+        { title: 'Confirm the library partner', lane: 'human', kind: 'outreach', estimateMinutes: 15 },
+      ],
+    })) as AskJson;
+
+    await pursueOpportunity(db, { work }, askJson, opportunity, kyle.id);
+
+    // Home and Agents read this list: onboarding's initiative, then the grant initiative awaiting a vote.
+    const initiatives = await listOrgInitiatives(db, work);
+    expect(initiatives.map((i) => [i.title, i.statusLabel])).toEqual([['HackFW 2026', undefined], ['Pursue grant funding strategy', 'Awaiting vote']]);
+    const grant = initiatives[1];
+
+    // The suggested task needs a person and sits under the grant initiative, not General.
+    const [ask] = await work.listHumanTasks();
+    expect(ask).toMatchObject({ title: 'Confirm the library partner', status: 'open', initiativeId: grant.id });
+
+    // When the agent finishes its task, Agents shows it under the grant initiative.
+    const agentsDone = (await work.listAgentTasks!()).map((t) => ({ ...t, status: 'done' as const }));
+    const { items } = buildTimeline(
+      { initiatives, names: new Map(), humanTasks: [], agentTasks: agentsDone, meetings: [], shares: [], proposals: [], opportunities: [], applications: [], sources: [] },
+      { limit: 10, actors: ['agent'] },
+    );
+    expect(items.map((i) => [i.title, i.initiative?.title])).toEqual([['Check eligibility', 'Pursue grant funding strategy']]);
+  });
+
+  it('pursues an opportunity the catalog has not assessed, without printing null', async () => {
+    const [kyle] = await db.insert(members).values({ externalId: 'm-kyle', email: 'k@example.org', displayName: 'Kyle', role: 'admin' }).returning();
+    await saveBasics(db, { name: 'FWTX DAO' });
+    const prompts: string[] = [];
+    const askJson = (async ({ prompt, schema }) => {
+      prompts.push(prompt);
+      return schema.parse({ brief: '', tasks: [{ title: 'Check eligibility', lane: 'agent' }] });
+    }) as AskJson;
+    const work = createMemoryWorkSource();
+    const unassessed: FundingOpportunity = { ...opportunity, id: 'native-1', sponsor: null, route: null, summary: null, nextStep: null };
+
+    await pursueOpportunity(db, { work }, askJson, unassessed, kyle.id);
+    expect(prompts[0]).not.toContain('null');
+    const [agentTask] = await work.listAgentTasks!();
+    expect(agentTask.title).toBe('Check eligibility');
+    expect(JSON.stringify(await work.listAgentTasks!())).not.toContain('(null)');
+  });
 });
+

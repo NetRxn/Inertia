@@ -2,53 +2,53 @@ import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { login } from './helpers';
 
-const CARD_ORDER = [
-  'Waiting for you',
-  'Top priorities',
-  'Coming up',
-  "Robert's Rules",
-  'Funding',
-  'Last meeting',
-  'This week',
-  'From the chat',
-  'Recently shared',
-];
-
 /** Signs in and waits for the feed to stream in behind its loading state. */
 async function openHome(page: Page) {
   await login(page, 'ana@example.org');
-  await expect(page.getByRole('heading', { level: 2, name: 'Waiting for you' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'You could help with' })).toBeVisible();
 }
 
 test.describe('Home feed', () => {
-  test('home shows cards in order', async ({ page }) => {
+  test('home shows the initiatives, work to help with and what has been happening', async ({ page }) => {
     await openHome(page);
+    const main = page.getByRole('main');
 
-    const headings = await page.locator('main h2').allTextContents();
-    const present = headings.map((h) => h.trim());
+    // The seeded organization's initiatives, joined to the work engine's goals.
+    const initiatives = main.getByRole('region', { name: 'Initiatives' });
+    await expect(initiatives.getByRole('heading', { name: 'Community garden grant' })).toBeVisible();
+    await expect(initiatives.getByRole('listitem').filter({ hasText: 'Treasury policy v2' }).getByText('Awaiting vote')).toBeVisible();
 
-    // Every heading is a known card, at most once, in the fixed relative order (R4).
-    expect(present.every((h) => CARD_ORDER.includes(h))).toBe(true);
-    expect(new Set(present).size).toBe(present.length);
-    const positions = present.map((h) => CARD_ORDER.indexOf(h));
-    expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    await expect(main.getByText('Design community garden signage')).toBeVisible();
+    await expect(main.getByText('Add to Inertia: notes, transcripts, links')).toBeVisible();
 
-    expect(present[0]).toBe('Waiting for you');
-    // Seeded shares mean the feed always ends with Recently shared (R24).
-    expect(present).toContain('Recently shared');
-    expect(present.at(-1)).toBe('Recently shared');
-
-    // Ana has nothing claimed in the fixture, so the waiting card shows its empty state.
-    await expect(page.getByText('Nothing waiting for you. See Work for things you could take on.')).toBeVisible();
+    const happening = main.getByRole('region', { name: "What's been happening" });
+    await expect(happening.getByText('Meeting notes:').first()).toBeVisible();
+    // Agent work stays on Agents.
+    await expect(happening.getByText('Grant Writer')).toHaveCount(0);
     await expect(page.getByText('Ask the DAO anything…')).toBeVisible();
   });
 
-  test('floating menu stays visible after scrolling', async ({ page }) => {
+  test('a filter and an initiative narrow the feed', async ({ page }) => {
+    await openHome(page);
+    const main = page.getByRole('main');
+
+    await main.getByRole('navigation', { name: 'Show' }).getByRole('link', { name: 'Meetings' }).click();
+    await page.waitForURL(/show=meetings/);
+    const happening = main.getByRole('region', { name: "What's been happening" });
+    await expect(happening.getByText('Meeting notes:').first()).toBeVisible();
+    await expect(happening.getByText('Vote:')).toHaveCount(0);
+
+    await main.getByRole('region', { name: 'Initiatives' }).getByRole('link', { name: /Youth coding nights/ }).click();
+    await page.waitForURL(/initiative=init-coding/);
+    await expect(main.getByRole('heading', { level: 2, name: 'Open in Youth coding nights' })).toBeVisible();
+    await expect(main.getByText('Design community garden signage').filter({ visible: true })).toHaveCount(0);
+  });
+
+  test('the menu is Agents, Home and Organization, and stays visible after scrolling', async ({ page }) => {
     await openHome(page);
 
     const menu = page.getByRole('navigation', { name: 'Sections' });
-    const labels = await menu.getByRole('link').evaluateAll((links) => links.map((l) => l.getAttribute('aria-label')));
-    expect(labels).toEqual(['Home', 'Votes', 'Work', 'Funding', 'Calendar', 'Docs', 'Profile']);
+    await expect(menu.getByRole('link')).toHaveText(['Agents', 'Home', 'Organization']);
     await expect(menu.getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

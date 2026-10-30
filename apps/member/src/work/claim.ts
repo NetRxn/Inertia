@@ -24,7 +24,7 @@ export async function claimTask(taskId: string): Promise<ClaimMessage> {
 
     if (message.ok) {
       await recordWorkEvent(getDb(), { memberId: member.id, taskId, kind: 'claimed' }).catch((error) => console.error('[work] Could not record claim:', error));
-      revalidatePath('/work');
+      revalidatePath('/agents');
       revalidatePath('/');
     }
 
@@ -53,7 +53,7 @@ export async function completeTask(taskId: string, answer: string): Promise<{ ok
     await recordWorkEvent(db, { memberId: member.id, taskId, kind: 'completed', detail: text.slice(0, 500) });
     const { addSource } = await import('../org/ingest');
     await addSource(db, { kind: 'note', title: `${member.displayName}: ${task?.title ?? 'task answer'}`, content: text, addedBy: member.id }).catch(() => undefined);
-    revalidatePath('/work');
+    revalidatePath('/agents');
     revalidatePath('/');
     return { ok: true, message: 'Done. Thank you! Agents will pick up your answer.' };
   } catch (error) {

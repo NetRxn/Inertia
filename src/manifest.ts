@@ -1,3 +1,4 @@
+import {organizationSearchTool} from './organization-search/host.js';
 import { objectiveIntakeJobDeclaration, objectiveSourceContextToolDeclaration, objectiveIntakeCapabilities } from "./intake/host.js";
 import { meetingExtractionTools } from "./roundtable/extraction.js";
 import { centralTools, centralCapabilities } from "./central/host.js";
@@ -24,6 +25,7 @@ export const manifest: PaperclipPluginManifestV1 = {
     ...publicDraftingCapabilities,
     ...centralCapabilities,
     "companies.read",
+    "agents.read",
     "issues.read",
     "issues.create",
     "issues.update",
@@ -49,7 +51,7 @@ export const manifest: PaperclipPluginManifestV1 = {
     ]
   },
   database: { migrationsDir: "migrations" },
-  tools: [...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), (({operation:_,...tool})=>tool)(publicGapPlanReviewTool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
+  tools: [organizationSearchTool, ...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), (({operation:_,...tool})=>tool)(publicGapPlanReviewTool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
   jobs: [
     ...fundingDiscoveryManifest.jobs,
     roundtableJobDeclaration,

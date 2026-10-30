@@ -43,11 +43,11 @@ function agentCounts(tasks: AgentTask[]): LaneCounts {
  * One picture of the work, human and agent side by side: what finished this
  * week on each side, what is waiting on a person, and both lanes per initiative.
  */
-export async function buildWorkStatus(adapters: Pick<Adapters, 'work'>, now: Date): Promise<WorkStatus> {
+export async function buildWorkStatus(adapters: Pick<Adapters, 'work'>, now: Date, orgInitiatives?: Initiative[]): Promise<WorkStatus> {
   const work = adapters.work;
   const weekAgo = new Date(now.getTime() - 7 * DAY);
   const [initiatives, human, agents, completions, agentDone] = await Promise.all([
-    work.listInitiatives(),
+    orgInitiatives ?? work.listInitiatives(),
     work.listHumanTasks(),
     work.listAgentTasks ? work.listAgentTasks() : Promise.resolve([] as AgentTask[]),
     work.completionsBetween(weekAgo, now),

@@ -58,12 +58,15 @@ function truncate(text: string, max: number): string {
 /**
  * Builds the member's home feed. Cards come back in the fixed home order;
  * `waiting` is always present, and any other card without data is left out.
+ * Pass the organization's initiatives (listOrgInitiatives); without them the
+ * feed falls back to the work engine's.
  */
 export async function buildFeed(
   adapters: Adapters,
   member: Member,
   shares: ShareSummary[],
   now: Date,
+  orgInitiatives?: Initiative[],
 ): Promise<FeedCard[]> {
   const nowMs = now.getTime();
   const week = weekBounds(now);
@@ -72,7 +75,7 @@ export async function buildFeed(
   const [tasks, initiatives, events, proposals, meetings, completions, directory, threads, opportunities, applications] =
     await Promise.all([
       adapters.work.listHumanTasks(),
-      adapters.work.listInitiatives(),
+      orgInitiatives ?? adapters.work.listInitiatives(),
       adapters.events.listUpcoming(now, 4),
       adapters.proposals.listProposals(),
       adapters.meetings.listMeetings(1),

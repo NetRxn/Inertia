@@ -4,24 +4,22 @@ import { login } from './helpers';
 
 const PDF_BYTES = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R]>>endobj\ntrailer<</Root 1 0 R>>');
 
-/** Opens the composer on the Work tab. */
+/** Opens the composer. */
 async function openComposer(page: import('@playwright/test').Page) {
   await page.getByRole('button', { name: '＋ Share' }).click();
   return page.getByRole('dialog', { name: 'Share' });
 }
 
-/** The Ideas segment of the Work tab. */
-function ideasSection(page: import('@playwright/test').Page) {
-  return page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { level: 2, name: 'Ideas' }) });
+/** Home's feed, filtered to what members shared. */
+async function sharedFeed(page: import('@playwright/test').Page) {
+  await page.goto('/?show=shared');
+  return page.getByRole('main').getByRole('region', { name: 'Shared' });
 }
 
 test.describe('Share', () => {
-  test('posting an idea with a link shows it under Ideas and in Recently shared', async ({ page }) => {
+  test('posting an idea with a link shows it in the shared feed on Home', async ({ page }) => {
     await login(page, 'riley@example.org');
-    await page.goto('/work');
-
+    
     // ＋ Share floats above the chat bar and opens the composer.
     const shareButton = page.getByRole('button', { name: '＋ Share' });
     await expect(shareButton).toBeVisible();
@@ -36,34 +34,22 @@ test.describe('Share', () => {
 
     await dialog.getByRole('button', { name: 'Post', exact: true }).click();
 
-    // The composer closes and the share lands in the Ideas segment.
+    // The composer closes and the share lands in Home's shared feed.
     await expect(dialog).not.toBeVisible();
-    await page.getByRole('link', { name: 'Ideas' }).click();
-    await page.waitForURL(/tab=ideas/);
-    const ideas = ideasSection(page);
+    const ideas = await sharedFeed(page);
     await expect(ideas.getByText('City micro-grants could fund the garden expansion next spring.')).toBeVisible();
     await expect(ideas.getByRole('link', { name: /cityofexample/ })).toBeVisible();
-
-    // And in the home feed's Recently shared card.
-    await page.goto('/');
-    const recentlyShared = page
-      .locator('section')
-      .filter({ has: page.getByRole('heading', { level: 2, name: 'Recently shared' }) });
-    await expect(recentlyShared.getByText('City micro-grants could fund the garden expansion next spring.')).toBeVisible();
   });
 
   test('a description containing <script> renders as text', async ({ page }) => {
     await login(page, 'quinn@example.org');
-    await page.goto('/work');
-
+    
     const dialog = await openComposer(page);
     await dialog.getByLabel('Description').fill('<script>window.sharePwned = true</script> garden plan');
     await dialog.getByRole('button', { name: 'Post', exact: true }).click();
     await expect(dialog).not.toBeVisible();
 
-    await page.getByRole('link', { name: 'Ideas' }).click();
-    await page.waitForURL(/tab=ideas/);
-    const ideas = ideasSection(page);
+    const ideas = await sharedFeed(page);
     // The markup is visible verbatim, as text.
     await expect(ideas.getByText('<script>window.sharePwned = true</script> garden plan')).toBeVisible();
     await expect(ideas.locator('script')).toHaveCount(0);
@@ -75,8 +61,7 @@ test.describe('Share', () => {
 
   test('sharing a PDF lists its name and serves it with nosniff', async ({ page }) => {
     await login(page, 'taylor@example.org');
-    await page.goto('/work');
-
+    
     const dialog = await openComposer(page);
     await dialog.getByLabel('Description').fill('The garden plan so far.');
     await page.setInputFiles('#share-file', {
@@ -87,9 +72,7 @@ test.describe('Share', () => {
     await dialog.getByRole('button', { name: 'Post', exact: true }).click();
     await expect(dialog).not.toBeVisible();
 
-    await page.getByRole('link', { name: 'Ideas' }).click();
-    await page.waitForURL(/tab=ideas/);
-    const fileLink = ideasSection(page).getByRole('link', { name: 'garden-plan.pdf' });
+    const fileLink = (await sharedFeed(page)).getByRole('link', { name: 'garden-plan.pdf' });
     await expect(fileLink).toBeVisible();
 
     const href = await fileLink.getAttribute('href');
@@ -106,16 +89,13 @@ test.describe('Share', () => {
 
   test('the author can delete their own post', async ({ page }) => {
     await login(page, 'drew@example.org');
-    await page.goto('/work');
-
+    
     const dialog = await openComposer(page);
     await dialog.getByLabel('Description').fill('Scratch that — wrong thread.');
     await dialog.getByRole('button', { name: 'Post', exact: true }).click();
     await expect(dialog).not.toBeVisible();
 
-    await page.getByRole('link', { name: 'Ideas' }).click();
-    await page.waitForURL(/tab=ideas/);
-    const ideas = ideasSection(page);
+    const ideas = await sharedFeed(page);
     const card = ideas.locator('article').filter({ hasText: 'Scratch that — wrong thread.' });
 
     // Only the author's own posts carry the action.

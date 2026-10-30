@@ -75,11 +75,11 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
             ) : null}
           </div>
           <div className="in-ask__actions">
-            <Link href="/work" className="in-btn in-btn--primary">
-              Open in Work
+            <Link href="/#your-work" className="in-btn in-btn--primary">
+              See your tasks
             </Link>
             {rest.length > 0 ? (
-              <Link href="/work" className="in-btn in-btn--quiet">
+              <Link href="/#your-work" className="in-btn in-btn--quiet">
                 {plural(rest.length, 'more task')} waiting
               </Link>
             ) : null}
@@ -88,10 +88,10 @@ export function WaitingCard({ tasks }: { tasks: HumanTask[] }) {
       ) : (
         <p className="in-ask__why">
           Nothing waiting for you. See{' '}
-          <Link href="/work" className={styles.textLink}>
-            Work
-          </Link>{' '}
-          for things you could take on.
+          <Link href="/#your-work" className={styles.textLink}>
+            what you could help with
+          </Link>
+          .
         </p>
       )}
     </section>

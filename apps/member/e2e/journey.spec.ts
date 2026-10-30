@@ -13,14 +13,12 @@ test('full journey: login, feed, claim, share, ask', async ({ page }) => {
   await login(page, 'lee@example.org');
   const main = page.getByRole('main');
   await expect(main.getByRole('heading', { level: 1, name: 'Welcome, Lee' })).toBeVisible();
-  for (const card of ['Waiting for you', 'Top priorities', 'Coming up', "Robert's Rules", 'Last meeting']) {
-    await expect(main.getByRole('heading', { level: 2, name: card })).toBeVisible();
+  for (const heading of ['Initiatives', 'You could help with', 'Coming up', "What's been happening"]) {
+    await expect(main.getByRole('heading', { level: 2, name: heading })).toBeVisible();
   }
 
-  // Claim a task that needs a person.
-  await page.getByRole('navigation', { name: 'Sections' }).getByRole('link', { name: 'Work' }).click();
-  await expect(page).toHaveURL('/work');
-  const taskCard = page.locator('.in-ask').filter({ hasText: TASK });
+  // Claim a task that needs a person, right on Home.
+  const taskCard = page.locator('#your-work .in-ask').filter({ hasText: TASK });
   await taskCard.getByRole('button', { name: "I'll take it" }).click();
   await expect(taskCard.getByRole('status')).toHaveText("It's yours.", { timeout: 10_000 });
 
@@ -31,11 +29,12 @@ test('full journey: login, feed, claim, share, ask', async ({ page }) => {
   await composer.getByRole('button', { name: 'Post', exact: true }).click();
   await expect(composer).not.toBeVisible();
 
-  // Back home, the claim waits for Lee and the idea is in Recently shared.
+  // The claim waits for Lee, and the idea is in the shared feed.
   await page.goto('/');
   const waiting = main.getByRole('region', { name: 'Waiting for you' });
   await expect(waiting.getByRole('heading', { level: 3 })).toHaveText(TASK);
-  await expect(main.getByRole('region', { name: 'Recently shared' }).getByText(IDEA)).toBeVisible();
+  await page.goto('/?show=shared');
+  await expect(main.getByRole('region', { name: 'Shared' }).getByText(IDEA)).toBeVisible();
 
   // Ask the chat; the answer cites the meeting it came from.
   await page.getByRole('button', { name: 'Ask the DAO anything…' }).click();
@@ -44,10 +43,10 @@ test('full journey: login, feed, claim, share, ask', async ({ page }) => {
   await sheet.getByRole('button', { name: 'Send' }).click();
   await expect(sheet.getByText(/the most recent meeting was Community garden planning session/)).toBeVisible();
   const chip = sheet.getByRole('list', { name: 'Sources' }).getByRole('link', { name: /Community garden planning session/ });
-  await expect(chip).toHaveAttribute('href', '/docs#meeting-meeting-1');
+  await expect(chip).toHaveAttribute('href', '/org?tab=docs#meeting-meeting-1');
 
-  // The chip opens that meeting's notes on Docs.
+  // The chip opens that meeting's notes in Organization → Docs.
   await chip.click();
-  await expect(page).toHaveURL('/docs#meeting-meeting-1');
+  await expect(page).toHaveURL('/org?tab=docs#meeting-meeting-1');
   await expect(page.locator('#meeting-meeting-1')).toHaveAttribute('open', '');
 });

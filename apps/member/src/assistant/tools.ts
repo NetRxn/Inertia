@@ -11,7 +11,7 @@ import type {
   Proposal,
   SourceRef,
 } from '../adapters/types';
-import { ROUTE_LABELS, safeHttpUrl } from '../funding/funding';
+import { routeLabel, safeHttpUrl } from '../funding/funding';
 import type { Db } from '../db/client';
 import { members } from '../db/schema';
 import type { ShareSummary } from '../feed/build-feed';
@@ -21,6 +21,7 @@ import { byPriority, taskKind } from '../work/initiatives';
 import { wrapSourceDataCapped } from './source-data';
 import { searchPassages } from '../org/ingest';
 import { getOrganization } from '../org/organization';
+import { listOrgInitiatives } from '../work/org-initiatives';
 
 /** At most this many blocks per tool call, each at most this long (tags included). */
 export const MAX_RESULTS = 8;
@@ -115,13 +116,13 @@ function opportunitySource(opportunity: FundingOpportunity): Source {
   return {
     ref: ref('opportunity', opportunity.id, opportunity.program, safeHttpUrl(opportunity.sourceUrl)),
     text: [
-      `Sponsor: ${opportunity.sponsor}`,
-      `Route: ${ROUTE_LABELS[opportunity.route]}`,
-      `Summary: ${opportunity.summary}`,
+      opportunity.sponsor ? `Sponsor: ${opportunity.sponsor}` : null,
+      `Route: ${routeLabel(opportunity.route)}`,
+      opportunity.summary ? `Summary: ${opportunity.summary}` : null,
       `Deadline: ${opportunity.deadline ?? 'none published'}`,
       opportunity.benefit ? `Benefit: ${opportunity.benefit}` : null,
       opportunity.effort ? `Effort: ${opportunity.effort}` : null,
-      `Next step: ${opportunity.nextStep}`,
+      opportunity.nextStep ? `Next step: ${opportunity.nextStep}` : null,
       `Checked at the official source: ${opportunity.observedAt}`,
     ]
       .filter((line): line is string => line !== null)
@@ -263,7 +264,7 @@ export function createAssistantTools(ctx: AssistantContext, collect: (refs: Sour
       inputSchema: z.object({}),
       execute: async () => {
         const [initiatives, tasks] = await Promise.all([
-          ctx.adapters.work.listInitiatives(),
+          listOrgInitiatives(ctx.db, ctx.adapters.work),
           ctx.adapters.work.listHumanTasks(),
         ]);
         const ranked = [...initiatives].sort(byPriority);

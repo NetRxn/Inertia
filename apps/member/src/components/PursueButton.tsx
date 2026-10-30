@@ -10,7 +10,7 @@ export function PursueButton({ opportunityId, pursued }: { opportunityId: string
   const router = useRouter();
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-  if (pursued) return <Link className="in-btn in-btn--quiet" href="/work">Pursuing · see the work</Link>;
+  if (pursued) return <Link className="in-btn in-btn--quiet" href="/#your-work">Pursuing · see the work</Link>;
   return (
     <span>
       <button

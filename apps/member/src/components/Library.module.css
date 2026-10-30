@@ -1,0 +1,55 @@
+/* The document library: a grid of key documents, like a shelf. */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-3);
+}
+
+.doc {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-edge);
+  min-width: 0;
+}
+
+.doc[data-pinned] {
+  border-color: var(--moss);
+}
+
+.icon {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.title {
+  font: var(--text-heading);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+a.title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.category {
+  display: grid;
+  gap: var(--space-3);
+}

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../src/db/test-db';
 import type { Db } from '../src/db/client';
-import { requestLoginLink, consumeLoginToken, getMemberForSession, signOut } from '../src/identity/auth';
+import { requestLoginLink, consumeLoginToken, checkLoginToken, getMemberForSession, signOut } from '../src/identity/auth';
 import { syncMembers } from '../src/identity/sync';
 import { createFixtureAdapters, FIXTURE_NOW } from '../src/adapters';
 import { members } from '../src/db/schema';
@@ -194,7 +194,24 @@ describe('consumeLoginToken', () => {
     expect(failCount).toBe(1);
   });
 
-  it('rejects a token after 15 minutes', async () => {
+  it('checking a link does not use it, so chat previews leave it working', async () => {
+    await requestLoginLink(db, 'ana@example.org', mailer, { baseUrl: 'http://localhost:3000', now: FIXTURE_NOW });
+    const token = new URL(mailer.calls[0].url).searchParams.get('token')!;
+
+    expect(await checkLoginToken(db, token, FIXTURE_NOW)).toEqual({ ok: true, firstName: 'Ana' });
+    expect(await checkLoginToken(db, token, FIXTURE_NOW)).toEqual({ ok: true, firstName: 'Ana' });
+    expect((await consumeLoginToken(db, token, FIXTURE_NOW)).ok).toBe(true);
+    expect(await checkLoginToken(db, token, FIXTURE_NOW)).toEqual({ ok: false, reason: 'used' });
+    expect(await checkLoginToken(db, 'tampered', FIXTURE_NOW)).toEqual({ ok: false, reason: 'invalid' });
+  });
+
+  it('keeps an emailed link working for an hour', async () => {
+    await requestLoginLink(db, 'ana@example.org', mailer, { baseUrl: 'http://localhost:3000', now: FIXTURE_NOW });
+    const token = new URL(mailer.calls[0].url).searchParams.get('token')!;
+    expect((await checkLoginToken(db, token, new Date(FIXTURE_NOW.getTime() + 59 * 60 * 1000))).ok).toBe(true);
+  });
+
+  it('rejects a token after an hour', async () => {
     await requestLoginLink(db, 'ana@example.org', mailer, {
       baseUrl: 'http://localhost:3000',
       now: FIXTURE_NOW,
@@ -203,8 +220,8 @@ describe('consumeLoginToken', () => {
     const url = new URL(mailer.calls[0].url);
     const token = url.searchParams.get('token')!;
 
-    // 15 minutes + 1 second later
-    const expiredTime = new Date(FIXTURE_NOW.getTime() + 15 * 60 * 1000 + 1000);
+    // An hour and a second later
+    const expiredTime = new Date(FIXTURE_NOW.getTime() + 60 * 60 * 1000 + 1000);
     const result = await consumeLoginToken(db, token, expiredTime);
 
     expect(result).toEqual({ ok: false, reason: 'expired' });
@@ -288,7 +305,23 @@ describe('getMemberForSession', () => {
     expect(member2).toBeNull();
   });
 
-  it('session expires after 30 days', async () => {
+  it('session lasts 90 days and renews whenever it is used', async () => {
+    await requestLoginLink(db, 'ana@example.org', mailer, { baseUrl: 'http://localhost:3000', now: FIXTURE_NOW });
+    const token = new URL(mailer.calls[0].url).searchParams.get('token')!;
+    const consumed = await consumeLoginToken(db, token, FIXTURE_NOW);
+    if (!consumed.ok) throw new Error('Expected consume to succeed');
+    const day = 24 * 60 * 60 * 1000;
+    const at = (days: number) => new Date(FIXTURE_NOW.getTime() + days * day);
+
+    // Used every 80 days, it keeps working well past the first 90.
+    expect(await getMemberForSession(db, consumed.sessionToken, at(80))).toBeTruthy();
+    expect(await getMemberForSession(db, consumed.sessionToken, at(160))).toBeTruthy();
+    expect(await getMemberForSession(db, consumed.sessionToken, at(240))).toBeTruthy();
+    // Left alone for more than 90 days, it ends.
+    expect(await getMemberForSession(db, consumed.sessionToken, at(240 + 90 + 1))).toBeNull();
+  });
+
+  it('session expires after 90 days unused', async () => {
     await requestLoginLink(db, 'ana@example.org', mailer, {
       baseUrl: 'http://localhost:3000',
       now: FIXTURE_NOW,
@@ -306,8 +339,8 @@ describe('getMemberForSession', () => {
     const member1 = await getMemberForSession(db, sessionToken, FIXTURE_NOW);
     expect(member1).toBeTruthy();
 
-    // Should not work 30 days + 1 second later
-    const expiredTime = new Date(FIXTURE_NOW.getTime() + 30 * 24 * 60 * 60 * 1000 + 1000);
+    // Should not work 90 days + 1 second later
+    const expiredTime = new Date(FIXTURE_NOW.getTime() + 90 * 24 * 60 * 60 * 1000 + 1000);
     const member2 = await getMemberForSession(db, sessionToken, expiredTime);
     expect(member2).toBeNull();
   });

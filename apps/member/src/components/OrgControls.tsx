@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import {
   changeGovernance,
   checkIntegrations,
+  clearIntegrationSettings,
+  saveModelSettings,
+  saveOrganizationBasics,
+  saveTelegramSettings,
   decideInitiative,
   draftProfile,
   findWorkIn,
@@ -270,5 +274,80 @@ export function CheckConnections() {
         </ul>
       )}
     </div>
+  );
+}
+
+export type ModelSettingsValue = { provider: string; model: string; fastModel: string; baseUrl: string; hasKey: boolean; saved: boolean };
+
+/** Which language model the chat and the data processing use. Keys are write-only. */
+export function ModelSettings({ current, canStoreKeys }: { current: ModelSettingsValue; canStoreKeys: boolean }) {
+  const { pending, message, run } = useAction();
+  const [provider, setProvider] = useState(current.provider || 'anthropic');
+  const [model, setModel] = useState(current.model);
+  const [fastModel, setFastModel] = useState(current.fastModel);
+  const [baseUrl, setBaseUrl] = useState(current.baseUrl);
+  const [apiKey, setApiKey] = useState('');
+  return (
+    <form className={styles.stack} onSubmit={(e: FormEvent) => { e.preventDefault(); run(() => saveModelSettings({ provider, model, fastModel, baseUrl, apiKey }), () => setApiKey('')); }}>
+      <div className={styles.row}>
+        <select className={styles.input} aria-label="Provider" value={provider} onChange={(e) => setProvider(e.target.value)}>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai-compatible">OpenAI-compatible (Z.ai GLM, local, others)</option>
+        </select>
+        <input className={styles.input} aria-label="Model" value={model} onChange={(e) => setModel(e.target.value)} placeholder={provider === 'anthropic' ? 'claude-sonnet-5-5' : 'glm-5'} maxLength={120} />
+      </div>
+      <div className={styles.row}>
+        <input className={styles.input} aria-label="Fast model" value={fastModel} onChange={(e) => setFastModel(e.target.value)} placeholder={provider === 'anthropic' ? 'Fast model for reading data, e.g. claude-haiku-5-5' : 'Fast model (optional)'} maxLength={120} />
+        <input className={styles.input} aria-label="Server address" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder={provider === 'anthropic' ? 'Server address (optional)' : 'https://api.z.ai/api/paas/v4'} inputMode="url" />
+      </div>
+      <input className={styles.input} aria-label="API key" type="password" autoComplete="off" value={apiKey} onChange={(e) => setApiKey(e.target.value)} disabled={!canStoreKeys} placeholder={!canStoreKeys ? 'Keys need MEMBER_APP_SECRET_KEY on the server' : current.hasKey ? 'Key saved. Paste a new one to replace it' : 'API key'} />
+      <div className={styles.row}>
+        <button className="in-btn in-btn--primary" disabled={pending || !model.trim()}>{pending ? 'Saving…' : 'Save model'}</button>
+        {current.saved && <button type="button" className="in-btn in-btn--quiet" disabled={pending} onClick={() => run(() => clearIntegrationSettings('model'))}>Use the server&apos;s settings</button>}
+        <Notice message={message} />
+      </div>
+    </form>
+  );
+}
+
+/** The Telegram bot the connectors read group messages with. */
+export function TelegramSettings({ current, canStoreKeys }: { current: { chatIds: string; hasToken: boolean; saved: boolean }; canStoreKeys: boolean }) {
+  const { pending, message, run } = useAction();
+  const [token, setToken] = useState('');
+  const [chatIds, setChatIds] = useState(current.chatIds);
+  return (
+    <form className={styles.stack} onSubmit={(e: FormEvent) => { e.preventDefault(); run(() => saveTelegramSettings({ token, chatIds }), () => setToken('')); }}>
+      <ol className={styles.meta}>
+        <li>In Telegram, message @BotFather: /newbot, then copy the token.</li>
+        <li>Still in @BotFather: /setprivacy, pick the bot, Disable, so it sees group messages.</li>
+        <li>Add the bot to your group, then paste the token here.</li>
+      </ol>
+      <input className={styles.input} aria-label="Bot token" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} disabled={!canStoreKeys} placeholder={!canStoreKeys ? 'Tokens need MEMBER_APP_SECRET_KEY on the server' : current.hasToken ? 'Token saved. Paste a new one to replace it' : '123456:ABC…'} />
+      <input className={styles.input} aria-label="Chat ids" value={chatIds} onChange={(e) => setChatIds(e.target.value)} placeholder="Only these chats (optional), e.g. -1001234567890" />
+      <div className={styles.row}>
+        <button className="in-btn in-btn--primary" disabled={pending || !canStoreKeys || (!token.trim() && !current.hasToken)}>{pending ? 'Checking…' : 'Save Telegram'}</button>
+        {current.saved && <button type="button" className="in-btn in-btn--quiet" disabled={pending} onClick={() => run(() => clearIntegrationSettings('telegram'))}>Use the server&apos;s settings</button>}
+        <Notice message={message} />
+      </div>
+    </form>
+  );
+}
+
+/** The organization's name and website, as everyone sees them. */
+export function OrganizationBasics({ name: savedName, website: savedWebsite }: { name: string; website: string }) {
+  const { pending, message, run } = useAction();
+  const [name, setName] = useState(savedName);
+  const [website, setWebsite] = useState(savedWebsite);
+  return (
+    <form className={styles.stack} onSubmit={(e: FormEvent) => { e.preventDefault(); run(() => saveOrganizationBasics({ name, website }).then((r) => (r.ok ? { ok: true, message: 'Saved.' } : r))); }}>
+      <div className={styles.row}>
+        <input className={styles.input} aria-label="Organization name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required />
+        <input className={styles.input} aria-label="Website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" inputMode="url" />
+      </div>
+      <div className={styles.row}>
+        <button className="in-btn in-btn--primary" disabled={pending || !name.trim()}>{pending ? 'Saving…' : 'Save'}</button>
+        <Notice message={message} />
+      </div>
+    </form>
   );
 }
