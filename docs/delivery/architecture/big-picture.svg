@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+<rect x="0" y="0" width="1200" height="900" rx="12" fill="#f5f7fa" stroke="#f5f7fa"/>
+<text x="40" y="43" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#286587">INERTIA / OCTOBER 30 DEMO</text>
+<text x="40" y="92" font-family="Arial,sans-serif" font-size="35" font-weight="700" fill="#21374a">The intended architecture</text>
+<text x="40" y="126" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#475b6c">Organization-wide work, with funding as the first full workflow target. This is the approved direction; it is not a deployment-status diagram.</text>
+<rect x="40" y="165" width="350" height="140" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="59" y="198" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">People + authorized sources</text>
+<text x="59" y="231" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Current membership and action authority.</text>
+<text x="59" y="254.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Website, shares, meetings, Buzz and</text>
+<text x="59" y="277.4" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">funding sources.</text>
+<rect x="425" y="165" width="350" height="140" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="444" y="198" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Member app + Paperclip</text>
+<text x="444" y="231" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Partner owns the member app. Native</text>
+<text x="444" y="254.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">goals, tasks, dependencies and review</text>
+<text x="444" y="277.4" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">coordinate work.</text>
+<rect x="810" y="165" width="350" height="140" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="829" y="198" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Protected VPS boundary</text>
+<text x="829" y="231" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Cloudflare Access + tunnel. Durable state</text>
+<text x="829" y="254.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">and artifacts. No Caddy; one execution</text>
+<text x="829" y="277.4" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">plane.</text>
+<rect x="40" y="329" width="1120" height="85" rx="12" fill="#e4edf5" stroke="#dae2e9"/>
+<text x="62" y="363" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#286587">GENERAL COORDINATOR</text>
+<text x="62" y="392" font-family="Arial,sans-serif" font-size="20" font-weight="400" fill="#21374a">Funding priorities + meetings + ordinary organization work; delegate, monitor, return useful results.</text>
+<rect x="40" y="438" width="350" height="183" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="59" y="471" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Alpha / discovery</text>
+<text x="59" y="504" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Incremental and change-aware scanning,</text>
+<text x="59" y="527.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">source high-water/checkpoint reuse,</text>
+<text x="59" y="550.4000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">targeted discovery and full coverage</text>
+<text x="59" y="573.6000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">accounting. Retain captures and explain</text>
+<text x="59" y="596.8000000000002" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">failures.</text>
+<rect x="425" y="438" width="350" height="183" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="444" y="471" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Parallel Beta / cases</text>
+<text x="444" y="504" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Each actionable opportunity: research,</text>
+<text x="444" y="527.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">compile, draft and correct. Retain valid</text>
+<text x="444" y="550.4000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">checkpoints; genuine human waits do not</text>
+<text x="444" y="573.6000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">stop other cases.</text>
+<rect x="810" y="438" width="350" height="183" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="829" y="471" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">Charlie / independent review</text>
+<text x="829" y="504" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Separate principal reviews exact</text>
+<text x="829" y="527.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">source/artifact versions. Rejection returns</text>
+<text x="829" y="550.4000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">the same case for correction; source</text>
+<text x="829" y="573.6000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">admission is not final packet approval.</text>
+<rect x="40" y="645" width="545" height="176" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="59" y="678" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">P1 / reuse knowledge + careful Buzz</text>
+<text x="59" y="711" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Existing member corpus is useful now. Funding machine-reader wiring</text>
+<text x="59" y="734.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">and Paperclip real bridge are separate gaps. Signed admission, current</text>
+<text x="59" y="757.4000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">audience, pairing and replay remain explicit.</text>
+<rect x="610" y="645" width="550" height="176" rx="12" fill="#ffffff" stroke="#dae2e9"/>
+<text x="629" y="678" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#21374a">P2 / Google push + human authority</text>
+<text x="629" y="711" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Existing Gemini notes -&gt; owning DAO import/readback -&gt; deduplicated</text>
+<text x="629" y="734.2" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">action triage. Review useful outputs; current submission is manual.</text>
+<text x="629" y="757.4000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">Future agent submission requires separate exact-package authorization</text>
+<text x="629" y="780.6000000000001" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#475b6c">and qualification.</text>
+<text x="40" y="868" font-family="Arial,sans-serif" font-size="13" font-weight="400" fill="#21374a">Snapshot: 29 Oct 2026, 16:22:18 CDT operator proof. Static document; refresh before presenting.</text>
+</svg>

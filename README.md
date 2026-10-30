@@ -1,5 +1,7 @@
 # Inertia
 
+**October30 demo:** [persistent critical-path chart](docs/delivery/critical-path/index.html) · [dated readiness](docs/delivery/CURRENT-DEMO-READINESS.md), [visual proof map](docs/delivery/architecture/index.html), and [walkthrough](docs/delivery/DEMO-WALKTHROUGH.md). Current status, plans, warnings and time credits are maintained in the persistent chart; dated snapshots below remain historical. Historical claims below do not override it.
+
 Inertia connects DAO conversations, meeting records, application packets and agent contributions. Paperclip owns native work; Buzz presents the same records. The Wednesday October 28 target uses existing authorized PostgreSQL domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred, not demo prerequisites.
 
 ## Join the sprint

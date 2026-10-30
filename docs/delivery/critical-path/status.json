@@ -1,0 +1,208 @@
+{
+  "updatedAt": "2026-10-29T22:44:25.978645+00:00",
+  "timeZone": "America/Chicago",
+  "rule": "Each NEW independently evidenced critical-path green earns20 minutes from proof time. Previously credited greens are not credited again.",
+  "renewedAt": "2026-10-29T22:14:00Z",
+  "earnedGreenCredits": [
+    {
+      "item": "fanout",
+      "scope": "Batched fan-out:4 real cases created with exact bindings, correctBeta/project and0duplicates; remaining9notyetdispatched.",
+      "proofAt": "2026-10-29T22:42:21.241118Z",
+      "receipt": "/tmp/inertia-server-capacity-ops-20261029/fanout-live.json",
+      "minutes": 20
+    },
+    {
+      "item": "parallel",
+      "scope": "4distinct funding-case provider runs overlap with actualsuccessfulfundingtoolcalls.",
+      "proofAt": "2026-10-29T22:42:21.241118Z",
+      "receipt": "/tmp/inertia-server-capacity-ops-20261029/fanout-live.json",
+      "minutes": 20
+    }
+  ],
+  "earnedMinutes": 40,
+  "baseDeadline": null,
+  "items": [
+    {
+      "id": "runtime",
+      "label": "Production runtime, storage and access",
+      "status": "green",
+      "cleanPlan": true,
+      "owner": "release_assembly",
+      "plan": "plans/runtime.md",
+      "evidence": "Image9e62 deployed: normal production boot, health/plugin/security42guards25 and actual strict native-input checks pass. Persistent stores unchanged.",
+      "nextStep": "Retain postboot checks and recovery evidence.",
+      "proofAt": "2026-10-29T21:22:18Z",
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "discovery",
+      "label": "Full discovery, prioritization and incremental continuity",
+      "status": "yellow",
+      "cleanPlan": false,
+      "owner": "Root + docs research lane",
+      "plan": "plans/discovery.md",
+      "evidence": "Earlier inventory and 13 scout candidates retained; full coverage/ranking/high-water acceptance not established.",
+      "nextStep": "Audit persisted source frontiers, dispositions and changed-input continuation.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "alpha",
+      "label": "Alpha \u2192 Coordinator handoff",
+      "status": "green",
+      "cleanPlan": true,
+      "owner": "release_assembly",
+      "plan": "plans/alpha-handoff.md",
+      "evidence": "13 bindings consumed in queue revision22; older notification failure repaired.",
+      "nextStep": "Preserve receipt; do not rerun the universe.",
+      "proofAt": "2026-10-29T19:55:38Z",
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "fanout",
+      "label": "Batched Coordinator \u2192 Beta fan-out",
+      "status": "green",
+      "cleanPlan": true,
+      "owner": "release_assembly",
+      "plan": "plans/fanout.md",
+      "evidence": "LIVE17:42:21:4 distinct cases INE64\u201367 created with correct bindings/assignee/project and0duplicates.9of13 stillpendingdispatch.",
+      "nextStep": "Preserve batchprogress/queue; dispatch remaining9without waiting indefinitely on held cases. Deploy independentlyreviewed recovery-inference prevention at safe boundary.",
+      "proofAt": "2026-10-29T22:42:21.241118Z",
+      "creditedInRenewedWindow": true
+    },
+    {
+      "id": "parallel",
+      "label": "Concurrent Beta case execution",
+      "status": "green",
+      "cleanPlan": true,
+      "owner": "release_assembly + funding_handoff_audit",
+      "plan": "plans/beta-lifecycle.md",
+      "evidence": "LIVE17:42:21:4 distinct Beta case providers overlapped; eachmade successfulfunding calls, with originalresponsibleidentity. Separateheld-case independence stillpending.",
+      "nextStep": "Observe useful saved writing, case-level hold behavior and continued batching.",
+      "proofAt": "2026-10-29T22:42:21.241118Z",
+      "creditedInRenewedWindow": true
+    },
+    {
+      "id": "holding",
+      "label": "Exhausted-case hold and evidence-triggered revisit",
+      "status": "red",
+      "cleanPlan": false,
+      "owner": "funding_handoff_audit",
+      "plan": "plans/beta-lifecycle.md",
+      "evidence": "Lifecycleguidance correctionLIVE9e62. Existingholdworks inactualnativePG. Additionalrecoverystructural-child bug causedglobalrootbarrier; exact11generatededgescorrectednormalAPI. Prevention source independentlytested; semanticnoveltyremainsunknown.",
+      "nextStep": "Correct demonstrated host contract; test typed review preservation and hold; research semantic novelty enforcement.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "sources",
+      "label": "Authoritative source research and capture",
+      "status": "yellow",
+      "cleanPlan": false,
+      "owner": "release_assembly + Root",
+      "plan": "plans/source-research.md",
+      "evidence": "Successful captures and lossless paged reads observed; some requirements and access boundaries unresolved.",
+      "nextStep": "Classify each gap as public research, unavailable portal/private record or source defect; continue answerable work.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "charlie",
+      "label": "Independent Charlie review and correction handoff",
+      "status": "green",
+      "cleanPlan": true,
+      "owner": "release_assembly",
+      "plan": "plans/charlie-review.md",
+      "evidence": "Independent source rejection and automatic return to Beta verified. Does not prove accepted final packet.",
+      "nextStep": "Preserve exact review identities and findings.",
+      "proofAt": "2026-10-29T19:57:27Z",
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "drafting",
+      "label": "Substantive application writing across opportunities",
+      "status": "red",
+      "cleanPlan": false,
+      "owner": "release_assembly + Root",
+      "plan": "plans/drafting.md",
+      "evidence": "NSF now10 fields but new fields are source corrections, not application narrative. All13 corporate/local cases have no drafts. Legacy Carter narrative and budget found.",
+      "nextStep": "After fan-out, prove source-backed application answers on simpler cases and retain partial progress.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "packet",
+      "label": "Reviewed rendered packet and precise human handoff",
+      "status": "red",
+      "cleanPlan": false,
+      "owner": "Root + release_assembly",
+      "plan": "plans/packet.md",
+      "evidence": "MD/DOCX preliminary render works; no accepted complete packet. Preliminary binary native attachment gap exists.",
+      "nextStep": "Complete required content; independent typed/whole-packet review; render readable packet and separate real authority gaps.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "org-search",
+      "label": "Organization research data flow",
+      "status": "red",
+      "cleanPlan": true,
+      "owner": "implement_host + peer app owner",
+      "plan": "plans/organization-search.md",
+      "evidence": "Isolated existing-search/read handler17tests+typecheck+actualHTTP/PostgreSQL and3citation tests pass. Native registration, live read credential and deployment remain.",
+      "nextStep": "Expose existing shared search/read contract; wire research tool; prove one DAO fact in a cited saved answer.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "buzz",
+      "label": "Real Paperclip \u2194 Buzz work loop",
+      "status": "red",
+      "cleanPlan": false,
+      "owner": "implement_host",
+      "plan": "plans/buzz.md",
+      "evidence": "Member-app corpus/chat success accepted; Paperclip bridge remains unproved.",
+      "nextStep": "Verify actual relay references, admitted signer, channel/thread binding and pairings; controlled exchange.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "notes",
+      "label": "Gemini notes \u2192 DAO storage \u2192 Paperclip actions",
+      "status": "red",
+      "cleanPlan": false,
+      "owner": "implement_host + funding_handoff_audit",
+      "plan": "plans/notes.md",
+      "evidence": "Dedicated lane: lossless five-export converter67tests+typecheck; investigating existing meeting-reader admission path rather than inventing another tool.",
+      "nextStep": "Batch shared read contract with org search; convert5 exports; bind resolver; prove replay-safe import/context/triage.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    },
+    {
+      "id": "demo",
+      "label": "Demo architecture, evidence and walkthrough",
+      "status": "yellow",
+      "cleanPlan": true,
+      "owner": "Docs chat01a18867 + Root",
+      "plan": "plans/demo.md",
+      "evidence": "Docs PR139 and visually checked PDF exist; ongoing status synchronization.",
+      "nextStep": "Keep artifact current in background; final walkthrough/claims pass last.",
+      "proofAt": null,
+      "creditedInRenewedWindow": false
+    }
+  ],
+  "firstNewGreenRequiredBy": "2026-10-29T22:42:56Z",
+  "newWindowStartedAt": "2026-10-29T22:27:56Z",
+  "parallelLanes": {
+    "live_operator": "release_assembly",
+    "native_lifecycle_recovery": "funding_handoff_audit",
+    "org_reader_buzz": "implement_host",
+    "notes_implementation": "01a189c8-115f-7aa3-b01e-65ef5ff12c08",
+    "business_drafting_audit": "01a189c8-20fa-7bc2-a402-ec9707767ed0",
+    "canonical_docs_cloud": "01a189c8-56c6-7778-bd62-e8dd779e70da@durable",
+    "original_plan_adversarial_review": "01a189c9-badb-7581-bd37-a9333e24f421",
+    "visual_docs_discovery": "01a18867-419e-7a21-b1a1-aa92894e94a8"
+  },
+  "explicitDiagnosticBonusMinutes": 10,
+  "firstNewGreenRequirementMet": true
+}
