@@ -1,5 +1,7 @@
 # Native durable funding acceptance: non-live candidate
 
+> For current source installation and release boundaries, start with [MVP install](../../docs/guide/install.md) and [release/recovery](../../docs/guide/release.md). The original isolated acceptance-capture qualification below is historical component evidence, not a current global deployment claim.
+
 This is an isolated qualification of a trusted Paperclip host extension. It is not deployed, not a plugin SDK feature, and not connected to a real funding service. It adds no review UI, grant-submission route, new task table, or second approval/effect ledger.
 
 ## Pinned base
