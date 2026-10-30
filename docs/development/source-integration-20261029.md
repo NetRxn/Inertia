@@ -10,6 +10,19 @@
 
 Use these direct links or select the exact branch in GitHub's branch dropdown above the file list. Local read-only navigation is `git fetch origin`, then `git log --oneline -5 origin/develop`; it does not switch or reset the peer checkout. The member app is still on its peer-owned stack.
 
+## Current integrated source
+
+The frozen pair is integrated through [Inertia #147](https://github.com/NetRxn/Inertia/pull/147) and [DFW #84](https://github.com/NetRxn/DFW-Gov-Fund/pull/84):
+
+- Inertia source landed at develop `cd254e5359d1e2813e440321f9105fbfd12fa520`; its tree equals tested `087835bd3e27549a9d4ff374afcee9b7d3bc39da`. [Exact candidate CI](https://github.com/NetRxn/Inertia/actions/runs/40983609665) and [actual develop push CI](https://github.com/NetRxn/Inertia/actions/runs/40983793472) passed. Public Node 24 tests: 1,133 passed/12 explicit optional skips. All six configured cross-repository files passed 11 tests; the focused paired handler/bridge/capture subset passed 10. Typecheck, build and production package passed.
+- DFW source landed at main `6203f76988ce629f8c2f524ad9ea9bc6e380f7a2`; its tree equals tested `29b7b207f2bb00296285c299c032c4fd3162470b`. [Exact pinned CI](https://github.com/NetRxn/DFW-Gov-Fund/actions/runs/40983302798) passed audit, compile, lint, types, full pytest, build and migration smoke: 2,292 tests passed/6 skipped. The separate local full suite passed the same counts.
+- Frozen plugin `78bd5fc` and domain `b85182e` are preserved by ancestry. DFW main's `dfe686a` lost-claim fix and its native-cycle bytes are retained. Only the domain manifest conflicted; 719 actual current hashes were verified, and all six authored nonmanifest files equal the frozen source.
+- Superseded source PRs #146/#83 are closed only after preservation checks and replacement references. Peer/app PRs and source-author branches remain intact. 45 completed historical source/docs/test refs were pruned after exact-tip, owner, active-checkout, open-PR and ancestry verification; this task's temporary integration refs are removed after their merges.
+
+Automatic postmerge checks may run separately; these statements bind the exact candidate checks and verified merged trees. Source integration does not establish runtime parity with the separately operated c5 deployment.
+
+## Initial reviewed baseline
+
 The submission integration target is `develop`. Native/plugin source and demo documentation are integrated through [PR144](https://github.com/NetRxn/Inertia/pull/144) and [PR139](https://github.com/NetRxn/Inertia/pull/139). The source integration landed at `181ecc7ef83b6a622b5ba976fba3c3abc4c39a7e`; its tree exactly matches tested candidate `e18c9ce7f786f22c86cc062cf8bc82db09675905`.
 
 ## Evidence
@@ -47,8 +60,8 @@ On Node 24.22.2, the public aggregate with all private fixture variables unset p
 
 Source integration does not establish runtime deployment, completed funding applications, real Buzz delivery, notes ingestion or human acceptance. The current mission remains a general Coordinator with P0 funding/P1 Buzz/P2 notes; full funding acceptance is the whole actionable portfolio.
 
-## Frozen paired follow-up
+## Frozen paired follow-up — integrated
 
-The next reviewed pair is Inertia #146 at `78bd5fc038bab58cfab347663c6cfca2197d95de` and DFW #83 at `b85182e5f2a808d9ba1ffc10c469218de22ad2c7`. The domain adds bounded correction reasons and preserves a genuinely unknown deadline under independent review without erasing known deadlines. Integration candidates merge these heads onto current canonical branches, retaining DFW main's `dfe686a` lost-claim fix. Exact combined validation and merge outcomes are recorded separately.
+Inertia #146 at `78bd5fc038bab58cfab347663c6cfca2197d95de` and DFW #83 at `b85182e5f2a808d9ba1ffc10c469218de22ad2c7` are now preserved in the canonical targets through #147/#84. The domain adds bounded correction reasons and retains a genuinely unknown deadline under independent review without erasing known deadlines. The current source evidence above records the combined checks and merged targets.
 
 The operator-reported VPS c5 deployment is separate from Git integration. This source report does not establish develop/runtime parity.
