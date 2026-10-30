@@ -1,0 +1,162 @@
+{
+  "schema": "inertia-clean-application-deployment-pin-v1",
+  "releaseTag": "deployment/clean-application-20261030.1",
+  "state": "DEPLOYMENT_AND_PUBLISHER_VERIFIED_BUSINESS_NOT_ACCEPTED_AT_SNAPSHOT",
+  "scope": "Reusable clean-primary render and exact editorial-review path; not final application/eligibility/packet/submission approval",
+  "componentVersions": {
+    "inertiaPlugin": "0.1.1",
+    "dfwRuntimeWheel": "3.4.1",
+    "versionPolicy": "Preserve sealed component versions; deployment tag is not a3.4.2 package claim or whole-main runtime promotion"
+  },
+  "source": {
+    "inertiaIntegratedSource": "88840aa39307a61337fcaa31cf788ca588f11593",
+    "dfwCanonicalMain": "d5cbfdf10c50ac08dac67c87151d12b4bb00cb43",
+    "dfwFrozenRenderer": "237955af144c9e384a97bf1007bb8390a50ed341",
+    "nativeEditorialSource": "3eff9169c0b904e28be7dabd96f7605495fad6d2",
+    "pluginPublicationSource": "bc3880acec980b219a780e548ef42db5eaad295e",
+    "canonicalSourceCI": {
+      "run": 41054683575,
+      "state": "success",
+      "python": "3.14.6",
+      "passed": 2309,
+      "skipped": 6,
+      "seconds": 1259.41,
+      "allStagesPassed": true
+    },
+    "all722DistributionHashesVerified": true,
+    "wholeCanonicalMainRuntimeParity": false
+  },
+  "runtime": {
+    "imageDigest": "sha256:59d0bfd842511552ff5bc5b1e22df7f90daa7159b347707ad876f4e45577d217",
+    "priorRollbackImageDigest": "sha256:f47870c6561fe257f93914efda963af317e84c7a6fd0c9f7192917a80b84b062",
+    "observedAt": "2026-10-30T12:38:00.746313+00:00",
+    "sourceManifestSha256": "487a375c5c287d1ddb19652d588d5905d7ae4b56f1fd66507284a4df17640d3a",
+    "payloadManifestSha256": "c600693adfd248b52f5ea7bd47ac57ac2ba9765004532bdf40c2562530deb336",
+    "sealedArchiveSha256": "51b11a794df17cb839c77a9e80ff72c90918325d4ced9a4a70bc9f0be386b486",
+    "selectiveWheelSha256": "9b9a7260042210ad329b10f2ef0a1e7de572ae36db007013fef86ec56af48708",
+    "rendererModuleSha256": "83ec2d34cb00a3d2474768df7b36e8e183d5a0b1db05a7bc631f95b6ddcfc1e3",
+    "packageFingerprint": "44975c4af964de6dadc6c9c1d8621e0bbe3f294bf09437c18342fd0a4c18f32f",
+    "priorPackageFingerprint": "912e27384081e98c35826e6fbc1f3a22bbacee30d9b038fb2a374a7a64436ba4",
+    "changedWheelMembers": [
+      "dfw_incentives/native_case_preliminary.py",
+      "dfw_incentives-3.4.1.dist-info/RECORD"
+    ],
+    "otherPythonModulesPreserved": 171,
+    "configurationSha256": "79807dab8d8b97c1c8085dce6f96312fbf3bd693f8864eacf9db692d8527788e",
+    "registryDigestPrefixReported": "51bac266\u20267955",
+    "registryDigestFull": null,
+    "nativeGuards": 47,
+    "nativeSupersessions": 42,
+    "payloadFiles": 932,
+    "pythonSources": 172,
+    "pluginRuntimeUnchanged": true,
+    "memberImageUnchanged": "78b5f89b7525caf7fd14af06d68d499da34dca22e1c997e2b5928722adbae851",
+    "postbootSecurityVerified": true,
+    "actualBridgeControlsVerified": true,
+    "freshBackupsAndCatalogs": "Operator verified target-only native/domain/member backups and preserved412runs/776wakes; no backup/applicant data copied to Git",
+    "registryDigestEvidence": "Operator verified registry repin; abbreviated digest51bac266\u20267955 reported. Exact stored configuration digest binds the repin; full registry value remains in operator evidence, not fabricated here."
+  },
+  "renderContract": {
+    "primaryKey": "sponsor_ready_application_draft",
+    "internalKey": "private_owner_decision_list",
+    "defaultWhenPrimaryAbsent": "Legacy worksheet retained",
+    "invalidExplicitPrimary": "Fail closed; no silent fallback",
+    "internalBoundary": "Presentation separation only; existing permissions unchanged",
+    "readinessAdmitted": false,
+    "businessComplete": false
+  },
+  "actualOutput": {
+    "initialNativePrimary": {
+      "verified": true,
+      "bodySha256": "3ef0ba5ca0fb757569fefb9db87b302c176dd11eb33a4e8aa7285f1733ed9819",
+      "bodyBytes": 6651,
+      "documentId": "ed1ae116-9c52-43e8-9ee5-890bc4ed0d13",
+      "revisionId": "0b70634c-7759-47df-b229-9696a9fa4842",
+      "revisionNumber": 1,
+      "bodyEqualsSavedPrimaryAndConsumerFile": true
+    },
+    "initialWord": {
+      "verified": true,
+      "mdSha256": "3ef0ba5ca0fb757569fefb9db87b302c176dd11eb33a4e8aa7285f1733ed9819",
+      "mdBytes": 6651,
+      "docxSha256": "de81b85b52bbf01d7d9f01164d4bb8ff92c7981054b213ab77d909ed88d4a1d1",
+      "docxBytes": 39342,
+      "matchesSavedPrimary": true,
+      "ownerNoteExactPrivateField": true,
+      "historical18FieldsPreserved": true
+    },
+    "charlieVerdict": {
+      "verified": true,
+      "receiptHash": "79daf1e7501c587649074961f59c88d69c497e59ebf0dc6f2fc4be85efeb8be3",
+      "subjectBodySha256": "3ef0ba5ca0fb757569fefb9db87b302c176dd11eb33a4e8aa7285f1733ed9819",
+      "outcome": "changes_requested",
+      "findingsCount": 1,
+      "findingCategory": "Legal applicant signature name must remain a placeholder consistent with unresolved internal identity check",
+      "packetApproval": false,
+      "businessComplete": false
+    },
+    "correctedNativeObserved": {
+      "nativeDocumentBodySha256": "029bd22f74deea1912606059f6040cf0c76f1ef4d215b3ea01929a8b91f02ff0",
+      "nativeDocumentBodyBytes": 6667,
+      "freshCurrentStructuredPrimaryAndWordParity": "PENDING; do not mix earlier exported3ef0proof with corrected029bd nativebody",
+      "rootCurrentConsumerReadiness": "PENDING"
+    },
+    "currentFinalArtifactConsistency": "Not asserted across revisions: Word proof covers initial3ef0; fallback029bd and later0c6 are separate native revisions.",
+    "rootConsumerReadiness": "NOT_ACCEPTED: latest0c6 primary reintroduced internal gates. One final content-only pass was in progress at snapshot; no runtime/source/config changes permitted.",
+    "fallback": {
+      "nativeBodySha256": "029bd22f74deea1912606059f6040cf0c76f1ef4d215b3ea01929a8b91f02ff0",
+      "bodyBytes": 6667,
+      "state": "Preserved actual clean draft; unapproved/disputed review; do not claim current final application approval"
+    },
+    "latestConsumerRejected": {
+      "nativeBodySha256": "0c6fdb12211c40d874a0b14df6beebbfdcfc169c33fb3664a46dc3d88acfbad1",
+      "bodyBytes": 10472,
+      "reason": "Internal gates were reinserted into the human-facing primary",
+      "rootDecision": "REJECTED consumer readiness"
+    },
+    "laterReviewInterpretation": "Root disputed broad gates/context interpretation in a later review; historical review receipts are preserved and are not overwritten by this release record."
+  },
+  "qualifications": {
+    "fullLocal": {
+      "passed": 2309,
+      "skipped": 6,
+      "warning": "Existing Starlette httpx deprecation",
+      "seconds": 521.9,
+      "exitCode": 0,
+      "python": "3.14.8"
+    },
+    "sourceCli": {
+      "passed": true,
+      "tables": 54,
+      "integrity": "ok",
+      "temporaryOnly": true,
+      "logSha256": "b5f64b3d3ac46834ad08e86dd26a28fba8d18b81225dc66d6289467b41dbd0b2"
+    },
+    "actualPgSourceTests": 5,
+    "actualNativeSdkTests": 4,
+    "candidateImageFullStartupTests": 1,
+    "candidateImageRendererPostgres": "PASS per newer operator proof, before live cutover",
+    "legacyAndNegativeControlsPreserved": true
+  },
+  "evidenceHashes": {
+    "SOURCE-HANDOFF.json": "bea8acbea29506a3bcd8b9e815317909187972f5a957e31124fd4e72400a9875",
+    "runtime-wheel-receipt.json": "13721aff9a06f438233fd13cab2cc17f83ceef1c06d5745bcd9a4bc2b5060d07",
+    "actual-primary-pg-proof.json": "8d1b1386a0beeb3ce9afec3384f288f7d9d867056f59c9d037ef6dedf3142f0d",
+    "native-primary-editorial-proof.json": "89d98a38a29d18d196d303cdbc9dcebb9eb6eaf36ac07f6388cc124e4a9904a6",
+    "postboot.json": "b412b80c6ae3ab2e90c39f1d5622fcbff6ff6517a325784715aaca585b10a8a6",
+    "bridge-postboot.json": "c4b93ab516fcc07dd75fbda30c3f4e0a37a8c1dfa61f2507d8d42ea2cc332c1b"
+  },
+  "publication": {
+    "packetOrInternalSheetTextPublished": false,
+    "gitBinding": "Annotated tag and external receipt bind containing canonical commit and pin hash; no self-reference here",
+    "priorTagsImmutable": [
+      "v0.1.0",
+      "v0.1.1",
+      "evidence/p2-20261030.1",
+      "DFW:v3.4.1"
+    ],
+    "noVpsOperationsByGitLane": true,
+    "freeze": "Human stability deadline08:15CDT. Metadata/source tag closeout only; no new runtime/deploy/config action or fabricated business green."
+  },
+  "snapshotAt": "2026-10-30T13:00:34Z"
+}

@@ -14,7 +14,7 @@ Inertia helps an organization turn existing knowledge and objectives into accoun
 
 ## What the MVP demonstrates
 
-Saved Alpha candidates reached the Coordinator and thirteen distinct Beta case tasks. Four case providers ran concurrently; later cases progressed while earlier cases awaited independent source review. Scoped organization search supplied source/passages/hashes to actual saved writing, with readback and Markdown/DOCX parity. A FUTO draft sample met the team's MVP quality bar; that sample does not establish acceptance of the whole funding portfolio.
+Saved Alpha candidates reached the Coordinator and thirteen distinct Beta case tasks. Four case providers ran concurrently; later cases progressed while earlier cases awaited independent source review. Scoped organization search supplied source/passages/hashes to actual saved writing, with readback and Markdown/DOCX parity. Clean-primary rendering and editorial review are demonstrated mechanisms; they do not establish consumer acceptance of the latest application. See the [clean-render deployment record](../releases/clean-application-20261030/README.md) for the explicit output/review status.
 
 Charlie independently rejected sources and returned corrections to the same case. FUTO source proposal `393f…` was accepted, completed its native source-review child and resumed Beta. **Source approval is not approval of the application draft, budget or final packet.** No final Charlie whole-packet approval or external submission is claimed.
 
