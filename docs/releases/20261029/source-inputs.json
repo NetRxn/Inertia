@@ -21,12 +21,17 @@
       }
     },
     "dfw": {
-      "commit": "6203f76988ce629f8c2f524ad9ea9bc6e380f7a2",
-      "tree": "b64cb8558b3c4a8b213b96ed50120ef8ac25d750",
+      "commit": "97ed317427e30633a4adcdb936ff7eb56a2b2e18",
+      "tree": "cf097e432d7013160091f160f7e341aaace18703",
       "packageMetadataSha256": "284f8c9e43290124b8df77caa07cdc7699ad077abd8a52d06320cf5a3b4aafcf",
-      "distributionManifestSha256": "f6595ca8a2a6591988c633c7f077902636892535d8af920edbf185955740d941",
+      "distributionManifestSha256": "6157047d49019f13530ac4b8c5b4a17acf079ade311eda28fa4251cdce4bdfee",
       "nativeCycleSha256": "66798ce3eecf7a5953a0fe59cf37b2a101859b63478cc824496f2f8f6321041a",
-      "frozenB851AndLostClaimDfeAncestryVerified": true
+      "frozenB851AndLostClaimDfeAncestryVerified": true,
+      "previousQualifiedCommit": "6203f76988ce629f8c2f524ad9ea9bc6e380f7a2",
+      "rendererSource": "a2c91a5ff0487695b15d0508de30df3d19472d22",
+      "rendererIntegrationCandidate": "be11c3539d9f9269f75e09652ed7b3580708d3c2",
+      "rendererModuleSha256": "ba198209ee20285b1c9328c1cfe6d8d02aff6daa1a3c56d6eb420a8e77006599",
+      "rendererIndependentIntegrationReview": "CLEAR;720 immutable blob hashes and exact authored files; main lost-claim/nativecycle/progression preserved"
     }
   },
   "documentationInput": {
@@ -66,12 +71,12 @@
     },
     "dfw": {
       "pythonPinned": "3.14.6",
-      "passed": 2292,
+      "passed": 2304,
       "explicitSkips": 6,
       "exitCode": 0,
-      "candidate": "29b7b207f2bb00296285c299c032c4fd3162470b",
+      "candidate": "be11c3539d9f9269f75e09652ed7b3580708d3c2",
       "mergedTreeEqualsCandidate": true,
-      "ci": 40983302798,
+      "ci": 40992270716,
       "fullCIStages": [
         "locked install",
         "live dependency audit",
@@ -90,18 +95,63 @@
         "disabledSchedules": true,
         "credentialsProvided": false,
         "logSha256": "7cd1f101172cba9fb506dad20ea67212041b7f223fbb153894cb24ba76ada503"
-      }
+      },
+      "rendererLocalQualification": {
+        "candidate": "be11c3539d9f9269f75e09652ed7b3580708d3c2",
+        "passed": 2304,
+        "explicitSkips": 6,
+        "exitCode": 0,
+        "python": "3.14.8",
+        "focusedTests": 25,
+        "independentIntegrationReview": "CLEAR;720hashes exact",
+        "wheelSdistPortable": "verified: exact renderer bytes and720candidateblob hashes; portable725trackedpaths only",
+        "sqliteCLI": {
+          "qualifiedCandidate": "be11c3539d9f9269f75e09652ed7b3580708d3c2",
+          "steps": [
+            {
+              "command": [
+                "-m",
+                "dfw_incentives.cli",
+                "init-db"
+              ],
+              "exitCode": 0
+            },
+            {
+              "command": [
+                "scripts/validate_distribution.py"
+              ],
+              "exitCode": 0
+            }
+          ],
+          "sqlite": {
+            "integrity": "ok",
+            "tableCount": 54,
+            "temporaryOnly": true
+          },
+          "credentialsPassed": false,
+          "disabledSchedules": true,
+          "originalProfilesModified": false,
+          "logSha256": "9b7ae57c85603033f3423a5ba2b8bb06dd28ad2fac9403307834b38651bcebe2"
+        }
+      },
+      "previousQualifiedFullCI": {
+        "passed": 2292,
+        "explicitSkips": 6,
+        "candidate": "29b7b207f2bb00296285c299c032c4fd3162470b",
+        "ci": 40983302798
+      },
+      "distributionHashes": 720
     }
   },
   "publication": {
     "inertiaTagTarget": "Exact accepted canonical merge commit of release/demo-20261029; annotated tag and external release receipt record final commit/tree/artifact hashes.",
-    "dfwTagTarget": "6203f76988ce629f8c2f524ad9ea9bc6e380f7a2",
+    "dfwTagTarget": "97ed317427e30633a4adcdb936ff7eb56a2b2e18",
     "tagPushSideEffects": "No current workflows trigger on tags; no automatic CI/package publish/deploy proof.",
     "immutableTags": true,
     "demoDocsOwnership": "Human-owned DemoDocs remain untouched; this bundle does not claim human presentation acceptance."
   },
   "deploymentComparison": {
-    "operatorReportedReference": "c5, supplied by root",
+    "operatorReportedReference": "Root-reported c12, renderer a2c91a5; source lane performed no host operations",
     "independentlyInspected": false,
     "deployedImageDigest": null,
     "deployedSourceManifest": null,
@@ -109,7 +159,11 @@
       "definition": "This file records immutable source inputs; final annotated tag and external publication receipt bind its containing commit and artifact hashes."
     },
     "parity": "NOT_ESTABLISHED",
-    "rule": "Source tags do not establish deployed-image/source parity; preserve a separate redacted operator manifest before any parity claim"
+    "rule": "Source tags do not establish deployed-image/source parity; preserve a separate redacted operator manifest before any parity claim",
+    "operatorReportedImageDigest": "c12cfffcfb2c76428464c6f86ed04e018e9604c8995dfa76f2807a85af4e0682",
+    "operatorReportedSourceManifest": "b442cd420e3431c8025fdea83c10ce9b2acfd12f2603acd49848e53b88500517",
+    "operatorReportedPayloadManifest": "fa7c612cfe877fb74883135ee7f360e8ca274e0b813054a36fd6ae9db127b1ea",
+    "reportedManifestAuthority": "Shared critical-path/plans/runtime.md; operator-reported, not independently verified in this lane"
   },
   "deferred": [
     "End-to-end production Notes acceptance",
@@ -121,8 +175,9 @@
   ],
   "rollback": {
     "inertiaPreFreshDocsQualifiedCheckpoint": "09001dc00c360ec0f9fb1923e820c8eaff3675d5",
-    "dfwPreviousQualifiedCheckpointRetainingLostClaimFix": "5847675b6f7148a06a74b27a02af6cbce87ad1b9",
-    "kind": "source rollback checkpoints only; not runtime rollback authorization"
+    "dfwPreviousQualifiedCheckpointRetainingLostClaimFix": "6203f76988ce629f8c2f524ad9ea9bc6e380f7a2",
+    "kind": "source rollback checkpoints only; not runtime rollback authorization",
+    "dfwOlderQualifiedCheckpoint": "5847675b6f7148a06a74b27a02af6cbce87ad1b9"
   },
   "nativeCompatibility": {
     "package": "paperclipai",
