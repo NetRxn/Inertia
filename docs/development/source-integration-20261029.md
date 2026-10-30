@@ -4,15 +4,15 @@ The submission integration target is `develop`. Native/plugin source and demo do
 
 ## Evidence
 
-- Node 24.22.2 full aggregate:1,139 passed, 5 explicit optional skips, exit 0. Cross-repository capture qualification supplied its explicit reviewed DFW fixture; five other optional private fixtures were skipped.
+- Node 24.22.2 full aggregate: 1,139 passed, 5 explicit optional skips, exit 0. Cross-repository capture qualification supplied its explicit reviewed DFW fixture; five other optional private fixtures were skipped.
 - [Final candidate CI](https://github.com/NetRxn/Inertia/actions/runs/40977418494) and [actual develop push CI](https://github.com/NetRxn/Inertia/actions/runs/40977895355) passed. Automatic CI checks locked install/typecheck/build; full tests were run locally.
-- Production package:190 files, 8 migrations, production dependencies only, private files excluded. Focused extraction 30/30; native unit 33/33; composed/org 11/11; independent composed-pin repeat 8/8.
+- Production package: 190 files, 8 migrations, production dependencies only, private files excluded. Focused extraction 30/30; native unit 33/33; composed/org 11/11; independent composed-pin repeat 8/8.
 - Six native conflicts reconciled without replacing develop's newer bridge/notes/deployment sources. Final composer lists 16 overlays and 33 explicit supersessions.
 - Exact native `fed4b8d`, plugin `68386de`, paging `d2066aa`, capacity `19d194a`, reconciliation `2d4900d`, AI binding `cd26255`, deferred wake `044b95d`, extraction `9a30c5e` and docs `f2bc070` are ancestors of integrated develop.
 
 ## PR and branch disposition
 
-87/135/136 were automatically marked merged; stacked137/138/140/143 were closed with replacement #144 references only after exact-head ancestry verification. Their work and history remain preserved.
+87/135/136 were automatically marked merged; stacked 137/138/140/143 were closed with replacement #144 references only after exact-head ancestry verification. Their work and history remain preserved.
 
 37 completed native/funding/CI branches were pruned only after verifying the exact remote tip matched a merged owner PR and was contained in develop. No active-owner, peer, open-PR-dependent, unknown or unmerged branch was deleted. Remote heads reduced 130 → 95, including two source/integration recovery branches. This count is a dated checkpoint, not a live counter.
 
@@ -23,7 +23,13 @@ The submission integration target is `develop`. Native/plugin source and demo do
 |81|Buzz scaffold installed-host/architecture qualification remains open|
 |85|Native receipt-bound actual PostgreSQL qualification remains open|
 
-A broader pruning batch was rejected because member/app ownership was not established. Those branches were retained; subsequent pruning used only a verified native/funding subset. Patch equivalence alone is never deletion authority.
+Member/app and unknown branch ownership remains under peer coordination. Those histories are retained until ownership and preservation are verified. Patch equivalence alone is never deletion authority.
+
+## Reproducible public tests
+
+The public test command no longer executes personal filesystem paths. Six cross-repository test files use explicit `INERTIA_DFW_SOURCE_ROOT` and `INERTIA_DFW_PYTHON` inputs; unconfigured tests skip visibly, while partial or invalid configuration fails. All original assertions remain in place. Two intake test fixtures canonicalize temporary directories so macOS aliases do not cause false failures against the unchanged production path guard.
+
+On Node 24.22.2, the public aggregate with all private fixture variables unset passed **1,132 tests, 12 skipped**, exit 0. The six configured files passed **11 tests** against the reviewed DFW source. Typecheck and whitespace checks passed. These changes affect documentation/test harnesses only.
 
 ## DFW dependency
 
