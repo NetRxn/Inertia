@@ -14,7 +14,7 @@ import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 export const manifest: PaperclipPluginManifestV1 = {
   id: "netrxn.inertia",
   apiVersion: 1,
-  version: "0.1.0",
+  version: "0.1.1",
   displayName: "Inertia · Buzz connection",
   description:
     "One conversation across Buzz and Paperclip, with signed identities and recoverable delivery.",
@@ -25,6 +25,7 @@ export const manifest: PaperclipPluginManifestV1 = {
     "agents.read",
     ...fundingDiscoveryManifest.capabilities,
     "ui.page.register",
+    "instance.settings.register",
     "ui.detailTab.register",
     ...objectiveIntakeCapabilities,
     ...publicDraftingCapabilities,
