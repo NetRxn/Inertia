@@ -7,6 +7,7 @@ import { createNativeObjectiveAdapter } from './native.js';
 import { createIntakeStore } from './store.js';
 import { ingestObjective, objectiveKey, objectiveHash, projectObjectiveProgress } from './service.js';
 import { assertNativeTaskRun, resolveNativeDescendantTask } from '../paperclip/context.js';
+import { createOrgStore } from '../org/store.js';
 export const objectiveIntakeJobDeclaration = { jobKey: 'reconcile-objective-sources', displayName: 'Reconcile objective sources', description: 'Manually ingest admitted owner-provided objective files; disabled by default.' };
 export const objectiveSourceContextToolDeclaration = { name: 'objective_source_context', displayName: 'Read assigned objective source', description: 'Read the protected current source for an authenticated assigned native objective task.', parametersSchema: { type: 'object', properties: {}, additionalProperties: false } };
 export const objectiveIntakeCapabilities = ['companies.read', 'issues.read', 'issues.create', 'issues.update', 'issue.subtree.read', 'issues.checkout', 'database.namespace.read', 'database.namespace.write', 'jobs.schedule', 'agent.tools.register'] satisfies PluginCapability[];
@@ -105,6 +106,11 @@ export function registerObjectiveIntake(ctx: Host): () => ObjectiveIntakeStatus 
       // Config-only authority would miss a reassignment occurring after checkout adoption.
       const authorizeSource = async () => {
         if (!await authorize()) return false;
+        try {
+          if (await createOrgStore(ctx.db).isHidden(c.companyId, 'objective:' + m.key)) return false;
+        } catch {
+          return false;
+        }
         const current = await d.store.read(m.key);
         return mappingMatches(current, c, source) && current.version === m.version && current.marker === m.marker &&
           current.nativeIssueId === m.nativeIssueId && await task(current, c, run) === taskIssueId && await authorize();

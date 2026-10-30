@@ -24,11 +24,13 @@ export const manifest: PaperclipPluginManifestV1 = {
   capabilities: [
     "agents.read",
     ...fundingDiscoveryManifest.capabilities,
+    "ui.page.register",
     "ui.detailTab.register",
     ...objectiveIntakeCapabilities,
     ...publicDraftingCapabilities,
     ...centralCapabilities,
     "companies.read",
+    "agents.read",
     "issues.read",
     "issues.create",
     "issues.update",
@@ -45,7 +47,14 @@ export const manifest: PaperclipPluginManifestV1 = {
     "secrets.read-ref",
   ],
   entrypoints: { worker: "dist/src/worker.js", ui: "dist/ui" },
-  ui: { slots: [{ type: "detailTab", id: "member-packet", displayName: "Packet", exportName: "MemberPacketTab", entityTypes: ["issue"] }] },
+  ui: {
+    slots: [
+      { type: "page", id: "dao", displayName: "DAO", exportName: "OrgPage" },
+      { type: "detailTab", id: "task-trail", displayName: "Why this exists", exportName: "TaskTrailTab", entityTypes: ["issue"] },
+      { type: "detailTab", id: "member-packet", displayName: "Packet", exportName: "MemberPacketTab", entityTypes: ["issue"] },
+      { type: "companySettingsPage", id: "integrations", displayName: "Integrations", exportName: "IntegrationsSettingsPage", routePath: "integrations" }
+    ]
+  },
   database: { migrationsDir: "migrations" },
   tools: [organizationSearchTool, entityContextTool, caseWorkTool, privatePreparationTool, enrichmentTool, ...fundingDiscoveryManifest.tools, ...publicDraftingTools.map(({ operation: _, ...tool }) => tool), (({operation:_,...tool})=>tool)(publicGapPlanReviewTool), ...meetingExtractionTools, objectiveSourceContextToolDeclaration, ...centralTools.map(({ operation: _, ...tool }) => tool)],
   jobs: [

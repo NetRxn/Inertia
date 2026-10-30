@@ -1,0 +1,38 @@
+<!-- @dsCard group="Agent" height=380 subtitle="One ask, with why you and what it's for" -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>AgentAsk — preview</title>
+<style>
+  .stage { position: relative; padding: var(--space-6); overflow: hidden; min-height: 330px; }
+  .light { position: absolute; border-radius: var(--radius-pill); filter: blur(40px); opacity: .35; }
+  .l1 { background: var(--signal); width: 180px; height: 180px; left: 20px; top: 40px; }
+  .l2 { background: var(--ion); width: 220px; height: 140px; left: 380px; top: 180px; }
+  .in-ask { position: relative; }
+</style></head>
+<body>
+<div class="stage in-tex in-tex--orbits">
+  <div class="light l1"></div><div class="light l2"></div>
+  <section class="in-ask in-glass" aria-label="Inertia asks">
+    <div class="in-ask__head"><span class="in-dot"></span><span class="in-label">Inertia · asks you</span><span class="in-chip in-chip--signal">~15 min</span></div>
+    <div class="in-ask__body">
+      <span class="in-gicon in-gicon--signal in-gicon--sm" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+      <div>
+        <h2 class="in-ask__title">Photograph the garden plots</h2>
+        <p class="in-ask__why">The grant draft needs one current photo. You're nearby this week and you said you'd help with outreach.</p>
+      </div>
+    </div>
+    <div class="in-ask__ctx in-mono">
+      <span>initiative · <b>Community Garden Grant</b></span>
+      <span>source · meet / wed notes · drafted by agent</span>
+      <span>credit · <b>+12 pts</b> · ratified at next meeting</span>
+    </div>
+    <div class="in-ask__actions">
+      <button class="in-btn in-btn--primary" type="button">Take it</button>
+      <button class="in-btn in-btn--secondary" type="button">Not now</button>
+      <button class="in-btn in-btn--quiet" type="button">Suggest someone</button>
+    </div>
+  </section>
+</div>
+<script></script>
+</body>
+</html>

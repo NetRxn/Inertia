@@ -1,0 +1,29 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.tiles > div {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--glass-strong);
+}
+
+.tiles b {
+  font: var(--text-display);
+}
+
+.tiles span {
+  font: var(--text-small);
+  color: var(--ink-muted);
+}
+
+.status {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
