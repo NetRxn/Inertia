@@ -1,4 +1,5 @@
 import {CASE_DOCUMENT_DEFINITIONS} from './native-case-document-read.mjs';
+import {selectDraftReviewAdmission,DRAFT_REVIEW_DEFINITIONS} from './native-draft-review.mjs';
 import {selectSourceReviewAdmission,SOURCE_REVIEW_CREATE_DEFINITION} from './native-source-review.mjs';
 import{nativeDomainReviewComposition}from'./native-domain-review-composition.mjs';
 /** Opt-in current public case tools. Existing enrichment/meeting paths delegate unchanged. */
@@ -43,21 +44,23 @@ export async function readTaskProjectAdmission(db,binding,policy,nativeReview,co
  const isResearch=context.actor.id===configured.researcher?.agentId&&context.issue.projectId===configured.researchProjectId;
  const b=isResearch?await base.readTaskProjectAdmission(db,binding,policy,nativeReview,context):null;
  const[parent]=context.issue.parentId?await db.select().from(issues).where(and(eq(issues.companyId,binding.companyId),eq(issues.id,context.issue.parentId))).limit(1):[];
+ const editorial=selectDraftReviewAdmission(rows,binding,policy,nativeReview,context,root,parent);if(editorial)return editorial;
  const source=selectSourceReviewAdmission(rows,binding,policy,nativeReview,context,root,parent);if(source)return source;
  const selected=selectCaseWorkAdmission(rows,binding,policy,nativeReview,context,root,b);
  return selected??base.readTaskProjectAdmission(db,binding,policy,nativeReview,context);
 }
 export function isTaskProjectTool(binding,name){
  const a=binding.nativeTaskProjectAdmission;
- return ['case-work','source-review'].includes(a?.kind)?(name===CASE_PROJECTED_TOOL||a.role==='researcher'&&name===ENRICHMENT_PROJECTED_TOOL):base.isTaskProjectTool(binding,name);
+ return ['case-work','source-review','draft-review'].includes(a?.kind)?(name===CASE_PROJECTED_TOOL||a.role==='researcher'&&name===ENRICHMENT_PROJECTED_TOOL):base.isTaskProjectTool(binding,name);
 }
 export async function assertFreshTaskProject(db,binding,context){
- if(!['case-work','source-review'].includes(binding.nativeTaskProjectAdmission?.kind))return base.assertFreshTaskProject(db,binding,context);
+ if(!['case-work','source-review','draft-review'].includes(binding.nativeTaskProjectAdmission?.kind))return base.assertFreshTaskProject(db,binding,context);
  const current=await readTaskProjectAdmission(db,binding,context.actor.adapterConfig.nativeFunding,binding.nativeReview,context);
  if(!current||hash(current)!==hash(binding.nativeTaskProjectAdmission))deny();return current;
 }
 export async function taskProjectDefinitions(binding,context){
- if(!['case-work','source-review'].includes(binding.nativeTaskProjectAdmission?.kind))return base.taskProjectDefinitions(binding,context);
+ if(!['case-work','source-review','draft-review'].includes(binding.nativeTaskProjectAdmission?.kind))return base.taskProjectDefinitions(binding,context);
+ if(binding.nativeTaskProjectAdmission.kind==='draft-review'){await context();return structuredClone([...DRAFT_REVIEW_DEFINITIONS,...CASE_DOCUMENT_DEFINITIONS]);}
  await context();if(typeof binding.assignedMcpTools?.definitionsFresh!=='function')deny();
  const wanted=binding.nativeTaskProjectAdmission.role==='researcher'?[CASE_PROJECTED_TOOL,ENRICHMENT_PROJECTED_TOOL]:[CASE_PROJECTED_TOOL];
  const tools=(await binding.assignedMcpTools.definitionsFresh('standard')).filter(t=>wanted.includes(t.name));
@@ -91,7 +94,7 @@ export function caseWorkToolResult(value){
 }
 export async function executeTaskProjectTool(binding,call,context){
  const a=binding.nativeTaskProjectAdmission;
- if(!['case-work','source-review'].includes(a?.kind))return base.executeTaskProjectTool(binding,call,context);
+ if(!['case-work','source-review','draft-review'].includes(a?.kind))return base.executeTaskProjectTool(binding,call,context);
  if(!isTaskProjectTool(binding,call.tool)||!binding.assignedMcpTools?.has(call.tool))deny();
  if(call.tool===CASE_PROJECTED_TOOL&&!((a.role==='researcher'&&['reserve_case','reserve_candidate'].includes(call.arguments?.operation))||(a.role==='producer'&&['context','checkpoint','prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk','source_context','source_links','source_capture','source_propose','source_receipt'].includes(call.arguments?.operation))||(a.kind==='source-review'&&['source_context','source_review','source_receipt','source_settlement'].includes(call.arguments?.operation))))deny();
  if(a.kind==='source-review'&&(call.arguments?.parameters?.proposal_hash!==a.proposalHash||(call.arguments?.operation==='source_context'&&call.arguments?.parameters?.view!=='proposal')))deny();
