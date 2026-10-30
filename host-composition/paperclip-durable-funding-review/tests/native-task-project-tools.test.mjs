@@ -68,3 +68,41 @@ test('explicit reader admission follows only current native descendants of the m
  const selected=m.selectTaskProjectAdmission(f.rows,f.binding,null,null,f.context,[f.mapping],[parent]);assert.equal(selected.role,'reader');
  f.context.issue.parentId=id(9);assert.equal(m.selectTaskProjectAdmission(f.rows,f.binding,null,null,f.context,[f.mapping],[parent]),null);
 });
+function notesReaderFixture(){
+ const f=readerFixture();
+ const c=structuredClone(f.config.roundtable);delete c.meetings[0].nativeExtraction;delete c.meetings[0].withdrawn;
+ Object.assign(c.meetings[0],{sourceId:'owner:synthetic',revision:'sha256:'+'a'.repeat(64),exportSha256:'b'.repeat(64),ownerFile:'/private/tmp/fixture.json'});
+ f.config.ownerNotes=c;delete f.config.roundtable;
+ return f;
+}
+test('ownerNotes mapped Coordinator gets read-only context without transcript configuration',()=>{
+ const f=notesReaderFixture(),a=f.select();assert.equal(a?.role,'reader');assert.equal(m.taskProjectToolNames(a).length,1);
+ assert(m.taskProjectToolNames(a)[0].includes('meeting_source_context'));
+});
+test('ownerNotes and unrelated transcript configuration coexist, with ambiguous mapping denied',()=>{
+ const f=notesReaderFixture();f.config.roundtable=fixture().config.roundtable;f.config.roundtable.meetings[0].nativeExtraction.issueId=id(7);
+ assert.equal(f.select()?.role,'reader');
+ f.config.roundtable=structuredClone(f.config.ownerNotes);f.config.roundtable.meetings[0].withdrawn=false;
+ assert.throws(()=>f.select(),/native_task_project_admission_denied/);
+});
+for(const [name,change] of [
+ ['disabled notes',f=>f.config.ownerNotes.enabled=false],['pending notes mapping',f=>f.mapping.pending=true],
+ ['changed assignee',f=>f.context.issue.assigneeAgentId=id(9)],['stale run',f=>f.context.run.status='succeeded'],
+ ['read grant removed',f=>f.config.ownerNotes.nativeIntake.sourceAccess=false],['foreign actor',f=>f.context.actor.companyId=id(9)],
+])test('ownerNotes denies '+name,()=>{const f=notesReaderFixture();change(f);try{assert.equal(f.select(),null);}catch(e){assert.match(e.message,/native_task_project_admission_denied/);}});
+test('ownerNotes never gains transcript extractor authority from nativeExtraction-shaped input',()=>{
+ const f=notesReaderFixture();f.config.ownerNotes.meetings[0].nativeExtraction={projectId:f.binding.projectId,issueId:f.binding.issueId,agentId:f.binding.agentId};
+ assert.throws(()=>f.select(),/native_task_project_admission_denied/);
+});
+test('ownerNotes revision changes invalidate the frozen admission hash',()=>{
+ const f=notesReaderFixture(),a=f.select();f.config.ownerNotes.meetings[0].exportSha256='c'.repeat(64);
+ assert.notEqual(f.select().bindingHash,a.bindingHash);
+});
+test('notes configuration cannot affect the catalog of an actor without explicit opt-in',()=>{
+ const f=notesReaderFixture();delete f.adapterConfig.nativeTaskProjectTools;f.config.ownerNotes.meetings=null;
+ assert.equal(f.select(),null);
+});
+test('enabled empty notes batch preserves unrelated valid transcript admission',()=>{
+ const f=readerFixture();f.config.ownerNotes={...structuredClone(f.config.roundtable),meetings:[]};
+ assert.equal(f.select()?.role,'reader');
+});

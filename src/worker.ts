@@ -1,3 +1,4 @@
+import {registerOrganizationSearch} from './organization-search/host.js';
 import {registerConfiguredEntityContext} from "./entity-context/host.js";
 import {registerConfiguredCaseWork} from "./case-work/host.js";
 import {registerConfiguredPrivatePreparation} from "./private-preparation/host.js";
@@ -85,6 +86,7 @@ export function createPlugin() {
       await registerConfiguredTrustedCentral(ctx);
       roundtableStatus = await registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
+      registerOrganizationSearch(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
           const config = await ctx.config.get(company.id);
