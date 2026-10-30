@@ -4,7 +4,7 @@ This procedure freezes qualified source. It does not deploy, change credentials/
 
 ## Candidate and version convention
 
-`release/demo-20261029` starts from qualified Inertia source 09001dc, with DFW main 6203f76 pinned in the source manifest. The docs owner's fresh guide/architecture/user-guide handoff 27bbfef is included, preserving current develop and peer source. Historical docs #139 snapshots cannot stand in for current claims. Review the resulting docs/code diff and merge the accepted release bundle back into canonical develop before selecting an immutable final tag commit. Never tag a moving branch name, failed candidate or unmerged work.
+`release/demo-20261029` starts from qualified Inertia source 09001dc, with DFW main 97ed317 pinned in the source manifest. The docs owner's fresh guide/architecture/user-guide handoff 27bbfef is included, preserving current develop and peer source. Historical docs #139 snapshots cannot stand in for current claims. Review the resulting docs/code diff and merge the accepted release bundle back into canonical develop before selecting an immutable final tag commit. Never tag a moving branch name, failed candidate or unmerged work.
 
 No existing tags or GitHub releases establish a naming convention. Proposed first tags are Inertia `v0.1.0` and DFW `v3.4.1`; package metadata is consistent, and DFW explicitly makes pyproject.toml authoritative. No version bump or production-readiness claim is implied. Resolve any first-convention/scope ambiguity with root before publishing.
 
@@ -18,7 +18,7 @@ No existing tags or GitHub releases establish a naming convention. Proposed firs
 
 ## Source rollback
 
-Preserve tags and release history. Inspect a prior qualified source in a new detached worktree or fresh checkout; do not reset the teammate's active checkout or rewrite a published tag. Select the exact manifest checkpoint rather than guessing HEAD~1. Pre-fresh-docs Inertia checkpoint 09001dc and prior DFW checkpoint 5847675 are recorded; the latter retains the lost-claim fix. They are source references, not independently accepted runtime rollback images.
+Preserve tags and release history. Inspect a prior qualified source in a new detached worktree or fresh checkout; do not reset the teammate's active checkout or rewrite a published tag. Select the exact manifest checkpoint rather than guessing HEAD~1. Pre-fresh-docs Inertia checkpoint 09001dc and pre-render DFW checkpoint 6203f76 are recorded; the latter retains the lost-claim fix. They are source references, not independently accepted runtime rollback images.
 
 ## Runtime rollback boundary
 
