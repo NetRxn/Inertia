@@ -1,0 +1,5 @@
+import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs/promises';
+const executor=await fs.readFile(new URL('../../../native-candidate/dist/services/native-runtime/native-session-executor.js',import.meta.url),'utf8');
+const expression=executor.match(/\.\.\.\(([^\n]+?) \? \{fundingProducer:true\} : \{\}\)/)?.[1];assert(expression,'actual executor funding metadata condition');
+const enabled=new Function('nativeEntityAdmission','nativePrivatePreparationAdmission','nativeTaskProjectAdmission','nativeDiscoveryAdmission','effectiveFundingPolicy','return '+expression);
+test('adding entity access preserves pre-existing ordinary funding producer execution metadata',()=>{for(const entity of[null,{role:'reader'}])assert.equal(enabled(entity,null,null,null,{role:'producer'}),true);for(const [priv,task,discovery,policy]of[[{},null,null,{role:'producer'}],[null,{},null,{role:'producer'}],[null,null,{}, {role:'producer'}],[null,null,null,{role:'reviewer'}],[null,null,null,null]])assert.equal(Boolean(enabled({},priv,task,discovery,policy)),false);});

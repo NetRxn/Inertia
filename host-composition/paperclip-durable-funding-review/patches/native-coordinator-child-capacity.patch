@@ -1,0 +1,68 @@
+--- a/dist/services/native-runtime/native-coordinator-policy.js
++++ b/dist/services/native-runtime/native-coordinator-policy.js
+@@ -1,16 +1,17 @@
+ /** Restrictive server-owned native coordination profile; no routing or credentials. */
++export const NATIVE_COORDINATOR_CHILD_LIMIT = Symbol('paperclip.native-coordinator-child-limit');
+ export const NATIVE_COORDINATOR_TOOLS = Object.freeze(['continue_task','get_task_context','get_task_history','search_tasks','list_projects','list_agents','get_agent','list_documents','read_document','list_document_revisions','create_task','reassign_task','set_dependencies','report_progress','write_document','request_human_input']);
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ export function normalizeNativeCoordinatorPolicy(config={}) {
+  if(config.nativeCoordinator===undefined)return null;
+  if(config.nativeFunding!==undefined)throw Error("native_coordination_configuration_invalid");
+  const p=config.nativeCoordinator;
+- if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!['version','projectIds'].includes(k))||p.version!==1||!Array.isArray(p.projectIds)||!p.projectIds.length||p.projectIds.length>16||p.projectIds.some(id=>typeof id!=='string'||!uuid.test(id))||new Set(p.projectIds).size!==p.projectIds.length||config.disableCommandExecution!==true||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'||[config.extraArgs,config.args].some(a=>a!==undefined&&(!Array.isArray(a)||a.length)))throw Error('native_coordination_configuration_invalid');
+- return Object.freeze({version:1,projectIds:Object.freeze([...p.projectIds].sort())});
++ if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!['version','projectIds','childIssueLimit'].includes(k))||p.version!==1||p.childIssueLimit!==undefined&&(!Number.isSafeInteger(p.childIssueLimit)||p.childIssueLimit<0)||!Array.isArray(p.projectIds)||!p.projectIds.length||p.projectIds.length>16||p.projectIds.some(id=>typeof id!=='string'||!uuid.test(id))||new Set(p.projectIds).size!==p.projectIds.length||config.disableCommandExecution!==true||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'||[config.extraArgs,config.args].some(a=>a!==undefined&&(!Array.isArray(a)||a.length)))throw Error('native_coordination_configuration_invalid');
++ return Object.freeze({version:1,projectIds:Object.freeze([...p.projectIds].sort()),...(p.childIssueLimit===undefined?{}:{childIssueLimit:p.childIssueLimit})});
+ }
+ export function assertNativeCoordinatorContext(binding,context) {
+  const p=binding.nativeCoordinatorPolicy;if(!p)return;
+  const now=normalizeNativeCoordinatorPolicy(context.actor.adapterConfig);
+- if(p.companyId!==binding.companyId||p.agentId!==binding.agentId||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='ceo'||context.actor.adapterType!=='paperclip_runner'||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,projectIds:p.projectIds})||context.issue.companyId!==binding.companyId||!p.projectIds.includes(context.issue.projectId))throw Error('native_coordination_scope_revoked');
++ if(p.companyId!==binding.companyId||p.agentId!==binding.agentId||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='ceo'||context.actor.adapterType!=='paperclip_runner'||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,projectIds:p.projectIds,...(p.childIssueLimit===undefined?{}:{childIssueLimit:p.childIssueLimit})})||context.issue.companyId!==binding.companyId||!p.projectIds.includes(context.issue.projectId))throw Error('native_coordination_scope_revoked');
+ }
+ export function nativeCoordinatorProjectAllowed(binding,issue){return !binding.nativeCoordinatorPolicy||(issue.companyId===binding.companyId&&binding.nativeCoordinatorPolicy.projectIds.includes(issue.projectId));}
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -112,7 +112,7 @@
+     }
+     return JSON.stringify(value) ?? "null";
+ }
+-import { NATIVE_COORDINATOR_TOOLS, assertNativeCoordinatorContext, nativeCoordinatorProjectAllowed } from "./native-coordinator-policy.js";
++import { NATIVE_COORDINATOR_CHILD_LIMIT, NATIVE_COORDINATOR_TOOLS, assertNativeCoordinatorContext, nativeCoordinatorProjectAllowed } from "./native-coordinator-policy.js";
+ import { assertNativeFundingContext, assertNativeFundingTool, nativeFundingToolNames } from "./native-funding-policy.js";
+ export class PaperclipRunnerToolAuthority {
+     db;
+@@ -1097,6 +1097,7 @@
+                 assigneeAgentId,
+                 blockedByIssueIds,
+                 blockParentUntilDone: Boolean(sourceReview),
++                ...(this.binding.nativeCoordinatorPolicy?.childIssueLimit===undefined?{}:{[NATIVE_COORDINATOR_CHILD_LIMIT]:this.binding.nativeCoordinatorPolicy.childIssueLimit}),
+                 ...(sourceReview?{[SOURCE_REVIEW_CHILD_CONTINUATION]:true}:{}),
+                 ...(caseHistory?{[CASE_HISTORY_CONTINUATION]:caseHistory}:{}),
+                 createdByAgentId: this.binding.agentId,
+--- a/dist/services/issues.js
++++ b/dist/services/issues.js
+@@ -1,3 +1,4 @@
++import {NATIVE_COORDINATOR_CHILD_LIMIT} from './native-runtime/native-coordinator-policy.js';
+ import {CASE_HISTORY_CONTINUATION,SOURCE_REVIEW_CHILD_CONTINUATION} from './native-runtime/native-source-review.mjs';
+ import { recordChatHandoff, recordChatCompletion, existingChatCompletionReply, acknowledgeChatCompletionReply } from "./chat-completion-delivery.js";
+ import { mirrorSlackBoardComment, slackBoardReplyBindings } from "./slack-board-messages.js";
+@@ -6124,10 +6125,14 @@
+                 .where(and(eq(issues.companyId, parent.companyId), eq(issues.parentId, parent.id),
+                     ...(data[SOURCE_REVIEW_CHILD_CONTINUATION]===true ? [sql `NOT COALESCE((${issues.status} = 'done' AND ${issues.originKind} = 'manual' AND ${issues.createdByAgentId} = ${parent.assigneeAgentId} AND ${issues.originId} ~ ${'^paperclip-runner:create-task:'+parent.id+':source-review:[a-f0-9]{64}$'}), false)`] : []),
+                     ...(data[CASE_HISTORY_CONTINUATION] ? [sql `NOT COALESCE((${issues.status} = 'done' AND ${issues.projectId} = ${data[CASE_HISTORY_CONTINUATION].projectId} AND ${issues.assigneeAgentId} = ${data[CASE_HISTORY_CONTINUATION].assigneeAgentId} AND ${issues.originKind} = 'manual' AND ${issues.createdByAgentId} = ${parent.assigneeAgentId} AND ${issues.originId} ~ ${'^paperclip-runner:create-task:'+parent.id+':case:[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'}), false)`] : [])));
+-            if (childCount >= MAX_CHILD_ISSUES_CREATED_BY_HELPER) {
+-                throw unprocessable(`Parent issue already has the maximum ${MAX_CHILD_ISSUES_CREATED_BY_HELPER} child issues for this helper`, data[CASE_HISTORY_CONTINUATION]?{code:'native_task_capacity',retryable:true,limit:MAX_CHILD_ISSUES_CREATED_BY_HELPER}:undefined);
+-            }
+-            const { acceptanceCriteria, blockParentUntilDone, executionWorkspaceInheritanceMode = "linkage", actorAgentId, actorUserId, ...issueData } = data;
++            // Only a freshly admitted native Coordinator can provide this Symbol.
++            // JSON/model arguments cannot replace the helper's default capacity.
++            const childIssueLimit = data[NATIVE_COORDINATOR_CHILD_LIMIT] ?? MAX_CHILD_ISSUES_CREATED_BY_HELPER;
++            if (!Number.isSafeInteger(childIssueLimit) || childIssueLimit < 0) throw unprocessable('Invalid native child issue capacity');
++            if (childIssueLimit !== 0 && childCount >= childIssueLimit) {
++                throw unprocessable(`Parent issue already has the maximum ${childIssueLimit} child issues for this helper`, data[CASE_HISTORY_CONTINUATION]?{code:'native_task_capacity',retryable:true,limit:childIssueLimit}:undefined);
++            }
++            const { [NATIVE_COORDINATOR_CHILD_LIMIT]: _nativeChildIssueLimit, acceptanceCriteria, blockParentUntilDone, executionWorkspaceInheritanceMode = "linkage", actorAgentId, actorUserId, ...issueData } = data;
+             const inheritStrategyOnly = executionWorkspaceInheritanceMode === "strategy_only";
+             // A child may target another project. Parent workspace identity is only
+             // valid inside the parent's project, so do not forward it across that

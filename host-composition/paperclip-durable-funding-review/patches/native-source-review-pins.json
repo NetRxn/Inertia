@@ -1,0 +1,70 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/services/native-runtime/native-private-preparation.mjs": "a1822f27c5505f31f8d6a1480796055d66762917c53eed2014081abe3146c677",
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e",
+    "dist/services/native-runtime/native-entity-context.mjs": "b366ce5f6c5a36bfdb1c53b7ed0dc1311f98283c0be63659fb83049935ccf368",
+    "dist/services/native-runtime/native-session-resume.js": "c09c22a6e92c0783d3bd95ed3ae8a86bf9cb1e0124612e0b3d490c46e119ff6b",
+    "dist/services/native-runtime/funding-execution-policy.js": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57",
+    "dist/services/native-runtime/funding-tool-preapproval.js": "ae3b345565ff7f9c8231e0e5bdec2995abcfac5c975a31be7fd7d07d83fe565d"
+  },
+  "files": {
+    "dist/services/issues.js": {
+      "base_sha256": "398403ea0e6761f39cb44f9e1cbd062288e316e9b80581903ed84cc3a005edfc",
+      "candidate_sha256": "81f5a53a055d390b09ee22b43f7965151b8ead5878658d326a639f8eec476a25"
+    },
+    "dist/services/native-runtime/assigned-mcp-tools.js": {
+      "base_sha256": "77cc7c6e604b5c7349ed020355b6bf8906d9b1be6fa4c8c3f809edb33ca76041",
+      "candidate_sha256": "4c2197bbf17deaff347c266a060b2f766e79421b2b7ee59d1e9cf535c480a2cf"
+    },
+    "dist/services/native-runtime/native-case-work-tools.mjs": {
+      "base_sha256": "3e52c84f67d82923a13bdbd9d62dd83ebde6ef44925236ff11cc850cc42d2bd3",
+      "candidate_sha256": "56a31978d149429f7c626374b31710c4fe906afb7daa9c92b83308fe27dc200f"
+    },
+    "dist/services/native-runtime/native-session-executor.js": {
+      "base_sha256": "b82ff2c95a3a424f260b218faf0f62ef4c443a43336cfe1ab3dc78367289138d",
+      "candidate_sha256": "2fff957c75bb1bb63752d6570ee996b6917d95faec76b10eb4d8ba0220c2290f"
+    },
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "base_sha256": "5b1725936776ed758100fd9b7ff46be77df9a0ff546fed11e00b21b352eed19c",
+      "candidate_sha256": "f71a1d8db4b3b180324ad430c7f8329cec7aac602d70e353ad6b02fcb8a7c7a7"
+    },
+    "dist/services/native-runtime/status-decision-committer.js": {
+      "base_sha256": "3ddf8d135bde75519fb94330ca25380f6f4cf55edbe04e6cc4565f6162c8efd0",
+      "candidate_sha256": "5efddc5b70cb60563c6bdde0d02776de1462c2b725810f244ebd2d6bf40562e4"
+    },
+    "dist/services/plugin-tool-registry.js": {
+      "base_sha256": "5e01de6dacc298563ce8f184d43f02695b1a2e47d2dc4959a31abb1e52d49acf",
+      "candidate_sha256": "4fd9b2233a4982c244ea270f9f9eb04a61a6a65dbbfc921098117cca9e5710fc"
+    },
+    "dist/services/tool-gateway.js": {
+      "base_sha256": "d56e7ce2e610ca012df70ffda1526b3f95c79076fc1c7a0c383fe1c854626f45",
+      "candidate_sha256": "4be446d0b5d67b53f6ec872506c835f5a824731205e815f2846cc51125929d00"
+    },
+    "dist/services/heartbeat.js": {
+      "base_sha256": "676584dc5db0851a09fa35dfc3ed5d562930080193c744384d9910a1af8faf48",
+      "candidate_sha256": "a6f3417cd561591837b1b161593565c5b0b007407262356b6543f2cef45f5645"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-assigned-skills.mjs": {
+      "candidate_sha256": "3a2e621d30b421e97dd6b9bed68b6b189a18b1195a2ab1a95e5171f942c92cad"
+    },
+    "dist/services/native-runtime/native-inertia-execution-policy.mjs": {
+      "candidate_sha256": "0b567c98dc61e905191ee37ccd9793d2d4cffb4c7e5254bc1731565768ce1baa"
+    },
+    "dist/services/native-runtime/native-packet-artifact-handoff.mjs": {
+      "candidate_sha256": "8d368d4d478dde4d4ae80c4a7a6a96e50c2d4ad1834ad4704fba3f29f60b133d"
+    },
+    "dist/services/native-runtime/native-source-review.mjs": {
+      "candidate_sha256": "ab2f47dfcedff3d6ab91710e25962064b75f2367a230842c0386fddc533c2b57"
+    }
+  },
+  "patch": "native-source-review.patch",
+  "patch_sha256": "4abb3f03488a03ac94f0bcc243bc28f780fd4f11fa87f8a49c9774d8c1a35b8e"
+}

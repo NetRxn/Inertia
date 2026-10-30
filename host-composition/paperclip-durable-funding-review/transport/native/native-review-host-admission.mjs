@@ -1,3 +1,4 @@
+import {scopeForIssue,templateMatches} from './native-portfolio-scope.mjs';
 /** Fresh native-table admission for the existing owning-host review runtime.
  * No listener, lifecycle operation, grants, cache or configuration write.
  * Construction inputs are protected administrator state, never model arguments.
@@ -25,17 +26,18 @@ function validProcess(p){
     &&p.args.includes(p.entrypoint)&&p.args.includes(p.configurationPath)
     &&Number.isInteger(p.timeoutMs)&&p.timeoutMs>=100&&p.timeoutMs<=120000
     &&Number.isInteger(p.maxOutputBytes)&&p.maxOutputBytes>=1024&&p.maxOutputBytes<=4*1024*1024
-    &&Array.isArray(p.pins)&&p.pins.length>=2&&p.pins.length<=128
+    &&Array.isArray(p.pins)&&p.pins.length>=2&&p.pins.length<=256
     &&p.pins.every(v=>keys(v,['path','sha256'])&&typeof v.path==='string'&&isAbsolute(v.path)&&hash(v.sha256))
     &&new Set(p.pins.map(v=>v.path)).size===p.pins.length
     &&[p.entrypoint,p.configurationPath].every(path=>p.pins.some(pin=>pin.path===path));
 }
 function validDrafting(c,s){
   const required=['enabled','nativeAttention','projectId','applicantSlug','matchId','producer','reviewer','process'];
-  if(!keys(c,[...required,'nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'],required)
+  if(!keys(c,[...required,'portfolioRootIssueId','nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'],required)
     ||c.enabled!==true||c.nativeAttention!==true||c.projectId!==s.projectId||!id(c.applicantSlug)||c.applicantSlug.length>128||!id(c.matchId)
-    ||['nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'].some(k=>Object.hasOwn(c,k)&&c[k]!==false)
-    ||!validProcess(c.process))return false;
+    ||['nativeCaseProgression','nativeDependencyHandoff'].some(k=>Object.hasOwn(c,k)&&c[k]!==false)
+    ||c.nativeGapPlanReview!==undefined&&typeof c.nativeGapPlanReview!=='boolean'
+    ||c.portfolioRootIssueId!==s.portfolioRootIssueId||!validProcess(c.process))return false;
   return [['producer',s.producerAgentId,s.producerPrincipalId],['reviewer',s.reviewerAgentId,s.reviewerPrincipalId]].every(([role,agentId,principalId])=>
     keys(c[role],['issueId','agentId','principalId'])&&c[role].issueId===s.issueId&&c[role].agentId===agentId&&c[role].principalId===principalId);
 }
@@ -44,14 +46,17 @@ function validDrafting(c,s){
  * The complete original publicDrafting object, including process pins, is hashed.
  * Native participant authorization is a separate mandatory runtime check.
  */
-export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting}={}){
-  if(!id(expectedPluginId)||!(keys(scope,[...scopeKeys,'wholePacketReview'],scopeKeys)&&(scope.wholePacketReview===undefined||scope.wholePacketReview===true))||scopeKeys.some(k=>!id(scope[k]))||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
+export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting,privatePreparation}={}){
+  if(!id(expectedPluginId)||!(keys(scope,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'],scopeKeys)&&(scope.wholePacketReview===undefined||scope.wholePacketReview===true))||scopeKeys.some(k=>!id(scope[k]))||scope.portfolioRootIssueId!==undefined&&(scope.portfolioRootIssueId!==scope.issueId||scope.wholePacketReview!==true)||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
   const pinned=Object.freeze({...scope});
-  if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(publicDrafting,pinned)||publicDrafting.applicantSlug!==applicantSlug||publicDrafting.matchId!==matchId)invalid();
-  const initial=fingerprint(publicDrafting);
+  const privateMode=privatePreparation!==undefined;
+  const adapt=c=>{if(!privateMode)return c;if(!object(c)||!id(c.policyRevision))return null;const{policyRevision,...rest}=c;return{...rest,nativeAttention:true};};
+  const configured=privateMode?privatePreparation:publicDrafting;
+  if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(adapt(configured),pinned)||configured.applicantSlug!==applicantSlug||configured.matchId!==matchId)invalid();
+  const initial=fingerprint(configured);
   return (rows,requestedScope,input)=>{
-    if(!keys(requestedScope,[...scopeKeys,'wholePacketReview'],scopeKeys)||(requestedScope.wholePacketReview===true)!==(pinned.wholePacketReview===true)||requestedScope.wholePacketReview!==undefined&&requestedScope.wholePacketReview!==true||scopeKeys.some(k=>requestedScope[k]!==pinned[k])
-      ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==pinned.issueId||input.issue.projectId!==pinned.projectId
+    if(!keys(requestedScope,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'],scopeKeys)||(requestedScope.wholePacketReview===true)!==(pinned.wholePacketReview===true)||requestedScope.wholePacketReview!==undefined&&requestedScope.wholePacketReview!==true||!templateMatches(requestedScope,pinned)||!scopeForIssue(pinned,input?.issue)
+      ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==requestedScope.issueId||input.issue.projectId!==pinned.projectId
       ||input.actor?.agentId!==pinned.reviewerAgentId||!id(input.actor.runId)||!Array.isArray(rows)||rows.length!==1)return false;
     const row=rows[0];
     if(!row||row.pluginId!==expectedPluginId||row.pluginKey!==pluginKey||row.status!=='ready'
@@ -60,7 +65,7 @@ export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,ap
       if(!id(row.settingsId)||row.settingsPluginId!==row.pluginId||row.settingsCompanyId!==pinned.companyId||row.enabled!==true)return false;
     }else if(row.settingsPluginId!=null||row.settingsCompanyId!=null||row.enabled!=null)return false;
     const config=row.configJson;
-    try{return config?.nativeFundingToolPreapproval===true&&validDrafting(config.publicDrafting,pinned)&&fingerprint(config.publicDrafting)===initial;}
+    try{return config?.nativeFundingToolPreapproval===true&&validDrafting(adapt(privateMode?config.privatePreparation:config.publicDrafting),pinned)&&fingerprint(privateMode?config.privatePreparation:config.publicDrafting)===initial;}
     catch{return false;}
   };
 }

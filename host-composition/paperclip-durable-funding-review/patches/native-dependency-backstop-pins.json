@@ -1,0 +1,18 @@
+{
+  "version": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "patch": "paperclip-2026.1012.0-native-dependency-backstop.patch",
+  "patch_sha256": "930cf03d7b31bd5c44a210d31ae964740a2c7556e087f4b76c3b3411ff8fd6ef",
+  "sourcePatch": "native-dependency-backstop-source.patch",
+  "sourcePatch_sha256": "4c265721b8690724a34a58a73b48a9df5300a460a5329392d76e85b26f0a6b37",
+  "files": {
+    "@paperclipai/server/dist/services/recovery/service.js": {
+      "base_sha256": "375f1a5e0b2f8ed0b9e20175c0573779dd96cae1406bef121d581cbf21b9f4a9",
+      "candidate_sha256": "06d5feba39fec523c3fbd3d1c9db40d1aa13eef8f0d283e280ba7f1da80a96ca"
+    }
+  },
+  "unchangedGuards": {
+    "@paperclipai/server/dist/services/native-runtime/status-arbiter.js": "ff63007d6dbeafbdf119c63ed9dda626e70a7d1cf6efa20bec7700f49fffa79f",
+    "@paperclipai/server/dist/services/native-runtime/status-decision-committer.js": "f85fc7b0a2047bc75bee615890c9771823ff24e11039afc2be0845b6c6ad9f8e"
+  }
+}

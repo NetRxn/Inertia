@@ -1,3 +1,4 @@
+import {discoveryPortfolioBinding} from "./native-portfolio.js";
 import { readNativeDocument, writeNativeDocument } from "./documents.js";
 import {
   registerDiscoveryDiligence,
@@ -33,6 +34,8 @@ export interface DiscoveryBinding {
   organizationId: string;
   projectId: string;
   issueId: string;
+  portfolioRootIssueId?: string;
+  rootProjectId?: string;
   agentId: string;
   urgentIssueId: string;
   /** Approved public search facets, not private objectives/applicant records. */
@@ -169,11 +172,11 @@ export function registerFundingDiscovery(
       row.companyId !== b.companyId ||
       ["done", "cancelled"].includes(row.status) ||
       (id === b.issueId &&
-        (row.projectId !== b.projectId || row.assigneeAgentId !== b.agentId))
+        (row.projectId !== b.projectId || row.assigneeAgentId !== (b.portfolioRootIssueId?actors.getStore()?.agentId:b.agentId)))
     )
       throw Error("Discovery native binding unavailable");
     const actor = actors.getStore();
-    if (actor)
+    if (actor && !b.portfolioRootIssueId)
       await ctx.issues.assertCheckoutOwner({
         issueId: actor.agentId === b.diligence?.agentId ? b.diligence.issueId : b.issueId,
         companyId: b.companyId,
@@ -183,7 +186,7 @@ export function registerFundingDiscovery(
     return row;
   }
   async function authorized(binding: unknown, run: ToolRunContext) {
-    const b = bindings.find((x) => x.key === binding);
+    let b = bindings.find((x) => x.key === binding);
     if (
       !b ||
       b.enabled !== true ||
@@ -193,8 +196,9 @@ export function registerFundingDiscovery(
       !run.runId
     )
       throw Error("Discovery actor denied");
+    b=await discoveryPortfolioBinding(ctx,b,run,"scout");
     await issue(b);
-    await ctx.issues.assertCheckoutOwner({
+    if(!b.portfolioRootIssueId)await ctx.issues.assertCheckoutOwner({
       issueId: b.issueId,
       companyId: b.companyId,
       actorAgentId: run.agentId,
@@ -279,6 +283,11 @@ export function registerFundingDiscovery(
       });
   }
   async function deliver(b: DiscoveryBinding, c: Continuation) {
+    if(b.portfolioRootIssueId){
+      await put(b,"funding-discovery-results",JSON.stringify({binding:b.key,result:c.result,
+        nextAction:"Coordinator creates the next independent research/diligence/preparation child using these source references; native lifecycle owns continuation."}),"Current scoped funding research results");
+      c.delivered=true;await persist(b,c);return;
+    }
     let pending = false;
     const captures = new Set<string>();
     for (const item of c.result.preliminary ?? []) {
@@ -814,6 +823,7 @@ export function registerFundingDiscovery(
   );
   ctx.jobs.register("funding-discovery-recheck", async () => {
     for (const b of bindings) {
+      if(b.portfolioRootIssueId)continue;
       if (b.enabled !== true) continue;
       const completed = await owner.own(scope(b), async () => {
         await issue(b);

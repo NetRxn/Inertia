@@ -1,0 +1,81 @@
+import {describe,it,expect} from "vitest";
+import {registerCaseWork,type CaseWorkBinding} from "../../src/case-work/host.js";
+function fixture(){
+ const tools=new Map<string,any>(),docs=new Map<string,any>(),comments:any[]=[],wakes:any[]=[];
+ const rows:any[]=[{id:"root",companyId:"company",projectId:"P",status:"in_progress",assigneeAgentId:"co"},{id:"scan",companyId:"company",projectId:"Q",parentId:"root",status:"in_progress",assigneeAgentId:"alpha",executionRunId:"scan-run"},{id:"case-a",companyId:"company",projectId:"Q",parentId:"root",status:"in_progress",assigneeAgentId:"beta",executionRunId:"run-a",originKind:"manual",originId:"paperclip-runner:create-task:root:case:binding-a"},{id:"case-b",companyId:"company",projectId:"Q",parentId:"root",status:"in_progress",assigneeAgentId:"beta",executionRunId:"run-b",originKind:"manual",originId:"paperclip-runner:create-task:root:case:binding-b"}];
+ let authorized=true;const calls:any[]=[];
+ const ctx:any={tools:{register:(name:string,_def:any,fn:any)=>tools.set(name,fn)},issues:{get:async(id:string)=>rows.find(r=>r.id===id)??null,getSubtree:async(id:string)=>({companyId:"company",rootIssueId:id,issues:rows,issueIds:rows.map(r=>r.id),activeRuns:Object.fromEntries(rows.filter(r=>r.executionRunId).map(r=>[r.id,[{id:r.executionRunId,issueId:r.id,agentId:r.assigneeAgentId,status:"running",finishedAt:null}]])),assignees:{alpha:{id:"alpha",status:"running"},beta:{id:"beta",status:"running"}}}),documents:{list:async(issueId:string)=>[...docs.values()].filter(r=>r.issueId===issueId),get:async(issueId:string,key:string)=>docs.get(issueId+":"+key)??null,upsert:async(value:any)=>{docs.set(value.issueId+":"+value.key,value);return value;}},listComments:async()=>comments,createComment:async(issueId:string,body:string)=>{comments.push({issueId,body});return{id:"comment-"+comments.length};},requestWakeup:async(issueId:string,_company:string,options:any)=>{wakes.push({issueId,options});return{status:"queued"};}}};
+ const binding:CaseWorkBinding={companyId:"company",researchProjectId:"Q",projectId:"Q",rootIssueId:"root",rootProjectId:"P",applicantSlug:"dao",researcher:{agentId:"alpha",principalId:"a"},producer:{agentId:"beta",principalId:"b"},policyRevision:"v1",authorize:async()=>authorized,bridge:{call:async(op,params,callbacks)=>{const actor=await callbacks.context();calls.push({op,params,actor});if(actor.role==="producer"){const task=await callbacks.caseTask!({case_binding_id:actor.case_binding_id});expect(task.issue_id).toBe(actor.issue_id);return{case_binding_id:actor.case_binding_id,checkpoint_hash:"a".repeat(64),business_complete:false,note:params.note??null};}return{case_binding_id:"binding-a",case_key:"a".repeat(64),revision_hash:"b".repeat(64),business_complete:false,source_ref:{record_id:"record",namespace:"program",external_id:"one"},create_task:{idempotencyKey:"case:binding-a",title:"Research current public program",description:"Incremental work; final business acceptance is not established."}};}}};
+ registerCaseWork(ctx,[binding],{own:async(_scope:any,fn:any)=>fn()});
+ const invoke=(operation:string,parameters:any,run:any)=>tools.get("funding_case_work")({operation,parameters},run);
+ return{ctx,rows,docs,comments,wakes,calls,binding,invoke,revoke:()=>authorized=false};
+}
+const scan={companyId:"company",projectId:"Q",agentId:"alpha",runId:"scan-run"};
+const beta=(n:string)=>({companyId:"company",projectId:"Q",agentId:"beta",runId:"run-"+n});
+describe("case work protected native binding",()=>{
+ it("checkpoints identified source forCo whileAlpha scanremainsactive; replay deduplicates source/comment and retries native wake",async()=>{const f=fixture(),input={record_id:"record",record_hash:"c".repeat(64)};const result=await f.invoke("reserve_case",input,scan);expect(result.data.business_complete).toBe(false);expect(f.docs.size).toBe(1);expect(f.comments.length).toBe(1);expect(f.wakes.length).toBe(1);await f.invoke("reserve_case",input,scan);expect(f.docs.size).toBe(1);expect(f.comments.length).toBe(1);expect(f.wakes.length).toBe(2);expect(f.rows[1].status).toBe("in_progress");});
+ it("twoBeta runs derive differentcases andsave substantivepartialwork withoutcaseacceptance",async()=>{const f=fixture();const results=await Promise.all(["a","b"].map(n=>f.invoke("checkpoint",{previous_checkpoint_hash:null,revision_hash:"d".repeat(64),phase:"research",artifact_refs:[],note:"Current source observation and unresolved verification forcase"+n,unresolved:["Verify deadline against current source."]},beta(n))));expect(results.map(r=>r.data.case_binding_id)).toEqual(["binding-a","binding-b"]);expect(results.every(r=>r.data.business_complete===false)).toBe(true);expect(f.calls.map(r=>r.actor.case_binding_id)).toEqual(["binding-a","binding-b"]);expect(f.rows.slice(2).every(r=>r.status==="in_progress")).toBe(true);});
+ it("denies modelcase selectors,wrongorigin,roleconfusion andrevocation",async()=>{const f=fixture();await expect(f.invoke("context",{case_binding_id:"binding-b"},beta("a"))).rejects.toThrow();await expect(f.invoke("reserve_case",{record_id:"r",record_hash:"a".repeat(64)},beta("a"))).rejects.toThrow();f.rows[2].originId="paperclip-runner:create-task:foreign:case:binding-a";await expect(f.invoke("context",{},beta("a"))).rejects.toThrow();f.revoke();await expect(f.invoke("reserve_case",{record_id:"r",record_hash:"a".repeat(64)},scan)).rejects.toThrow();expect(f.calls.length).toBe(0);});
+ it("source paging accepts onlybounddocumentlookups and strict offsets",async()=>{const f=fixture();await f.invoke("context",{view:"source",source_document_id:"current-document",offset:0,limit:32000},beta("a"));await expect(f.invoke("context",{view:"source",source_document_id:"x",offset:-1},beta("a"))).rejects.toThrow();await expect(f.invoke("context",{view:"summary",source_document_id:"x"},beta("a"))).rejects.toThrow();});
+});
+it('advertises complete checkpoint and source/history parameter schemas to commandless providers',async()=>{const{caseWorkTool}=await import('../../src/case-work/host.js');const schema:any=caseWorkTool.parametersSchema;const checkpoint=schema.oneOf.find((p:any)=>p.properties.operation.const==='checkpoint').properties.parameters;expect(checkpoint.required).toEqual(expect.arrayContaining(['revision_hash','previous_checkpoint_hash','phase','artifact_refs']));expect(checkpoint.properties.phase.enum).toEqual(['research','draft']);expect(checkpoint.properties.artifact_refs.items.required).toEqual(['kind','reference','sha256']);expect(checkpoint.properties.note.maxLength).toBe(32768);});
+it('routes exact-case prepare/workspace/packet operations only for the bound producer and preserves noncompletion',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};for(const op of['prepare','workspace','render','packet']){const result=await f.invoke(op,{},beta('a'));expect(result.data.case_binding_id).toBe('binding-a');expect(result.data.business_complete).toBe(false);}await expect(f.invoke('prepare',{},scan)).rejects.toThrow(/role denied/);await expect(f.invoke('prepare',{case_binding_id:'binding-b'},beta('a'))).rejects.toThrow(/Invalid case preparation/);expect(f.rows[2].status).toBe('in_progress');});
+it('passes typed workspace saves to exact bound case, denies model scope and stale-shaped digests',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};await f.invoke('save',{workspace_hash:'a'.repeat(64),proposals:[{target_type:'sponsor_answer',target_key:'question',value:'Current grounded draft'}]},beta('a'));await f.invoke('save_gap_progress',{workspace_hash:'a'.repeat(64),progress:{items:[]}},beta('a'));for(const [op,p]of[['save',{workspace_hash:'bad',proposals:[]}],['save_gap_progress',{workspace_hash:'a'.repeat(64),progress:{},match_id:'foreign'}]])await expect(f.invoke(String(op),p,beta('a'))).rejects.toThrow(/Invalid case preparation/);expect(f.calls.every(c=>c.actor.case_binding_id==='binding-a')).toBe(true);});
+
+it('does not turn a workspace read or incomplete render into a completion-review request',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};for(const operation of ['context','workspace','render']){const result=await f.invoke(operation,{},beta('a'));const guide=result.data.native_review_guidance;expect(guide.queued).toBe(false);expect(guide.reviewer_agent_id).toBe('alpha');expect(guide.attention_request).toBeUndefined();expect(guide.review_request_condition).toBe('persisted_typed_review_request_or_completion_ready');expect(guide.when_review_ready.attention_request.targetAgentId).toBe('alpha');expect(guide.when_exhausted.reportedWorkDisposition).toBe('blocked');expect(guide.when_exhausted.blocker.scope).toBe('current_track');expect(guide.when_exhausted.instruction).toContain('revisit');expect(guide.instruction).toContain('native_review_request_ids');}expect(f.wakes).toHaveLength(0);});
+it('preserves useful checkpoint text and case identity without automatically queuing another reviewer',async()=>{const f=fixture();f.binding.reviewer={agentId:'alpha',principalId:'a'};const result=await f.invoke('checkpoint',{revision_hash:'a'.repeat(64),previous_checkpoint_hash:null,phase:'draft',artifact_refs:[],note:'Useful partial application answer',unresolved:['Exact public sponsor wording unavailable after documented research.']},beta('a'));expect(result.data.note).toBe('Useful partial application answer');expect(f.docs.size).toBe(1);expect(result.data.business_complete).toBe(false);expect(result.data.native_review_guidance.attention_request).toBeUndefined();expect(result.data.native_review_guidance.when_exhausted.instruction).toContain('new evidence');expect(f.rows[2].status).toBe('in_progress');expect(f.wakes).toHaveLength(0);});
+
+it("advertises separate case context views so summary paging cannot be mistaken for source/history paging",async()=>{
+ const{caseWorkTool}=await import('../../src/case-work/host.js');const schema:any=caseWorkTool.parametersSchema;
+ const contexts=schema.oneOf.find((row:any)=>row.properties.operation.const==="context").properties.parameters.oneOf;
+ const summary=contexts.find((row:any)=>row.properties.view.const==="summary");
+ const history=contexts.find((row:any)=>row.properties.view.const==="history");
+ const source=contexts.find((row:any)=>row.properties.view.const==="source");
+ expect(summary.properties.limit).toBeUndefined();expect(summary.properties.offset.const).toBe(0);
+ expect(history.required).toEqual(["view"]);expect(history.properties.limit.maximum).toBe(100);
+ expect(source.required).toEqual(["view","source_document_id"]);expect(source.properties.limit.maximum).toBe(32000);
+ for(const row of contexts)expect(row.additionalProperties).toBe(false);
+ const f=fixture();await expect(f.invoke("context",{view:"summary",offset:0,limit:25},beta("a"))).rejects.toThrow("Invalid case context page");
+ expect(f.calls).toHaveLength(0);await f.invoke("context",{},beta("a"));await f.invoke("context",{view:"history",offset:0,limit:100},beta("a"));
+ expect(f.calls.map(call=>call.params)).toEqual([{}, {view:"history",offset:0,limit:100}]);
+ for(const op of["prepare","workspace","render","packet"]){const branch=schema.oneOf.find((row:any)=>row.properties.operation.const===op);expect(branch.properties.parameters).toMatchObject({type:"object",additionalProperties:false,properties:{}});}
+});
+it('reserves a one-off candidate only through the configured researcher and preserves its preliminary source identities',async()=>{
+ const f=fixture(),original=f.binding.bridge.call;
+ f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:'one-off-source',source_candidate_record_id:'candidate-record'});
+ const result=await f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},scan);
+ expect(result.data).toMatchObject({preliminary:true,one_off_source_id:'one-off-source',source_candidate_record_id:'candidate-record',business_complete:false});expect(f.calls[0].actor.role).toBe('researcher');expect(f.docs.size).toBe(1);expect(f.wakes[0].issueId).toBe('root');
+ await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},beta('a'))).rejects.toThrow(/role denied/);
+ await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64),agent_id:'co'},scan)).rejects.toThrow();
+});
+it('withholds candidate reservation lacking the one-off source identity contract',async()=>{
+ const f=fixture();await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},scan)).rejects.toThrow(/candidate reservation/);expect(f.docs.size).toBe(0);
+});
+it('rejects candidate reservation reattributed to a different original source candidate',async()=>{
+ const f=fixture(),original=f.binding.bridge.call;f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:'one-off-source',source_candidate_record_id:'different-candidate'});
+ await expect(f.invoke('reserve_candidate',{record_id:'candidate-record',record_hash:'a'.repeat(64)},scan)).rejects.toThrow(/candidate reservation/);expect(f.docs.size).toBe(0);
+});
+
+it('saves proposed planning assumptions only through the current producer case without factual authority',async()=>{const f=fixture();f.binding.reviewer={agentId:'charlie',principalId:'c'};const p={workspace_hash:'a'.repeat(64),assumption:{key:'request-plan',value:'10000',units:'USD',currency:'USD',commitment:'proposed',rationale:'Proposed delivery envelope supported by current sponsor range.',source_evidence_ids:['sponsor-range']}};const result=await f.invoke('save_assumption',p,beta('a'));expect(result.data.case_binding_id).toBe('binding-a');expect(result.data.business_complete).toBe(false);expect(result.data.native_review_guidance.queued).toBe(false);await expect(f.invoke('save_assumption',p,scan)).rejects.toThrow(/role denied/);for(const extra of[{assumption:{...p.assumption,commitment:'actual'}},{assumption:{...p.assumption,value:10000}},{assumption:{...p.assumption,source_evidence_ids:[]}},{company_id:'foreign'}])await expect(f.invoke('save_assumption',{...p,...extra},beta('a'))).rejects.toThrow(/Invalid case assumption/);expect(f.calls).toHaveLength(1);expect(f.calls[0].actor.case_binding_id).toBe('binding-a');expect(f.docs.size).toBe(0);});
+
+
+describe("committed researcher reservation with dependent Coordinator",()=>{
+ it("returns the saved candidate and deferred notification while the real dependency remains blocked; replay reuses the document",async()=>{
+  const f=fixture(),original=f.binding.bridge.call;f.rows[0].status="blocked";
+  f.binding.bridge.call=async(...args)=>({...await original(...args) as any,preliminary:true,one_off_source_id:"one-off-source",source_candidate_record_id:"candidate-record"});
+  let attempts=0;f.ctx.issues.requestWakeup=async()=>{attempts++;throw new Error("Issue is blocked by unresolved blockers");};
+  for(let n=0;n<2;n++){
+   const result=await f.invoke("reserve_candidate",{record_id:"candidate-record",record_hash:"a".repeat(64)},scan);
+   expect(result.data).toMatchObject({case_binding_id:"binding-a",business_complete:false,preliminary:true,coordinator_notification:{state:"deferred",reason:"unresolved_blockers"},create_task:{idempotencyKey:"case:binding-a",assigneeActorId:"beta"}});
+   expect(result.data.coordinator_notification.queued).toBeUndefined();
+  }
+  expect(f.docs.size).toBe(1);expect(f.comments).toHaveLength(1);expect(attempts).toBe(2);expect(f.rows[0].status).toBe("blocked");expect(f.rows[1].status).toBe("in_progress");
+ });
+ it("preserves all unexpected wake errors after the durable checkpoint",async()=>{
+  for(const error of[new Error("permission denied"),new Error("Issue has no assigned agent to wake"),new Error("Issue is blocked by unresolved blockers: unexpected detail"),"Issue is blocked by unresolved blockers"]){
+   const f=fixture();f.ctx.issues.requestWakeup=async()=>{throw error;};
+   await expect(f.invoke("reserve_case",{record_id:"record",record_hash:"a".repeat(64)},scan)).rejects.toBe(error);
+   expect(f.docs.size).toBe(1);
+  }
+ });
+});

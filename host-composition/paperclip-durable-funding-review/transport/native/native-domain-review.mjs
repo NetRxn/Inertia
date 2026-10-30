@@ -17,7 +17,7 @@ export function nativeDomainReviewAssignment(scope,{issue,interaction,actor,assi
     const applied=assignment?.sourceDecision;
     const terminal=['accepted','rejected'].includes(interaction?.status);
     const resolved=allowResolved&&terminal&&interaction.resolvedByAgentId===actor?.agentId&&interaction.resolvedByRunId===actor?.runId;
-    if(issue?.projectId!==scope.projectId||(!resolved&&(terminal||issue.status!=='in_review'||issue.executionRunId!==actor?.runId))
+    if(issue?.companyId!==scope.companyId||issue?.id!==scope.issueId||issue?.projectId!==scope.projectId||(!resolved&&(terminal||issue.status!=='in_review'||issue.executionRunId!==actor?.runId))
       ||!actor?.runId||actor.agentId!==scope.reviewerAgentId
       ||!interaction?.id||interaction.companyId!==issue.companyId||interaction.issueId!==issue.id
       ||interaction.addresseeAgentId!==scope.reviewerAgentId||interaction.addresseeUserId
@@ -31,7 +31,7 @@ export function nativeDomainReviewAssignment(scope,{issue,interaction,actor,assi
 export function createNativeDomainReviewGuard({scopes,readCandidate,readAdmission}={}) {
   if(!Array.isArray(scopes)||scopes.length<1||scopes.length>16||typeof readCandidate!=='function'||typeof readAdmission!=='function')fail('native_domain_review_configuration_invalid');
   const pinned=scopes.map(s=>{
-    if(!(exact(s,scopeKeys)||exact(s,[...scopeKeys,'wholePacketReview'])&&s.wholePacketReview===true)||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
+    if(!(exact(s,scopeKeys)||exact(s,[...scopeKeys,'wholePacketReview'])&&s.wholePacketReview===true||exact(s,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'])&&s.wholePacketReview===true&&nonempty(s.portfolioRootIssueId))||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
     return Object.freeze({...s});
   });
   if(new Set(pinned.map(s=>s.companyId+'\0'+s.issueId)).size!==pinned.length)fail('native_domain_review_configuration_invalid');
@@ -45,6 +45,8 @@ export function createNativeDomainReviewGuard({scopes,readCandidate,readAdmissio
     const facts=nativeDomainReviewAssignment(scope,{issue,interaction,actor,assignment});
     const source=assignment.sourceRun;
     const candidate=await readCandidate(Object.freeze({...scope,producerRunId:source.id}));
+    if(candidate?.review_kind==='preparation')fail('native_preparation_requires_complete_packet');
+    if(candidate?.review_kind==='gap_plan')fail('native_gap_review_requires_complete_packet');
     if(scope.wholePacketReview===true){
       if(!candidate||candidate.review_kind!=='packet'||candidate.producer_principal_id!==scope.producerPrincipalId||candidate.producer_run_id!==source.id)fail('native_packet_review_admission_required');
       const binding=Object.freeze({...facts,review_kind:'packet',manifest_hash:candidate.manifest_hash,packet_id:candidate.packet_id,packet_version:candidate.packet_version});

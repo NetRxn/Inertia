@@ -2,6 +2,7 @@ import type { DiscoveryProcessConfig } from "../discovery/stdio.js";
 import { createBoundedContextBridge } from "../bridge/duplex.js";
 export interface DraftingProcessConfig extends DiscoveryProcessConfig { configurationPath: string }
 export interface DraftingContext {
+  issue_id?: string; portfolio_root_issue_id?: string;
   company_id: string; applicant_slug: string; match_id: string;
   principal_id: string; run_id: string; role: "producer"|"reviewer";
 }

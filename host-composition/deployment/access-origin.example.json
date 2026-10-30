@@ -1,0 +1,7 @@
+{
+  "issuer": "https://netrxn.cloudflareaccess.com",
+  "audience": "a29f5af19baa628276c7f1e12bf94915e3e32e252b71bbaa1dca7264aec38a2d",
+  "allowedEmails": ["NetRxn137@gmail.com", "kyle@datalof.com"],
+  "bindHost": "127.0.0.1",
+  "port": 19091
+}

@@ -1,0 +1,213 @@
+--- a/dist/services/native-runtime/funding-tool-preapproval.js
++++ b/dist/services/native-runtime/funding-tool-preapproval.js
+@@ -21,10 +21,11 @@
+   const config=row?.configJson,b=config?.publicDrafting;
+   if(config?.nativeFundingToolPreapproval!==true||!object(b)||b.enabled!==true||![b.projectId,b.applicantSlug,b.matchId].every(text))return null;
+   const nativeAttention=b.nativeAttention===true;
++  if(b.nativeGapPlanReview!==undefined&&typeof b.nativeGapPlanReview!=="boolean")return null;
+   const a=b.producer,z=b.reviewer;
+   if(!object(a)||!object(z)||![a.issueId,a.agentId,a.principalId,z.issueId,z.agentId,z.principalId].every(text)||
+     (nativeAttention?a.issueId!==z.issueId:a.issueId===z.issueId)||a.agentId===z.agentId||a.principalId===z.principalId)return null;
+-  if(nativeAttention && [b.nativeCaseProgression,b.nativeDependencyHandoff,b.nativeGapPlanReview].some(v=>v!==undefined&&v!==false))return null;
++  if(nativeAttention && [b.nativeCaseProgression,b.nativeDependencyHandoff].some(v=>v!==undefined&&v!==false))return null;
+   const role=a.agentId===input.agentId?"producer":z.agentId===input.agentId?"reviewer":null;if(!role)return null;
+   let actor=b[role];
+   const [agent]=await db.select().from(agents).where(and(eq(agents.id,input.agentId),eq(agents.companyId,input.companyId))).limit(1);
+--- a/dist/services/native-runtime/native-domain-review-composition.mjs
++++ b/dist/services/native-runtime/native-domain-review-composition.mjs
+@@ -1,3 +1,4 @@
++import{gapBinding,gapArtifact,gapReceipt}from'./native-gap-review.mjs';
+ import {scopeForIssue} from './native-portfolio-scope.mjs';
+ import {NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA} from './native-review-artifact-schema.mjs';
+ import {packetBinding,packetArtifact,packetReceipt} from './native-packet-review.mjs';
+@@ -19,6 +20,7 @@
+ const toolContext='netrxn.inertia:funding_review_context',toolAdmit='netrxn.inertia:review_funding_candidate';
+ function checkBinding(scope,input,binding,allowResolved=false){
+  const expected=nativeDomainReviewAssignment(scope,input,{allowResolved});
++ if(scope.wholePacketReview===true&&gapBinding(binding)){if(Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_gap_review_receipt_mismatch');return;}
+  if(scope.wholePacketReview===true&&packetBinding(binding)){if(Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_packet_review_receipt_mismatch');return;}
+  if(!binding||Object.keys(binding).length!==9||!hash(binding.candidate_hash)||Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_domain_review_receipt_mismatch');
+ }
+@@ -54,10 +56,11 @@
+       assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
+       const scope=scopeFor(input.issue);
+       nativeDomainReviewAssignment(scope,input);
+-      if(!artifact||!(hash(artifact.candidate_hash)||scope.wholePacketReview===true&&packetArtifact(artifact))||Buffer.byteLength(JSON.stringify(artifact))>128*1024)fail('native_domain_review_artifact_invalid');
+-      if(await installed.authorize(scope,input,toolAdmit,{request_id:artifact.candidate_hash??artifact.manifest_hash,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
++      if(!artifact||!(hash(artifact.candidate_hash)||scope.wholePacketReview===true&&(packetArtifact(artifact)||gapArtifact(artifact)))||Buffer.byteLength(JSON.stringify(artifact))>128*1024)fail('native_domain_review_artifact_invalid');
++      if(await installed.authorize(scope,input,gapArtifact(artifact)?'netrxn.inertia:review_funding_gap_plan':toolAdmit,{request_id:artifact.candidate_hash??artifact.manifest_hash??artifact.request_id,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
+       const result=await installed.admitReview(scope,input,artifact);
+       checkBinding(scope,input,result?.binding);
++      if(scope.wholePacketReview===true&&gapArtifact(artifact)){if(!gapReceipt(result,artifact))fail('native_gap_review_receipt_mismatch');return result;}
+       if(scope.wholePacketReview===true&&packetArtifact(artifact)){if(!packetReceipt(result,artifact))fail('native_packet_review_receipt_mismatch');return result;}
+       if(result.binding.candidate_hash!==artifact.candidate_hash||result.artifact_hash!==digest(artifact)||!['supported','rejected'].includes(result.state))fail('native_domain_review_receipt_mismatch');
+       return result;
+@@ -66,9 +69,10 @@
+       assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
+       const scope=scopeFor(input.issue);
+       nativeDomainReviewAssignment(scope,input,{allowResolved:true});
+-      for(const tool of [toolContext,toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
++      for(const tool of [toolContext,gapArtifact(artifact)?'netrxn.inertia:review_funding_gap_plan':toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
+       const result=await installed.readReviewReceipt(scope,input);
+       checkBinding(scope,input,result?.binding,true);
++      if(scope.wholePacketReview===true&&gapArtifact(artifact)){if(!gapReceipt(result,artifact))fail('native_gap_review_receipt_mismatch');return result;}
+       if(scope.wholePacketReview===true&&packetArtifact(artifact)){if(!packetReceipt(result,artifact))fail('native_packet_review_receipt_mismatch');return result;}
+       if(!artifact||result.binding.candidate_hash!==artifact.candidate_hash||result.artifact_hash!==digest(artifact)||!['supported','rejected'].includes(result.state))fail('native_domain_review_receipt_mismatch');
+       return result;
+--- a/dist/services/native-runtime/native-domain-review.mjs
++++ b/dist/services/native-runtime/native-domain-review.mjs
+@@ -45,6 +45,7 @@
+     const facts=nativeDomainReviewAssignment(scope,{issue,interaction,actor,assignment});
+     const source=assignment.sourceRun;
+     const candidate=await readCandidate(Object.freeze({...scope,producerRunId:source.id}));
++    if(candidate?.review_kind==='gap_plan')fail('native_gap_review_requires_complete_packet');
+     if(scope.wholePacketReview===true){
+       if(!candidate||candidate.review_kind!=='packet'||candidate.producer_principal_id!==scope.producerPrincipalId||candidate.producer_run_id!==source.id)fail('native_packet_review_admission_required');
+       const binding=Object.freeze({...facts,review_kind:'packet',manifest_hash:candidate.manifest_hash,packet_id:candidate.packet_id,packet_version:candidate.packet_version});
+--- /dev/null
++++ b/dist/services/native-runtime/native-gap-review.mjs
+@@ -0,0 +1,15 @@
++/** Distinct prepared-gap review; never candidate support or whole-packet acceptance. */
++import{packetDigest}from'./native-packet-review.mjs';
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
++const exact=(v,k)=>object(v)&&Object.keys(v).length===k.length&&k.every(x=>Object.hasOwn(v,x));
++const text=(v,n=200)=>typeof v==='string'&&v.length>0&&v.length<=n;
++const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
++const facts=['company_id','issue_id','interaction_id','decision_id','producer_principal_id','producer_run_id','reviewer_principal_id','reviewer_run_id'];
++const fields=['workspace_hash','progress_hash','requirement_id','rubric_version','agent_work_remaining','preparation_sufficient','source_support_sufficient','decision_is_precise','findings','next_step'];
++export function gapBinding(v){return exact(v,[...facts,'review_kind','request_id','workspace_hash','progress_hash','requirement_id'])&&facts.every(k=>text(v[k]))&&v.review_kind==='gap_plan'&&text(v.request_id)&&hash(v.workspace_hash)&&hash(v.progress_hash)&&text(v.requirement_id)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
++const handoff=a=>!a.agent_work_remaining&&a.preparation_sufficient&&a.source_support_sufficient&&a.decision_is_precise&&!a.findings.length;
++export function gapArtifact(v){const a=v?.artifact;return exact(v,['review_kind','request_id','artifact'])&&v.review_kind==='gap_plan'&&text(v.request_id)&&exact(a,fields)&&hash(a.workspace_hash)&&hash(a.progress_hash)&&text(a.requirement_id)&&a.rubric_version==='actionable-gap-v1'&&['agent_work_remaining','preparation_sufficient','source_support_sufficient','decision_is_precise'].every(k=>typeof a[k]==='boolean')&&Array.isArray(a.findings)&&a.findings.length<=100&&a.findings.every(f=>text(f,4000))&&text(a.next_step,4000);}
++export function gapReceipt(v,artifact){return exact(v,['binding','review_id','artifact_hash','state'])&&gapBinding(v.binding)&&v.review_id===v.binding.request_id&&hash(v.artifact_hash)&&['handoff_ready','rework_required'].includes(v.state)&&(!artifact||gapArtifact(artifact)&&artifact.request_id===v.binding.request_id&&['workspace_hash','progress_hash','requirement_id'].every(k=>artifact.artifact[k]===v.binding[k])&&packetDigest(artifact.artifact)===v.artifact_hash&&v.state===(handoff(artifact.artifact)?'handoff_ready':'rework_required'));}
++export function gapContext(v){const c=v?.context,r=c?.requests?.[0];return exact(v,['binding','context'])&&gapBinding(v.binding)&&object(c)&&c.kind==='gap_plan'&&c.next_action==='review_gap_plans'&&Array.isArray(c.requests)&&c.requests.length===1&&object(r)&&r.request_id===v.binding.request_id&&r.workspace_hash===v.binding.workspace_hash&&r.progress_hash===v.binding.progress_hash&&r.progress?.requirement_id===v.binding.requirement_id&&packetDigest(r.progress)===r.progress_hash&&Array.isArray(r.evidence)&&object(r.output_contract);}
++const string={type:'string',minLength:1,maxLength:4000},digest={type:'string',pattern:'^[a-f0-9]{64}$'};
++export const NATIVE_GAP_REVIEW_ARTIFACT_SCHEMA={type:'object',additionalProperties:false,properties:{review_kind:{type:'string',const:'gap_plan'},request_id:{type:'string',minLength:1,maxLength:200},artifact:{type:'object',additionalProperties:false,properties:{workspace_hash:digest,progress_hash:digest,requirement_id:{type:'string',minLength:1,maxLength:200},rubric_version:{type:'string',const:'actionable-gap-v1'},agent_work_remaining:{type:'boolean'},preparation_sufficient:{type:'boolean'},source_support_sufficient:{type:'boolean'},decision_is_precise:{type:'boolean'},findings:{type:'array',maxItems:100,items:string},next_step:string},required:fields}},required:['review_kind','request_id','artifact']};
+--- a/dist/services/native-runtime/native-review-application.mjs
++++ b/dist/services/native-runtime/native-review-application.mjs
+@@ -15,7 +15,7 @@
+   for(const b of registry.bindings){
+     if(!exact(b,['scope','reviewerPolicy','process','host'])||!exact(b.host,['expectedPluginId','publicDrafting']))fail();
+     const p=b.reviewerPolicy,s=b.scope;
+-    if(!exact(p,['version','role','projectIds','issueIds',...(s?.portfolioRootIssueId?['portfolioRootIssueId']:[])])||p.portfolioRootIssueId!==s?.portfolioRootIssueId||p.version!==1||p.role!=='reviewer'||JSON.stringify(p.projectIds)!==JSON.stringify([s?.projectId])||!(s?.portfolioRootIssueId?Array.isArray(p.issueIds)&&p.issueIds.length<=16&&p.issueIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.issueIds).size===p.issueIds.length&&p.issueIds.includes(s.issueId):JSON.stringify(p.issueIds)===JSON.stringify([s?.issueId])))fail();
++    if(!exact(p,['version','role','projectIds','issueIds',...(s?.portfolioRootIssueId?['portfolioRootIssueId']:[])])||p.portfolioRootIssueId!==s?.portfolioRootIssueId||p.version!==1||p.role!=='reviewer'||!(s?.portfolioRootIssueId?Array.isArray(p.projectIds)&&p.projectIds.length>=1&&p.projectIds.length<=16&&p.projectIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.projectIds).size===p.projectIds.length&&p.projectIds.includes(s.projectId):JSON.stringify(p.projectIds)===JSON.stringify([s?.projectId]))||!(s?.portfolioRootIssueId?Array.isArray(p.issueIds)&&p.issueIds.length<=16&&p.issueIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.issueIds).size===p.issueIds.length&&p.issueIds.includes(s.issueId):JSON.stringify(p.issueIds)===JSON.stringify([s?.issueId])))fail();
+     // Producer and reviewer are distinct pinned protocols, not interchangeable.
+     // Construction validates the reviewer process without launching a child.
+     createNativeReviewStdio(b.process);
+--- a/dist/services/native-runtime/native-review-artifact-schema.mjs
++++ b/dist/services/native-runtime/native-review-artifact-schema.mjs
+@@ -1,3 +1,4 @@
++import{NATIVE_GAP_REVIEW_ARTIFACT_SCHEMA}from'./native-gap-review.mjs';
+ import {NATIVE_PACKET_REVIEW_ARTIFACT_SCHEMA} from './native-packet-review.mjs';
+ /** Exact public CandidateReview JSON contract, with nested references inlined for a tool property. Identity is never model input. */
+ export const NATIVE_REVIEW_ARTIFACT_SCHEMA = {
+@@ -83,4 +84,4 @@
+   "type": "object"
+ };
+ 
+-export const NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA={oneOf:[NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_PACKET_REVIEW_ARTIFACT_SCHEMA]};
++export const NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA={oneOf:[NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_PACKET_REVIEW_ARTIFACT_SCHEMA,NATIVE_GAP_REVIEW_ARTIFACT_SCHEMA]};
+--- a/dist/services/native-runtime/native-review-host-admission.mjs
++++ b/dist/services/native-runtime/native-review-host-admission.mjs
+@@ -35,7 +35,8 @@
+   const required=['enabled','nativeAttention','projectId','applicantSlug','matchId','producer','reviewer','process'];
+   if(!keys(c,[...required,'portfolioRootIssueId','nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'],required)
+     ||c.enabled!==true||c.nativeAttention!==true||c.projectId!==s.projectId||!id(c.applicantSlug)||c.applicantSlug.length>128||!id(c.matchId)
+-    ||['nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'].some(k=>Object.hasOwn(c,k)&&c[k]!==false)
++    ||['nativeCaseProgression','nativeDependencyHandoff'].some(k=>Object.hasOwn(c,k)&&c[k]!==false)
++    ||c.nativeGapPlanReview!==undefined&&typeof c.nativeGapPlanReview!=='boolean'
+     ||c.portfolioRootIssueId!==s.portfolioRootIssueId||!validProcess(c.process))return false;
+   return [['producer',s.producerAgentId,s.producerPrincipalId],['reviewer',s.reviewerAgentId,s.reviewerPrincipalId]].every(([role,agentId,principalId])=>
+     keys(c[role],['issueId','agentId','principalId'])&&c[role].issueId===s.issueId&&c[role].agentId===agentId&&c[role].principalId===principalId);
+--- a/dist/services/native-runtime/native-review-runtime.mjs
++++ b/dist/services/native-runtime/native-review-runtime.mjs
+@@ -7,7 +7,7 @@
+ import {nativeDomainReviewAssignment} from './native-domain-review.mjs';
+ const fail=code=>{throw Error(code);};
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+-const toolNames=['netrxn.inertia:funding_review_context','netrxn.inertia:review_funding_candidate'];
++const toolNames=['netrxn.inertia:funding_review_context','netrxn.inertia:review_funding_candidate','netrxn.inertia:review_funding_gap_plan'];
+ const scopeKeys=['companyId','projectId','issueId','producerAgentId','reviewerAgentId','producerPrincipalId','reviewerPrincipalId'];
+ const nonempty=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\s\x00-\x1f\x7f]/.test(v);
+ const freeze=value=>{if(value&&typeof value==='object'){for(const child of Object.values(value))freeze(child);Object.freeze(value);}return value;};
+@@ -21,7 +21,7 @@
+       ||scope.portfolioRootIssueId!==undefined&&(scope.portfolioRootIssueId!==scope.issueId||scope.wholePacketReview!==true)
+       ||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId
+       ||!policy||Object.keys(policy).sort().join()!==(scope.portfolioRootIssueId?'issueIds,portfolioRootIssueId,projectIds,role,version':'issueIds,projectIds,role,version')||policy.portfolioRootIssueId!==scope.portfolioRootIssueId
+-      ||policy.version!==1||policy.role!=='reviewer'||!same(policy.projectIds,[scope.projectId])||!(scope.portfolioRootIssueId?Array.isArray(policy.issueIds)&&policy.issueIds.length<=16&&policy.issueIds.every(nonempty)&&new Set(policy.issueIds).size===policy.issueIds.length&&policy.issueIds.includes(scope.issueId):same(policy.issueIds,[scope.issueId])))fail('native_domain_review_runtime_configuration_invalid');
++      ||policy.version!==1||policy.role!=='reviewer'||!(scope.portfolioRootIssueId?Array.isArray(policy.projectIds)&&policy.projectIds.length>=1&&policy.projectIds.length<=16&&policy.projectIds.every(nonempty)&&new Set(policy.projectIds).size===policy.projectIds.length&&policy.projectIds.includes(scope.projectId):same(policy.projectIds,[scope.projectId]))||!(scope.portfolioRootIssueId?Array.isArray(policy.issueIds)&&policy.issueIds.length<=16&&policy.issueIds.every(nonempty)&&new Set(policy.issueIds).size===policy.issueIds.length&&policy.issueIds.includes(scope.issueId):same(policy.issueIds,[scope.issueId])))fail('native_domain_review_runtime_configuration_invalid');
+     let config;
+     try{
+       const file=b.process?.configurationPath,meta=await fs.lstat(file),bytes=await fs.readFile(file);
+@@ -34,7 +34,7 @@
+       if((config.whole_packet_review===true)!==(scope.wholePacketReview===true))throw Error();
+       if(config.company_id!==scope.companyId||!nonempty(config.applicant_slug)||!nonempty(config.match_id)||ns.target_type!=='sponsor_answer'||!nonempty(ns.target_key))throw Error();
+     }catch{fail('native_domain_review_runtime_configuration_invalid');}
+-    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
++    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),gapPlanReview:config.gap_plan_review===true,applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
+   }
+   function entry(scope){const e=entries.find(e=>templateMatches(scope,e.scope));if(!e)fail('native_domain_review_scope_unavailable');return e.scope.portfolioRootIssueId?{...e,scope:Object.freeze({...scope})}:e;}
+   async function hostAdmission(e,input){
+@@ -67,10 +67,10 @@
+     await fresh(e,input);
+     const result=await native.decideTool({companyId:e.scope.companyId,actor:{actorType:'agent',actorId:e.scope.reviewerAgentId,agentId:e.scope.reviewerAgentId},
+       runContext:{heartbeatRunId:input.actor.runId,issueId:e.scope.issueId,projectId:e.scope.projectId},
+-      request:{toolName,providerType:'paperclip_plugin',arguments:args,sideEffecting:toolName===toolNames[1]},consumeRateLimit:options.consumeRateLimit===true});
++      request:{toolName,providerType:'paperclip_plugin',arguments:args,sideEffecting:toolName!==toolNames[0]},consumeRateLimit:options.consumeRateLimit===true});
+     return result?.allowed===true&&result.decision==='allow';
+   }
+-  async function current(e,input){const facts=await fresh(e,input);for(const name of toolNames)if(!await decide(e,input,name,{},{}))fail('native_domain_review_tool_access_denied');return facts;}
++  async function current(e,input){const facts=await fresh(e,input);for(const name of (e.gapPlanReview?toolNames:toolNames.slice(0,2)))if(!await decide(e,input,name,{},{}))fail('native_domain_review_tool_access_denied');return facts;}
+   async function callbacks(e,input){
+     await current(e,input);
+     return {
+--- a/dist/services/native-runtime/native-review-stdio.mjs
++++ b/dist/services/native-runtime/native-review-stdio.mjs
+@@ -1,3 +1,4 @@
++import{gapBinding,gapArtifact,gapReceipt,gapContext}from'./native-gap-review.mjs';
+ import {packetBinding,packetArtifact,packetReceipt,packetContext,packetSubject} from './native-packet-review.mjs';
+ /** Pinned native-review stdio only; no lifecycle, routing, credentials or listener.
+  * An acquired fence has no expiry timer. The owning native transaction MUST
+@@ -29,7 +30,7 @@
+ const error=(code,message,uncertain=false)=>new NativeReviewTransportError(code,message,uncertain);
+ function validContext(v){return (keys(v,contextFields)||keys(v,[...contextFields,'issue_id','portfolio_root_issue_id'])&&id(v.issue_id)&&id(v.portfolio_root_issue_id)&&v.issue_id!==v.portfolio_root_issue_id)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
+ function validAssignment(v){return keys(v,assignmentFields)&&assignmentFields.every(k=>id(v[k]))&&v.producer_agent_id!==v.reviewer_agent_id&&v.producer_run_id!==v.reviewer_run_id;}
+-function validBinding(v){if(packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
++function validBinding(v){if(gapBinding(v)||packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
+ function validArtifact(v){
+  return keys(v,['candidate_hash','requirement_hash','evidence_set_hash','rubric_version','findings','requirement_supported'])
+   &&['candidate_hash','requirement_hash','evidence_set_hash'].every(k=>hash(v[k]))&&typeof v.rubric_version==='string'&&v.rubric_version.length>0
+@@ -70,7 +71,7 @@
+ export function createNativeReviewStdio(config){
+  const c=configuration(config);
+  return Object.freeze({async call(op,params,callbacks){
+-  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
++  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
+   if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
+   const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
+@@ -198,6 +199,7 @@
+    &&b.reviewer_principal_id===this.context.principal_id;
+  }
+  validReceipt(v,artifact){
++  if(gapBinding(v?.binding))return this.bindingMatches(v.binding)&&gapReceipt(v,artifact);
+   if(packetBinding(v?.binding))return this.bindingMatches(v.binding)&&packetReceipt(v,artifact);
+   if(!keys(v,['binding','review_id','candidate_id','artifact_hash','state'])||!this.bindingMatches(v.binding)||!id(v.review_id)||!id(v.candidate_id)||!hash(v.artifact_hash)||!['supported','rejected'].includes(v.state))return false;
+   if(!artifact)return true;
+@@ -208,6 +210,7 @@
+  validSuccess(v){
+   if(this.op==='admit')return this.validReceipt(v,this.params);
+   if(this.op==='receipt')return this.validReceipt(v);
++  if(gapBinding(v?.binding))return this.bindingMatches(v.binding)&&gapContext(v);
+   if(packetBinding(v?.binding))return this.bindingMatches(v.binding)&&packetContext(v);
+   if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
+   const request=v.context.requests[0],candidate=request?.candidate;
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -795,6 +795,7 @@
+             || !["accept", "reject"].includes(String(input.decision))) {
+             throw badRequest("Choose accept or reject for this run's assigned review.");
+         }
++        if(input.domainReview?.review_kind==='gap_plan'&&input.decision!=='reject')throw badRequest('Gap-plan review requires producer continuation and complete packet review before acceptance');
+         const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+         if (input.decision === "reject" && !reason)
+             throw badRequest("Explain the changes required before rejecting the review.");

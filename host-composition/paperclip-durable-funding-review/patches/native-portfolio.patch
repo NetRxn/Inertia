@@ -1,0 +1,603 @@
+--- a/dist/services/native-discovery-tool-grants.mjs
++++ b/dist/services/native-discovery-tool-grants.mjs
+@@ -32,7 +32,7 @@
+   const role=c.agentId===agentId?'scout':c.diligence?.agentId===agentId?'diligence':null,a=role==='scout'?c:role==='diligence'?c.diligence:null;
+   if(!role||!a||!c.diligence||!c.principalId||c.agentId===c.diligence?.agentId||c.principalId===c.diligence?.principalId||c.issueId===c.diligence?.issueId||!a.principalId||!a.issueId||!c.projectId)throw conflict('Exact independent discovery role required');
+   const[issue]=await tx.select().from(issues).where(and(eq(issues.id,a.issueId),eq(issues.companyId,companyId))).for('update');if(!issue||issue.hiddenAt||issue.projectId!==c.projectId||issue.assigneeAgentId!==agentId||issue.workMode!=='standard'||['done','cancelled'].includes(issue.status)||issue.executionRunId)throw conflict('Idle exact assigned discovery task required');
+-  let policy;try{policy=normalizeNativeFundingPolicy(agent.adapterConfig);}catch{throw conflict('Exact native funding ceiling required');}if(!policy||policy.role!==(role==='scout'?'producer':'reviewer')||!policy.projectIds.includes(c.projectId)||!policy.issueIds.includes(a.issueId))throw conflict('Discovery task outside native ceiling');
++  let policy;try{policy=normalizeNativeFundingPolicy(agent.adapterConfig);}catch{throw conflict('Exact native funding ceiling required');}if(!policy||![role==='scout'?'producer':'reviewer','worker'].includes(policy.role)||!policy.projectIds.includes(c.projectId)||!policy.issueIds.includes(a.issueId))throw conflict('Discovery task outside native ceiling');
+   const[grant]=await tx.select().from(principalPermissionGrants).where(and(eq(principalPermissionGrants.companyId,companyId),eq(principalPermissionGrants.principalType,'agent'),eq(principalPermissionGrants.principalId,agentId),eq(principalPermissionGrants.permissionKey,'tools:use'))).for('update');if(!grant)throw conflict('Existing tools:use row required');
+   if(fingerprint(grant)!==body.expectedGrantFingerprint)throw conflict('Tool grant changed');
+   const before=finite(grant.scope),names=[...new Set([...before,...DISCOVERY_CANONICAL_TOOLS[role]])].sort(),scope={allow:names.map(n=>'tool:'+n)};
+--- a/dist/services/native-runtime/funding-tool-preapproval.js
++++ b/dist/services/native-runtime/funding-tool-preapproval.js
+@@ -26,17 +26,24 @@
+     (nativeAttention?a.issueId!==z.issueId:a.issueId===z.issueId)||a.agentId===z.agentId||a.principalId===z.principalId)return null;
+   if(nativeAttention && [b.nativeCaseProgression,b.nativeDependencyHandoff,b.nativeGapPlanReview].some(v=>v!==undefined&&v!==false))return null;
+   const role=a.agentId===input.agentId?"producer":z.agentId===input.agentId?"reviewer":null;if(!role)return null;
+-  const actor=b[role];
++  let actor=b[role];
+   const [agent]=await db.select().from(agents).where(and(eq(agents.id,input.agentId),eq(agents.companyId,input.companyId))).limit(1);
+   const cfg=agent?.adapterConfig;
+   let nativePolicy;
+   if(nativeAttention) {
+     try { nativePolicy=normalizeNativeFundingPolicy(cfg); } catch { return null; }
+     if(!agent||!["idle","running"].includes(agent.status)||agent.role!=="general"||agent.adapterType!=="paperclip_runner"||role!=="producer"||
+-      !nativePolicy||nativePolicy.role!=="producer"||!nativePolicy.projectIds.includes(b.projectId)||!nativePolicy.issueIds.includes(actor.issueId))return null;
++      !nativePolicy||!["producer","worker"].includes(nativePolicy.role)||!nativePolicy.projectIds.includes(b.projectId)||!nativePolicy.issueIds.includes(actor.issueId))return null;
+   } else if(!agent||!["idle","running"].includes(agent.status)||agent.adapterType!=="codex_local"||cfg?.disableCommandExecution!==true||cfg.engine!=="cli"||cfg.dangerouslyBypassApprovalsAndSandbox!==false||cfg.dangerouslyBypassSandbox===true||[cfg.extraArgs,cfg.args].some(v=>v!==undefined&&(!Array.isArray(v)||v.length)))return null;
+   const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,input.runId),eq(heartbeatRuns.companyId,input.companyId),eq(heartbeatRuns.agentId,input.agentId))).limit(1);
+   if(!run||run.status!=="running"||run.finishedAt)return null;
++  if(b.portfolioRootIssueId!==undefined){
++    if(!nativeAttention||b.portfolioRootIssueId!==a.issueId||b.portfolioRootIssueId!==z.issueId||nativePolicy?.portfolioRootIssueId!==b.portfolioRootIssueId||run.nativeIssueId===b.portfolioRootIssueId)return null;
++    const [root]=await db.select().from(issues).where(and(eq(issues.id,b.portfolioRootIssueId),eq(issues.companyId,input.companyId))).limit(1);
++    const [child]=await db.select().from(issues).where(and(eq(issues.id,run.nativeIssueId),eq(issues.companyId,input.companyId))).limit(1);
++    if(!root||root.hiddenAt||root.projectId!==b.projectId||["done","cancelled"].includes(root.status)||!child||child.parentId!==root.id||child.projectId!==b.projectId)return null;
++    actor={...actor,issueId:child.id};
++  }
+   if(nativeAttention && (run.runtimeMode!=="native" || run.nativeIssueId!==actor.issueId))return null;
+   const ids=[run.nativeIssueId,run.contextSnapshot?.issueId,run.contextSnapshot?.taskId].filter(v=>v!=null);
+   if(!ids.length||ids.some(v=>v!==actor.issueId)||run.contextSnapshot?.projectId!=null&&run.contextSnapshot.projectId!==b.projectId)return null;
+--- a/dist/services/native-runtime/native-discovery-policy.mjs
++++ b/dist/services/native-runtime/native-discovery-policy.mjs
+@@ -18,7 +18,7 @@
+ export function selectNativeDiscoveryAdmission(rows,binding,policy,context,nativeReview){
+  if(!policy)return null;
+  const candidates=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.config?.fundingDiscovery?.enabled===true&&
+-  [r.config.fundingDiscovery.issueId,r.config.fundingDiscovery.diligence?.issueId].includes(binding.issueId));
++  ([r.config.fundingDiscovery.issueId,r.config.fundingDiscovery.diligence?.issueId].includes(binding.issueId)||r.config.fundingDiscovery.portfolioRootIssueId!==undefined&&r.config.fundingDiscovery.portfolioRootIssueId===policy.portfolioRootIssueId&&r.config.fundingDiscovery.agentId===binding.agentId&&r.config.fundingDiscovery.projectId===context.issue.projectId&&!nativeReview));
+  if(candidates.length===0)return null;
+  if(candidates.length!==1||nativeReview)return denied();
+  const row=candidates[0],c=row.config.fundingDiscovery;
+@@ -26,14 +26,22 @@
+   ||!id(c.key)||!id(c.organizationId)||!id(c.projectId)||!id(c.principalId)||!object(c.process)
+   ||!Array.isArray(c.publicQueries)||!c.publicQueries.length||c.publicQueries.length>10
+   ||c.publicQueries.some(q=>typeof q!=='string'||!q.trim()||q.length>500||/[\x00-\x1f]/.test(q)))denied();
+- const role=c.issueId===binding.issueId?'scout':'diligence';
++ const portfolio=c.portfolioRootIssueId!==undefined;
++ if(c.rootProjectId!==undefined&&(!portfolio||!id(c.rootProjectId)))denied();
++ if(portfolio&&(!id(c.portfolioRootIssueId)||c.issueId!==c.portfolioRootIssueId||policy.portfolioRootIssueId!==c.portfolioRootIssueId
++  ||!policy.issueIds.includes(c.portfolioRootIssueId)||binding.issueId===c.portfolioRootIssueId||context.issue.parentId!==c.portfolioRootIssueId
++  ||context.issue.status!=='in_progress'||!context.rootIssue||context.rootIssue.id!==c.portfolioRootIssueId
++  ||context.rootIssue.companyId!==binding.companyId||context.rootIssue.projectId!==(c.rootProjectId??c.projectId)||!policy.projectIds.includes(c.rootProjectId??c.projectId)||context.rootIssue.hiddenAt||['done','cancelled'].includes(context.rootIssue.status)))denied();
++ const role=portfolio?(c.agentId===binding.agentId?'scout':'diligence'):c.issueId===binding.issueId?'scout':'diligence';
+  const actor=role==='scout'?c:c.diligence;
++ const configuredPolicy=normalizeNativeFundingPolicy(context.actor.adapterConfig);
++ if(configuredPolicy?.role==='worker')policy={...policy,role:role==='scout'?'producer':'reviewer'};
+  if(!actor||actor.agentId!==binding.agentId||!id(actor.principalId)||!object(actor.process)
+-  ||c.projectId!==context.issue.projectId||!policy.projectIds.includes(c.projectId)||!policy.issueIds.includes(binding.issueId)
++  ||c.projectId!==context.issue.projectId||!policy.projectIds.includes(c.projectId)||!(portfolio||policy.issueIds.includes(binding.issueId))
+   ||policy.role!==(role==='scout'?'producer':'reviewer')
+-  ||c.diligence&&(c.diligence.issueId===c.issueId||c.diligence.agentId===c.agentId||c.diligence.principalId===c.principalId))denied();
+- let now;try{now=normalizeNativeFundingPolicy(context.actor.adapterConfig);}catch{return denied();}
+- if(canonical(now)!==canonical({version:policy.version,role:policy.role,projectIds:policy.projectIds,issueIds:policy.issueIds})||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId
++  ||c.diligence&&(!portfolio&&c.diligence.issueId===c.issueId||c.diligence.agentId===c.agentId||c.diligence.principalId===c.principalId))denied();
++ let now;try{now=normalizeNativeFundingPolicy(context.actor.adapterConfig);if(now?.role==='worker')now={...now,role:policy.role};}catch{return denied();}
++ if(canonical(now)!==canonical({version:policy.version,role:policy.role,projectIds:policy.projectIds,issueIds:policy.issueIds,...(policy.portfolioRootIssueId?{portfolioRootIssueId:policy.portfolioRootIssueId}:{})})||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId
+   ||context.actor.role!=='general'||context.actor.adapterType!=='paperclip_runner'||['paused','terminated','pending_approval','error'].includes(context.actor.status)
+   ||context.issue.id!==binding.issueId||context.issue.companyId!==binding.companyId||context.issue.hiddenAt
+   ||context.issue.assigneeAgentId!==binding.agentId||context.issue.executionRunId!==binding.runId||context.issue.workMode!=='standard'
+@@ -50,6 +58,10 @@
+   .innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId))
+   .where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);}
+  if(!context)denied();
++ if(policy.portfolioRootIssueId){
++  const [rootIssue]=await db.select().from(issues).where(and(eq(issues.id,policy.portfolioRootIssueId),eq(issues.companyId,binding.companyId))).limit(1);
++  context={...context,rootIssue};
++ }
+  const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,
+   settingsId:pluginCompanySettings.id,enabled:pluginCompanySettings.enabled}).from(plugins)
+   .innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId)))
+--- a/dist/services/native-runtime/native-domain-review-composition.mjs
++++ b/dist/services/native-runtime/native-domain-review-composition.mjs
+@@ -1,3 +1,4 @@
++import {scopeForIssue} from './native-portfolio-scope.mjs';
+ import {NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA} from './native-review-artifact-schema.mjs';
+ import {packetBinding,packetArtifact,packetReceipt} from './native-packet-review.mjs';
+ /** One owning-host composition, installed before native startup/sweep work.
+@@ -26,7 +27,8 @@
+   if(typeof required!=='boolean')fail('native_domain_review_configuration_invalid');
+   let installed;
+   const assertReady=()=>{if(required&&!installed)fail('native_domain_review_uninitialized');};
+-  const isBound=issue=>installed?.scopes.some(s=>s.companyId===issue?.companyId&&s.issueId===issue?.id)===true;
++  const scopeFor=issue=>installed?.scopes.map(s=>scopeForIssue(s,issue)).find(Boolean);
++  const isBound=issue=>Boolean(scopeFor(issue));
+   return Object.freeze({
+     install({scopes,acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt}={}) {
+       if(installed)fail('native_domain_review_already_initialized');
+@@ -37,10 +39,10 @@
+     },
+     assertReady,
+     isBound(issue){assertReady();return isBound(issue);},
+-    reviewArtifactSchema(issue){assertReady();const scope=installed?.scopes.find(s=>s.companyId===issue?.companyId&&s.issueId===issue?.id);return scope?.wholePacketReview===true?NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA:NATIVE_REVIEW_ARTIFACT_SCHEMA;},
++    reviewArtifactSchema(issue){assertReady();const scope=scopeFor(issue);return scope?.wholePacketReview===true?NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA:NATIVE_REVIEW_ARTIFACT_SCHEMA;},
+     async reviewContext(input){
+       assertReady();if(!isBound(input?.issue))return null;
+-      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      const scope=scopeFor(input.issue);
+       nativeDomainReviewAssignment(scope,input);
+       if(await installed.authorize(scope,input,toolContext,{},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
+       const result=await installed.readReviewContext(scope,input);
+@@ -50,7 +52,7 @@
+     },
+     async admitReview(input,artifact){
+       assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
+-      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      const scope=scopeFor(input.issue);
+       nativeDomainReviewAssignment(scope,input);
+       if(!artifact||!(hash(artifact.candidate_hash)||scope.wholePacketReview===true&&packetArtifact(artifact))||Buffer.byteLength(JSON.stringify(artifact))>128*1024)fail('native_domain_review_artifact_invalid');
+       if(await installed.authorize(scope,input,toolAdmit,{request_id:artifact.candidate_hash??artifact.manifest_hash,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
+@@ -62,7 +64,7 @@
+     },
+     async readReviewReceipt(input,artifact){
+       assertReady();if(!isBound(input?.issue))fail('native_domain_review_unconfigured');
+-      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      const scope=scopeFor(input.issue);
+       nativeDomainReviewAssignment(scope,input,{allowResolved:true});
+       for(const tool of [toolContext,toolAdmit])if(await installed.authorize(scope,input,tool,{})!==true)fail('native_domain_review_tool_access_denied');
+       const result=await installed.readReviewReceipt(scope,input);
+@@ -79,7 +81,7 @@
+       assertReady();
+       if(!isBound(input?.issue)||input.decision==='reject')return null;
+       if(input.nestedTransaction===true)fail('native_domain_review_nested_transaction_unsupported');
+-      const scope=installed.scopes.find(s=>s.companyId===input.issue.companyId&&s.issueId===input.issue.id);
++      const scope=scopeFor(input.issue);
+       let fence,released;
+       const release=()=>released??=(async()=>{if(fence)await fence.release();})();
+       const acquire=async()=>{
+--- a/dist/services/native-runtime/native-domain-review.mjs
++++ b/dist/services/native-runtime/native-domain-review.mjs
+@@ -17,7 +17,7 @@
+     const applied=assignment?.sourceDecision;
+     const terminal=['accepted','rejected'].includes(interaction?.status);
+     const resolved=allowResolved&&terminal&&interaction.resolvedByAgentId===actor?.agentId&&interaction.resolvedByRunId===actor?.runId;
+-    if(issue?.projectId!==scope.projectId||(!resolved&&(terminal||issue.status!=='in_review'||issue.executionRunId!==actor?.runId))
++    if(issue?.companyId!==scope.companyId||issue?.id!==scope.issueId||issue?.projectId!==scope.projectId||(!resolved&&(terminal||issue.status!=='in_review'||issue.executionRunId!==actor?.runId))
+       ||!actor?.runId||actor.agentId!==scope.reviewerAgentId
+       ||!interaction?.id||interaction.companyId!==issue.companyId||interaction.issueId!==issue.id
+       ||interaction.addresseeAgentId!==scope.reviewerAgentId||interaction.addresseeUserId
+@@ -31,7 +31,7 @@
+ export function createNativeDomainReviewGuard({scopes,readCandidate,readAdmission}={}) {
+   if(!Array.isArray(scopes)||scopes.length<1||scopes.length>16||typeof readCandidate!=='function'||typeof readAdmission!=='function')fail('native_domain_review_configuration_invalid');
+   const pinned=scopes.map(s=>{
+-    if(!(exact(s,scopeKeys)||exact(s,[...scopeKeys,'wholePacketReview'])&&s.wholePacketReview===true)||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
++    if(!(exact(s,scopeKeys)||exact(s,[...scopeKeys,'wholePacketReview'])&&s.wholePacketReview===true||exact(s,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'])&&s.wholePacketReview===true&&nonempty(s.portfolioRootIssueId))||scopeKeys.some(k=>!nonempty(s[k]))||(s.producerAgentId===s.reviewerAgentId||s.producerPrincipalId===s.reviewerPrincipalId))fail('native_domain_review_configuration_invalid');
+     return Object.freeze({...s});
+   });
+   if(new Set(pinned.map(s=>s.companyId+'\0'+s.issueId)).size!==pinned.length)fail('native_domain_review_configuration_invalid');
+--- a/dist/services/native-runtime/native-funding-policy.js
++++ b/dist/services/native-runtime/native-funding-policy.js
+@@ -14,11 +14,11 @@
+ export function normalizeNativeFundingPolicy(config={}) {
+  if(config.nativeFunding===undefined)return null;
+  const p=config.nativeFunding;
+- if(!exact(p,['version','role','projectIds','issueIds'])||p.version!==1||!['producer','reviewer'].includes(p.role)||!ids(p.projectIds)||!ids(p.issueIds)
++ if(!(exact(p,['version','role','projectIds','issueIds'])||exact(p,['version','role','projectIds','issueIds','portfolioRootIssueId'])&&uuid.test(p.portfolioRootIssueId)&&p.issueIds?.includes(p.portfolioRootIssueId))||p.version!==1||!['producer','reviewer','worker'].includes(p.role)||!ids(p.projectIds)||!ids(p.issueIds)
+   ||config.nativeCoordinator!==undefined||config.provider!=='codex'||config.engine!=='cli'||config.disableCommandExecution!==true
+   ||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'
+   ||Object.hasOwn(config,'extraArgs')||Object.hasOwn(config,'args'))throw Error('native_funding_configuration_invalid');
+- return Object.freeze({version:1,role:p.role,projectIds:Object.freeze([...p.projectIds].sort()),issueIds:Object.freeze([...p.issueIds].sort())});
++ return Object.freeze({version:1,role:p.role,projectIds:Object.freeze([...p.projectIds].sort()),issueIds:Object.freeze([...p.issueIds].sort()),...(p.portfolioRootIssueId?{portfolioRootIssueId:p.portfolioRootIssueId}:{})});
+ }
+ export function nativeFundingToolNames(policy) {
+  if(policy?.role==='producer')return producerNames;
+@@ -30,13 +30,14 @@
+ }
+ export function assertNativeFundingContext(binding,context) {
+  const p=binding.nativeFundingPolicy;if(!p)return;
+- const now=normalizeNativeFundingPolicy(context.actor.adapterConfig);
++ let now=normalizeNativeFundingPolicy(context.actor.adapterConfig);
++ if(now?.role==='worker')now={...now,role:binding.nativeReview?'reviewer':'producer'};
+  if(binding.nativeCoordinatorPolicy||p.companyId!==binding.companyId||p.agentId!==binding.agentId
+   ||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='general'
+   ||context.actor.adapterType!=='paperclip_runner'||['paused','terminated','pending_approval','error'].includes(context.actor.status)
+-  ||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,role:p.role,projectIds:p.projectIds,issueIds:p.issueIds})
++  ||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,role:p.role,projectIds:p.projectIds,issueIds:p.issueIds,...(p.portfolioRootIssueId?{portfolioRootIssueId:p.portfolioRootIssueId}:{})})
+   ||context.issue.companyId!==binding.companyId||context.issue.id!==binding.issueId||context.issue.hiddenAt
+-  ||!p.projectIds.includes(context.issue.projectId)||!p.issueIds.includes(context.issue.id)
++  ||!p.projectIds.includes(context.issue.projectId)||!(p.issueIds.includes(context.issue.id)&&context.issue.id!==p.portfolioRootIssueId||p.portfolioRootIssueId&&context.issue.parentId===p.portfolioRootIssueId&&context.issue.id!==p.portfolioRootIssueId)
+   ||context.run.id!==binding.runId||context.run.companyId!==binding.companyId||context.run.agentId!==binding.agentId
+   ||context.run.nativeIssueId!==binding.issueId||context.run.runtimeMode!=='native'||context.run.status!=='running'
+   ||(p.role==='reviewer')!==Boolean(binding.nativeReview))throw Error('native_funding_scope_revoked');
+--- /dev/null
++++ b/dist/services/native-runtime/native-portfolio-scope.mjs
+@@ -0,0 +1,14 @@
++/** Protected direct-child native scope. Task text never supplies routing authority. */
++export function scopeForIssue(scope,issue){
++ if(!scope||issue?.companyId!==scope.companyId)return null;
++ if(scope.portfolioRootIssueId!==undefined){
++  if(issue.projectId!==scope.projectId)return null;
++  if(scope.portfolioRootIssueId!==scope.issueId||issue.parentId!==scope.portfolioRootIssueId||issue.id===scope.issueId)return null;
++  return {...scope,issueId:issue.id};
++ }
++ return issue.id===scope.issueId?scope:null;
++}
++export function templateMatches(scope,template){
++ return scope&&template&&Object.keys(template).every(k=>k==='issueId'&&template.portfolioRootIssueId!==undefined
++  ?typeof scope.issueId==='string'&&scope.issueId!==template.portfolioRootIssueId:scope[k]===template[k]);
++}
+--- a/dist/services/native-runtime/native-review-application.mjs
++++ b/dist/services/native-runtime/native-review-application.mjs
+@@ -1,3 +1,4 @@
++import {templateMatches} from './native-portfolio-scope.mjs';
+ /** Owning-server initialization only. No model route, listener or lifecycle controller. */
+ import fs from 'node:fs/promises';
+ import {constants} from 'node:fs';
+@@ -14,7 +15,7 @@
+   for(const b of registry.bindings){
+     if(!exact(b,['scope','reviewerPolicy','process','host'])||!exact(b.host,['expectedPluginId','publicDrafting']))fail();
+     const p=b.reviewerPolicy,s=b.scope;
+-    if(!exact(p,['version','role','projectIds','issueIds'])||p.version!==1||p.role!=='reviewer'||JSON.stringify(p.projectIds)!==JSON.stringify([s?.projectId])||JSON.stringify(p.issueIds)!==JSON.stringify([s?.issueId]))fail();
++    if(!exact(p,['version','role','projectIds','issueIds',...(s?.portfolioRootIssueId?['portfolioRootIssueId']:[])])||p.portfolioRootIssueId!==s?.portfolioRootIssueId||p.version!==1||p.role!=='reviewer'||JSON.stringify(p.projectIds)!==JSON.stringify([s?.projectId])||!(s?.portfolioRootIssueId?Array.isArray(p.issueIds)&&p.issueIds.length<=16&&p.issueIds.every(v=>typeof v==='string'&&v.length>0)&&new Set(p.issueIds).size===p.issueIds.length&&p.issueIds.includes(s.issueId):JSON.stringify(p.issueIds)===JSON.stringify([s?.issueId])))fail();
+     // Producer and reviewer are distinct pinned protocols, not interchangeable.
+     // Construction validates the reviewer process without launching a child.
+     createNativeReviewStdio(b.process);
+@@ -49,7 +50,7 @@
+   const policy=toolAccessPolicyService(db);
+   const getIssue=async(issueId,companyId)=>(await db.select().from(issues).where(and(eq(issues.id,issueId),eq(issues.companyId,companyId))).limit(1))[0];
+   return createNativeReviewRuntime({bindings,stdioFactory:createNativeReviewStdio,native:{
+-    assertHostAdmission(scope,input){const i=bindings.findIndex(b=>b.scope.companyId===scope.companyId&&b.scope.issueId===scope.issueId);return i<0?false:checks[i](scope,input);},
++    assertHostAdmission(scope,input){const i=bindings.findIndex(b=>templateMatches(scope,b.scope));return i<0?false:checks[i](scope,input);},
+     async assertCurrentReviewer(binding){
+       const [actor]=await db.select().from(agents).where(and(eq(agents.id,binding.agentId),eq(agents.companyId,binding.companyId))).limit(1);
+       const [run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId),eq(heartbeatRuns.agentId,binding.agentId))).limit(1);
+--- a/dist/services/native-runtime/native-review-host-admission.mjs
++++ b/dist/services/native-runtime/native-review-host-admission.mjs
+@@ -1,3 +1,4 @@
++import {scopeForIssue,templateMatches} from './native-portfolio-scope.mjs';
+ /** Fresh native-table admission for the existing owning-host review runtime.
+  * No listener, lifecycle operation, grants, cache or configuration write.
+  * Construction inputs are protected administrator state, never model arguments.
+@@ -32,10 +33,10 @@
+ }
+ function validDrafting(c,s){
+   const required=['enabled','nativeAttention','projectId','applicantSlug','matchId','producer','reviewer','process'];
+-  if(!keys(c,[...required,'nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'],required)
++  if(!keys(c,[...required,'portfolioRootIssueId','nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'],required)
+     ||c.enabled!==true||c.nativeAttention!==true||c.projectId!==s.projectId||!id(c.applicantSlug)||c.applicantSlug.length>128||!id(c.matchId)
+     ||['nativeCaseProgression','nativeDependencyHandoff','nativeGapPlanReview'].some(k=>Object.hasOwn(c,k)&&c[k]!==false)
+-    ||!validProcess(c.process))return false;
++    ||c.portfolioRootIssueId!==s.portfolioRootIssueId||!validProcess(c.process))return false;
+   return [['producer',s.producerAgentId,s.producerPrincipalId],['reviewer',s.reviewerAgentId,s.reviewerPrincipalId]].every(([role,agentId,principalId])=>
+     keys(c[role],['issueId','agentId','principalId'])&&c[role].issueId===s.issueId&&c[role].agentId===agentId&&c[role].principalId===principalId);
+ }
+@@ -45,13 +46,13 @@
+  * Native participant authorization is a separate mandatory runtime check.
+  */
+ export function createNativeReviewHostAdmissionPolicy({scope,expectedPluginId,applicantSlug,matchId,publicDrafting}={}){
+-  if(!id(expectedPluginId)||!(keys(scope,[...scopeKeys,'wholePacketReview'],scopeKeys)&&(scope.wholePacketReview===undefined||scope.wholePacketReview===true))||scopeKeys.some(k=>!id(scope[k]))||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
++  if(!id(expectedPluginId)||!(keys(scope,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'],scopeKeys)&&(scope.wholePacketReview===undefined||scope.wholePacketReview===true))||scopeKeys.some(k=>!id(scope[k]))||scope.portfolioRootIssueId!==undefined&&(scope.portfolioRootIssueId!==scope.issueId||scope.wholePacketReview!==true)||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId)invalid();
+   const pinned=Object.freeze({...scope});
+   if(!id(applicantSlug)||applicantSlug.length>128||!id(matchId)||!validDrafting(publicDrafting,pinned)||publicDrafting.applicantSlug!==applicantSlug||publicDrafting.matchId!==matchId)invalid();
+   const initial=fingerprint(publicDrafting);
+   return (rows,requestedScope,input)=>{
+-    if(!keys(requestedScope,[...scopeKeys,'wholePacketReview'],scopeKeys)||(requestedScope.wholePacketReview===true)!==(pinned.wholePacketReview===true)||requestedScope.wholePacketReview!==undefined&&requestedScope.wholePacketReview!==true||scopeKeys.some(k=>requestedScope[k]!==pinned[k])
+-      ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==pinned.issueId||input.issue.projectId!==pinned.projectId
++    if(!keys(requestedScope,[...scopeKeys,'wholePacketReview','portfolioRootIssueId'],scopeKeys)||(requestedScope.wholePacketReview===true)!==(pinned.wholePacketReview===true)||requestedScope.wholePacketReview!==undefined&&requestedScope.wholePacketReview!==true||!templateMatches(requestedScope,pinned)||!scopeForIssue(pinned,input?.issue)
++      ||input?.issue?.companyId!==pinned.companyId||input.issue.id!==requestedScope.issueId||input.issue.projectId!==pinned.projectId
+       ||input.actor?.agentId!==pinned.reviewerAgentId||!id(input.actor.runId)||!Array.isArray(rows)||rows.length!==1)return false;
+     const row=rows[0];
+     if(!row||row.pluginId!==expectedPluginId||row.pluginKey!==pluginKey||row.status!=='ready'
+--- a/dist/services/native-runtime/native-review-runtime.mjs
++++ b/dist/services/native-runtime/native-review-runtime.mjs
+@@ -1,3 +1,4 @@
++import {templateMatches} from './native-portfolio-scope.mjs';
+ /** Trusted native/private adapter. Native services retain identity, grants and
+  * lifecycle authority. No model-selected paths, credentials, routing or wakes.
+  */
+@@ -16,10 +17,11 @@
+   const entries=[];
+   for(const b of bindings){
+     const scope=b?.scope,policy=b?.reviewerPolicy;
+-    if(!scope||(Object.keys(scope).length!==scopeKeys.length+(scope.wholePacketReview===true?1:0)||Object.keys(scope).some(k=>!scopeKeys.includes(k)&&k!=='wholePacketReview')||scope.wholePacketReview!==undefined&&scope.wholePacketReview!==true)||scopeKeys.some(k=>!nonempty(scope[k]))
++    if(!scope||(Object.keys(scope).length!==scopeKeys.length+(scope.wholePacketReview===true?1:0)+(scope.portfolioRootIssueId!==undefined?1:0)||Object.keys(scope).some(k=>!scopeKeys.includes(k)&&k!=='wholePacketReview'&&k!=='portfolioRootIssueId')||scope.wholePacketReview!==undefined&&scope.wholePacketReview!==true)||scopeKeys.some(k=>!nonempty(scope[k]))
++      ||scope.portfolioRootIssueId!==undefined&&(scope.portfolioRootIssueId!==scope.issueId||scope.wholePacketReview!==true)
+       ||scope.producerAgentId===scope.reviewerAgentId||scope.producerPrincipalId===scope.reviewerPrincipalId
+-      ||!policy||Object.keys(policy).sort().join()!=='issueIds,projectIds,role,version'
+-      ||policy.version!==1||policy.role!=='reviewer'||!same(policy.projectIds,[scope.projectId])||!same(policy.issueIds,[scope.issueId]))fail('native_domain_review_runtime_configuration_invalid');
++      ||!policy||Object.keys(policy).sort().join()!==(scope.portfolioRootIssueId?'issueIds,portfolioRootIssueId,projectIds,role,version':'issueIds,projectIds,role,version')||policy.portfolioRootIssueId!==scope.portfolioRootIssueId
++      ||policy.version!==1||policy.role!=='reviewer'||!same(policy.projectIds,[scope.projectId])||!(scope.portfolioRootIssueId?Array.isArray(policy.issueIds)&&policy.issueIds.length<=16&&policy.issueIds.every(nonempty)&&new Set(policy.issueIds).size===policy.issueIds.length&&policy.issueIds.includes(scope.issueId):same(policy.issueIds,[scope.issueId])))fail('native_domain_review_runtime_configuration_invalid');
+     let config;
+     try{
+       const file=b.process?.configurationPath,meta=await fs.lstat(file),bytes=await fs.readFile(file);
+@@ -34,7 +36,7 @@
+     }catch{fail('native_domain_review_runtime_configuration_invalid');}
+     entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
+   }
+-  function entry(scope){const e=entries.find(e=>scopeKeys.every(k=>e.scope[k]===scope?.[k])&&(e.scope.wholePacketReview===true)===(scope?.wholePacketReview===true));if(!e)fail('native_domain_review_scope_unavailable');return e;}
++  function entry(scope){const e=entries.find(e=>templateMatches(scope,e.scope));if(!e)fail('native_domain_review_scope_unavailable');return e.scope.portfolioRootIssueId?{...e,scope:Object.freeze({...scope})}:e;}
+   async function hostAdmission(e,input){
+     // The owning dispatcher must read current plugin/company enablement and the
+     // exact enabled native-attention publicDrafting configuration fingerprint.
+@@ -49,6 +51,11 @@
+       nativeReview:{nativeReviewInteractionId:input.interaction?.id,nativeReviewDecisionId:input.assignment?.sourceDecision?.id}};
+     await native.assertCurrentReviewer(binding);
+     const issue=await native.getIssue(e.scope.issueId,e.scope.companyId);
++    if(e.scope.portfolioRootIssueId){
++      const root=await native.getIssue(e.scope.portfolioRootIssueId,e.scope.companyId);
++      if(!root||root.hiddenAt||root.id!==e.scope.portfolioRootIssueId||root.companyId!==e.scope.companyId||root.projectId!==e.scope.projectId||['done','cancelled'].includes(root.status)
++        ||issue?.parentId!==root.id||issue.id===root.id)fail('native_portfolio_review_scope_revoked');
++    }
+     const assignment=await native.getReviewAssignment({...binding,contextSnapshot:binding.nativeReview,actingRunId:binding.runId,allowResolvedByRunId:binding.runId});
+     const facts={issue,interaction:assignment?.interaction,actor:{agentId:binding.agentId,runId:binding.runId},assignment};
+     nativeDomainReviewAssignment(e.scope,facts,{allowResolved:['accepted','rejected'].includes(facts.interaction?.status)});
+@@ -67,7 +74,7 @@
+   async function callbacks(e,input){
+     await current(e,input);
+     return {
+-      async context(signal){signal?.throwIfAborted();await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,applicant_slug:e.applicantSlug,match_id:e.matchId,principal_id:e.scope.reviewerPrincipalId,run_id:input.actor.runId,role:'reviewer'};},
++      async context(signal){signal?.throwIfAborted();await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,applicant_slug:e.applicantSlug,match_id:e.matchId,principal_id:e.scope.reviewerPrincipalId,run_id:input.actor.runId,role:'reviewer',...(e.scope.portfolioRootIssueId?{issue_id:e.scope.issueId,portfolio_root_issue_id:e.scope.portfolioRootIssueId}:{})};},
+       async nativeAssignment(signal){signal?.throwIfAborted();const f=await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,project_id:f.issue.projectId,issue_id:f.issue.id,interaction_id:f.interaction.id,decision_id:f.assignment.sourceDecision.id,producer_agent_id:f.assignment.sourceRun.agentId,producer_run_id:f.assignment.sourceRun.id,reviewer_agent_id:e.scope.reviewerAgentId,reviewer_run_id:input.actor.runId};},
+     };
+   }
+--- a/dist/services/native-runtime/native-review-stdio.mjs
++++ b/dist/services/native-runtime/native-review-stdio.mjs
+@@ -27,7 +27,7 @@
+  constructor(code,message,uncertain=false){super(message);this.name='NativeReviewTransportError';this.code=code;this.outcomeUnconfirmed=uncertain;this.validationRejected=false;}
+ }
+ const error=(code,message,uncertain=false)=>new NativeReviewTransportError(code,message,uncertain);
+-function validContext(v){return keys(v,contextFields)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
++function validContext(v){return (keys(v,contextFields)||keys(v,[...contextFields,'issue_id','portfolio_root_issue_id'])&&id(v.issue_id)&&id(v.portfolio_root_issue_id)&&v.issue_id!==v.portfolio_root_issue_id)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
+ function validAssignment(v){return keys(v,assignmentFields)&&assignmentFields.every(k=>id(v[k]))&&v.producer_agent_id!==v.reviewer_agent_id&&v.producer_run_id!==v.reviewer_run_id;}
+ function validBinding(v){if(packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
+ function validArtifact(v){
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -1,3 +1,4 @@
++import {readTaskProjectAdmission} from "./native-task-project-tools.mjs";
+ import { readNativeDiscoveryAdmission } from "./native-discovery-policy.mjs";
+ import { publicScoutProjection, assertPublicScoutWorkspace } from "../../vendor/paperclip-runner/drivers/public-scout-projection.mjs";
+ import { resolveAcpxQualification } from "./acpx-qualification.js";
+@@ -8127,10 +8128,13 @@
+     // Remote Codex already sends dynamic tool calls over authenticated PRP. Keep
+     // the assigned gateway on the control plane instead of asking the sandbox to
+     // reach the host's HTTP origin (which may be private or loopback-only).
+-    const nativeDiscoveryAdmission = await readNativeDiscoveryAdmission(input.db, input.execution.binding, input.execution.provider.nativeFundingPolicy, nativeReview);
++    const rawFundingPolicy = input.execution.provider.nativeFundingPolicy;
++    const effectiveFundingPolicy = rawFundingPolicy?.role === "worker" ? {...rawFundingPolicy,role:nativeReview?"reviewer":"producer"} : rawFundingPolicy;
++    const nativeTaskProjectAdmission = await readTaskProjectAdmission(input.db,input.execution.binding,rawFundingPolicy,nativeReview);
++    const nativeDiscoveryAdmission = nativeTaskProjectAdmission ? null : await readNativeDiscoveryAdmission(input.db, input.execution.binding, effectiveFundingPolicy, nativeReview);
+     const publicScout = nativeDiscoveryAdmission?.role === "scout" ? publicScoutProjection(nativeDiscoveryAdmission) : null;
+     if (publicScout) assertPublicScoutWorkspace(input.execution.workspace.cwd);
+-    const relayAssignedMcp = (remoteTarget !== null || nativeDiscoveryAdmission || input.execution.provider.nativeFundingPolicy?.role === "producer") && input.execution.provider.kind === "codex";
++    const relayAssignedMcp = (remoteTarget !== null || nativeTaskProjectAdmission || nativeDiscoveryAdmission || effectiveFundingPolicy?.role === "producer") && input.execution.provider.kind === "codex";
+     const assignedMcpUrl = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_URL;
+     const assignedMcpToken = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_TOKEN;
+     const assignedMcpName = input.runnerEnvironment?.PAPERCLIP_NATIVE_MCP_NAME;
+@@ -8150,14 +8154,15 @@
+             gatewayPublicId: assignedGatewayPublicId,
+             bearerToken: assignedMcpToken,
+             workMode: input.execution.task.workMode,
+-            ...(!nativeDiscoveryAdmission && input.execution.provider.nativeFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
++            ...(!nativeTaskProjectAdmission && !nativeDiscoveryAdmission && effectiveFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
+         })
+         : undefined;
+     const coordinator = input.execution.provider.nativeCoordinatorPolicy;
+-    const funding = input.execution.provider.nativeFundingPolicy;
+-    if (funding && (coordinator || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never" || !nativeDiscoveryAdmission && (funding.role === "reviewer") !== Boolean(nativeReview))) throw Error("native_funding_execution_denied");
++    const funding = effectiveFundingPolicy;
++    if (funding && (coordinator || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never" || !nativeTaskProjectAdmission && !nativeDiscoveryAdmission && (funding.role === "reviewer") !== Boolean(nativeReview))) throw Error("native_funding_execution_denied");
+     if (coordinator && (nativeReview || remoteTarget || input.execution.provider.kind !== "codex" || input.execution.provider.approvalPolicy !== "never")) throw Error("native_coordination_execution_denied");
+     const authority = new PaperclipRunnerToolAuthority(input.db, {
++        ...(nativeTaskProjectAdmission ? {nativeTaskProjectAdmission} : {}),
+         ...(nativeDiscoveryAdmission ? {nativeDiscoveryAdmission} : {}),
+         ...(coordinator ? {nativeCoordinatorPolicy:{...coordinator,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
+         ...(funding ? {nativeFundingPolicy:{...funding,companyId:input.execution.binding.companyId,agentId:input.execution.binding.agentId}} : {}),
+--- /dev/null
++++ b/dist/services/native-runtime/native-task-project-tools.mjs
+@@ -0,0 +1,125 @@
++/** Opt-in exact meeting-task catalog; no grants, lifecycle writes, shell or raw API. */
++import {createHash} from 'node:crypto';
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
++const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
++const text=v=>typeof v==='string'&&!!v.trim()&&v.length<=500&&!/[\x00-\x1f]/.test(v);
++const exact=(v,keys)=>object(v)&&Object.keys(v).sort().join() === [...keys].sort().join();
++const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':object(v)?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
++const hash=v=>createHash('sha256').update(canonical(v)).digest('hex');
++const arrayHash=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
++const deny=()=>{throw Error('native_task_project_admission_denied');};
++export const TASK_PROJECT_CANONICAL_TOOLS=Object.freeze({
++ extractor:Object.freeze(['meeting_source_context','submit_meeting_candidates'].map(n=>'netrxn.inertia:'+n)),
++ reader:Object.freeze(['netrxn.inertia:meeting_source_context']),
++});
++const projected=n=>{const s=v=>v.replace(/[^a-zA-Z0-9_]+/g,'_').replace(/^_+|_+$/g,'');const i=n.lastIndexOf(':');return `app_${s(n.slice(0,i)).slice(0,20)}_${s(n.slice(i+1)).slice(-26)}_${createHash('sha256').update(n).digest('hex').slice(0,12)}`;};
++export function taskProjectToolNames(admission){const names=TASK_PROJECT_CANONICAL_TOOLS[admission?.role];if(!names)deny();return names.map(projected);}
++export function isTaskProjectTool(binding,name){return !!binding.nativeTaskProjectAdmission&&taskProjectToolNames(binding.nativeTaskProjectAdmission).includes(name);}
++function optIn(config){
++ if(config?.nativeTaskProjectTools===undefined)return null;
++ const p=config.nativeTaskProjectTools;
++ if(!exact(p,['version','projectIds'])||p.version!==1||!Array.isArray(p.projectIds)||p.projectIds.length<1||p.projectIds.length>16||p.projectIds.some(v=>!uuid(v))||new Set(p.projectIds).size!==p.projectIds.length)deny();
++ return p;
++}
++function runner(binding,context,policy){
++ const c=context.actor.adapterConfig;
++ if(c.provider!=='codex'||c.engine!=='cli'||c.disableCommandExecution!==true||c.dangerouslyBypassApprovalsAndSandbox!==false||c.dangerouslyBypassSandbox===true||c.codexPermissionMode!=='never'||['extraArgs','args'].some(k=>c[k]!==undefined&&(!Array.isArray(c[k])||c[k].length)))deny();
++ const worker=context.actor.role==='general'&&policy?.role==='worker'&&c.nativeFunding?.role==='worker'&&canonical(policy)===canonical(c.nativeFunding)&&c.nativeCoordinator===undefined;
++ const coordinator=context.actor.role==='ceo'&&!policy&&c.nativeFunding===undefined&&c.nativeCoordinator?.version===1&&c.nativeCoordinator.projectIds?.includes(context.issue.projectId);
++ if(!worker&&!coordinator)deny();
++ if(context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.adapterType!=='paperclip_runner'||['paused','terminated','pending_approval','error'].includes(context.actor.status)
++  ||context.issue.id!==binding.issueId||context.issue.companyId!==binding.companyId||context.issue.hiddenAt||context.issue.workMode!=='standard'||context.issue.assigneeAgentId!==binding.agentId||context.issue.executionRunId!==binding.runId||!['in_progress','blocked','todo'].includes(context.issue.status)
++  ||context.run.id!==binding.runId||context.run.companyId!==binding.companyId||context.run.agentId!==binding.agentId||context.run.nativeIssueId!==binding.issueId||context.run.runtimeMode!=='native'||context.run.status!=='running'||context.run.finishedAt)deny();
++ return coordinator;
++}
++function base(rows,binding,policy,nativeReview,context){
++ if(nativeReview)return null;
++ const enabled=optIn(context?.actor?.adapterConfig);if(!enabled)return null;
++ if(!enabled.projectIds.includes(context.issue.projectId))return null;
++ const candidates=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.config?.roundtable?.enabled===true);
++ if(!candidates.length)return null;if(candidates.length!==1)deny();
++ const row=candidates[0],c=row.config.roundtable;
++ if(row.status!=='ready'||row.companyId!==binding.companyId||row.settingsPresent&&row.enabled!==true||!text(c.admission)||!text(c.principalId)||!text(c.origin)||!Array.isArray(c.meetings)||c.meetings.length<1||c.meetings.length>100||c.meetings.some(m=>!object(m)||!text(m.meetingId))||new Set(c.meetings.map(m=>m.meetingId)).size!==c.meetings.length)deny();
++ try{const u=new URL(c.origin);if(u.protocol!=='https:'||u.origin!==c.origin)deny();}catch{deny();}
++ return{c,coordinator:runner(binding,context,policy),adapterHash:hash(context.actor.adapterConfig)};
++}
++export function taskProjectMappingKeys(companyId,c){
++ if(!c?.nativeIntake||!text(c.nativeIntake.organizationId))return[];
++ return c.meetings.filter(m=>text(m.meetingId)).map(m=>{
++  const ref=arrayHash([companyId,c.origin,c.principalId,m.meetingId]);
++  return arrayHash([c.nativeIntake.organizationId,'inertia-roundtable',ref]);
++ });
++}
++/** Pure selector consumes native/config/mapping records, never model-supplied scope. */
++export function selectTaskProjectAdmission(rows,binding,policy,nativeReview,context,mappings=[],ancestors=[]){
++ const selected=base(rows,binding,policy,nativeReview,context);if(!selected)return null;
++ const{c,coordinator,adapterHash}=selected;
++ const extraction=c.meetings.filter(m=>m.nativeExtraction?.issueId===binding.issueId);
++ let role,mapping;
++ if(extraction.length){
++  if(extraction.length!==1||coordinator)deny();
++  const m=extraction[0],a=m.nativeExtraction;
++  if(m.withdrawn!==false||!text(m.meetingId)||a.projectId!==context.issue.projectId||a.agentId!==binding.agentId)deny();
++  role='extractor';
++ }else{
++  const intake=c.nativeIntake;
++  if(intake?.referenceOnly!==true||intake.sourceAccess!==true||intake.projectId!==context.issue.projectId||![intake.intakeAgentId,...(intake.allowedAgentIds??[])].includes(binding.agentId))return null;
++  const keys=taskProjectMappingKeys(binding.companyId,c),chain=[context.issue,...ancestors],seen=new Set();
++  let current=context.issue;
++  for(let depth=0;current&&depth<33;depth++){
++   if(seen.has(current.id)||current.companyId!==binding.companyId||current.projectId!==context.issue.projectId||current.hiddenAt||['done','cancelled'].includes(current.status))deny();seen.add(current.id);
++   const matches=mappings.filter(m=>m&&keys.includes(m.key)&&m.companyId===binding.companyId&&m.nativeIssueId===current.id&&m.pending===false&&m.snapshot?.withdrawn===false&&m.snapshot?.sourceSystem==='inertia-roundtable'&&m.snapshot.organizationId===intake.organizationId&&m.snapshot.audience==='restricted'&&typeof m.marker==='string'&&/^[a-f0-9]{64}$/.test(m.marker));
++   if(matches.length){
++    if(matches.length!==1)deny();mapping=matches[0];
++    if(current.originKind!=='plugin:netrxn.inertia:objective'||current.originId!==mapping.key||!new RegExp('^Objective source revision: '+mapping.marker+'$','m').test(current.description??''))deny();
++    const ref=mapping.snapshot.sourceId;
++    if(!c.meetings.some(m=>m.withdrawn===false&&arrayHash([binding.companyId,c.origin,c.principalId,m.meetingId])===ref))deny();
++    break;
++   }
++   if(!current.parentId)break;
++   current=chain.find(i=>i.id===current.parentId);
++  }
++  if(!mapping)return null;
++  role='reader';
++ }
++ return Object.freeze({version:1,role,companyId:binding.companyId,projectId:context.issue.projectId,issueId:binding.issueId,agentId:binding.agentId,runId:binding.runId,bindingHash:hash([c,mapping??null]),adapterHash});
++}
++export async function readTaskProjectAdmission(db,binding,policy,nativeReview,context){
++ const [{and,eq,sql},{plugins,pluginCompanySettings,pluginConfig,agents,issues,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ if(!context){[context]=await db.select({actor:agents,issue:issues,run:heartbeatRuns}).from(heartbeatRuns).innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId)).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);}
++ if(!context)deny();
++ if(nativeReview||!optIn(context.actor.adapterConfig))return null;
++ const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,settingsId:pluginCompanySettings.id,enabled:pluginCompanySettings.enabled}).from(plugins)
++  .innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId)))
++  .leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ const source=rows.map(r=>({...r,settingsPresent:r.settingsId!=null})),selected=base(source,binding,policy,nativeReview,context);if(!selected)return null;
++ if(selected.c.meetings.some(m=>m.nativeExtraction?.issueId===binding.issueId))return selectTaskProjectAdmission(source,binding,policy,nativeReview,context);
++ const intake=selected.c.nativeIntake;
++ if(intake?.sourceAccess!==true||intake.projectId!==context.issue.projectId||![intake.intakeAgentId,...(intake.allowedAgentIds??[])].includes(binding.agentId))return null;
++ const keys=taskProjectMappingKeys(binding.companyId,selected.c);if(!keys.length)return null;
++ const records=await db.execute(sql`SELECT record FROM "plugin_netrxn_inertia_e936d62b87".objective_intake WHERE mapping_key IN (${sql.join(keys.map(k=>sql`${k}`),sql`, `)})`);
++ const mappings=(records.rows??records).map(r=>r.record),ancestors=[];let current=context.issue;
++ for(let depth=0;current.parentId&&depth<32;depth++){
++  if(mappings.some(m=>m?.nativeIssueId===current.id))break;
++  const [parent]=await db.select().from(issues).where(and(eq(issues.id,current.parentId),eq(issues.companyId,binding.companyId))).limit(1);
++  if(!parent)break;ancestors.push(parent);current=parent;
++ }
++ return selectTaskProjectAdmission(source,binding,policy,nativeReview,context,mappings,ancestors);
++}
++export async function assertFreshTaskProject(db,binding,context){
++ const fresh=await readTaskProjectAdmission(db,binding,context.actor.adapterConfig.nativeFunding??null,binding.nativeReview,context);
++ if(!fresh||hash(fresh)!==hash(binding.nativeTaskProjectAdmission))deny();return fresh;
++}
++export async function taskProjectDefinitions(binding,context){
++ await context();const assigned=binding.assignedMcpTools,allowed=taskProjectToolNames(binding.nativeTaskProjectAdmission);
++ if(typeof assigned?.definitionsFresh!=='function')deny();
++ const tools=(await assigned.definitionsFresh('standard')).filter(t=>allowed.includes(t.name));
++ if(tools.length!==allowed.length||new Set(tools.map(t=>t.name)).size!==allowed.length)deny();
++ await context();return tools.map(t=>structuredClone(t));
++}
++export async function executeTaskProjectTool(binding,call,context){
++ if(!isTaskProjectTool(binding,call.tool))deny();
++ const tools=await taskProjectDefinitions(binding,context);
++ if(!tools.some(t=>t.name===call.tool)||!binding.assignedMcpTools.has(call.tool))deny();
++ const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;
++}
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1,3 +1,4 @@
++import {taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-task-project-tools.mjs";
+ import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { NATIVE_REVIEW_ARTIFACT_SCHEMA } from "./native-review-artifact-schema.mjs";
+ import { assertFreshNativeDiscovery, discoveryDefinitions, executeDiscoveryTool, isDiligenceDocumentTool, readDiligenceDocuments, DILIGENCE_DOCUMENT_TOOLS } from "./native-discovery-policy.mjs";
+@@ -115,6 +116,11 @@
+         }
+     }
+     definitions() {
++        if (this.binding.nativeTaskProjectAdmission) return (async()=>{
++            const tools=await taskProjectDefinitions(this.binding,()=>this.#boundContext());
++            if(this.binding.nativeCoordinatorPolicy) tools.push(...CAPABILITY_SEMANTIC_TOOL_CATALOG.filter(t=>NATIVE_COORDINATOR_TOOLS.includes(t.operationId)).map(t=>({name:t.operationId,description:t.description + (["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? " Coordinator may inspect targetTaskId only within server-configured projects; ownership and writes remain bound to the current task." : ""),inputSchema:["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? {...t.inputSchema,properties:{...t.inputSchema.properties,targetTaskId:{type:"string",format:"uuid",description:"Optional task in the server-authorized project scope; omission reads the current task."}}} : t.inputSchema})));
++            return tools;
++        })();
+         if (this.binding.nativeDiscoveryAdmission) return (async () => {
+             const tools = await discoveryDefinitions(this.binding, () => this.#boundContext());
+             if (this.binding.nativeDiscoveryAdmission.role === "diligence") tools.push(...CAPABILITY_SEMANTIC_TOOL_CATALOG.filter(t => DILIGENCE_DOCUMENT_TOOLS.includes(t.operationId)).map(t => ({name:t.operationId,description:"Read only public capture-work routing references on your current independently assigned diligence task. Use list_documents then read_document; its body supplies binding and captureId for funding-diligence-context. No targetTaskId or arbitrary documents.",inputSchema:t.inputSchema})));
+@@ -172,7 +178,7 @@
+         const assignedTools = this.binding.assignedMcpTools?.definitions((tools) => runnerCodexDynamicToolsFit([...connectionTools, ...tools, ...definitions])) ?? [];
+         return [...connectionTools, ...assignedTools, ...definitions];
+     }
+-    #reviewDefinitions(domainBound = false) {
++    #reviewDefinitions(domainBound = false, domainIssue) {
+             // Scope Paperclip control-plane actions. Provider file and shell access
+             // still follow the configured agent/environment policy, including tests.
+             return [
+@@ -187,7 +193,7 @@
+                         properties: {
+                             decision: { type: "string", enum: ["accept", "reject"] },
+                             reason: { type: "string", description: "Required when rejecting: the specific changes the worker must make." },
+-                            ...(domainBound ? { domainReview: structuredClone(nativeDomainReviewComposition.reviewArtifactSchema({companyId:this.binding.companyId,id:this.binding.issueId})) } : {}),
++                            ...(domainBound ? { domainReview: structuredClone(nativeDomainReviewComposition.reviewArtifactSchema(domainIssue)) } : {}),
+                         },
+                         required: ["decision"],
+                     },
+@@ -196,7 +202,7 @@
+     }
+     async #fundingDefinitions() {
+         const context = await this.#boundContext();
+-        if (this.binding.nativeFundingPolicy.role === "reviewer") return this.#reviewDefinitions(nativeDomainReviewComposition.isBound(context.issue));
++        if (this.binding.nativeFundingPolicy.role === "reviewer") return this.#reviewDefinitions(nativeDomainReviewComposition.isBound(context.issue),context.issue);
+         const assigned = this.binding.assignedMcpTools;
+         if (typeof assigned?.definitionsFresh !== "function") throw Error("native_funding_catalog_incomplete");
+         const allowed = nativeFundingToolNames(this.binding.nativeFundingPolicy);
+@@ -206,6 +212,7 @@
+         return tools.map(tool => structuredClone(tool));
+     }
+     async execute(call) {
++        if(this.binding.nativeTaskProjectAdmission && (!this.binding.nativeCoordinatorPolicy || isTaskProjectTool(this.binding,call.tool))) return executeTaskProjectTool(this.binding,call,()=>this.#boundContext());
+         if (isDiligenceDocumentTool(this.binding, call.tool)) return readDiligenceDocuments(this.binding, call, () => this.#boundContext(), documentService(this.db));
+         if (this.binding.nativeDiscoveryAdmission) return executeDiscoveryTool(this.binding, call, () => this.#boundContext());
+         if (this.binding.nativeFundingPolicy) {
+@@ -410,7 +417,7 @@
+             case "get_task_context": {
+                 const childTasks = await this.db.select().from(issues)
+                     .where(and(eq(issues.companyId, this.binding.companyId), eq(issues.parentId, readIssue.id), isNull(issues.hiddenAt),
+-                        ...(this.binding.nativeFundingPolicy ? [inArray(issues.projectId,this.binding.nativeFundingPolicy.projectIds),inArray(issues.id,this.binding.nativeFundingPolicy.issueIds)] : [])))
++                        ...(this.binding.nativeFundingPolicy ? [inArray(issues.projectId,this.binding.nativeFundingPolicy.projectIds),eq(issues.id,this.binding.issueId)] : [])))
+                     .orderBy(desc(issues.createdAt), desc(issues.id))
+                     .limit(101);
+                 const scopedContext = this.binding.nativeCoordinatorPolicy
+@@ -767,7 +774,8 @@
+             }
+         }
+         assertNativeCoordinatorContext(this.binding, row);
+-        if (this.binding.nativeDiscoveryAdmission) await assertFreshNativeDiscovery(this.db, this.binding, row);
++        if(this.binding.nativeTaskProjectAdmission) await assertFreshTaskProject(this.db,this.binding,row);
++        else if (this.binding.nativeDiscoveryAdmission) await assertFreshNativeDiscovery(this.db, this.binding, row);
+         else assertNativeFundingContext(this.binding, row);
+         return row;
+     }
+--- a/dist/vendor/paperclip-runner/contracts/native-execution.js
++++ b/dist/vendor/paperclip-runner/contracts/native-execution.js
+@@ -361,11 +361,11 @@
+         let nativeFundingPolicy;
+         if (provider.nativeFundingPolicy !== undefined) {
+             const policy = record(provider.nativeFundingPolicy, "input.provider.nativeFundingPolicy");
+-            exactKeys(policy,["version","role","projectIds","issueIds"],"input.provider.nativeFundingPolicy");
++            exactKeys(policy,["version","role","projectIds","issueIds",...(policy.portfolioRootIssueId===undefined?[]:["portfolioRootIssueId"])],"input.provider.nativeFundingPolicy");
+             const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+             const ids=values=>Array.isArray(values)&&values.length>=1&&values.length<=16&&values.every(id=>typeof id==="string"&&uuid.test(id))&&new Set(values).size===values.length;
+-            if (!isV5 || provider.approvalPolicy !== "never" || provider.nativeCoordinatorPolicy !== undefined || policy.version !== 1 || !["producer","reviewer"].includes(policy.role) || !ids(policy.projectIds) || !ids(policy.issueIds)) throw new NativeExecutionInputError("input.provider.nativeFundingPolicy is invalid");
+-            nativeFundingPolicy=Object.freeze({version:1,role:policy.role,projectIds:Object.freeze([...policy.projectIds].sort()),issueIds:Object.freeze([...policy.issueIds].sort())});
++            if (!isV5 || provider.approvalPolicy !== "never" || provider.nativeCoordinatorPolicy !== undefined || policy.version !== 1 || !["producer","reviewer","worker"].includes(policy.role) || policy.portfolioRootIssueId!==undefined&&(!uuid.test(policy.portfolioRootIssueId)||!policy.issueIds?.includes(policy.portfolioRootIssueId)) || !ids(policy.projectIds) || !ids(policy.issueIds)) throw new NativeExecutionInputError("input.provider.nativeFundingPolicy is invalid");
++            nativeFundingPolicy=Object.freeze({version:1,role:policy.role,projectIds:Object.freeze([...policy.projectIds].sort()),issueIds:Object.freeze([...policy.issueIds].sort()),...(policy.portfolioRootIssueId?{portfolioRootIssueId:policy.portfolioRootIssueId}:{})});
+         }
+         parsedProvider = {
+             ...(nativeFundingPolicy ? {nativeFundingPolicy} : {}),

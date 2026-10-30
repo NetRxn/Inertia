@@ -1,5 +1,9 @@
 # Inertia
 
+**October30 demo:** [persistent critical-path chart](docs/delivery/critical-path/index.html) · [dated readiness](docs/delivery/CURRENT-DEMO-READINESS.md), [visual proof map](docs/delivery/architecture/index.html), and [walkthrough](docs/delivery/DEMO-WALKTHROUGH.md). Current status, plans, warnings and time credits are maintained in the persistent chart; dated snapshots below remain historical. Historical claims below do not override it.
+
+**Source integration:** [October29 repository status](docs/development/source-integration-20261029.md) records the canonical develop integration, validation and retained peer/qualification branches.
+
 Inertia connects DAO conversations, meeting records, application packets and agent contributions. Paperclip owns native work; Buzz presents the same records. The Wednesday October 28 target uses existing authorized PostgreSQL domain tools and the existing authorized Buzz agent. Helix and Y2 are deferred, not demo prerequisites.
 
 ## Join the sprint
@@ -17,6 +21,15 @@ npm run typecheck
 npm run demo
 npm run demo:roundtable
 ```
+
+`npm test` visibly skips cross-repository DFW qualification when its fixture paths are unset. To run those tests with every assertion enabled, provide a reviewed DFW checkout and its Python runtime:
+
+```sh
+INERTIA_DFW_SOURCE_ROOT=/absolute/path/to/government-funding-dfw \
+INERTIA_DFW_PYTHON=/absolute/path/to/python npm test
+```
+
+Both paths are required for opt-in qualification; incomplete or invalid configured paths fail the test run.
 
 - **Connected bridge:** a signed Buzz reply becomes a native Paperclip comment and a signed receipt with matching IDs. The fixture demonstrates restart/replay without duplicate native writes. Native confirmation cards, recoverable receipt delivery and scoped health are implemented.
 - **Roundtable ingestion:** merged Meet/Drive source adapter, durable publication recovery and reference-only native follow-up. Actual native PostgreSQL/WAL qualification passed with synthetic external I/O; the job remains default-disabled. Notes-only website output is still partial.

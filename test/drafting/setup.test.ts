@@ -58,7 +58,7 @@ it("native attention configuration is an explicit true opt-in, permits independe
  const f=host(value);await registerConfiguredPublicDrafting(f.ctx);expect(f.tools.size).toBe(6);
  expect((manifest.instanceConfigSchema as any).properties.publicDrafting.properties.nativeAttention).toMatchObject({type:"boolean",const:true});
  for(const nativeAttention of[false,"true",1,null])await expect(registerConfiguredPublicDrafting(host({...value,nativeAttention}).ctx)).rejects.toThrow(/attention/);
- for(const name of["nativeCaseProgression","nativeDependencyHandoff","nativeGapPlanReview"])await expect(registerConfiguredPublicDrafting(host({...value,[name]:true}).ctx)).rejects.toThrow(/attention/);
+ for(const name of["nativeCaseProgression","nativeDependencyHandoff"])await expect(registerConfiguredPublicDrafting(host({...value,[name]:true}).ctx)).rejects.toThrow(/attention/);
  await expect(registerConfiguredPublicDrafting(host({...value,nativeAttention:undefined}).ctx)).rejects.toThrow(/independent/);
 });
 it("native attention source fingerprint revocation prevents native reads without changing prior mode state",async()=>{

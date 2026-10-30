@@ -1,0 +1,21 @@
+{
+  "auditMethod": "Read existing independent observer metadata receipt; no new runtime/DB access",
+  "observerReceipt": "/tmp/inertia-server-capacity-ops-20261029/fanout-live.json",
+  "observerSha256": "c6949accd6013bb1f9fa7ff26c84b3ca60e9a7d7ddfaa7cfa14646f779f54421",
+  "observedAt": "2026-10-29T22:42:21.241118+00:00",
+  "projectedAt": "2026-10-29T22:47:43+00:00",
+  "bindingCount": 13,
+  "createdTaskCount": 4,
+  "pendingBindingCount": 9,
+  "allBindingsHaveTasks": false,
+  "duplicateBindingTaskCount": 0,
+  "maxObservedOverlappingCaseRuns": 4,
+  "doesNotProve": [
+    "full intended-source coverage",
+    "persisted scan page consumption or EOF",
+    "all13task dispatch",
+    "independent held-case progress",
+    "completed application materials"
+  ],
+  "creditsChangedByAudit": false
+}

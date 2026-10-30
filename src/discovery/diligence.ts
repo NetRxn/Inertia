@@ -1,3 +1,4 @@
+import {discoveryPortfolioBinding} from "./native-portfolio.js";
 import { fundingFactsParameters, validateFundingFactEvidence, validateFundingFactsReceipt, type FundingFactsRequest, type FundingFactsReceipt } from "./funding-facts.js";
 import { readNativeDocument, writeNativeDocument } from "./documents.js";
 import type {
@@ -186,14 +187,15 @@ export function registerDiscoveryDiligence(
       b.enabled !== true ||
       (b.authorize && !(await b.authorize())) ||
       b.agentId === b.diligence.agentId ||
-      b.issueId === b.diligence.issueId ||
+      (!b.portfolioRootIssueId && b.issueId === b.diligence.issueId) ||
       run.companyId !== b.companyId ||
       run.projectId !== b.projectId ||
       !run.runId ||
       run.agentId !== b.diligence.agentId
     )
       throw Error("Independent diligence actor denied");
-    const d = b.diligence,
+    b=await discoveryPortfolioBinding(ctx,b,run,"diligence");
+    const d = b.diligence!,
       row = await ctx.issues.get(d.issueId, b.companyId);
     if (
       !row ||
@@ -204,7 +206,7 @@ export function registerDiscoveryDiligence(
       ["done", "cancelled"].includes(row.status)
     )
       throw Error("Independent diligence issue unavailable");
-    await ctx.issues.assertCheckoutOwner({
+    if(!b.portfolioRootIssueId)await ctx.issues.assertCheckoutOwner({
       issueId: d.issueId,
       companyId: b.companyId,
       actorAgentId: run.agentId,

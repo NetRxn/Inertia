@@ -1,0 +1,706 @@
+--- a/dist/services/heartbeat.js
++++ b/dist/services/heartbeat.js
+@@ -1,3 +1,4 @@
++import {readCommittedSourceReviewWake,readDurableNativeStatusFollowup} from "./native-runtime/native-source-review.mjs";
+ import {privateSessionIsolation,privateDigest} from "./native-runtime/native-private-preparation.mjs";
+ import { getNativeReviewRetryState } from "./native-runtime/native-review-retry.mjs";
+ import { retryIdempotentDatabaseOperation } from "../database-retry.js";
+@@ -21618,15 +21619,24 @@
+             const scopeKey = issueId
+                 ? `${candidate.companyId}:${candidate.agentId}:${issueId}:${readNativeReviewAssignmentContext(wakeContext)?.nativeReviewInteractionId ?? ""}`
+                 : null;
++            try {
++            // Source review is fresh input. A same-batch wake merged into the
++            // currently running turn must not consume this durable followup.
++            const sourceReviewFollowup = issueId && candidate.reason === "issue_children_completed"
++                ? await readCommittedSourceReviewWake(db, { companyId: candidate.companyId, agentId: candidate.agentId, issueId, intentId: candidate.id })
++                : false;
+             const priorDelivery = scopeKey
+                 ? deliveredByIssueScope.get(scopeKey)
+                 : null;
+-            if (priorDelivery) {
++            const priorHasFollowup = priorDelivery && sourceReviewFollowup
++                ? await readDurableNativeStatusFollowup(db, { companyId: candidate.companyId, agentId: candidate.agentId, issueId }, priorDelivery.deliveryId)
++                : false;
++            if (priorDelivery && (!sourceReviewFollowup || priorHasFollowup)) {
+                 await db
+                     .update(agentWakeupRequests)
+                     .set({
+                     status: "coalesced",
+-                    runId: priorDelivery.runId,
++                    runId: priorHasFollowup ? priorHasFollowup.runId : priorDelivery.runId,
+                     finishedAt: new Date(),
+                     error: null,
+                     updatedAt: new Date(),
+@@ -21680,8 +21690,8 @@
+                     continue;
+                 }
+             }
+-            try {
+                 const wakeRun = await enqueueWakeup(candidate.agentId, {
++                    ...(sourceReviewFollowup ? { allowRunCoalescing: false } : {}),
+                     source: candidate.source,
+                     triggerDetail: (candidate.triggerDetail ??
+                         "system"),
+@@ -21729,6 +21739,7 @@
+                     .where(eq(agentWakeupRequests.id, candidate.id));
+                 if (scopeKey) {
+                     deliveredByIssueScope.set(scopeKey, {
++                        deliveryId: delivered?.id ?? null,
+                         runId: wakeRun?.id ?? delivered?.runId ?? null,
+                         status: wakeRun ? "coalesced" : (delivered?.status ?? "queued"),
+                     });
+--- a/dist/services/issues.js
++++ b/dist/services/issues.js
+@@ -1,3 +1,4 @@
++import {CASE_HISTORY_CONTINUATION,SOURCE_REVIEW_CHILD_CONTINUATION} from './native-runtime/native-source-review.mjs';
+ import { recordChatHandoff, recordChatCompletion, existingChatCompletionReply, acknowledgeChatCompletionReply } from "./chat-completion-delivery.js";
+ import { mirrorSlackBoardComment, slackBoardReplyBindings } from "./slack-board-messages.js";
+ import { assertAgentRunWriteAllowed } from "../agent-run-cancellation.js";
+@@ -6120,9 +6121,11 @@
+             const [{ childCount }] = await db
+                 .select({ childCount: sql `count(*)::int` })
+                 .from(issues)
+-                .where(and(eq(issues.companyId, parent.companyId), eq(issues.parentId, parent.id)));
++                .where(and(eq(issues.companyId, parent.companyId), eq(issues.parentId, parent.id),
++                    ...(data[SOURCE_REVIEW_CHILD_CONTINUATION]===true ? [sql `NOT COALESCE((${issues.status} = 'done' AND ${issues.originKind} = 'manual' AND ${issues.createdByAgentId} = ${parent.assigneeAgentId} AND ${issues.originId} ~ ${'^paperclip-runner:create-task:'+parent.id+':source-review:[a-f0-9]{64}$'}), false)`] : []),
++                    ...(data[CASE_HISTORY_CONTINUATION] ? [sql `NOT COALESCE((${issues.status} = 'done' AND ${issues.projectId} = ${data[CASE_HISTORY_CONTINUATION].projectId} AND ${issues.assigneeAgentId} = ${data[CASE_HISTORY_CONTINUATION].assigneeAgentId} AND ${issues.originKind} = 'manual' AND ${issues.createdByAgentId} = ${parent.assigneeAgentId} AND ${issues.originId} ~ ${'^paperclip-runner:create-task:'+parent.id+':case:[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$'}), false)`] : [])));
+             if (childCount >= MAX_CHILD_ISSUES_CREATED_BY_HELPER) {
+-                throw unprocessable(`Parent issue already has the maximum ${MAX_CHILD_ISSUES_CREATED_BY_HELPER} child issues for this helper`);
++                throw unprocessable(`Parent issue already has the maximum ${MAX_CHILD_ISSUES_CREATED_BY_HELPER} child issues for this helper`, data[CASE_HISTORY_CONTINUATION]?{code:'native_task_capacity',retryable:true,limit:MAX_CHILD_ISSUES_CREATED_BY_HELPER}:undefined);
+             }
+             const { acceptanceCriteria, blockParentUntilDone, executionWorkspaceInheritanceMode = "linkage", actorAgentId, actorUserId, ...issueData } = data;
+             const inheritStrategyOnly = executionWorkspaceInheritanceMode === "strategy_only";
+--- a/dist/services/native-runtime/assigned-mcp-tools.js
++++ b/dist/services/native-runtime/assigned-mcp-tools.js
+@@ -189,7 +189,7 @@
+                 sessionToken: input.bearerToken,
+                 tool: descriptor.name,
+                 parameters,
+-                ...(input.fundingProducer === true ? {nativeMcpExecution:true} : {}),
++                ...(input.fundingProducer === true || input.nativeInertiaResources === true && ["netrxn.inertia:funding_case_work","netrxn.inertia:entity_context"].includes(descriptor.name) ? {nativeMcpExecution:true} : {}),
+             });
+             if (result.status !== "completed" && result.status !== "replayed") {
+                 throw new Error("assigned_mcp_tool_execution_incomplete");
+--- /dev/null
++++ b/dist/services/native-runtime/native-assigned-skills.mjs
+@@ -0,0 +1,32 @@
++/** Existing call_api reads only: authority comes from the persisted native RUN bundle. */
++const VERSION='GET /api/companies/{companyId}/skills/{skillId}/versions/{versionId}',FILE='GET /api/companies/{companyId}/skills/{skillId}/files';
++const object=v=>v&&typeof v==='object'&&!Array.isArray(v),deny=()=>{throw Error('native_assigned_skill_read_denied');};
++export function selectAssignedSkillRead(snapshot,rows,input,companyId){
++ if(!object(input)||Object.keys(input).some(k=>!['operationId','pathParams','query','responseText'].includes(k))||![VERSION,FILE].includes(input.operationId)||!object(input.pathParams)||input.pathParams.companyId!==companyId)deny();
++ const isVersion=input.operationId===VERSION,p=input.pathParams;
++ if(Object.keys(p).sort().join()!==(isVersion?'companyId,skillId,versionId':'companyId,skillId'))deny();
++ const row=rows.find(r=>r.id===p.skillId&&r.companyId===companyId),assigned=snapshot?.skills?.filter(s=>s.key===row?.key&&s.versionId&&/^[a-f0-9]{64}$/.test(s.bundle?.digest));
++ if(!row||assigned?.length!==1)deny();const pin=assigned[0];
++ if(isVersion){if(p.versionId!==pin.versionId||input.query!==undefined)deny();return{skillId:row.id,versionId:pin.versionId,bundleDigest:pin.bundle.digest};}
++ // The existing files endpoint otherwise reads mutable local/github bytes.
++ // Its installed-source branch serves the immutable current version inventory.
++ if(row.currentVersionId!==pin.versionId||!row.metadata?.skillSourceId||!row.metadata?.snapshotHash||input.query!==undefined&&(!object(input.query)||Object.keys(input.query).some(k=>k!=='path')))deny();
++ const path=input.query?.path??'SKILL.md';if(typeof path!=='string'||!path||path.startsWith('/')||path.includes('\\')||path.includes('\0')||path.split('/').some(s=>!s||s==='.'||s==='..'))deny();
++ return{skillId:row.id,versionId:pin.versionId,bundleDigest:pin.bundle.digest,path};
++}
++export const ASSIGNED_SKILL_READ_DEFINITION=Object.freeze({name:'call_api',description:'Read only skills assigned to this persisted native run. Use GET /api/companies/{companyId}/skills/{skillId}/versions/{versionId} with the exact pinned version to read its fileInventory. GET files is available only for the exact installed immutable snapshot; no arbitrary paths, discovery, latest versions or writes.',inputSchema:{type:'object',properties:{operationId:{type:'string',enum:[VERSION,FILE]},pathParams:{type:'object',properties:{companyId:{type:'string'},skillId:{type:'string'},versionId:{type:'string'}},required:['companyId','skillId'],additionalProperties:false},query:{type:'object',properties:{path:{type:'string'}},additionalProperties:false},responseText:{type:'object',properties:{offsetBytes:{type:'integer',minimum:0},limitBytes:{type:'integer',minimum:4,maximum:24576}},additionalProperties:false}},required:['operationId','pathParams'],additionalProperties:false}});
++export async function assignedSkillFacts(db,binding,context){
++ const raw=context.run.runnerProfileJson?.nativeExecutionInput;if(!raw)return null;
++ const {parseNativeExecutionInput}=await import('../../vendor/paperclip-runner/index.js');const execution=parseNativeExecutionInput(raw);
++ if(['companyId','issueId','agentId','runId'].some(k=>execution.binding[k]!==binding[k]))deny();
++ const snapshot=execution.runtimeContext;if(!snapshot?.skills?.some(s=>s.versionId))return null;
++ const[{and,eq,inArray},{companySkills}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const rows=await db.select().from(companySkills).where(and(eq(companySkills.companyId,binding.companyId),inArray(companySkills.key,snapshot.skills.filter(s=>s.versionId).map(s=>s.key))));
++ return{snapshot,rows};
++}
++export async function assertAssignedSkillRead(db,binding,context,input){const facts=await assignedSkillFacts(db,binding,context);if(!facts)deny();return selectAssignedSkillRead(facts.snapshot,facts.rows,input,binding.companyId);}
++
++export function assignedSkillReadDefinition(facts){
++ const assignments=facts.snapshot.skills.flatMap(pin=>facts.rows.filter(row=>row.key===pin.key&&pin.versionId).map(row=>({companyId:row.companyId,skillId:row.id,key:pin.key,versionId:pin.versionId})));
++ return{...ASSIGNED_SKILL_READ_DEFINITION,description:ASSIGNED_SKILL_READ_DEFINITION.description+' Exact assigned read coordinates: '+JSON.stringify(assignments)};
++}
+--- a/dist/services/native-runtime/native-case-work-tools.mjs
++++ b/dist/services/native-runtime/native-case-work-tools.mjs
+@@ -1,3 +1,4 @@
++import {selectSourceReviewAdmission,SOURCE_REVIEW_CREATE_DEFINITION} from './native-source-review.mjs';
+ import{nativeDomainReviewComposition}from'./native-domain-review-composition.mjs';
+ /** Opt-in current public case tools. Existing enrichment/meeting paths delegate unchanged. */
+ import * as base from './native-enrichment-tools.mjs';
+@@ -40,20 +41,22 @@
+  const[root]=await db.select().from(issues).where(and(eq(issues.companyId,binding.companyId),eq(issues.id,configured.rootIssueId))).limit(1);
+  const isResearch=context.actor.id===configured.researcher?.agentId&&context.issue.projectId===configured.researchProjectId;
+  const b=isResearch?await base.readTaskProjectAdmission(db,binding,policy,nativeReview,context):null;
++ const[parent]=context.issue.parentId?await db.select().from(issues).where(and(eq(issues.companyId,binding.companyId),eq(issues.id,context.issue.parentId))).limit(1):[];
++ const source=selectSourceReviewAdmission(rows,binding,policy,nativeReview,context,root,parent);if(source)return source;
+  const selected=selectCaseWorkAdmission(rows,binding,policy,nativeReview,context,root,b);
+  return selected??base.readTaskProjectAdmission(db,binding,policy,nativeReview,context);
+ }
+ export function isTaskProjectTool(binding,name){
+  const a=binding.nativeTaskProjectAdmission;
+- return a?.kind==='case-work'?(name===CASE_PROJECTED_TOOL||a.role==='researcher'&&name===ENRICHMENT_PROJECTED_TOOL):base.isTaskProjectTool(binding,name);
++ return ['case-work','source-review'].includes(a?.kind)?(name===CASE_PROJECTED_TOOL||a.role==='researcher'&&name===ENRICHMENT_PROJECTED_TOOL):base.isTaskProjectTool(binding,name);
+ }
+ export async function assertFreshTaskProject(db,binding,context){
+- if(binding.nativeTaskProjectAdmission?.kind!=='case-work')return base.assertFreshTaskProject(db,binding,context);
++ if(!['case-work','source-review'].includes(binding.nativeTaskProjectAdmission?.kind))return base.assertFreshTaskProject(db,binding,context);
+  const current=await readTaskProjectAdmission(db,binding,context.actor.adapterConfig.nativeFunding,binding.nativeReview,context);
+  if(!current||hash(current)!==hash(binding.nativeTaskProjectAdmission))deny();return current;
+ }
+ export async function taskProjectDefinitions(binding,context){
+- if(binding.nativeTaskProjectAdmission?.kind!=='case-work')return base.taskProjectDefinitions(binding,context);
++ if(!['case-work','source-review'].includes(binding.nativeTaskProjectAdmission?.kind))return base.taskProjectDefinitions(binding,context);
+  await context();if(typeof binding.assignedMcpTools?.definitionsFresh!=='function')deny();
+  const wanted=binding.nativeTaskProjectAdmission.role==='researcher'?[CASE_PROJECTED_TOOL,ENRICHMENT_PROJECTED_TOOL]:[CASE_PROJECTED_TOOL];
+  const tools=(await binding.assignedMcpTools.definitionsFresh('standard')).filter(t=>wanted.includes(t.name));
+@@ -62,8 +65,9 @@
+ }
+ export async function executeTaskProjectTool(binding,call,context){
+  const a=binding.nativeTaskProjectAdmission;
+- if(a?.kind!=='case-work')return base.executeTaskProjectTool(binding,call,context);
++ if(!['case-work','source-review'].includes(a?.kind))return base.executeTaskProjectTool(binding,call,context);
+  if(!isTaskProjectTool(binding,call.tool)||!binding.assignedMcpTools?.has(call.tool))deny();
+- if(call.tool===CASE_PROJECTED_TOOL&&!((a.role==='researcher'&&call.arguments?.operation==='reserve_case')||(a.role==='producer'&&['context','checkpoint','prepare','workspace','save','save_gap_progress','render','packet'].includes(call.arguments?.operation))))deny();
+- await taskProjectDefinitions(binding,context);if(call.tool===CASE_PROJECTED_TOOL&&a.role==='producer'&&['prepare','workspace','save','save_gap_progress','render','packet'].includes(call.arguments?.operation))nativeDomainReviewComposition.assertCasePreparation((await context()).issue,a.bindingHash);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;
++ if(call.tool===CASE_PROJECTED_TOOL&&!((a.role==='researcher'&&['reserve_case','reserve_candidate'].includes(call.arguments?.operation))||(a.role==='producer'&&['context','checkpoint','prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk','source_context','source_links','source_capture','source_propose','source_receipt'].includes(call.arguments?.operation))||(a.kind==='source-review'&&['source_context','source_review','source_receipt','source_settlement'].includes(call.arguments?.operation))))deny();
++ if(a.kind==='source-review'&&(call.arguments?.parameters?.proposal_hash!==a.proposalHash||(call.arguments?.operation==='source_context'&&call.arguments?.parameters?.view!=='proposal')))deny();
++ await taskProjectDefinitions(binding,context);if(call.tool===CASE_PROJECTED_TOOL&&a.role==='producer'&&['prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk'].includes(call.arguments?.operation))nativeDomainReviewComposition.assertCasePreparation((await context()).issue,a.bindingHash);const result=await binding.assignedMcpTools.execute(call,'standard');await context();return result;
+ }
+--- /dev/null
++++ b/dist/services/native-runtime/native-inertia-execution-policy.mjs
+@@ -0,0 +1,55 @@
++/** Resource deadlines for two existing native tools. This never grants tool access. */
++import { readTaskProjectAdmission } from './native-case-work-tools.mjs';
++import { readEntityAdmission, entityHash } from './native-entity-context.mjs';
++export const NATIVE_INERTIA_RESOURCE_KIND = 'inertia-native-resource-v1';
++export const NATIVE_INERTIA_RESOURCE_TOOLS = Object.freeze(['netrxn.inertia:funding_case_work','netrxn.inertia:entity_context']);
++export const NATIVE_INERTIA_RESOURCE_OVERHEAD = Object.freeze({rpcMs:40_000,gatewayMs:50_000});
++const CASE=NATIVE_INERTIA_RESOURCE_TOOLS[0],ENTITY=NATIVE_INERTIA_RESOURCE_TOOLS[1];
++const caseOperations=new Set(['context','checkpoint','prepare','workspace','save','save_assumption','save_gap_progress','render','packet','packet_artifacts','packet_artifact_chunk','source_context','source_links','source_capture','source_propose','source_receipt']);
++const sourceOperations=new Set(['source_context','source_review','source_receipt','source_settlement']);
++const entityOperations=new Set(['context','search','refresh']);
++const fields=['version','kind','role','companyId','agentId','runId','issueId','projectId','toolName','invocationId','bindingHash','startedAt','operationTimeoutMs','operationDeadlineAt','rpcDeadlineAt','gatewayDeadlineAt'];
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
++const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v);
++const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
++const duration=v=>Number.isInteger(v)&&v>=100&&v<=120_000;
++const sameSet=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&new Set(a).size===a.length&&a.every((v,i)=>typeof v==='string'&&v===b[i]);
++const invalid=()=>{throw Error('native_inertia_execution_policy_invalid');};
++function assigned(input){
++ const a=input.assignment,p=a?.pinned;
++ return a?.valid===true&&p?.version===1&&p.agentId===input.agentId&&Array.isArray(p.connections)&&p.connections.length===0&&Array.isArray(p.tools)&&p.tools.length===0&&sameSet(a.names,p.pluginTools)&&a.names.includes(input.toolName);
++}
++/** The named gateway already validates its pinned SDK ceiling. Native authority supplies the narrower role/catalog. */
++export async function resolveNativeInertiaExecutionPolicy(db,input){
++ if(!NATIVE_INERTIA_RESOURCE_TOOLS.includes(input.toolName)||!assigned(input)||!Number.isSafeInteger(input.startedAt)||input.startedAt>Date.now())return null;
++ const p=input.policyInput,operation=p?.request?.arguments?.operation;
++ if(p?.companyId!==input.companyId||p.actor?.actorType!=='agent'||p.actor.agentId!==input.agentId||p.runContext?.heartbeatRunId!==input.runId||p.request?.toolName!==input.toolName||p.request?.providerType!=='paperclip_plugin')return null;
++ const [{and,eq},s,{toolAccessPolicyService}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db'),import('../tool-access-policy.js')]);
++ const key=input.toolName===CASE?'nativeCaseWork':'entityContext';
++ async function current(){
++  const [context]=await db.select({actor:s.agents,issue:s.issues,run:s.heartbeatRuns}).from(s.heartbeatRuns).innerJoin(s.issues,eq(s.issues.id,s.heartbeatRuns.nativeIssueId)).innerJoin(s.agents,eq(s.agents.id,s.heartbeatRuns.agentId)).where(and(eq(s.heartbeatRuns.id,input.runId),eq(s.heartbeatRuns.companyId,input.companyId),eq(s.agents.id,input.agentId))).limit(1);
++  if(!context||context.run.runtimeMode!=='native'||context.run.status!=='running'||context.run.finishedAt||context.issue.companyId!==input.companyId||p.runContext.issueId!==context.issue.id||p.runContext.projectId!==context.issue.projectId)return null;
++  const binding={companyId:input.companyId,agentId:input.agentId,runId:input.runId,issueId:context.issue.id};
++  const admission=input.toolName===CASE?await readTaskProjectAdmission(db,binding,context.actor.adapterConfig?.nativeFunding,null,context):await readEntityAdmission(db,binding,context);
++  if(input.toolName===CASE?!(admission?.kind==='case-work'&&admission.role==='producer'&&caseOperations.has(operation)||admission?.kind==='source-review'&&admission.role==='reviewer'&&sourceOperations.has(operation)&&p.request.arguments.parameters?.proposal_hash===admission.proposalHash):!admission||!entityOperations.has(operation)||operation==='refresh'&&!admission.canRefresh)return null;
++  const rows=await db.select({config:s.pluginConfig.configJson,status:s.plugins.status,enabled:s.pluginCompanySettings.enabled}).from(s.plugins).innerJoin(s.pluginConfig,and(eq(s.pluginConfig.pluginId,s.plugins.id),eq(s.pluginConfig.companyId,input.companyId))).leftJoin(s.pluginCompanySettings,and(eq(s.pluginCompanySettings.pluginId,s.plugins.id),eq(s.pluginCompanySettings.companyId,input.companyId))).where(eq(s.plugins.pluginKey,'netrxn.inertia')).limit(2);
++  if(rows.length!==1||rows[0].status!=='ready'||rows[0].enabled===false)return null;
++  const config=rows[0].config?.[key],operationTimeoutMs=config?.process?.timeoutMs;
++  if(config?.enabled!==true||entityHash(config)!==admission.bindingHash||!duration(operationTimeoutMs))return null;
++  return{admission,operationTimeoutMs};
++ }
++ const before=await current();if(!before)return null;
++ const decision=await toolAccessPolicyService(db).decide({...p,consumeRateLimit:false});
++ if(decision?.allowed!==true||decision.decision!=='allow')throw Error('native_inertia_execution_grant_denied');
++ const after=await current();if(!after||entityHash(after)!==entityHash(before))throw Error('native_inertia_execution_scope_changed');
++ const b=after.admission,n=after.operationTimeoutMs,t=input.startedAt;
++ const result=Object.freeze({version:1,kind:NATIVE_INERTIA_RESOURCE_KIND,role:b.role,companyId:b.companyId,agentId:b.agentId,runId:b.runId,issueId:b.issueId,projectId:b.projectId,toolName:input.toolName,invocationId:input.invocationId,bindingHash:b.bindingHash,startedAt:t,operationTimeoutMs:n,operationDeadlineAt:t+n,rpcDeadlineAt:t+n+NATIVE_INERTIA_RESOURCE_OVERHEAD.rpcMs,gatewayDeadlineAt:t+n+NATIVE_INERTIA_RESOURCE_OVERHEAD.gatewayMs});
++ return validateNativeInertiaExecutionPolicy(result,input.toolName,{companyId:b.companyId,agentId:b.agentId,runId:b.runId,projectId:b.projectId});
++}
++/** Internal dispatcher argument only: resource metadata is never added to plugin/model context. */
++export function validateNativeInertiaExecutionPolicy(policy,toolName,runContext){
++ if(Object.hasOwn(runContext,'fundingExecution')||Object.hasOwn(runContext,'nativeInertiaExecution'))invalid();
++ if(!object(policy)||Object.keys(policy).length!==fields.length||fields.some(k=>!Object.hasOwn(policy,k))||policy.version!==1||policy.kind!==NATIVE_INERTIA_RESOURCE_KIND||!NATIVE_INERTIA_RESOURCE_TOOLS.includes(toolName)||policy.toolName!==toolName||!['companyId','agentId','runId','issueId','projectId','invocationId'].every(k=>uuid(policy[k]))||!['companyId','agentId','runId','projectId'].every(k=>policy[k]===runContext[k])||!hash(policy.bindingHash)||!duration(policy.operationTimeoutMs)||!Number.isSafeInteger(policy.startedAt)||policy.startedAt>Date.now()||policy.operationDeadlineAt!==policy.startedAt+policy.operationTimeoutMs||policy.rpcDeadlineAt!==policy.operationDeadlineAt+NATIVE_INERTIA_RESOURCE_OVERHEAD.rpcMs||policy.gatewayDeadlineAt!==policy.operationDeadlineAt+NATIVE_INERTIA_RESOURCE_OVERHEAD.gatewayMs||(toolName===CASE?!['producer','reviewer'].includes(policy.role):!['reader','researcher','reviewer'].includes(policy.role)))invalid();
++ if(policy.operationDeadlineAt<=Date.now())throw Error('native_inertia_execution_deadline_exhausted');
++ return policy;
++}
+--- /dev/null
++++ b/dist/services/native-runtime/native-packet-artifact-handoff.mjs
+@@ -0,0 +1,47 @@
++/** Reuses native registration; all bytes and names derive from current DFW output. */
++import {createHash} from 'node:crypto';
++const object=v=>v&&typeof v==='object'&&!Array.isArray(v),canonical=v=>object(v)?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':Array.isArray(v)?'['+v.map(canonical).join(',')+']':JSON.stringify(v),sha=v=>createHash('sha256').update(v).digest('hex'),deny=()=>{throw Error('native_packet_artifact_handoff_denied');};
++const typedFiles={sponsor_docx:['docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document']};
++const files={application_packet_markdown:['md','text/markdown'],application_packet_docx:['docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],packet_data:['json','application/json'],review:['json','application/json']};
++export const PACKET_ARTIFACT_DEFINITION=Object.freeze({name:'register_deliverable',description:'Attach one exact current DFW-rendered file to this case. The server retrieves bounded chunks, verifies the manifest and bytes, derives its filename and storage path, and invokes native file handoff. This is preparation only; it never accepts or submits the packet.',inputSchema:{type:'object',properties:{artifactKey:{type:'string',pattern:'^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$'}},required:['artifactKey'],additionalProperties:false}});
++export async function readPacketArtifact(a,input,fetch,maxBytes){
++ if(a?.kind!=='case-work'||a.role!=='producer'||!object(input)||Object.keys(input).join()!=='artifactKey'||typeof input.artifactKey!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(input.artifactKey)||!Number.isSafeInteger(maxBytes)||maxBytes<1)deny();
++ const catalog=await fetch('packet_artifacts',{}),m=catalog?.manifest;
++ if(!object(catalog)||catalog.case_binding_id!==a.caseBindingId||catalog.business_complete!==false||m?.schema!=='dfw-packet-machine-manifest-v1'||m.scope?.company_id!==a.companyId||m.scope?.issue_id!==a.issueId||!Number.isSafeInteger(m.packet_version)||m.packet_version<1||typeof m.native_producer_run_id!=='string'||!m.native_producer_run_id||!Array.isArray(m.artifacts)||!Array.isArray(catalog.artifacts)||canonical(m.artifacts)!==canonical(catalog.artifacts)||sha(canonical(m))!==catalog.manifest_hash||new Set(m.artifacts.map(d=>d.key)).size!==m.artifacts.length)deny();
++ const read=async key=>{
++  const d=m.artifacts.find(d=>d.key===key);if(!d||!/^[a-f0-9]{64}$/.test(d.hash)||!Number.isSafeInteger(d.size_bytes)||d.size_bytes<1||d.size_bytes>maxBytes)deny();
++  const bytes=Buffer.alloc(d.size_bytes);let offset=0;
++  while(offset<bytes.length){
++   const limit=Math.min(131072,bytes.length-offset),chunk=await fetch('packet_artifact_chunk',{manifest_hash:catalog.manifest_hash,artifact_key:key,offset,limit});
++   if(!object(chunk)||chunk.manifest_hash!==catalog.manifest_hash||chunk.case_binding_id!==a.caseBindingId||chunk.business_complete!==false||canonical(chunk.artifact)!==canonical(d)||chunk.offset!==offset||!Number.isSafeInteger(chunk.end)||chunk.end!==Math.min(offset+limit,bytes.length)||chunk.next_offset!==(chunk.end===bytes.length?null:chunk.end)||typeof chunk.base64!=='string')deny();
++   const part=Buffer.from(chunk.base64,'base64');if(part.length!==chunk.end-offset||part.toString('base64')!==chunk.base64)deny();part.copy(bytes,offset);offset=chunk.end;
++  }
++  if(sha(bytes)!==d.hash)deny();return{bytes,descriptor:d};
++ };
++ const packet=await read('packet_data');let canonicalData;try{canonicalData=canonicalPacketData(new TextDecoder('utf-8',{fatal:true}).decode(packet.bytes));}catch{deny();}
++ if(sha(canonicalData)!==m.packet_data_hash)deny();
++ const selected=input.artifactKey==='packet_data'?packet:await read(input.artifactKey);
++ const current=await fetch('packet_artifacts',{});if(canonical(current)!==canonical(catalog))deny();
++ const known=Object.hasOwn(files,input.artifactKey),knownType=Object.hasOwn(typedFiles,selected.descriptor.type),[extension,contentType]=known?files[input.artifactKey]:knownType?typedFiles[selected.descriptor.type]:['bin','application/octet-stream'];return{bytes:selected.bytes,manifestHash:catalog.manifest_hash,filename:input.artifactKey+'.'+extension,contentType,sha256:selected.descriptor.hash,byteSize:selected.bytes.length,artifactKey:input.artifactKey,originalFilenameKnown:false,contentTypeDerivedFrom:known?'canonical_artifact_key':knownType?'verified_artifact_type':'opaque_bytes',catalog};
++}
++export async function stagePacketArtifact(workspaceRoot,runId,artifact){
++ const fs=await import('node:fs/promises'),path=await import('node:path');
++ if(typeof workspaceRoot!=='string'||!path.isAbsolute(workspaceRoot)||!/^[a-f0-9-]{36}$/.test(runId))deny();
++ const root=await fs.realpath(workspaceRoot);if(root!==path.resolve(workspaceRoot))deny();
++ const relative='.inertia-packet-'+runId,dir=path.join(root,relative);await fs.mkdir(dir,{mode:0o700}).catch(e=>{if(e.code!=='EEXIST')throw e;});
++ const st=await fs.lstat(dir);if(!st.isDirectory()||st.isSymbolicLink()||await fs.realpath(dir)!==dir)deny();
++ const filename=artifact.manifestHash+'-'+artifact.filename,absolute=path.join(dir,filename);await fs.writeFile(absolute,artifact.bytes,{flag:'wx',mode:0o600}).catch(e=>{if(e.code!=='EEXIST')throw e;});
++ return{input:{idempotencyKey:'packet:'+artifact.manifestHash+':'+artifact.artifactKey,filename:artifact.filename,contentType:artifact.contentType,byteSize:artifact.byteSize,sha256:artifact.sha256,contentRef:relative+'/'+filename,title:'Prepared funding '+artifact.artifactKey},cleanup:async()=>{await fs.unlink(absolute).catch(()=>{});await fs.rmdir(dir).catch(()=>{});}};
++}
++export function assertPacketArtifactCurrent(artifact,current){if(canonical(current)!==canonical(artifact.catalog))deny();}
++
++/** DFW writes both artifact JSON and canonical JSON with Python json.dumps.
++ * Preserve its validated numeric tokens (0.0, large integers, exponent spelling)
++ * instead of rounding through JavaScript Number while ordering object keys. */
++export function canonicalPacketData(text){
++ class NumberToken{constructor(source){this.source=source;}}
++ const parsed=JSON.parse(text,function(_key,value,context){if(typeof value!=='number')return value;if(typeof context?.source!=='string')deny();return new NumberToken(context.source);});
++ const compare=(a,b)=>{const x=[...a],y=[...b];for(let i=0;i<Math.min(x.length,y.length);i++){const d=x[i].codePointAt(0)-y[i].codePointAt(0);if(d)return d;}return x.length-y.length;};
++ const encode=value=>value instanceof NumberToken?value.source:Array.isArray(value)?'['+value.map(encode).join(',')+']':object(value)?'{'+Object.keys(value).sort(compare).map(k=>JSON.stringify(k)+':'+encode(value[k])).join(',')+'}':JSON.stringify(value);
++ return encode(parsed);
++}
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -8162,6 +8162,7 @@
+             gatewayPublicId: assignedGatewayPublicId,
+             bearerToken: assignedMcpToken,
+             workMode: input.execution.task.workMode,
++            ...(nativeEntityAdmission || ["case-work","source-review"].includes(nativeTaskProjectAdmission?.kind) ? {nativeInertiaResources:true} : {}),
+             ...(!nativePrivatePreparationAdmission && !nativeTaskProjectAdmission && !nativeDiscoveryAdmission && effectiveFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
+         })
+         : undefined;
+--- /dev/null
++++ b/dist/services/native-runtime/native-source-review.mjs
+@@ -0,0 +1,165 @@
++/** Ordinary source critique is a separately owned child, never native packet attention. */
++import {createHash} from 'node:crypto';
++const object=v=>v&&typeof v==='object'&&!Array.isArray(v);
++const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':object(v)?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
++export const sourceHash=v=>createHash('sha256').update(canonical(v)).digest('hex');
++const deny=()=>{throw Error('native_source_review_scope_denied');};
++const normalize=p=>object(p)&&Array.isArray(p.projectIds)&&Array.isArray(p.issueIds)?{...p,projectIds:[...p.projectIds].sort(),issueIds:[...p.issueIds].sort()}:p;
++export function sourceProposalHash(issue,parentId){
++ const prefix=`paperclip-runner:create-task:${parentId}:source-review:`;
++ if(issue?.originKind!=='manual'||typeof issue.originId!=='string'||!issue.originId.startsWith(prefix))return null;
++ const proposalHash=issue.originId.slice(prefix.length);return /^[a-f0-9]{64}$/.test(proposalHash)?proposalHash:null;
++}
++export function selectSourceReviewAdmission(rows,binding,policy,nativeReview,context,root,parent){
++ if(nativeReview)return null;
++ const all=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.config?.nativeCaseWork?.enabled===true);
++ if(!all.length)return null;if(all.length!==1)deny();
++ const row=all[0],c=row.config.nativeCaseWork,a=context.actor,i=context.issue,r=context.run;
++ if(!String(i.originId??'').includes(':source-review:'))return null;
++ const proposalHash=sourceProposalHash(i,parent?.id),prefix=`paperclip-runner:create-task:${c.rootIssueId}:case:`;
++ if(!c.reviewer?.agentId||!c.reviewer?.principalId||new Set([c.researcher?.agentId,c.producer?.agentId,c.reviewer.agentId]).size!==3||new Set([c.researcher?.principalId,c.producer?.principalId,c.reviewer.principalId]).size!==3
++ ||row.status!=='ready'||row.companyId!==binding.companyId||row.enabled===false
++ ||a.id!==c.reviewer.agentId||a.id!==binding.agentId||a.companyId!==binding.companyId||a.role!=='general'||a.adapterType!=='paperclip_runner'||!['idle','running'].includes(a.status)
++ ||a.adapterConfig?.provider!=='codex'||a.adapterConfig?.engine!=='cli'||a.adapterConfig?.disableCommandExecution!==true||a.adapterConfig?.codexPermissionMode!=='never'||a.adapterConfig?.dangerouslyBypassApprovalsAndSandbox!==false||a.adapterConfig?.dangerouslyBypassSandbox===true||a.adapterConfig?.nativeCoordinator!==undefined||Object.hasOwn(a.adapterConfig,'args')||Object.hasOwn(a.adapterConfig,'extraArgs')
++ ||policy?.version!==1||policy.role!=='worker'||sourceHash(normalize(policy))!==sourceHash(normalize(a.adapterConfig.nativeFunding))||policy.portfolioRootIssueId!==c.rootIssueId||!policy.issueIds?.includes(c.rootIssueId)||!policy.projectIds?.includes(c.rootProjectId)||!policy.projectIds?.includes(c.projectId)
++ ||!root||root.id!==c.rootIssueId||root.companyId!==binding.companyId||root.projectId!==c.rootProjectId||root.hiddenAt||['done','cancelled'].includes(root.status)
++ ||!parent||parent.companyId!==binding.companyId||parent.projectId!==c.projectId||parent.parentId!==root.id||parent.hiddenAt||!['todo','in_progress','blocked'].includes(parent.status)||parent.workMode!=='standard'||parent.assigneeAgentId!==c.producer.agentId||parent.originKind!=='manual'||!parent.originId?.startsWith(prefix)
++ ||!proposalHash||i.id!==binding.issueId||i.parentId!==parent.id||i.companyId!==binding.companyId||i.projectId!==c.projectId||i.hiddenAt||i.workMode!=='standard'||i.status!=='in_progress'||i.executionRunId!==binding.runId||i.assigneeAgentId!==binding.agentId
++ ||r.id!==binding.runId||r.companyId!==binding.companyId||r.agentId!==binding.agentId||r.nativeIssueId!==binding.issueId||r.runtimeMode!=='native'||r.status!=='running'||r.finishedAt)deny();
++ const caseBindingId=parent.originId.slice(prefix.length);if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(caseBindingId))deny();
++ return Object.freeze({version:1,kind:'source-review',role:'reviewer',companyId:binding.companyId,projectId:i.projectId,issueId:i.id,agentId:a.id,runId:r.id,rootIssueId:root.id,producerIssueId:parent.id,caseBindingId,proposalHash,bindingHash:sourceHash(c),adapterHash:sourceHash(a.adapterConfig)});
++}
++export function sourceReviewTaskInput(admission,input,proposal,config){
++ if(admission?.kind!=='case-work'||admission.role!=='producer'||!object(input)||Object.keys(input).sort().join()!=='proposalHash,purpose'||input.purpose!=='source_review'||!/^[a-f0-9]{64}$/.test(input.proposalHash)
++ ||proposal?.proposal_hash!==input.proposalHash||proposal.case_binding_id!==admission.caseBindingId||proposal.producer_issue_id!==admission.issueId||typeof proposal.producer_run_id!=='string'||!proposal.producer_run_id||typeof proposal.record_id!=='string'||!proposal.record_id
++ ||config.projectId!==admission.projectId||!config.reviewer?.agentId||!config.reviewer?.principalId||new Set([config.researcher?.agentId,config.producer?.agentId,config.reviewer.agentId]).size!==3||new Set([config.researcher?.principalId,config.producer?.principalId,config.reviewer.principalId]).size!==3)deny();
++ return {idempotencyKey:'source-review:'+input.proposalHash,title:'Independent source review '+input.proposalHash.slice(0,12),description:'Review the exact source proposal '+input.proposalHash+' for case '+admission.caseBindingId+'. Read source_context, then source_review accept/reject or source_settlement for independently confirmed source drift. This task does not approve a funding packet or submission.',projectId:admission.projectId,assigneeActorId:config.reviewer.agentId,status:'todo'};
++}
++export function sourceReviewWakeId(child,binding,reviewerAgentId,proposalHash){
++ return child?.companyId===binding.companyId&&child.parentId===binding.issueId&&child.assigneeAgentId===reviewerAgentId&&child.status==='todo'&&!child.hiddenAt&&sourceProposalHash(child,binding.issueId)===proposalHash?`created-child:${child.id}`:null;
++}
++export const SOURCE_REVIEW_CREATE_DEFINITION=Object.freeze({name:'create_task',description:'Create or recover the exact independent Charlie source-review child for this case. The server derives assignment, project, task content and idempotency; the child blocks this case until reviewed or settled as stale.',inputSchema:{type:'object',properties:{purpose:{type:'string',enum:['source_review']},proposalHash:{type:'string',pattern:'^[a-f0-9]{64}$'}},required:['purpose','proposalHash'],additionalProperties:false}});
++export async function readSourceReviewProposal(db,binding,input){
++ if(!object(input)||Object.keys(input).sort().join()!=='proposalHash,purpose'||input.purpose!=='source_review'||!/^[a-f0-9]{64}$/.test(input.proposalHash))deny();
++ const [{and,eq},{plugins,pluginConfig,pluginCompanySettings,issues},{documentService},{readTaskProjectAdmission}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db'),import('../documents.js'),import('./native-case-work-tools.mjs')]);
++ const admission=await readTaskProjectAdmission(db,binding,binding.nativeFundingPolicy?{version:binding.nativeFundingPolicy.version,role:'worker',projectIds:binding.nativeFundingPolicy.projectIds,issueIds:binding.nativeFundingPolicy.issueIds,portfolioRootIssueId:binding.nativeFundingPolicy.portfolioRootIssueId}:null,null);
++ if(admission?.kind!=='case-work'||admission.role!=='producer'||sourceHash(admission)!==sourceHash(binding.nativeTaskProjectAdmission))deny();
++ const rows=await db.select({config:pluginConfig.configJson,status:plugins.status,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ if(rows.length!==1||rows[0].status!=='ready'||rows[0].enabled===false)deny();const config=rows[0].config?.nativeCaseWork;
++ if(!config||sourceHash(config)!==admission.bindingHash)deny();
++ const key='funding-'+createHash('sha256').update(JSON.stringify('case-source-proposal-'+input.proposalHash)).digest('hex').slice(0,32)+'-0000000001';
++ const document=await documentService(db).getIssueDocumentByKey(binding.issueId,key);
++ if(!document||document.companyId!==binding.companyId||document.issueId!==binding.issueId||document.latestRevisionNumber!==1)deny();
++ let proposal;try{proposal=JSON.parse(document.body);}catch{deny();}
++ if(proposal.version!=='inertia-case-source-proposal-v1'||proposal.company_id!==binding.companyId||proposal.project_id!==admission.projectId||proposal.root_issue_id!==admission.rootIssueId||proposal.producer_agent_id!==binding.agentId||proposal.producer_principal_id!==config.producer.principalId)deny();
++ sourceReviewTaskInput(admission,input,proposal,config);return{proposal,config};
++}
++export function validateSourceReviewReceipt(a,c,value){
++ const actor=(v,id,principal,issue)=>object(v)&&v.company_id===a.companyId&&v.project_id===a.projectId&&v.root_issue_id===c.rootIssueId&&v.root_project_id===c.rootProjectId&&v.applicant_slug===c.applicantSlug&&v.agent_id===id&&v.principal_id===principal&&v.issue_id===issue&&typeof v.run_id==='string'&&v.run_id.length>0;
++ if(a?.kind!=='source-review'||!object(value)||value.proposal_hash!==a.proposalHash||value.case_binding_id!==a.caseBindingId||value.human_acceptance!=='not_accepted'||value.submission!=='not_submitted'||value.business_complete!==false||!Array.isArray(value.findings)||value.findings.some(v=>typeof v!=='string')||!actor(value.producer,c.producer.agentId,c.producer.principalId,a.producerIssueId)||!actor(value.reviewer,c.reviewer.agentId,c.reviewer.principalId,a.issueId)||value.producer.run_id===value.reviewer.run_id)deny();
++ if(value.state==='accepted'){if(value.decision!=='accept'||value.findings.length)deny();}
++ else if(value.state==='rejected'){if(value.decision!=='reject'||!value.findings.length)deny();}
++ else if(value.state==='settled_source_drift'){if(value.decision!==undefined||!Array.isArray(value.drift)||!value.drift.length||value.drift.some(v=>!object(v)||typeof v.field!=='string'||!v.field||v.expected_hash===v.current_hash||![v.expected_hash,v.current_hash].every(h=>h===null||typeof h==='string')))deny();}
++ else deny();
++ return structuredClone(value);
++}
++async function sourceReviewFacts(db,binding,{completion=false}={}){
++ const[{and,eq},{plugins,pluginConfig,pluginCompanySettings,agents,issues,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[context]=await db.select({actor:agents,issue:issues,run:heartbeatRuns}).from(heartbeatRuns).innerJoin(issues,eq(issues.id,binding.issueId)).innerJoin(agents,eq(agents.id,binding.agentId)).where(and(eq(heartbeatRuns.id,binding.runId),eq(heartbeatRuns.companyId,binding.companyId))).limit(1);if(!context)deny();
++ const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ const config=rows[0]?.config?.nativeCaseWork;if(!config)deny();
++ const[root]=await db.select().from(issues).where(and(eq(issues.id,config.rootIssueId),eq(issues.companyId,binding.companyId))).limit(1);
++ const[parent]=await db.select().from(issues).where(and(eq(issues.id,context.issue.parentId),eq(issues.companyId,binding.companyId))).limit(1);
++ // Finalization may run after the owning native run has recorded success. Ownership is still exact.
++ if(completion){if(!['running','succeeded'].includes(context.run.status))deny();context.run={...context.run,status:'running',finishedAt:null};}
++ const admission=selectSourceReviewAdmission(rows,binding,context.actor.adapterConfig.nativeFunding,null,context,root,parent);if(!admission)deny();
++ const {toolAccessPolicyService}=await import('../tool-access-policy.js');
++ const decision=await toolAccessPolicyService(db).decide({companyId:binding.companyId,actor:{actorType:'agent',actorId:binding.agentId,agentId:binding.agentId},runContext:{heartbeatRunId:binding.runId,issueId:binding.issueId,projectId:admission.projectId},request:{toolName:'netrxn.inertia:funding_case_work',providerType:'paperclip_plugin',arguments:{operation:'source_receipt',parameters:{proposal_hash:admission.proposalHash}},sideEffecting:false},consumeRateLimit:false});
++ if(decision?.allowed!==true||decision.decision!=='allow')deny();
++ return{admission,config,context};
++}
++export async function recordSourceReviewSettlement(db,binding,call,result){
++ const a=binding.nativeTaskProjectAdmission;if(a?.kind!=='source-review'||!['source_review','source_settlement','source_receipt'].includes(call.arguments?.operation))return;
++ const {admission,config}=await sourceReviewFacts(db,binding);if(sourceHash(admission)!==sourceHash(a))deny();
++ const payload=result?.data;const value=call.arguments.operation==='source_receipt'?payload?.receipt:payload;
++ // Pending receipts have no terminal value and cannot authorize DONE.
++ if(!value)return;
++ const receipt=validateSourceReviewReceipt(a,config,value);
++ if(call.arguments.operation!=='source_receipt'&&receipt.reviewer.run_id!==binding.runId)deny();
++ const[{and,eq},{heartbeatRuns,activityLog},{documentService}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db'),import('../documents.js')]);
++ const key='funding-'+createHash('sha256').update(JSON.stringify('case-source-proposal-'+a.proposalHash)).digest('hex').slice(0,32)+'-0000000001';
++ const document=await documentService(db).getIssueDocumentByKey(a.producerIssueId,key);let proposal;try{proposal=JSON.parse(document?.body);}catch{deny();}
++ if(document.latestRevisionNumber!==1||proposal.producer_run_id!==receipt.producer.run_id||proposal.proposal_hash!==a.proposalHash||proposal.case_binding_id!==a.caseBindingId||proposal.producer_issue_id!==a.producerIssueId)deny();
++ for(const actor of[receipt.producer,receipt.reviewer]){const[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,actor.run_id),eq(heartbeatRuns.companyId,a.companyId),eq(heartbeatRuns.agentId,actor.agent_id),eq(heartbeatRuns.nativeIssueId,actor.issue_id))).limit(1);if(!run||run.runtimeMode!=='native')deny();}
++ await db.insert(activityLog).values({companyId:a.companyId,actorType:'system',actorId:'inertia.source-review',agentId:binding.agentId,runId:binding.runId,action:'inertia.source_review_settled',entityType:'issue',entityId:a.issueId,details:{version:1,admission:{...a,runId:null},receipt,receiptHash:sourceHash(receipt)}});
++}
++export async function assertSourceReviewCompletion(db,{issue,toStatus,runId}){
++ if(toStatus!=='done'||!String(issue?.originId??'').includes(':source-review:'))return;
++ const binding={companyId:issue.companyId,issueId:issue.id,agentId:issue.assigneeAgentId,runId};
++ const{admission:a,config}=await sourceReviewFacts(db,binding,{completion:true});
++ const[{and,eq},{activityLog}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const rows=await db.select().from(activityLog).where(and(eq(activityLog.companyId,a.companyId),eq(activityLog.entityId,a.issueId),eq(activityLog.action,'inertia.source_review_settled'),eq(activityLog.actorType,'system'),eq(activityLog.actorId,'inertia.source-review')));
++ const receipt=rows.find(r=>r.details?.version===1&&sourceHash(r.details.admission)===sourceHash({...a,runId:null})&&r.details.receiptHash===sourceHash(r.details.receipt));
++ if(!receipt)deny();validateSourceReviewReceipt(a,config,receipt.details.receipt);
++}
++// Not a JSON/API option. Only the validated native mutation path can opt into
++// excluding completed exact source-review history from the helper's live quota.
++export const SOURCE_REVIEW_CHILD_CONTINUATION=Symbol('inertia.native-source-review-child');
++
++export const CASE_HISTORY_CONTINUATION=Symbol('inertia.native-case-history');
++export function selectCaseHistoryContinuation(rows,binding,context,input){
++ if(!binding.nativeCoordinatorPolicy||!/^case:[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(input.idempotencyKey??''))return null;
++ const matches=rows.filter(r=>r.pluginKey==='netrxn.inertia'&&r.companyId===binding.companyId&&r.status==='ready'&&r.enabled!==false&&r.config?.nativeCaseWork?.enabled===true);
++ if(matches.length!==1)return null;
++ const c=matches[0].config.nativeCaseWork,i=context.issue;
++ if(i.id!==binding.issueId||i.id!==c.rootIssueId||i.companyId!==binding.companyId||i.projectId!==c.rootProjectId||i.assigneeAgentId!==binding.agentId||i.hiddenAt||!['todo','in_progress','blocked'].includes(i.status)||input.projectId!==c.projectId||input.assigneeActorId!==c.producer?.agentId||!binding.nativeCoordinatorPolicy.projectIds?.includes(c.projectId)||!binding.nativeCoordinatorPolicy.projectIds?.includes(c.rootProjectId))return null;
++ return{projectId:c.projectId,assigneeAgentId:c.producer.agentId};
++}
++export async function readCaseHistoryContinuation(db,binding,context,input){
++ if(!binding.nativeCoordinatorPolicy||!String(input.idempotencyKey??'').startsWith('case:'))return null;
++ const[{and,eq},{plugins,pluginConfig,pluginCompanySettings}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const rows=await db.select({pluginKey:plugins.pluginKey,status:plugins.status,companyId:pluginConfig.companyId,config:pluginConfig.configJson,enabled:pluginCompanySettings.enabled}).from(plugins).innerJoin(pluginConfig,and(eq(pluginConfig.pluginId,plugins.id),eq(pluginConfig.companyId,binding.companyId))).leftJoin(pluginCompanySettings,and(eq(pluginCompanySettings.pluginId,plugins.id),eq(pluginCompanySettings.companyId,binding.companyId))).where(eq(plugins.pluginKey,'netrxn.inertia')).limit(2);
++ return selectCaseHistoryContinuation(rows,binding,context,input);
++}
++
++/** A completed source child is fresh input even when its producer turn is still alive.
++ * The marker alone is never authority: require the committer outbox, applied native
++ * decision/effect and the source-settlement audit to identify the exact child. */
++export function isCommittedSourceReviewWake(f,scope){
++ const w=f?.intent,p=f?.parent,c=f?.child,e=f?.effect,d=f?.decision,s=f?.settlement,r=s?.details?.receipt,a=s?.details?.admission;
++ if(!w||w.id!==scope.intentId||w.companyId!==scope.companyId||w.agentId!==scope.agentId||w.requestedByActorType!=='system'||w.requestedByActorId!=='native-status-committer'||w.source!=='automation'||w.triggerDetail!=='system'||w.reason!=='issue_children_completed'
++ ||w.payload?.issueId!==scope.issueId||w.payload?._paperclipWakeContext?.issueId!==scope.issueId||w.payload?._paperclipWakeContext?.source!=='native_status_decision'
++ ||!p||p.id!==scope.issueId||p.companyId!==scope.companyId||p.assigneeAgentId!==scope.agentId
++ ||!c||c.companyId!==scope.companyId||c.projectId!==p.projectId||c.parentId!==p.id||c.status!=='done'||c.hiddenAt||!sourceProposalHash(c,p.id)||w.payload.completedChildIssueId!==c.id||w.payload._paperclipWakeContext.completedChildIssueId!==c.id||w.idempotencyKey!==`issue_children_completed:${p.id}:${c.id}`
++ ||!e||e.companyId!==scope.companyId||e.issueId!==c.id||e.targetType!=='agent_wakeup_request'||e.targetId!==w.id||e.deliveryState!=='delivered'||!['parent_dependency_wake','parent_wake'].includes(e.effectKind)
++ ||!d||d.id!==e.decisionId||d.companyId!==scope.companyId||d.issueId!==c.id||d.applicationState!=='applied'||d.toStatus!=='done'
++ ||!s||!object(r)||!object(a)||s.companyId!==scope.companyId||s.entityId!==c.id||s.actorType!=='system'||s.actorId!=='inertia.source-review'||s.action!=='inertia.source_review_settled'||s.runId!==d.runId||s.details?.version!==1||s.details.receiptHash!==sourceHash(r)
++ ||a?.companyId!==scope.companyId||a.issueId!==c.id||a.producerIssueId!==p.id||a.proposalHash!==sourceProposalHash(c,p.id)
++ ||!['accepted','rejected','settled_source_drift'].includes(r?.state)||r.proposal_hash!==a.proposalHash||r.producer?.issue_id!==p.id||r.producer?.agent_id!==scope.agentId||r.reviewer?.issue_id!==c.id)return false;
++ return true;
++}
++export async function readCommittedSourceReviewWake(db,scope){
++ const[{and,eq,inArray},{agentWakeupRequests,issues,statusDecisionEffects,statusDecisions,activityLog}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[intent]=await db.select().from(agentWakeupRequests).where(and(eq(agentWakeupRequests.id,scope.intentId),eq(agentWakeupRequests.companyId,scope.companyId))).limit(1);
++ if(intent?.requestedByActorType!=='system'||intent.requestedByActorId!=='native-status-committer'||intent.reason!=='issue_children_completed')return false;
++ const childId=intent.payload?.completedChildIssueId;if(typeof childId!=='string')return false;
++ const[parent]=await db.select().from(issues).where(and(eq(issues.id,scope.issueId),eq(issues.companyId,scope.companyId))).limit(1);
++ const[child]=await db.select().from(issues).where(and(eq(issues.id,childId),eq(issues.companyId,scope.companyId))).limit(1);if(!sourceProposalHash(child,scope.issueId))return false;
++ const effects=await db.select({effect:statusDecisionEffects,decision:statusDecisions}).from(statusDecisionEffects).innerJoin(statusDecisions,and(eq(statusDecisions.id,statusDecisionEffects.decisionId),eq(statusDecisions.companyId,statusDecisionEffects.companyId))).where(and(eq(statusDecisionEffects.companyId,scope.companyId),eq(statusDecisionEffects.targetId,intent.id),eq(statusDecisionEffects.targetType,'agent_wakeup_request'),inArray(statusDecisionEffects.effectKind,['parent_dependency_wake','parent_wake']))).limit(4);
++ const settlements=await db.select().from(activityLog).where(and(eq(activityLog.companyId,scope.companyId),eq(activityLog.entityId,childId),eq(activityLog.action,'inertia.source_review_settled'),eq(activityLog.actorType,'system'),eq(activityLog.actorId,'inertia.source-review')));
++ return effects.some(({effect,decision})=>settlements.some(settlement=>isCommittedSourceReviewWake({intent,parent,child,effect,decision,settlement},scope)));
++}
++
++/** Batch delivery to an already-running turn cannot absorb fresh source input. */
++export function isDurableNativeStatusFollowup({wake,run},scope){
++ if(!wake||wake.companyId!==scope.companyId||wake.agentId!==scope.agentId||wake.requestedByActorType!=='system'||!String(wake.requestedByActorId??'').startsWith('native-status-wake-dispatch:')||wake.payload?.issueId!==scope.issueId)return false;
++ if(wake.status==='deferred_issue_execution'&&!wake.runId)return true;
++ return Boolean(['queued','claimed','coalesced','deferred_issue_execution'].includes(wake.status)&&wake.runId&&run?.id===wake.runId&&run.companyId===scope.companyId&&run.agentId===scope.agentId&&run.contextSnapshot?.issueId===scope.issueId&&run.status==='queued');
++}
++export async function readDurableNativeStatusFollowup(db,scope,deliveryId){
++ if(!deliveryId)return false;
++ const[{and,eq},{agentWakeupRequests,heartbeatRuns}]=await Promise.all([import('drizzle-orm'),import('@paperclipai/db')]);
++ const[wake]=await db.select().from(agentWakeupRequests).where(and(eq(agentWakeupRequests.id,deliveryId),eq(agentWakeupRequests.companyId,scope.companyId))).limit(1);let run=null;
++ if(wake?.runId)[run]=await db.select().from(heartbeatRuns).where(and(eq(heartbeatRuns.id,wake.runId),eq(heartbeatRuns.companyId,scope.companyId))).limit(1);
++ return isDurableNativeStatusFollowup({wake,run},scope)?{runId:wake.runId??null,status:run?.status??wake.status}:null;
++}
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1,7 +1,10 @@
++import {PACKET_ARTIFACT_DEFINITION,readPacketArtifact,stagePacketArtifact,assertPacketArtifactCurrent} from './native-packet-artifact-handoff.mjs';
++import {assignedSkillReadDefinition,assignedSkillFacts,assertAssignedSkillRead} from './native-assigned-skills.mjs';
++import {CASE_HISTORY_CONTINUATION,readCaseHistoryContinuation,SOURCE_REVIEW_CHILD_CONTINUATION,recordSourceReviewSettlement,SOURCE_REVIEW_CREATE_DEFINITION,sourceReviewTaskInput,sourceReviewWakeId,readSourceReviewProposal} from './native-source-review.mjs';
+ import{assertNativeCaseReviewConfigured}from'./native-case-review-runtime.mjs';
+ import {entityDefinitions,executeEntityTool,ENTITY_PROJECTED_TOOL} from "./native-entity-context.mjs";
+ import {readPrivatePreparation,privateDigest,privateDefinitions,executePrivateTool,assertCoordinatorPrivateIsolation} from "./native-private-preparation.mjs";
+-import {taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-case-work-tools.mjs";
++import {CASE_PROJECTED_TOOL,taskProjectDefinitions,executeTaskProjectTool,assertFreshTaskProject,isTaskProjectTool} from "./native-case-work-tools.mjs";
+ import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { NATIVE_REVIEW_ARTIFACT_SCHEMA } from "./native-review-artifact-schema.mjs";
+ import { assertFreshNativeDiscovery, discoveryDefinitions, executeDiscoveryTool, isDiligenceDocumentTool, readDiligenceDocuments, DILIGENCE_DOCUMENT_TOOLS } from "./native-discovery-policy.mjs";
+@@ -118,8 +121,13 @@
+             this.binding = {...this.binding,nativeFundingPolicy:Object.freeze({...binding.nativeFundingPolicy,projectIds:Object.freeze([...binding.nativeFundingPolicy.projectIds]),issueIds:Object.freeze([...binding.nativeFundingPolicy.issueIds])})};
+         }
+     }
+-    definitions() {
+-        return this.binding.nativeEntityAdmission ? this.#definitionsWithEntity() : this.#definitionsBeforeEntity();
++    async definitions() {
++        const tools=await (this.binding.nativeEntityAdmission ? this.#definitionsWithEntity() : this.#definitionsBeforeEntity());
++        if((this.binding.nativeTaskProjectAdmission||this.binding.nativeCoordinatorPolicy||this.binding.nativeFundingPolicy)&&runnerApiToolsEnabled(this.binding.companyId,this.binding.apiToolsEnabled)){
++            const facts=await assignedSkillFacts(this.db,this.binding,await this.#boundContext());
++            if(facts?.rows.length&&!tools.some(t=>t.name==='call_api'))tools.push(assignedSkillReadDefinition(facts));
++        }
++        return tools;
+     }
+     async #definitionsWithEntity() {
+         const original=await this.#definitionsBeforeEntity();
+@@ -132,6 +140,8 @@
+         if(this.binding.nativePrivatePreparationAdmission?.role==="producer")return privateDefinitions(this.binding,()=>this.#boundContext());
+         if (this.binding.nativeTaskProjectAdmission) return (async()=>{
+             const tools=await taskProjectDefinitions(this.binding,()=>this.#boundContext());
++            if(this.binding.nativeTaskProjectAdmission?.kind==="case-work"&&this.binding.nativeTaskProjectAdmission.role==="producer")tools.push(SOURCE_REVIEW_CREATE_DEFINITION);
++            if(this.binding.nativeTaskProjectAdmission?.kind==="case-work"&&this.binding.nativeTaskProjectAdmission.role==="producer"&&this.binding.workspaceRoot&&(this.binding.executionTargetKind??'local')==='local')tools.push(PACKET_ARTIFACT_DEFINITION);
+             if(this.binding.nativeCoordinatorPolicy) tools.push(...CAPABILITY_SEMANTIC_TOOL_CATALOG.filter(t=>NATIVE_COORDINATOR_TOOLS.includes(t.operationId)).map(t=>({name:t.operationId,description:t.description + (["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? " Coordinator may inspect targetTaskId only within server-configured projects; ownership and writes remain bound to the current task." : ""),inputSchema:["get_task_context","get_task_history","list_documents","read_document","list_document_revisions"].includes(t.operationId) ? {...t.inputSchema,properties:{...t.inputSchema.properties,targetTaskId:{type:"string",format:"uuid",description:"Optional task in the server-authorized project scope; omission reads the current task."}}} : t.inputSchema})));
+             return tools;
+         })();
+@@ -227,13 +237,33 @@
+         return tools.map(tool => structuredClone(tool));
+     }
+     async execute(call) {
+-        if(this.binding.nativeCoordinatorPolicy){await this.#boundContext();const result=await this.#executePrivateGuarded(call);await this.#boundContext();return result;}
++        if(this.binding.nativeCoordinatorPolicy){await this.#boundContext();let result;try{result=await this.#executePrivateGuarded(call);}catch(error){if(call.tool!=='create_task'||error?.details?.code!=='native_task_capacity')throw error;result={status:'task_capacity',retryable:true,taskCreated:false,limit:error.details.limit,parentIssueId:this.binding.issueId,guidance:'Keep the reserved case pending and retry after active tasks finish. Capacity does not require human input or exclude this source.'};}await this.#boundContext();return result;}
+         return this.#executePrivateGuarded(call);
+     }
+     async #executePrivateGuarded(call) {
++        if(call.tool==='register_deliverable'&&this.binding.nativeTaskProjectAdmission?.kind==='case-work'&&this.binding.nativeTaskProjectAdmission.role==='producer'){
++            if((this.binding.executionTargetKind??'local')!=='local')throw Error('native_packet_artifact_handoff_denied');
++            const fetch=async(operation,parameters)=>{const result=await executeTaskProjectTool(this.binding,{tool:CASE_PROJECTED_TOOL,callId:randomUUID(),arguments:{operation,parameters}},()=>this.#boundContext());return result?.data;};
++            const artifact=await readPacketArtifact(this.binding.nativeTaskProjectAdmission,call.arguments,fetch,MAX_ATTACHMENT_BYTES);
++            const staged=await stagePacketArtifact(this.binding.workspaceRoot,this.binding.runId,artifact);
++            try{const result=await this.#registerDeliverable(staged.input,async()=>assertPacketArtifactCurrent(artifact,await fetch('packet_artifacts',{})));await this.#boundContext();assertPacketArtifactCurrent(artifact,await fetch('packet_artifacts',{}));return result;}finally{await staged.cleanup();}
++        }
++        if(call.tool==='call_api'&&(this.binding.nativeTaskProjectAdmission||this.binding.nativeCoordinatorPolicy||this.binding.nativeFundingPolicy)){
++            const before=await assertAssignedSkillRead(this.db,this.binding,await this.#boundContext(),call.arguments);
++            const {operationId,...result}=record(await this.#callApi(call.callId,call.arguments));
++            const after=await assertAssignedSkillRead(this.db,this.binding,await this.#boundContext(),call.arguments);
++            if(canonicalJson(before)!==canonicalJson(after))throw Error('native_assigned_skill_read_denied');
++            return{...result,apiOperationId:operationId};
++        }
+         if(call.tool===ENTITY_PROJECTED_TOOL)return executeEntityTool(this.db,this.binding,call,()=>this.#boundContext());
+         if(this.binding.nativePrivatePreparationAdmission?.role==="producer")return executePrivateTool(this.binding,call,()=>this.#boundContext());
+-        if(this.binding.nativeTaskProjectAdmission && (!this.binding.nativeCoordinatorPolicy || isTaskProjectTool(this.binding,call.tool))) return executeTaskProjectTool(this.binding,call,()=>this.#boundContext());
++        if(call.tool==='create_task'&&this.binding.nativeTaskProjectAdmission?.kind==='case-work'&&this.binding.nativeTaskProjectAdmission.role==='producer'){
++            const context=await this.#boundContext();
++            const source=await readSourceReviewProposal(this.db,this.binding,call.arguments);
++            const input=sourceReviewTaskInput(this.binding.nativeTaskProjectAdmission,call.arguments,source.proposal,source.config);
++            return this.#createTask(input,(await captureRunIdentity(this.db,this.binding)).context?.id??null,{proposalHash:call.arguments.proposalHash,request:call.arguments});
++        }
++        if(this.binding.nativeTaskProjectAdmission && (!this.binding.nativeCoordinatorPolicy || isTaskProjectTool(this.binding,call.tool))){const result=await executeTaskProjectTool(this.binding,call,()=>this.#boundContext());await recordSourceReviewSettlement(this.db,this.binding,call,result);return result;}
+         if (isDiligenceDocumentTool(this.binding, call.tool)) return readDiligenceDocuments(this.binding, call, () => this.#boundContext(), documentService(this.db));
+         if (this.binding.nativeDiscoveryAdmission) return executeDiscoveryTool(this.binding, call, () => this.#boundContext());
+         if(call.tool==='record_preparation_review'){
+@@ -559,6 +589,7 @@
+                 apiUrl, token,
+                 beforeDispatch: async () => {
+                     const fresh = await this.#boundContext();
++                    if(this.binding.nativeTaskProjectAdmission||this.binding.nativeCoordinatorPolicy||this.binding.nativeFundingPolicy)await assertAssignedSkillRead(this.db,this.binding,fresh,input);
+                     if (!runnerApiToolsEnabled(this.binding.companyId, this.binding.apiToolsEnabled))
+                         throw new Error("paperclip_runner_tool_not_advertised");
+                     validateRunnerApiCall(input, { ...context, workMode: fresh.issue.workMode });
+@@ -955,7 +986,7 @@
+             publishActivity(publication);
+         return result;
+     }
+-    async #createTask(input, identityContextId) {
++    async #createTask(input, identityContextId, sourceReview = null) {
+         const idempotencyKey = requiredString(input.idempotencyKey);
+         if (input.status !== undefined && input.status !== "backlog" && input.status !== "todo") {
+             throw new Error("paperclip_runner_tool_input_invalid");
+@@ -979,6 +1010,11 @@
+             .update(canonicalJson(input))
+             .digest("hex");
+         const authorizeCreate = async (tx, context) => {
++            if(sourceReview){
++                const current=await readSourceReviewProposal(tx,this.binding,sourceReview.request);
++                const expected=sourceReviewTaskInput(this.binding.nativeTaskProjectAdmission,sourceReview.request,current.proposal,current.config);
++                if(canonicalJson(expected)!==canonicalJson(input))throw Error('native_source_review_scope_denied');
++            }
+             const parentIssueId = context.issue.conversationAgentId ? null : context.issue.id;
+             const projectId = nullableProviderId(input.projectId) ?? (parentIssueId ? context.issue.projectId : null);
+             if (!nativeCoordinatorProjectAllowed(this.binding, {companyId:this.binding.companyId,projectId})) throw Error("native_coordination_project_denied");
+@@ -1003,11 +1039,11 @@
+             });
+             if (trust.kind === "denied")
+                 throw forbidden(trust.detail);
+-            return { projectId, trust };
++            return { projectId, trust, caseHistory:await readCaseHistoryContinuation(tx,this.binding,context,input) };
+         };
+         let publication = null;
+         const result = await this.#withMutationReceipt("create_task", idempotencyKey, input, async (tx, context) => {
+-            const { projectId, trust } = await authorizeCreate(tx, context);
++            const { projectId, trust, caseHistory } = await authorizeCreate(tx, context);
+             const conversation = Boolean(context.issue.conversationAgentId);
+             const existingChild = await tx.select().from(issues).where(and(eq(issues.companyId, this.binding.companyId), eq(issues.originId, durableIdempotencyKey))).limit(1).then((rows) => rows[0] ?? null);
+             if (existingChild) {
+@@ -1020,7 +1056,7 @@
+                     disposition: "duplicate",
+                     stateRevision: existingChild.statusVersion,
+                     entityRefs: [existingChild.id],
+-                    scheduledWakeIds: [],
++                    scheduledWakeIds: sourceReview ? [sourceReviewWakeId(existingChild,this.binding,assigneeAgentId,sourceReview.proposalHash)].filter(Boolean) : [],
+                     task: {
+                         id: existingChild.id,
+                         identifier: existingChild.identifier,
+@@ -1050,7 +1086,9 @@
+                 priority,
+                 assigneeAgentId,
+                 blockedByIssueIds,
+-                blockParentUntilDone: false,
++                blockParentUntilDone: Boolean(sourceReview),
++                ...(sourceReview?{[SOURCE_REVIEW_CHILD_CONTINUATION]:true}:{}),
++                ...(caseHistory?{[CASE_HISTORY_CONTINUATION]:caseHistory}:{}),
+                 createdByAgentId: this.binding.agentId,
+                 originKind: "manual",
+                 originId: durableIdempotencyKey,
+@@ -1113,6 +1151,10 @@
+             };
+         }, { beforeReceiptReplay: async (tx, context) => {
+             await authorizeCreate(tx, context);
++            if(sourceReview){
++                const [child]=await tx.select().from(issues).where(and(eq(issues.companyId,this.binding.companyId),eq(issues.originId,durableIdempotencyKey))).for("update");
++                if(!child||child.originFingerprint!==inputFingerprint||child.parentId!==this.binding.issueId||child.assigneeAgentId!==assigneeAgentId||child.hiddenAt)throw Error('native_source_review_scope_denied');
++            }
+             if (this.binding.nativeCoordinatorPolicy) {
+                 const rows=await tx.select().from(issues).where(and(eq(issues.companyId,this.binding.companyId),eq(issues.originId,durableIdempotencyKey))).for("update");
+                 if (rows.length!==1 || !nativeCoordinatorProjectAllowed(this.binding,rows[0])) throw Error("native_coordination_project_denied");
+@@ -1128,6 +1170,10 @@
+         const assignedAgentId = typeof task.assigneeActorId === "string"
+             ? task.assigneeActorId
+             : null;
++        if(sourceReview){
++            const [currentChild]=await this.db.select().from(issues).where(and(eq(issues.id,childId),eq(issues.companyId,this.binding.companyId))).limit(1);
++            if(!sourceReviewWakeId(currentChild,this.binding,assigneeAgentId,sourceReview.proposalHash))scheduledWakeIds.length=0;
++        }
+         if (this.binding.enqueueWakeup && assignedAgentId && scheduledWakeIds.length > 0) {
+             await this.binding.enqueueWakeup(assignedAgentId, {
+                 source: "assignment",
+@@ -1139,6 +1185,7 @@
+                     parentIssueId: task.parentId ?? null,
+                 },
+                 idempotencyKey: scheduledWakeIds[0],
++                ...(sourceReview?{issueStateGuard:{statuses:["todo"],assigneeAgentId}}:{}),
+                 requestedByActorType: "agent",
+                 requestedByActorId: this.binding.agentId,
+                 contextSnapshot: {
+@@ -1412,7 +1459,7 @@
+             };
+         }, {beforeReceiptReplay: async tx => {await this.#assertCoordinatorTargets(tx,blockedByIssueIds);}});
+     }
+-    async #registerDeliverable(input) {
++    async #registerDeliverable(input, artifactAuthority = null) {
+         const idempotencyKey = requiredString(input.idempotencyKey);
+         const workspaceRoot = this.binding.workspaceRoot?.trim();
+         if (!workspaceRoot) {
+@@ -1421,6 +1468,7 @@
+         let publication = null;
+         let rollbackDefinitePreCommitFailure = null;
+         const result = await this.#withMutationReceipt("register_deliverable", idempotencyKey, input, async (tx, context) => {
++            await artifactAuthority?.();
+             const prepared = await prepareNativeRunnerFileHandoff({
+                 db: tx,
+                 binding: {
+--- a/dist/services/native-runtime/status-decision-committer.js
++++ b/dist/services/native-runtime/status-decision-committer.js
+@@ -1,3 +1,4 @@
++import {assertSourceReviewCompletion} from './native-source-review.mjs';
+ import{assertNativeCaseProducerCompletion}from'./native-case-review-runtime.mjs';
+ import { nativeDomainReviewComposition } from "./native-domain-review-composition.mjs";
+ import { and, asc, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
+@@ -1225,6 +1226,7 @@
+             issue.lastStatusDecisionId !== input.priorDecisionId) {
+             throw new NativeStatusRaceError();
+         }
++        await assertSourceReviewCompletion(tx,{issue,toStatus:input.decision.toStatus,runId:input.runId});
+         await assertNativeCaseProducerCompletion(tx,{issue,toStatus:input.decision.toStatus});
+         nativeDomainReviewComposition.assertCompletion({ issue, toStatus: input.decision.toStatus });
+         if (input.requireModelRejectionOwner || input.requireProviderFailureOwner) {
+--- a/dist/services/plugin-tool-registry.js
++++ b/dist/services/plugin-tool-registry.js
+@@ -1,3 +1,4 @@
++import {NATIVE_INERTIA_RESOURCE_KIND,validateNativeInertiaExecutionPolicy} from "./native-runtime/native-inertia-execution-policy.mjs";
+ import { validateFundingExecutionPolicy } from "./native-runtime/funding-execution-policy.js";
+ /**
+  * PluginToolRegistry — host-side registry for plugin-contributed agent tools.
+@@ -189,7 +190,9 @@
+             return buildName(pluginId, toolName);
+         },
+         async executeTool(namespacedName, parameters, runContext, executionPolicy) {
+-            const fundingExecution = validateFundingExecutionPolicy(executionPolicy,namespacedName,runContext);
++            const nativeInertiaExecution = executionPolicy?.kind === NATIVE_INERTIA_RESOURCE_KIND ? validateNativeInertiaExecutionPolicy(executionPolicy,namespacedName,runContext) : null;
++            const fundingExecution = nativeInertiaExecution ? null : validateFundingExecutionPolicy(executionPolicy,namespacedName,runContext);
++            const rpcExecution = nativeInertiaExecution ?? fundingExecution;
+             // 1. Resolve the namespaced name
+             const parsed = parseName(namespacedName);
+             if (!parsed) {
+@@ -220,7 +223,7 @@
+                 parameters,
+                 runContext: fundingExecution ? {...runContext,fundingExecution} : runContext,
+             };
+-            const result = await workerManager.call(dbId, "executeTool", rpcParams, fundingExecution ? Math.max(1,fundingExecution.rpcDeadlineAt-Date.now()) : undefined);
++            const result = await workerManager.call(dbId, "executeTool", rpcParams, rpcExecution ? Math.max(1,rpcExecution.rpcDeadlineAt-Date.now()) : undefined);
+             log.debug({
+                 pluginId,
+                 toolName,
+--- a/dist/services/tool-gateway.js
++++ b/dist/services/tool-gateway.js
+@@ -1,3 +1,4 @@
++import {resolveNativeInertiaExecutionPolicy} from "./native-runtime/native-inertia-execution-policy.mjs";
+ import {entityGatewayMetadata,ENTITY_TOOL} from "./native-runtime/native-entity-context.mjs";
+ import {privateGatewayMetadata,PRIVATE_TOOL} from "./native-runtime/native-private-preparation.mjs";
+ import { resolveFundingExecutionPolicy } from "./native-runtime/funding-execution-policy.js";
+@@ -7641,7 +7642,10 @@
+             try {
+                 const fundingExecutionPolicy = input.nativeMcpExecution === true && input.timeoutMs === undefined && tool.providerType === "paperclip_plugin"
+                     ? await resolveFundingExecutionPolicy(db, {companyId:session.companyId,agentId:session.agentId,runId:session.runId,toolName:tool.name,invocationId,startedAt:fundingExecutionStartedAt,assignment:await runtimePluginAssignment(policyInputForTool({session,tool,parameters:effectiveParameters}))}) : null;
+-                const executionTimeoutMs = fundingExecutionPolicy ? Math.max(1,fundingExecutionPolicy.gatewayDeadlineAt-Date.now()) : timeoutMs(input.timeoutMs);
++                const nativeInertiaExecutionPolicy = !fundingExecutionPolicy && input.nativeMcpExecution === true && input.timeoutMs === undefined && tool.providerType === "paperclip_plugin"
++                    ? await resolveNativeInertiaExecutionPolicy(db,{companyId:session.companyId,agentId:session.agentId,runId:session.runId,toolName:tool.name,invocationId,startedAt:fundingExecutionStartedAt,assignment:await runtimePluginAssignment(policyInputForTool({session,tool,parameters:effectiveParameters})),policyInput:policyInputForTool({session,tool,parameters:effectiveParameters})}) : null;
++                const trustedExecutionPolicy = fundingExecutionPolicy ?? nativeInertiaExecutionPolicy;
++                const executionTimeoutMs = trustedExecutionPolicy ? Math.max(1,trustedExecutionPolicy.gatewayDeadlineAt-Date.now()) : timeoutMs(input.timeoutMs);
+                 if (tool.providerType === "paperclip_plugin" &&
+                     (!session.agentId || !session.runId)) {
+                     throw new ToolGatewayHttpError(403, "Plugin tools require an agent run context", "agent_context_required");
+@@ -7661,7 +7665,7 @@
+                             projectId: session.projectId ?? "",
+                             ...(tool.name===PRIVATE_TOOL?{privatePreparationExecution:await privateGatewayMetadata(db,session)}:{}),
+                             ...(tool.name===ENTITY_TOOL?{entityExecution:await entityGatewayMetadata(db,session)}:{}),
+-                        }, fundingExecutionPolicy), executionTimeoutMs)
++                        }, trustedExecutionPolicy), executionTimeoutMs)
+                         : await runWithTimeout(executeBuiltinTool(session, tool, effectiveParameters, invocationId), executionTimeoutMs);
+                 const resultValidation = validateToolContent({
+                     value: result,

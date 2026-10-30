@@ -1,0 +1,62 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/routes/access.js": "e5830325590dc866d00b8d522674d6f98913bc78f43ad843f1968a517a4a0efa",
+    "dist/routes/agents.js": "46b47bee5adc0c4c6a897c8fe0d6b30a44f9f3923289a0976414230927b1c3f5",
+    "dist/routes/authz.js": "1340f50d6f737f7986185eaf06627804ffc39537d6af7cfceb6fc03bca40316a",
+    "dist/routes/issues.js": "78e9f242904553e2d1be5dae871b0aadbd643a808c7fd0ece3e079039b3b86fd",
+    "dist/services/access.js": "7be2d934db167ac58678a610158f3061608885ea173adcf451b12054e8a45733",
+    "dist/services/authorization.js": "0b05137b4df0bee6c7edf8347470d3651fb3c85a3a1be4ca3b7feb9d49edca88",
+    "dist/services/built-in-agent-metadata.js": "b7f92b881d17474b7b9a9db9214440bc7a032f5b2a5fa2edc8a26f22b81cff42",
+    "dist/services/heartbeat.js": "94dbece0357bb9f678f44fc3ef27a73a978d9ef64e3463acb57ce4807ef88432",
+    "dist/services/issue-resume-admission.mjs": "11f945429d4bd3b93ff56b71f0e36126db4e5db20181953df438b7d5e5a48048",
+    "dist/services/issues.js": "81f5a53a055d390b09ee22b43f7965151b8ead5878658d326a639f8eec476a25",
+    "dist/services/native-agent-permission-grants.mjs": "80273c7263d65765ac9993266aaf5aea1f14d45327114e7ba3041640d3fb1485",
+    "dist/services/native-runtime/funding-execution-policy.js": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57",
+    "dist/services/native-runtime/funding-tool-preapproval.js": "ae3b345565ff7f9c8231e0e5bdec2995abcfac5c975a31be7fd7d07d83fe565d",
+    "dist/services/native-runtime/native-assigned-skills.mjs": "3a2e621d30b421e97dd6b9bed68b6b189a18b1195a2ab1a95e5171f942c92cad",
+    "dist/services/native-runtime/native-case-review-router.mjs": "9a0ab38c7e2ae2c80a6237dae23ce6dc56eac5e2a334235b1b0d89a0495b96d3",
+    "dist/services/native-runtime/native-case-review-runtime.mjs": "64d74780db811dcd54b540f30cbb70b753c9e8c36cfec6766d805f25b6493dec",
+    "dist/services/native-runtime/native-case-work-tools.mjs": "fbc3eed06d3bc7402882a83d100c7bc5797c647ecaa9a6a90ae5f8cf19f18f53",
+    "dist/services/native-runtime/native-coordinator-continuation.mjs": "93b883ac290b25290dadbad52b85549a37071b160ce5ff0732467aecffb40391",
+    "dist/services/native-runtime/native-coordinator-policy.js": "0c1096e1ba52b481dabca09ba2b19ce6de042ef812335b7f32ac769321dfd1c8",
+    "dist/services/native-runtime/native-domain-review-composition.mjs": "6733759a4e10e353952e0c5bb4874fe1d52625eefbbcd00677e6bd260fc3c205",
+    "dist/services/native-runtime/native-entity-context.mjs": "b366ce5f6c5a36bfdb1c53b7ed0dc1311f98283c0be63659fb83049935ccf368",
+    "dist/services/native-runtime/native-packet-artifact-handoff.mjs": "8d368d4d478dde4d4ae80c4a7a6a96e50c2d4ad1834ad4704fba3f29f60b133d",
+    "dist/services/native-runtime/native-packet-review.mjs": "5d62f81f5697b8b1010cf3b798651643d2ad9496d9d9561db39396449d75a6d4",
+    "dist/services/native-runtime/native-private-preparation.mjs": "a1822f27c5505f31f8d6a1480796055d66762917c53eed2014081abe3146c677",
+    "dist/services/native-runtime/native-review-paging.mjs": "70505ec40459acc25f0338d3bec6a3450a2157a676ad904e7198873d224a7c4a",
+    "dist/services/native-runtime/native-review-runtime.mjs": "0e6e4952771e24d29db0133050652b0f5dcdbbc79e172b1a155b82088aa4d96a",
+    "dist/services/native-runtime/native-review-stdio.mjs": "6e9dcf315b3b263b019485241fa1751295d6ecdb42aa842a6bb1ac5a47036d09",
+    "dist/services/native-runtime/native-session-resume.js": "9df7909a3b9a6b1f732607ec1cf94446bcbb63c53a4467730c433831128f6734",
+    "dist/services/native-runtime/native-source-review.mjs": "ab2f47dfcedff3d6ab91710e25962064b75f2367a230842c0386fddc533c2b57",
+    "dist/services/native-runtime/native-task-continuation.mjs": "c56fb516349569a0be52a04b50523d781574e1b80c20776ea470db66b1ca555d",
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": "95be76fc4e877b51a8acb3882a8dfa042780ebfe5c0ba7ac1cbc103da40cd3d9",
+    "dist/services/native-runtime/status-decision-committer.js": "5efddc5b70cb60563c6bdde0d02776de1462c2b725810f244ebd2d6bf40562e4",
+    "dist/services/plugin-tool-registry.js": "4fd9b2233a4982c244ea270f9f9eb04a61a6a65dbbfc921098117cca9e5710fc",
+    "dist/services/tool-gateway.js": "4be446d0b5d67b53f6ec872506c835f5a824731205e815f2846cc51125929d00",
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  },
+  "patch": "native-scout-deadline.patch",
+  "patch_sha256": "cb9f56a3ba02192e0854444c8dd7ebc593fe5fdd52bc73b0d5f7c3dcf261fee1",
+  "files": {
+    "dist/services/native-runtime/native-session-executor.js": {
+      "base_sha256": "2fff957c75bb1bb63752d6570ee996b6917d95faec76b10eb4d8ba0220c2290f",
+      "candidate_sha256": "5f8d198cdeb56c77d81eeb645fa28debc7884a35d25c7862bda14a091ce989e4"
+    },
+    "dist/services/native-runtime/assigned-mcp-tools.js": {
+      "base_sha256": "4c2197bbf17deaff347c266a060b2f766e79421b2b7ee59d1e9cf535c480a2cf",
+      "candidate_sha256": "2832429aacddcaddc9f0f6e21876da663c3af4ec5c4ac0957b5ca45f77f16514"
+    },
+    "dist/services/native-runtime/native-inertia-execution-policy.mjs": {
+      "base_sha256": "0b567c98dc61e905191ee37ccd9793d2d4cffb4c7e5254bc1731565768ce1baa",
+      "candidate_sha256": "965ebbe90ee21a6b074e8a950bf7bf765453a2e28b21e01efc304b893b68f544"
+    }
+  },
+  "newFiles": {}
+}

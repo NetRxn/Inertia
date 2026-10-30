@@ -198,3 +198,16 @@ or business acceptance proof.
 ### Public scout completion boundary
 
 Closed scout instructions distinguish successful bounded capture from subsequent independent agent diligence. A captured-review-required record is not human approval or application readiness. The scout completes its own satisfied stage so native dependencies can admit diligence; genuine owner-only authority and failed/incomplete captures remain explicit. This instruction regression proves delivery of the distinction, not provider compliance or end-to-end completion.
+
+### Bounded discovery rejection feedback
+
+The paired private process can identify the exact pre-admission
+`program_identity_evidence_required` rejection without exposing diagnostics. The
+host recognizes only its exact exit-2 frame and reports confirmed non-admission;
+unknown process failures remain unconfirmed. This does not supply missing source
+evidence or authorize retrying unchanged input, eligibility, fit or an application.
+
+The source-only [native dependency backstop current-decision guard](NATIVE-DEPENDENCY-BACKSTOP.md)
+packages a pinned repair and disposable actual-service PostgreSQL regression. It
+is not wired into normal bootstrap or launch composition and does not authorize
+runtime changes.
