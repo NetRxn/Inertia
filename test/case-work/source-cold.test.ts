@@ -31,6 +31,13 @@ it('real Python source facade admits exact Charlie ordinary child and preserves 
   const evidence={source_document_id:meta.document,start:0,end:meta.quote.length,quote:meta.quote};
   const invalid=await call('source_propose',{context_hash:current.context_hash,fields:[{field:'title',value:'PRIVATE-CANARY',evidence:[]}],requirements:[{requirement:{key:'PROGRAM',sponsor_language:meta.quote,owner_role:'dao',answer_key:'SPONSOR.PROGRAM'},evidence}]}).catch(error=>error);
   expect(invalid).toBeInstanceOf(Error);expect(invalid.message).toContain('case_source_validation_failed');expect(invalid.message).not.toContain('PRIVATE-CANARY');
+  for(const [requirement,code] of [
+   [{key:'PROGRAM',sponsor_language:'PRIVATE-CANARY paraphrase'},'sponsor_language_quote_mismatch'],
+   [{key:'PROGRAM',sponsor_language:meta.quote,verification_status:'verified'},'verified_metadata_incomplete']
+  ] as const){
+   const invalid=await call('source_propose',{context_hash:current.context_hash,fields:[],requirements:[{requirement,evidence}]}).catch(error=>error);
+   expect(invalid).toBeInstanceOf(Error);expect(invalid.message).toContain(code);expect(invalid.message).not.toContain('PRIVATE-CANARY');expect(invalid.message).not.toContain(meta.quote);
+  }
   const proposed=await call('source_propose',{context_hash:current.context_hash,fields:[{field:'eligible_applicant_types',value:['nonprofit_501c3'],evidence:[evidence]}],requirements:[{requirement:{key:'PROGRAM',sponsor_language:meta.quote,owner_role:'dao',answer_key:'SPONSOR.PROGRAM'},evidence}]});
   expect(proposed.queued).toBe(false);expect(docs.size).toBe(1);
   rows[1].status='blocked';rows[1].executionRunId='new-owner-run';rows.push({id:'source-review',companyId:'company',projectId:'public-cases',parentId:meta.actor.issue_id,status:'in_progress',assigneeAgentId:'charlie',executionRunId:'charlie-run',originKind:'manual',originId:'paperclip-runner:create-task:'+meta.actor.issue_id+':source-review:'+proposed.proposal_hash});
