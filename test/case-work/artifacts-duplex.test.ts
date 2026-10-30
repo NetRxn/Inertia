@@ -1,10 +1,10 @@
 import {expect,it} from 'vitest';
+import {dfwFixture} from '../dfw-fixture.js';
 import {mkdtemp,writeFile,readFile,rm,realpath} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {fileURLToPath} from 'node:url';import {spawnSync} from 'node:child_process';import {createHash} from 'node:crypto';
 import {createBoundedContextBridge} from '../../src/bridge/duplex.js';
 import {validatePacketArtifacts,validatePacketArtifactChunk} from '../../src/case-work/artifacts.js';
-const backend=process.env.INERTIA_DFW_SOURCE_ROOT??'/tmp/inertia-delivery-20261028/dfw/government-funding-dfw';
-const python=process.env.INERTIA_DFW_PYTHON??'/Users/johnroehm/Programming/PythonEnvironments/DFW-Gov-Fund/DFW-Gov-Fund/government-funding-dfw/.venv/bin/python';
-it('real exact-case Python duplex transfers a current attachment above 4MiB through manifest-pinned chunks',{timeout:120000},async()=>{
+const {enabled,backend,python}=dfwFixture();
+it.skipIf(!enabled)('real exact-case Python duplex transfers a current attachment above 4MiB through manifest-pinned chunks',{timeout:120000},async()=>{
  const dir=await realpath(await mkdtemp(join(tmpdir(),'packet-chunk-duplex-')));
  try{
   const built=spawnSync(python,[fileURLToPath(new URL('./packet-large-fixture.py',import.meta.url)),backend,dir],{encoding:'utf8'});expect(built.status,built.stderr).toBe(0);

@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { createTestHarness } from '@paperclipai/plugin-sdk/testing';
 import type { PluginIssueRunSummary, ToolRunContext } from '@paperclipai/plugin-sdk';
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { manifest } from '../../src/manifest.js';
@@ -18,7 +18,7 @@ afterAll(async () => pg.close());
 afterEach(async () => { await Promise.all(directories.splice(0).map(p => rm(p, { recursive: true, force: true }))); });
 let serial = 0;
 async function setup(enabled = true) {
-  const directory = await mkdtemp(join(tmpdir(), 'objective-host-')); directories.push(directory);
+  const directory = await realpath(await mkdtemp(join(tmpdir(), 'objective-host-'))); directories.push(directory);
   const path = join(directory, 'source.json'), f = fixture();
   f.revise({ sourceId: 'bounty-' + ++serial, expectedPreviousHash: null });
   await writeFile(path, JSON.stringify(f.source), { mode: 0o600 });
