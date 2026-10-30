@@ -28,3 +28,8 @@ Qualification update:
 Remaining release gates: final independent review/freeze; installed-image proof after the P0 v0.1.1 baseline is preserved; actual independent Charlie findings and version-linked Beta correction. No P1 live rollout while operator owns P0 profile deployment.
 
 Frozen source candidate: all owning tests above green; independent whole-branch review requested and pending. This is source qualification only, not deployment or live critique acceptance.
+
+Final review correction:
+- Independent reviewer found the LIMIT501/>500 read-audit completion cap could strand a fully read draft after legitimate rereads. Actual native PostgreSQL RED reproduced with 510 duplicate partial rereads after complete reading.
+- Replaced the total-event cap with SQL DISTINCT ranges filtered by the same company/child/run/agent/system actor/action and exact version/document/revision/body hash/byte length. The existing safe-integer, bounded-range, no-gap coverage predicate remains mandatory. Foreign actor/run/hash or a genuine gap cannot authorize a result; no ledger/store/framework changed.
+- Actual SDK/nativePG/journal/callback regression 4/4 PASS (reread-green.log), pure/installer/composer19/19 PASS (reread-installer-green.log). Only native-draft-review runtime changed; patch/pins/composer digest updated, 47/42 retained. Full-startup1/1 prior proof remains applicable to unchanged bootstrap path; updated helper is dynamically imported by the 4/4 regression.

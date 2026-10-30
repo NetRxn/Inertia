@@ -83,9 +83,9 @@
   },
   "newFiles": {
     "dist/services/native-runtime/native-draft-review.mjs": {
-      "candidate_sha256": "4fc54aff5547b8aa1ffb521abcd004c10045730d9da1cc41bfc363aba3db56b4"
+      "candidate_sha256": "6564881ef4123dcdbe8a1f3f41c61980f713958d2b032b1be5930c1817989c44"
     }
   },
   "patch": "native-draft-editorial-review.patch",
-  "patch_sha256": "3d6546cb8e58d26857d189d21221e1de070d6c770c158e4bc3c002800791af7c"
+  "patch_sha256": "514c779d9a91fae33faa76648622604df6858666e6656a4aa2b69a98645d21d4"
 }
