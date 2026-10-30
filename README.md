@@ -32,7 +32,7 @@ The demonstrated pilot created thirteen distinct case tasks, ran four case provi
 | Review question | Documentation |
 | --- | --- |
 | What can users do, and what does the MVP demonstrate? | [MVP overview](docs/guide/README.md) · [User guide](docs/guide/user-guide.md) |
-| How are agents, review and durable stores connected? | [Architecture diagram](docs/guide/architecture.svg) · [Printable PDF](docs/guide/architecture.pdf) · [HTML view](docs/guide/architecture.html) |
+| How are agents, review and durable stores connected? | [Architecture diagram](docs/guide/architecture.svg) · [Printable PDF](docs/guide/architecture.pdf) · [HTML source](docs/guide/architecture.html) |
 | How do I install dependencies and validate the source? | [Installation and qualification](docs/guide/install.md) |
 | How are deployment, recovery and source releases managed? | [Release and recovery](docs/guide/release.md) · [Release notes](docs/releases/20261029/RELEASE_NOTES.md) |
 | Which commits and components were qualified? | [Source inputs](docs/releases/20261029/source-inputs.json) · [Integration evidence](docs/development/source-integration-20261029.md) |

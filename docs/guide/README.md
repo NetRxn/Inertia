@@ -5,7 +5,7 @@
 Inertia helps an organization turn existing knowledge and objectives into accountable work. Paperclip coordinates tasks and review; the member app makes organization knowledge and work accessible. Funding is the current MVP workflow, with a general Coordinator rather than a grant-only product.
 
 - [Use Inertia](user-guide.md): find a case, inspect evidence and read proposed work.
-- [Architecture](architecture.html): who owns work, evidence, review and durable state.
+- [Architecture](architecture.svg): who owns work, evidence, review and durable state.
 - [Install and qualify](install.md): source setup, plugin packaging and native composition.
 - [Release and recover](release.md): exact-source checks, deployment, rollback and tags.
 - [Source integration](../development/source-integration-20261029.md): integrated branches and validation receipts.
