@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vitest';
-import { mkdtemp, writeFile, chmod, mkdir, symlink, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, chmod, mkdir, symlink, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createLocalObjectiveSourceAdapter } from '../../src/intake/source.js';
@@ -9,7 +9,7 @@ import { fixture } from './support.js';
 const directories: string[] = [];
 afterEach(async () => { await Promise.all(directories.splice(0).map(p => rm(p, { recursive: true, force: true }))); });
 async function setup() {
-  const directory = await mkdtemp(join(tmpdir(), 'objective-source-')); directories.push(directory);
+  const directory = await realpath(await mkdtemp(join(tmpdir(), 'objective-source-'))); directories.push(directory);
   const path = join(directory, 'source.json'), f = fixture();
   await writeFile(path, JSON.stringify(f.source), { mode: 0o600 });
   const settings = { enabled: true, sourceMode: 'owner-file', organizationId: 'dao', projectId: 'project', intakeAgentId: 'ceo', sources: [{ sourceSystem: 'dao-platform', sourceId: 'bounty-1', path, allowedAgentIds: ['ceo', 'researcher'], allowedAudiences: ['members'] }] };

@@ -1,13 +1,13 @@
 import {it,expect} from "vitest";
+import {dfwFixture} from '../dfw-fixture.js';
 import {mkdtemp,writeFile,readFile,rm,realpath} from "node:fs/promises";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import {spawnSync} from "node:child_process";
 import {createHash} from "node:crypto";
 import {createBoundedContextBridge} from "../../src/bridge/duplex.js";
-const python="/Users/johnroehm/Programming/PythonEnvironments/DFW-Gov-Fund/DFW-Gov-Fund/government-funding-dfw/.venv/bin/python";
-const backend="/tmp/dfw-native-case-work-20261028";
-it("actual cold Python case protocol persists two independent partial drafts and paged history",{timeout:60000},async()=>{
+const {enabled,backend,python}=dfwFixture();
+it.skipIf(!enabled)("actual cold Python case protocol persists two independent partial drafts and paged history",{timeout:60000},async()=>{
  const dir=await realpath(await mkdtemp(path.join(tmpdir(),"case-work-cold-")));
  try{
   const setup=path.join(dir,"fixture.py");

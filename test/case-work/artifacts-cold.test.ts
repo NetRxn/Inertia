@@ -1,9 +1,9 @@
 import {expect,it} from 'vitest';
+import {dfwFixture} from '../dfw-fixture.js';
 import {mkdtemp,writeFile,readFile,rm,realpath} from 'node:fs/promises';import {tmpdir} from 'node:os';import {join} from 'node:path';import {spawnSync} from 'node:child_process';import {createHash} from 'node:crypto';
 import {validatePacketArtifacts,validatePacketArtifactChunk} from '../../src/case-work/artifacts.js';
-const backend=process.env.INERTIA_DFW_SOURCE_ROOT??'/tmp/inertia-delivery-20261028/dfw/government-funding-dfw';
-const python=process.env.INERTIA_DFW_PYTHON??'/Users/johnroehm/Programming/PythonEnvironments/DFW-Gov-Fund/DFW-Gov-Fund/government-funding-dfw/.venv/bin/python';
-it('accepts actual DFW generated DOCX, markdown and final field payload through exact-manifest chunks',{timeout:60000},async()=>{
+const {enabled,backend,python}=dfwFixture();
+it.skipIf(!enabled)('accepts actual DFW generated DOCX, markdown and final field payload through exact-manifest chunks',{timeout:60000},async()=>{
  const dir=await realpath(await mkdtemp(join(tmpdir(),'packet-artifacts-cold-')));
  try{
   const script=join(dir,'fixture.py'),output=join(dir,'packet.json');

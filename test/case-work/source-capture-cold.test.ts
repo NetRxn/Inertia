@@ -1,12 +1,11 @@
 import {expect,it} from 'vitest';
+import {dfwFixture} from '../dfw-fixture.js';
 import {mkdtemp,writeFile,readFile,rm,realpath} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import path from 'node:path';import {spawnSync} from 'node:child_process';import {createHash} from 'node:crypto';
 import {createBoundedContextBridge} from '../../src/bridge/duplex.js';
 import {registerCaseWork,type CaseWorkBinding} from '../../src/case-work/host.js';
-const backend=process.env.INERTIA_DFW_SOURCE_ROOT;
-if(!backend)throw Error('Explicit reviewed INERTIA_DFW_SOURCE_ROOT required for capture boundary qualification');
-const python=process.env.INERTIA_DFW_PYTHON??'/Users/johnroehm/Programming/PythonEnvironments/DFW-Gov-Fund/DFW-Gov-Fund/government-funding-dfw/.venv/bin/python';
-it('actual HTTP403 through case handler, real stdio and bridge preserves finite feedback without retrying intent',{timeout:60000},async()=>{
+const {enabled,backend,python}=dfwFixture();
+it.skipIf(!enabled)('actual HTTP403 through case handler, real stdio and bridge preserves finite feedback without retrying intent',{timeout:60000},async()=>{
  const dir=await realpath(await mkdtemp(path.join(tmpdir(),'case-source-cold-')));
  try{
   const setup=path.join(dir,'fixture.py');
