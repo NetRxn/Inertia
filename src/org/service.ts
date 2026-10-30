@@ -134,7 +134,8 @@ export function createOrgService(
    * superseded; a done write marks it applied. Any failure is unavailable; the same requestId resumes.
    *
    * plan(role, fresh) throws on a broken rule; 'done' on a fresh request (a repeat pin) records nothing.
-   * apply(role, seq) returns false when a newer op already wrote the target.
+   * apply(role, seq) returns the error to raise when its guarded write was refused (a newer op owns the target,
+   * or the target is no longer eligible); the op is then marked superseded, never applied.
    */
   async function operate(
     companyId: string,
@@ -142,7 +143,7 @@ export function createOrgService(
     role: OrgRole,
     op: Operation,
     plan: (role: OrgRole, fresh: boolean) => Promise<Step>,
-    apply: (role: OrgRole, seq: string) => Promise<boolean>
+    apply: (role: OrgRole, seq: string) => Promise<true | OrgError>
   ): Promise<void> {
     const hash = inputHash({ ...op.input, action: op.action, subject: op.subject, reason: op.reason });
 
@@ -182,9 +183,12 @@ export function createOrgService(
       throw superseded();
     }
 
-    if ((await plan(role, false)) === 'apply' && !(await apply(role, record.seq))) {
-      await store.settleOp(companyId, op.opKey, 'superseded');
-      throw superseded();
+    if ((await plan(role, false)) === 'apply') {
+      const outcome = await apply(role, record.seq);
+      if (outcome !== true) {
+        await store.settleOp(companyId, op.opKey, 'superseded');
+        throw outcome;
+      }
     }
 
     if (!(await store.settleOp(companyId, op.opKey, 'applied'))) {
@@ -216,11 +220,23 @@ export function createOrgService(
     return source ? { hidden: source.hidden } : null;
   }
 
-  /** Apply a hidden marker as op seq: false when a newer op already wrote it. */
-  async function writeHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden'], seq: string): Promise<boolean> {
+  /** Apply a hidden marker as op seq; superseded when a newer op already wrote it. */
+  async function writeHidden(companyId: string, sourceKey: string, hidden: OrgSource['hidden'], seq: string): Promise<true | OrgError> {
     const result = await store.setHidden(companyId, sourceKey, hidden, seq);
     if (result === 'missing') throw notFound();
-    return result === 'applied';
+    return result === 'applied' ? true : superseded();
+  }
+
+  /**
+   * A member write as op seq; when it was refused, say why: a newer op owns the row → superseded; otherwise the
+   * member is no longer eligible → the business-rule conflict.
+   */
+  async function writeMember(companyId: string, userId: string, seq: string, write: () => Promise<boolean>, ineligible: () => OrgError): Promise<true | OrgError> {
+    if (await write()) {
+      return true;
+    }
+    const owner = await store.memberAppliedSeq(companyId, userId);
+    return owner !== null && BigInt(owner) > BigInt(seq) ? superseded() : ineligible();
   }
 
   async function requireRole(companyId: string, userId: string, action: Parameters<typeof allowed>[1]): Promise<OrgRole> {
@@ -332,15 +348,9 @@ export function createOrgService(
           }
           return 'apply';
         },
-        // Already active (an earlier attempt wrote it): rewrite it as is, claiming the row for this op's seq.
-        async (_role, seq) => store.upsertMember(existing && existing.status === 'active' ? existing : {
-          companyId,
-          userId: targetUserId,
-          displayName,
-          role: 'member',
-          status: 'active',
-          joinedAt: clock().toISOString()
-        }, seq));
+        async (_role, seq) => writeMember(companyId, targetUserId, seq,
+          () => store.addMember({ companyId, userId: targetUserId, displayName, joinedAt: clock().toISOString() }, seq),
+          () => new OrgError('conflict', 'Already a member.')));
     },
 
     async removeMember(companyId: string, userId: string, input: Op & { userId: string; reason: string }): Promise<void> {
@@ -364,7 +374,9 @@ export function createOrgService(
           }
           return 'apply';
         },
-        async (_role, seq) => store.upsertMember({ ...target!, status: 'removed' }, seq));
+        async (_role, seq) => writeMember(companyId, targetUserId, seq,
+          () => store.removeMember(companyId, targetUserId, seq),
+          () => new OrgError('conflict', 'Member not found.')));
     },
 
     async setModerator(companyId: string, userId: string, input: Op & { userId: string; moderator: boolean; reason: string }): Promise<void> {
@@ -396,7 +408,9 @@ export function createOrgService(
           // Concurrent demotions may race past the countModerators check; acceptable for v1.
           return 'apply';
         },
-        async (_role, seq) => store.upsertMember({ ...target!, role: targetRole }, seq));
+        async (_role, seq) => writeMember(companyId, targetUserId, seq,
+          () => store.setMemberRole(companyId, targetUserId, targetRole, seq),
+          () => new OrgError('conflict', 'Member not found.')));
     },
 
     async share(companyId: string, userId: string, input: unknown): Promise<SharedSource> {

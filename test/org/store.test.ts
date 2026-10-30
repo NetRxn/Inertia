@@ -91,14 +91,22 @@ it('setHidden on an objective key needs an intake row for that company; never li
   expect(await store.listSources('co3', { includeHidden: true, limit: 10 })).toEqual([]);
 });
 
-it('upsertMember and setHidden are guarded by applied_seq: an older op never overwrites a newer one', async () => {
+it('member writes and setHidden are guarded by applied_seq: an older op never overwrites a newer one', async () => {
   const store = createOrgStore(db);
-  const member = { companyId: 'co8', userId: 'u', displayName: 'U', role: 'member' as const, status: 'active' as const, joinedAt: new Date().toISOString() };
-  expect(await store.upsertMember(member, '5')).toBe(true);
-  expect(await store.upsertMember({ ...member, status: 'removed' }, '7')).toBe(true);
-  expect(await store.upsertMember({ ...member, status: 'active' }, '6')).toBe(false);
-  expect(await store.readMember('co8', 'u')).toMatchObject({ status: 'removed' });
-  expect(await store.upsertMember({ ...member, status: 'removed' }, '7')).toBe(true);
+  const member = { companyId: 'co8', userId: 'u', displayName: 'U', joinedAt: new Date().toISOString() };
+  expect(await store.addMember(member, '5')).toBe(true);
+  expect(await store.addMember(member, '5')).toBe(true); // its own retry
+  expect(await store.addMember(member, '6')).toBe(false); // already active
+  expect(await store.removeMember('co8', 'u', '7')).toBe(true);
+  expect(await store.setMemberRole('co8', 'u', 'moderator', '8')).toBe(false); // removed: ineligible
+  expect(await store.addMember(member, '6')).toBe(false); // older than the removal
+  expect(await store.readMember('co8', 'u')).toMatchObject({ status: 'removed', role: 'member' });
+  expect(await store.removeMember('co8', 'u', '7')).toBe(true); // its own retry
+  expect(await store.memberAppliedSeq('co8', 'u')).toBe('7');
+  expect(await store.addMember(member, '9')).toBe(true);
+  expect(await store.setMemberRole('co8', 'u', 'moderator', '8')).toBe(false); // older than the re-add
+  expect(await store.setMemberRole('co8', 'u', 'moderator', '10')).toBe(true);
+  expect(await store.readMember('co8', 'u')).toMatchObject({ status: 'active', role: 'moderator' });
 
   const source = { companyId: 'co8', sourceKey: 'share:g', kind: 'link' as const, title: 'G', url: 'https://g.example', mediaType: null, byteLength: null, sha256: null, sharedBy: 'u', audience: 'members' as const, hidden: null, pins: 0, createdAt: new Date().toISOString() };
   await store.insertSource(source, null, '5');
