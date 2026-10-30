@@ -153,3 +153,61 @@ The native builder intersects the fixed four producer/two reviewer names with th
 Only the trusted runtime envelope reaches Codex's managed `paperclip-assigned` gateway. The renderer verifies its role, exact tool names, assignment digest, same-origin gateway and full run/task identity, then emits per-tool `approval_mode="approve"`. It adds no server default. User/context gateway inputs cannot provide this envelope. Global `never`, workspace sandbox, command-tool absence and explicit bypass=false remain unchanged.
 
 The CLI approval is a per-run snapshot. Fresh backend grant, role, run, task, source and candidate checks still govern every call; revocation prevents execution even if a prior CLI snapshot exists. No new credentials, recipients, private scope, application acceptance or external submissions are enabled.
+
+
+## Restricted native Coordinator
+
+The opt-in [native Coordinator overlay](NATIVE-COORDINATOR.md) uses the existing
+Paperclip semantic tools and locked authorization paths with an exact project scope
+and fixed command-disable settings. Bootstrap installs the inert restrictive code;
+it does not create, configure or start an agent. `npm run test:native-coordinator`
+checks the installed source. The portable disposable qualification adds synthetic
+PostgreSQL checks and an unauthenticated pinned CLI feature check. Real native
+autonomous continuation remains a separate acceptance gate.
+
+### Native runner image architecture
+
+The [runner packaging correction](NATIVE-RUNNER-PACKAGING.md) makes explicit
+runner selection fail closed, rejects incompatible Linux ELF machines and adds
+a read-only image preflight. Its additive Docker layer reuses only the matching
+native runner from the exact official multi-architecture build; it does not
+replace Codex, authentication or state. A verified source-image digest and
+target-platform qualification remain required before rollout.
+
+### Shared Paperclip home persistence preparation
+
+[SHARED-HOME-PERSISTENCE.md](SHARED-HOME-PERSISTENCE.md) follows the native
+once-configured home-persistence model, with read-only composition checks and no
+per-agent mounts. This is source preparation, not a launcher repair or deployment:
+private state/credential-retention approval, validated pre-teardown snapshot,
+effective mounts, complete API inventory and recreation checks remain required.
+
+
+
+### Public scout attachment isolation
+
+The closed public-scout projection bypasses generic private attachment/chat
+staging after native session ownership has been reserved. The inner execution
+path still rechecks admission and native review authority. This avoids the native
+empty attachment scaffold conflicting with the unchanged fresh-workspace guard.
+Ordinary and diligence runs retain their attachment handling. Verify the actual
+native workspace binding; a legacy adapter cwd value alone does not select it.
+Focused entry-boundary fixtures are synthetic source checks, not hosted-search
+or business acceptance proof.
+
+### Public scout completion boundary
+
+Closed scout instructions distinguish successful bounded capture from subsequent independent agent diligence. A captured-review-required record is not human approval or application readiness. The scout completes its own satisfied stage so native dependencies can admit diligence; genuine owner-only authority and failed/incomplete captures remain explicit. This instruction regression proves delivery of the distinction, not provider compliance or end-to-end completion.
+
+### Bounded discovery rejection feedback
+
+The paired private process can identify the exact pre-admission
+`program_identity_evidence_required` rejection without exposing diagnostics. The
+host recognizes only its exact exit-2 frame and reports confirmed non-admission;
+unknown process failures remain unconfirmed. This does not supply missing source
+evidence or authorize retrying unchanged input, eligibility, fit or an application.
+
+The source-only [native dependency backstop current-decision guard](NATIVE-DEPENDENCY-BACKSTOP.md)
+packages a pinned repair and disposable actual-service PostgreSQL regression. It
+is not wired into normal bootstrap or launch composition and does not authorize
+runtime changes.

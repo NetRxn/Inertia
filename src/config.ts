@@ -1,3 +1,4 @@
+import {organizationKnowledgeSchema} from './organization-search/host.js';
 import { objectiveIntakeSchema } from "./intake/schema.js";
 import { centralConfigSchema } from "./central/setup.js";
 import { publicDraftingSchema } from "./drafting/schema.js";
@@ -22,9 +23,14 @@ export const configurationSchema: JsonSchema = {
   type: "object",
   properties: {
     roundtable: roundtableSchema,
+    organizationKnowledge: organizationKnowledgeSchema,
     objectiveIntake: objectiveIntakeSchema,
     enabled: { type: "boolean", default: false },
     fundingDiscovery: fundingDiscoverySchema,
+    generalEnrichment: {type:"object",description:"Administrator-configured current public opportunity research and independent review."},
+    entityContext: {type:"object",description:"Default-off protected public entity context with exact native actor/project grants and configured refresh sources."},
+    nativeCaseWork: {type:"object",description:"Default-off protected public case identification and incremental native case checkpoints."},
+    privatePreparation: {type:"object",description:"Default-off administrator-only private case preparation. Requires actual private native execution isolation and an independent reviewer."},
     publicDrafting: publicDraftingSchema,
     nativeFundingToolPreapproval: { type: "boolean", default: false },
     trustedCentral: centralConfigSchema,

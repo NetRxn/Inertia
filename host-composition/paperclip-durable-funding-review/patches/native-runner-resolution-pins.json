@@ -1,0 +1,17 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "patch": "native-runner-resolution.patch",
+  "patch_sha256": "7f0c92f80ec0e56ad852e5e11579501325029839330663d0f2fd8cabbe711d5e",
+  "files": {
+    "dist/services/native-runtime/native-codex-runner.js": {
+      "base_sha256": "1466e58905ea2656466e5691b1f06ed6c8a29cf50d59a3174a7653fb247c4ea4",
+      "candidate_sha256": "681be159b5fa3f6cfc4b2caf327ffb47b178a3973d7e030d77b1a47bcc691fc7"
+    }
+  },
+  "newFiles": {}
+}

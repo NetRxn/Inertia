@@ -36,7 +36,19 @@ export async function nativeIdentityFixture(db) {
     await db.insert(schema.heartbeatRuns).values({id:actor.runId,companyId,agentId:actor.agentId,status:'running',contextSnapshot:{issueId:actor.issueId,projectId}});
     await db.insert(schema.issues).values({id:actor.issueId,companyId,projectId,title:`Fixture ${role} task`,status:'in_progress',assigneeAgentId:actor.agentId,executionRunId:actor.runId,checkoutRunId:actor.runId});
   }
-  // Fixture-only policy in isolated PGlite. Never writes to a deployed host.
-  await db.insert(schema.toolPolicies).values({companyId,name:'Qualification plugin allow',policyType:'allow',enabled:true,priority:1,selectors:{providerTypes:['paperclip_plugin']},config:{}});
   return {companyId,projectId,producer,reviewer};
+}
+
+// Explicit, isolated test authority. Identity creation alone grants no tool access.
+export async function nativeDraftingGrants(db, identity, pluginKey='netrxn.inertia') {
+  const roles={
+    producer:['funding_drafting_workspace','save_funding_proposals','save_funding_gap_progress','funding_drafting_checkpoint'],
+    reviewer:['funding_review_context','review_funding_candidate'],
+  };
+  for(const [role,tools] of Object.entries(roles)) {
+    await db.insert(schema.principalPermissionGrants).values({
+      companyId:identity.companyId,principalType:'agent',principalId:identity[role].agentId,
+      permissionKey:'tools:use',scope:{allow:tools.map(tool=>`tool:${pluginKey}:${tool}`)},
+    });
+  }
 }

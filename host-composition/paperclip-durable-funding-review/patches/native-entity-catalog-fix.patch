@@ -1,0 +1,22 @@
+--- a/dist/services/native-runtime/native-session-executor.js
++++ b/dist/services/native-runtime/native-session-executor.js
+@@ -8162,7 +8162,7 @@
+             gatewayPublicId: assignedGatewayPublicId,
+             bearerToken: assignedMcpToken,
+             workMode: input.execution.task.workMode,
+-            ...(!nativeEntityAdmission && !nativePrivatePreparationAdmission && !nativeTaskProjectAdmission && !nativeDiscoveryAdmission && effectiveFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
++            ...(!nativePrivatePreparationAdmission && !nativeTaskProjectAdmission && !nativeDiscoveryAdmission && effectiveFundingPolicy?.role === "producer" ? {fundingProducer:true} : {}),
+         })
+         : undefined;
+     const coordinator = input.execution.provider.nativeCoordinatorPolicy;
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -123,7 +123,7 @@
+     async #definitionsWithEntity() {
+         const original=await this.#definitionsBeforeEntity();
+         const extra=await entityDefinitions(this.db,this.binding,()=>this.#boundContext());
+-        const result=[...original,...extra];
++        const result=[...original.filter(tool=>tool.name!==ENTITY_PROJECTED_TOOL),...extra];
+         if(new Set(result.map(tool=>tool.name)).size!==result.length)throw Error("native_entity_catalog_duplicate");
+         return result;
+     }

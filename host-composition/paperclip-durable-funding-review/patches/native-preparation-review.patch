@@ -1,0 +1,170 @@
+--- a/dist/services/native-runtime/native-domain-review-composition.mjs
++++ b/dist/services/native-runtime/native-domain-review-composition.mjs
+@@ -1,3 +1,4 @@
++import{preparationBinding,preparationArtifact,preparationReceipt,preparationItemSchema}from'./native-preparation-review.mjs';
+ import{gapBinding,gapArtifact,gapReceipt}from'./native-gap-review.mjs';
+ import {scopeForIssue} from './native-portfolio-scope.mjs';
+ import {NATIVE_REVIEW_ARTIFACT_SCHEMA,NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA} from './native-review-artifact-schema.mjs';
+@@ -20,6 +21,7 @@
+ const toolContext='netrxn.inertia:funding_review_context',toolAdmit='netrxn.inertia:review_funding_candidate';
+ function checkBinding(scope,input,binding,allowResolved=false){
+  const expected=nativeDomainReviewAssignment(scope,input,{allowResolved});
++ if(scope.wholePacketReview===true&&preparationBinding(binding)){if(Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_preparation_receipt_mismatch');return;}
+  if(scope.wholePacketReview===true&&gapBinding(binding)){if(Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_gap_review_receipt_mismatch');return;}
+  if(scope.wholePacketReview===true&&packetBinding(binding)){if(Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_packet_review_receipt_mismatch');return;}
+  if(!binding||Object.keys(binding).length!==9||!hash(binding.candidate_hash)||Object.entries(expected).some(([k,v])=>binding[k]!==v))fail('native_domain_review_receipt_mismatch');
+@@ -32,16 +34,27 @@
+   const scopeFor=issue=>installed?.scopes.map(s=>scopeForIssue(s,issue)).find(Boolean);
+   const isBound=issue=>Boolean(scopeFor(issue));
+   return Object.freeze({
+-    install({scopes,acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt}={}) {
++    install({scopes,acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt,preparationReviewEnabled=false}={}) {
+       if(installed)fail('native_domain_review_already_initialized');
++      if(typeof preparationReviewEnabled!=='boolean')fail('native_domain_review_configuration_invalid');
+       if([acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt].some(f=>typeof f!=='function'))fail('native_domain_review_configuration_invalid');
+       // Validate/copy scope before anything can be installed or queried.
+       createNativeDomainReviewGuard({scopes,readCandidate:async()=>null,readAdmission:async()=>null});
+-      installed=Object.freeze({scopes:Object.freeze(scopes.map(s=>Object.freeze({...s}))),acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt});
++      installed=Object.freeze({preparationReviewEnabled,scopes:Object.freeze(scopes.map(s=>Object.freeze({...s}))),acquireFence,authorize,readReviewContext,admitReview,readReviewReceipt});
+     },
+     assertReady,
+     isBound(issue){assertReady();return isBound(issue);},
+     reviewArtifactSchema(issue){assertReady();const scope=scopeFor(issue);return scope?.wholePacketReview===true?NATIVE_WHOLE_PACKET_REVIEW_ARTIFACT_SCHEMA:NATIVE_REVIEW_ARTIFACT_SCHEMA;},
++    preparationReviewEnabled(issue){assertReady();return installed?.preparationReviewEnabled===true&&scopeFor(issue)?.wholePacketReview===true;},
++    preparationItemSchema(issue){assertReady();if(!scopeFor(issue)?.wholePacketReview)fail('native_preparation_review_unconfigured');return preparationItemSchema(NATIVE_REVIEW_ARTIFACT_SCHEMA);},
++    async recordPreparationReview(input,artifact){
++      assertReady();const scope=scopeFor(input?.issue);if(!installed?.preparationReviewEnabled||!scope?.wholePacketReview||!preparationArtifact(artifact))fail('native_preparation_review_unconfigured');
++      nativeDomainReviewAssignment(scope,input);
++      const tool=artifact.subject_kind==='gap_plan'?'netrxn.inertia:review_funding_gap_plan':toolAdmit;
++      if(await installed.authorize(scope,input,tool,{request_id:artifact.subject_id,artifact},{consumeRateLimit:true})!==true)fail('native_domain_review_tool_access_denied');
++      const result=await installed.admitReview(scope,input,artifact);checkBinding(scope,input,result?.binding);
++      if(!preparationReceipt(result,artifact))fail('native_preparation_receipt_mismatch');return result;
++    },
+     async reviewContext(input){
+       assertReady();if(!isBound(input?.issue))return null;
+       const scope=scopeFor(input.issue);
+--- a/dist/services/native-runtime/native-domain-review.mjs
++++ b/dist/services/native-runtime/native-domain-review.mjs
+@@ -45,6 +45,7 @@
+     const facts=nativeDomainReviewAssignment(scope,{issue,interaction,actor,assignment});
+     const source=assignment.sourceRun;
+     const candidate=await readCandidate(Object.freeze({...scope,producerRunId:source.id}));
++    if(candidate?.review_kind==='preparation')fail('native_preparation_requires_complete_packet');
+     if(candidate?.review_kind==='gap_plan')fail('native_gap_review_requires_complete_packet');
+     if(scope.wholePacketReview===true){
+       if(!candidate||candidate.review_kind!=='packet'||candidate.producer_principal_id!==scope.producerPrincipalId||candidate.producer_run_id!==source.id)fail('native_packet_review_admission_required');
+--- a/dist/services/native-runtime/native-funding-policy.js
++++ b/dist/services/native-runtime/native-funding-policy.js
+@@ -1,7 +1,7 @@
+ /** Exact existing funding-role ceiling; native Paperclip retains lifecycle authority. */
+ import { createHash } from 'node:crypto';
+ export const NATIVE_FUNDING_PRODUCER_TOOLS = Object.freeze(['funding_drafting_workspace','save_funding_proposals','save_funding_gap_progress','funding_drafting_checkpoint'].map(name => 'netrxn.inertia:' + name));
+-export const NATIVE_FUNDING_REVIEW_TOOLS = Object.freeze(['get_task_context','get_task_history','list_documents','read_document','list_document_revisions','resolve_review']);
++export const NATIVE_FUNDING_REVIEW_TOOLS = Object.freeze(['get_task_context','get_task_history','list_documents','read_document','list_document_revisions','resolve_review','record_preparation_review']);
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ const exact=(value,keys)=>value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join() === [...keys].sort().join();
+ const ids=values=>Array.isArray(values)&&values.length>=1&&values.length<=16&&values.every(id=>typeof id==='string'&&uuid.test(id))&&new Set(values).size===values.length;
+--- /dev/null
++++ b/dist/services/native-runtime/native-preparation-review.mjs
+@@ -0,0 +1,17 @@
++/** Whole current-set manifest; one exact independently typed item per call. */
++import{packetDigest}from'./native-packet-review.mjs';
++import{gapArtifact,NATIVE_GAP_REVIEW_ARTIFACT_SCHEMA}from'./native-gap-review.mjs';
++const object=v=>v!==null&&typeof v==='object'&&!Array.isArray(v),exact=(v,k)=>object(v)&&Object.keys(v).length===k.length&&k.every(x=>Object.hasOwn(v,x));
++const text=(v,n=200)=>typeof v==='string'&&v.length>0&&v.length<=n,hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
++const facts=['company_id','issue_id','interaction_id','decision_id','producer_principal_id','producer_run_id','reviewer_principal_id','reviewer_run_id'];
++export function preparationBinding(v){return exact(v,[...facts,'review_kind','manifest_hash'])&&facts.every(k=>text(v[k]))&&v.review_kind==='preparation'&&hash(v.manifest_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
++export function preparationArtifact(v){return exact(v,['review_kind','manifest_hash','subject_kind','subject_id','artifact'])&&v.review_kind==='preparation_item'&&hash(v.manifest_hash)&&text(v.subject_id)&&((v.subject_kind==='candidate'&&object(v.artifact)&&v.artifact.candidate_hash===v.subject_id&&hash(v.subject_id))||(v.subject_kind==='gap_plan'&&gapArtifact({review_kind:'gap_plan',request_id:v.subject_id,artifact:v.artifact})));}
++export function preparationReceipt(v,a){if(!exact(v,['binding','subject_kind','subject_id','review_id','original_reviewer_principal_id','original_reviewer_run_id','artifact_hash','state','source_producer_principal_id','source_producer_run_id'])||!preparationBinding(v.binding)||!['candidate','gap_plan'].includes(v.subject_kind)||!['subject_id','review_id','original_reviewer_principal_id','original_reviewer_run_id','source_producer_principal_id','source_producer_run_id'].every(k=>text(v[k]))||!hash(v.artifact_hash)||v.source_producer_principal_id!==v.binding.producer_principal_id||v.original_reviewer_principal_id!==v.binding.reviewer_principal_id||v.original_reviewer_principal_id===v.source_producer_principal_id||v.original_reviewer_run_id===v.source_producer_run_id)return false;
++ if(!a)return true;if(!preparationArtifact(a)||a.manifest_hash!==v.binding.manifest_hash||a.subject_kind!==v.subject_kind||a.subject_id!==v.subject_id||packetDigest(a.artifact)!==v.artifact_hash)return false;
++ const p=a.artifact,state=a.subject_kind==='candidate'?(p.requirement_supported&&p.findings.every(f=>f.support==='supported')?'supported':'rejected'):(!p.agent_work_remaining&&p.preparation_sufficient&&p.source_support_sufficient&&p.decision_is_precise&&!p.findings.length?'handoff_ready':'rework_required');return v.state===state;
++}
++export function preparationContext(v){const c=v?.context,m=c?.manifest;if(!exact(v,['binding','context'])||!preparationBinding(v.binding)||!object(c)||!['review_preparation_item','return_to_producer'].includes(c.next_action)||!object(m)||packetDigest(m)!==v.binding.manifest_hash||m.company_id!==v.binding.company_id||m.issue_id!==v.binding.issue_id||!hash(m.workspace_hash)||!Array.isArray(m.items)||m.items.length>512||!object(c.counts)||!['total','reviewed','pending'].every(k=>Number.isSafeInteger(c.counts[k])&&c.counts[k]>=0)||c.counts.total!==m.items.length||c.counts.pending+c.counts.reviewed!==c.counts.total)return false;
++ if(new Set(m.items.map(i=>i.kind+':'+i.id)).size!==m.items.length||m.items.some(i=>!object(i)||!['candidate','gap_plan'].includes(i.kind)||!['id','producer_principal_id','producer_run_id','target_type','target_key'].every(k=>text(i[k]))||i.producer_principal_id!==v.binding.producer_principal_id))return false;
++ if(c.counts.pending===0)return c.request===null&&c.next_action==='return_to_producer';const r=c.request;return c.next_action==='review_preparation_item'&&object(r)&&object(r.data)&&m.items.some(i=>i.kind===r.subject_kind&&i.id===r.subject_id)&&r.data.request_id===r.subject_id;
++}
++export function preparationItemSchema(candidateSchema){return{type:'object',additionalProperties:false,properties:{review_kind:{type:'string',const:'preparation_item'},manifest_hash:{type:'string',pattern:'^[a-f0-9]{64}$'},subject_kind:{type:'string',enum:['candidate','gap_plan']},subject_id:{type:'string',minLength:1,maxLength:200},artifact:{oneOf:[candidateSchema,NATIVE_GAP_REVIEW_ARTIFACT_SCHEMA.properties.artifact]}},required:['review_kind','manifest_hash','subject_kind','subject_id','artifact']};}
+--- a/dist/services/native-runtime/native-review-runtime.mjs
++++ b/dist/services/native-runtime/native-review-runtime.mjs
+@@ -34,7 +34,7 @@
+       if((config.whole_packet_review===true)!==(scope.wholePacketReview===true))throw Error();
+       if(config.company_id!==scope.companyId||!nonempty(config.applicant_slug)||!nonempty(config.match_id)||ns.target_type!=='sponsor_answer'||!nonempty(ns.target_key))throw Error();
+     }catch{fail('native_domain_review_runtime_configuration_invalid');}
+-    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),gapPlanReview:config.gap_plan_review===true,applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
++    entries.push(Object.freeze({scope:Object.freeze({...scope}),policy:Object.freeze({...policy,projectIds:Object.freeze([...policy.projectIds]),issueIds:Object.freeze([...policy.issueIds])}),allCurrentTargets:config.all_current_targets===true,gapPlanReview:config.gap_plan_review===true,applicantSlug:config.applicant_slug,matchId:config.match_id,stdio:stdioFactory(structuredClone(b.process))}));
+   }
+   function entry(scope){const e=entries.find(e=>templateMatches(scope,e.scope));if(!e)fail('native_domain_review_scope_unavailable');return e.scope.portfolioRootIssueId?{...e,scope:Object.freeze({...scope})}:e;}
+   async function hostAdmission(e,input){
+@@ -78,7 +78,7 @@
+       async nativeAssignment(signal){signal?.throwIfAborted();const f=await current(e,input);signal?.throwIfAborted();return {company_id:e.scope.companyId,project_id:f.issue.projectId,issue_id:f.issue.id,interaction_id:f.interaction.id,decision_id:f.assignment.sourceDecision.id,producer_agent_id:f.assignment.sourceRun.agentId,producer_run_id:f.assignment.sourceRun.id,reviewer_agent_id:e.scope.reviewerAgentId,reviewer_run_id:input.actor.runId};},
+     };
+   }
+-  return Object.freeze({scopes:Object.freeze(entries.map(e=>e.scope)),
++  return Object.freeze({preparationReviewEnabled:entries.some(e=>e.allCurrentTargets),scopes:Object.freeze(entries.map(e=>e.scope)),
+     authorize:async(scope,input,toolName,args,options)=>decide(entry(scope),input,toolName,args,options),
+     async readReviewContext(scope,input){const e=entry(scope);return e.stdio.call('context',{},await callbacks(e,input));},
+     async admitReview(scope,input,artifact){const e=entry(scope);return e.stdio.call('admit',artifact,await callbacks(e,input));},
+--- a/dist/services/native-runtime/native-review-stdio.mjs
++++ b/dist/services/native-runtime/native-review-stdio.mjs
+@@ -1,3 +1,4 @@
++import{preparationBinding,preparationArtifact,preparationReceipt,preparationContext}from'./native-preparation-review.mjs';
+ import{gapBinding,gapArtifact,gapReceipt,gapContext}from'./native-gap-review.mjs';
+ import {packetBinding,packetArtifact,packetReceipt,packetContext,packetSubject} from './native-packet-review.mjs';
+ /** Pinned native-review stdio only; no lifecycle, routing, credentials or listener.
+@@ -30,7 +31,7 @@
+ const error=(code,message,uncertain=false)=>new NativeReviewTransportError(code,message,uncertain);
+ function validContext(v){return (keys(v,contextFields)||keys(v,[...contextFields,'issue_id','portfolio_root_issue_id'])&&id(v.issue_id)&&id(v.portfolio_root_issue_id)&&v.issue_id!==v.portfolio_root_issue_id)&&contextFields.filter(k=>k!=='role').every(k=>id(v[k]))&&v.applicant_slug.length<=128&&v.role==='reviewer';}
+ function validAssignment(v){return keys(v,assignmentFields)&&assignmentFields.every(k=>id(v[k]))&&v.producer_agent_id!==v.reviewer_agent_id&&v.producer_run_id!==v.reviewer_run_id;}
+-function validBinding(v){if(gapBinding(v)||packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
++function validBinding(v){if(preparationBinding(v)||gapBinding(v)||packetBinding(v))return true;return keys(v,bindingFields)&&bindingFields.filter(k=>k!=='candidate_hash').every(k=>id(v[k]))&&hash(v.candidate_hash)&&v.producer_principal_id!==v.reviewer_principal_id&&v.producer_run_id!==v.reviewer_run_id;}
+ function validArtifact(v){
+  return keys(v,['candidate_hash','requirement_hash','evidence_set_hash','rubric_version','findings','requirement_supported'])
+   &&['candidate_hash','requirement_hash','evidence_set_hash'].every(k=>hash(v[k]))&&typeof v.rubric_version==='string'&&v.rubric_version.length>0
+@@ -71,7 +72,7 @@
+ export function createNativeReviewStdio(config){
+  const c=configuration(config);
+  return Object.freeze({async call(op,params,callbacks){
+-  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
++  if(!['context','admit','receipt','fence'].includes(op)||!(op==='admit'?(validArtifact(params)||packetArtifact(params)||gapArtifact(params)||preparationArtifact(params)):keys(params,[])))throw error('native_review_request','Invalid native review operation request');
+   if(!callbacks||typeof callbacks.context!=='function'||typeof callbacks.nativeAssignment!=='function')throw error('native_review_callbacks','Invalid trusted native review callbacks');
+   if(callbacks.operationDeadlineAt!==undefined&&(!Number.isSafeInteger(callbacks.operationDeadlineAt)||callbacks.operationDeadlineAt<=0))throw error('native_review_deadline','Invalid native review operation deadline');
+   const deadline=Math.min(Date.now()+c.timeoutMs,callbacks.operationDeadlineAt??Infinity),check=()=>{if(Date.now()>=deadline)throw error('native_review_deadline','Native review deadline exhausted before process launch');};
+@@ -199,6 +200,7 @@
+    &&b.reviewer_principal_id===this.context.principal_id;
+  }
+  validReceipt(v,artifact){
++  if(preparationBinding(v?.binding))return this.bindingMatches(v.binding)&&preparationReceipt(v,artifact);
+   if(gapBinding(v?.binding))return this.bindingMatches(v.binding)&&gapReceipt(v,artifact);
+   if(packetBinding(v?.binding))return this.bindingMatches(v.binding)&&packetReceipt(v,artifact);
+   if(!keys(v,['binding','review_id','candidate_id','artifact_hash','state'])||!this.bindingMatches(v.binding)||!id(v.review_id)||!id(v.candidate_id)||!hash(v.artifact_hash)||!['supported','rejected'].includes(v.state))return false;
+@@ -210,6 +212,7 @@
+  validSuccess(v){
+   if(this.op==='admit')return this.validReceipt(v,this.params);
+   if(this.op==='receipt')return this.validReceipt(v);
++  if(preparationBinding(v?.binding))return this.bindingMatches(v.binding)&&preparationContext(v);
+   if(gapBinding(v?.binding))return this.bindingMatches(v.binding)&&gapContext(v);
+   if(packetBinding(v?.binding))return this.bindingMatches(v.binding)&&packetContext(v);
+   if(!keys(v,['binding','context'])||!this.bindingMatches(v.binding)||!keys(v.context,['requests','next_action'])||v.context.next_action!=='review_candidates'||!Array.isArray(v.context.requests)||v.context.requests.length!==1)return false;
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -182,6 +182,7 @@
+             // Scope Paperclip control-plane actions. Provider file and shell access
+             // still follow the configured agent/environment policy, including tests.
+             return [
++                ...(domainBound && nativeDomainReviewComposition.preparationReviewEnabled(domainIssue) ? [{name:'record_preparation_review',description:'Record one independently typed artifact from the current complete preparation manifest. Read get_task_context for the current manifest and next pending item. This records domain evidence only; it never resolves native review. Repeat until pending is zero, then reject the native review with precise producer correction/regeneration instructions. Native acceptance still requires the regenerated whole packet.',inputSchema:nativeDomainReviewComposition.preparationItemSchema(domainIssue)}] : []),
+                 ...CAPABILITY_SEMANTIC_TOOL_CATALOG
+                     .filter((tool) => NATIVE_REVIEW_READ_TOOLS.has(tool.operationId))
+                     .map((tool) => ({ name: tool.operationId, description: tool.description, inputSchema: tool.inputSchema })),
+@@ -215,6 +216,12 @@
+         if(this.binding.nativeTaskProjectAdmission && (!this.binding.nativeCoordinatorPolicy || isTaskProjectTool(this.binding,call.tool))) return executeTaskProjectTool(this.binding,call,()=>this.#boundContext());
+         if (isDiligenceDocumentTool(this.binding, call.tool)) return readDiligenceDocuments(this.binding, call, () => this.#boundContext(), documentService(this.db));
+         if (this.binding.nativeDiscoveryAdmission) return executeDiscoveryTool(this.binding, call, () => this.#boundContext());
++        if(call.tool==='record_preparation_review'){
++            const context=await this.#boundContext();
++            if(!this.binding.nativeReview||this.binding.nativeFundingPolicy?.role!=='reviewer'||!nativeDomainReviewComposition.preparationReviewEnabled(context.issue))throw forbidden('Current preparation review is not enabled for this assigned native review');
++            assertNativeFundingTool(this.binding.nativeFundingPolicy,call.tool);
++            return nativeDomainReviewComposition.recordPreparationReview(await this.#domainReviewFacts(context),call.arguments);
++        }
+         if (this.binding.nativeFundingPolicy) {
+             assertNativeFundingTool(this.binding.nativeFundingPolicy,call.tool);
+             await this.#boundContext();

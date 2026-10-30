@@ -9,6 +9,8 @@ export const fundingDiscoverySchema: JsonSchema = {
     principalId: { type: "string" },
     projectId: { type: "string" },
     issueId: { type: "string" },
+    portfolioRootIssueId: { type:"string",minLength:1,maxLength:128 },
+    rootProjectId: { type:"string",minLength:1,maxLength:128 },
     agentId: { type: "string" },
     urgentIssueId: { type: "string" },
     publicQueries: {

@@ -2,9 +2,74 @@
 
 This default-disabled application adapter binds the existing three public DFW drafting operations to Paperclip's authenticated plugin tool path. It does not modify the Paperclip core gateway, expose the operator MCP, provision credentials, create connections, or submit/accept application content.
 
+## Current per-case source and preparation facade
+
+The `nativeCaseWork` configuration uses Alpha for discovery, Beta for each case,
+and a separate Charlie agent and principal for independent review. Its
+`funding_case_work({operation,parameters})` tool derives the case from the actual
+native task origin and rechecks current configuration, ancestry, assignment and
+running execution on each trusted callback. Caller parameters cannot choose a
+record, case, actor, project, root or process path. The legacy `publicDrafting`
+adapter described below is a separate configured path.
+
+Alpha may reserve a newly observed source candidate with
+`reserve_candidate({record_id,record_hash,scan_hash?})` under the same configured
+researcher scope as `reserve_case`. The response preserves the original candidate
+ID, separate materialized one-off source ID and preliminary state. The normal
+Coordinator creates the case task; this operation never impersonates Coordinator
+or admits eligibility/readiness.
+
+Beta reads `source_context` with `{}` for its current reserved record or
+`{view:"contract"}` for the exact domain-owned operation and field schemas. It can
+page `source_links({offset?,limit?,context_hash?})`, capture an admitted official
+link with `source_capture({url})`, and save an immutable source proposal with
+`source_propose({context_hash,fields,requirements})`. The host advertises the
+actual DFW field, passage and sponsor-requirement schemas. Evidence and source
+text never grant tool authority.
+
+A saved source proposal reports `queued:false`. Beta invokes the returned native
+`create_task({purpose:"source_review",proposalHash})` handoff. Native Paperclip
+owns the ordinary Charlie child, atomic parent dependency and execution wake.
+The host stores the original verified producer run in an immutable native
+proposal document; the domain independently compares it against its source
+proposal audit. Charlie must be assigned the exact child whose origin binds
+that proposal and whose parent is this Beta case under the configured root.
+It reads `source_context({view:"proposal",proposal_hash})` and calls
+`source_review({proposal_hash,decision,findings})`. Accept has no findings;
+rejection supplies substantive corrections. The original Beta run need not
+remain active while Charlie reviews.
+
+Confirmed changed source bytes can be settled by Charlie through
+`source_settlement({proposal_hash,findings})`; this records source drift and
+resumes correction without accepting the source. Transport failure or unreadable
+bytes do not establish drift. `source_receipt({proposal_hash})` preserves the
+historical terminal receipt and separately reports current admission and drift.
+After the child completes, Beta resumes the same case, rechecks current source
+and continues `prepare`, `workspace`, typed `save`, gap progress, `render` and
+`packet`. Candidate and complete-packet review retain native attention review.
+Partial research/draft checkpoints never complete the case.
+
+Beta's `packet_artifacts({})` returns the existing exact DFW packet projection:
+manifest/hash and artifact descriptors. The host verifies the exact company,
+case and manifest hash. `packet_artifact_chunk({manifest_hash,artifact_key,offset,limit?})`
+returns up to 196,608 bytes (default 131,072), bound to that current manifest.
+It rechecks native authority for every call and validates exact offsets, lengths,
+continuation and canonical base64. EOF returns an empty chunk and null continuation.
+Native reconstructs each artifact and verifies its final descriptor hash, checks
+canonical packet_data against the manifest and rechecks the current catalog.
+Transport responses are bounded; no aggregate 768 KiB or 4 MiB packet cap is
+introduced. The configured native attachment limit remains applicable.
+Neither operation accepts an arbitrary path.
+The bounded native `register_deliverable({artifactKey})` composition consumes
+these verified bytes and owns actual native attachment/work-product creation.
+A server path, returned base64 payload, registration request or saved review
+acknowledgement is not an attachment, download or completed human handoff. Current manual
+submission keeps final human authorization, execution and actual submission
+receipt distinct; no agent submission tool is enabled by this facade.
+
 ## Trusted composition
 
-Enable `publicDrafting` only after separately admitting the connection, native tool policy, and database access. This release supports one enabled company binding in the plugin instance. Server configuration fixes the company (native config owner), project, applicant, match, producer issue/agent/principal, reviewer issue/agent/principal, and administrator-pinned process. The two issue IDs, native agents and mapped principals must each differ. Both agents may use the same available model provider; independent principals and native runs are still mandatory.
+Enable `publicDrafting` only after separately admitting the connection, native tool policy, and database access. This release supports one enabled company binding in the plugin instance. Server configuration fixes the company (native config owner), project, applicant, match, producer issue/agent/principal, reviewer issue/agent/principal, and administrator-pinned process. In legacy mode the two issue IDs, native agents and mapped principals must each differ. The explicit native-attention mode below permits a shared issue while retaining independent agents and mapped principals. Both agents may use the same available model provider; independent principals and native runs are still mandatory.
 
 The gateway provides `{agentId, runId, companyId, projectId}` separately from model arguments. It does not provide `issueId`. Every synchronous private context request therefore rechecks current configuration, configured issue company/project/assignee/status, the exact running run returned by `getSubtree(..., {includeActiveRuns:true, includeAssignees:true})`, and active assignee status before calling `assertCheckoutOwner`. That checkout operation can adopt stale ownership, so it is not used as authentication. Missing/truncated run membership fails closed.
 
@@ -24,6 +89,38 @@ No tool accepts company, database, applicant, match, native issue, principal, ru
 The process has `executable`, `args`, `cwd`, `entrypoint`, `configurationPath`, `pins`, `timeoutMs`, and `maxOutputBytes`. Paths are absolute. Both `entrypoint` and `configurationPath` must occur in `args` and have exact SHA-256 pins. Use the fixed Python environment and absolute private `public_drafting_stdio.py` entrypoint with `--config` and the pinned administrator JSON. The private config contains exactly `database_url`, `company_id`, `applicant_slug`, and `match_id`; its scope must agree with every fresh native callback. Do not mount the same DFW database under another company. Database schema/setup is an operator prerequisite, not performed by this adapter.
 
 Pin the deployed Python package/dependencies and every relevant bootstrap/config file, not only the example entrypoint. A source checkout, mutable virtual environment, or caller-controlled PYTHONPATH is not a production trust boundary. The process inherits the trusted plugin worker's environment, never an agent-selected environment. Keep database credentials only in the authorized private configuration, outside repository/model-visible files.
+
+## Native attention producer mode
+
+`nativeAttention: true` is an administrator-only, optional literal opt-in; absence
+retains legacy behavior. It is mutually exclusive with enabled
+`nativeCaseProgression`, `nativeDependencyHandoff` and `nativeGapPlanReview`.
+The configured producer and reviewer may share a native issue only in this mode;
+agent IDs and mapped domain principals must still differ. Mode/configuration
+changes revoke current calls rather than switching controllers mid-operation.
+
+The four producer tools authenticate the current native assignee, active run,
+company, project and exact execution ownership through read-only SDK reads. They
+do not adopt checkout, change status/dependencies, freeze a producer run, reopen
+review work or request any native wake. Trusted `fundingExecution` metadata is
+mandatory, with the existing per-tool 120/160/170-second deadlines unchanged.
+The paired native-role metadata resolver must therefore be installed before this
+mode can operate; no absence fallback or model-supplied metadata is accepted.
+
+A private candidate callback returns only its exact `PendingReview` acknowledgement
+after fresh producer validation. The native producer must request attention using
+`paperclip_finish`; native Paperclip then admits the independent reviewer and owns
+correction/continuation. The two direct reviewer plugin handlers fail closed with
+native-review guidance in this mode. The separate trusted review bridge must bind
+the actual native participant/card/decision and admitted structured domain review;
+this producer mode does not fabricate a verdict or human acceptance.
+
+`funding_drafting_checkpoint` reads the existing public workspace/packet and saves
+a bounded **business checkpoint** through the supported native document API. It
+does not call the private case/freeze protocol or change native lifecycle. Existing
+lease/write fencing and immutable domain/native history remain. Qualify the paired
+composition and disable/reconcile legacy dispatch before admitting a replacement;
+this source opt-in is not evidence of live activation or autonomous execution.
 
 ## Bounded protocol and continuation
 

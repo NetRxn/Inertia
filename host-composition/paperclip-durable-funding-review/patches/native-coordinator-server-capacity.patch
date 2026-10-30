@@ -1,0 +1,27 @@
+--- a/dist/services/native-runtime/native-coordinator-policy.js
++++ b/dist/services/native-runtime/native-coordinator-policy.js
+@@ -7,11 +7,11 @@
+  if(config.nativeFunding!==undefined)throw Error("native_coordination_configuration_invalid");
+  const p=config.nativeCoordinator;
+  if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).some(k=>!['version','projectIds','childIssueLimit'].includes(k))||p.version!==1||p.childIssueLimit!==undefined&&(!Number.isSafeInteger(p.childIssueLimit)||p.childIssueLimit<0)||!Array.isArray(p.projectIds)||!p.projectIds.length||p.projectIds.length>16||p.projectIds.some(id=>typeof id!=='string'||!uuid.test(id))||new Set(p.projectIds).size!==p.projectIds.length||config.disableCommandExecution!==true||config.dangerouslyBypassApprovalsAndSandbox!==false||config.dangerouslyBypassSandbox===true||config.codexPermissionMode!=='never'||[config.extraArgs,config.args].some(a=>a!==undefined&&(!Array.isArray(a)||a.length)))throw Error('native_coordination_configuration_invalid');
+- return Object.freeze({version:1,projectIds:Object.freeze([...p.projectIds].sort()),...(p.childIssueLimit===undefined?{}:{childIssueLimit:p.childIssueLimit})});
++ return Object.freeze({version:1,projectIds:Object.freeze([...p.projectIds].sort())});
+ }
+ export function assertNativeCoordinatorContext(binding,context) {
+  const p=binding.nativeCoordinatorPolicy;if(!p)return;
+  const now=normalizeNativeCoordinatorPolicy(context.actor.adapterConfig);
+- if(p.companyId!==binding.companyId||p.agentId!==binding.agentId||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='ceo'||context.actor.adapterType!=='paperclip_runner'||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,projectIds:p.projectIds,...(p.childIssueLimit===undefined?{}:{childIssueLimit:p.childIssueLimit})})||context.issue.companyId!==binding.companyId||!p.projectIds.includes(context.issue.projectId))throw Error('native_coordination_scope_revoked');
++ if(p.companyId!==binding.companyId||p.agentId!==binding.agentId||context.actor.id!==binding.agentId||context.actor.companyId!==binding.companyId||context.actor.role!=='ceo'||context.actor.adapterType!=='paperclip_runner'||!now||JSON.stringify(now)!==JSON.stringify({version:p.version,projectIds:p.projectIds})||context.issue.companyId!==binding.companyId||!p.projectIds.includes(context.issue.projectId))throw Error('native_coordination_scope_revoked');
+ }
+ export function nativeCoordinatorProjectAllowed(binding,issue){return !binding.nativeCoordinatorPolicy||(issue.companyId===binding.companyId&&binding.nativeCoordinatorPolicy.projectIds.includes(issue.projectId));}
+--- a/dist/services/native-runtime/paperclip-runner-tool-authority.js
++++ b/dist/services/native-runtime/paperclip-runner-tool-authority.js
+@@ -1097,7 +1097,7 @@
+                 assigneeAgentId,
+                 blockedByIssueIds,
+                 blockParentUntilDone: Boolean(sourceReview),
+-                ...(this.binding.nativeCoordinatorPolicy?.childIssueLimit===undefined?{}:{[NATIVE_COORDINATOR_CHILD_LIMIT]:this.binding.nativeCoordinatorPolicy.childIssueLimit}),
++                ...(this.binding.nativeCoordinatorPolicy && context.actor.adapterConfig?.nativeCoordinator?.childIssueLimit!==undefined?{[NATIVE_COORDINATOR_CHILD_LIMIT]:context.actor.adapterConfig.nativeCoordinator.childIssueLimit}:{}),
+                 ...(sourceReview?{[SOURCE_REVIEW_CHILD_CONTINUATION]:true}:{}),
+                 ...(caseHistory?{[CASE_HISTORY_CONTINUATION]:caseHistory}:{}),
+                 createdByAgentId: this.binding.agentId,

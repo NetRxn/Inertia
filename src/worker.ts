@@ -1,3 +1,8 @@
+import {registerOrganizationSearch} from './organization-search/host.js';
+import {registerConfiguredEntityContext} from "./entity-context/host.js";
+import {registerConfiguredCaseWork} from "./case-work/host.js";
+import {registerConfiguredPrivatePreparation} from "./private-preparation/host.js";
+import {registerConfiguredEnrichment} from "./enrichment/host.js";
 import { registerObjectiveIntake, type ObjectiveIntakeStatus } from "./intake/host.js";
 import { registerConfiguredTrustedCentral } from "./central/setup.js";
 import { registerConfiguredPublicDrafting } from "./drafting/setup.js";
@@ -9,6 +14,7 @@ import {
 import { registerOrgProfile } from "./org/host.js";
 import {
   definePlugin,
+  PLUGIN_RPC_ERROR_CODES,
   runWorker,
   type PluginContext,
   type PluginHealthDiagnostics,
@@ -64,13 +70,25 @@ export function createPlugin() {
   };
   return definePlugin({
     multiCompanyConfig: true,
+    async onConfigChanged() {
+      // Setup captures protected per-company bindings. Ask the native host to
+      // replace this worker; re-registering handlers in-process duplicates them.
+      throw Object.assign(new Error("Configuration requires native worker restart."), {
+        code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED,
+      });
+    },
     async setup(ctx) {
       await registerConfiguredFundingDiscovery(ctx);
       await registerConfiguredPublicDrafting(ctx);
+      await registerConfiguredPrivatePreparation(ctx);
+      await registerConfiguredCaseWork(ctx);
+      await registerConfiguredEntityContext(ctx);
+      await registerConfiguredEnrichment(ctx);
       await registerConfiguredTrustedCentral(ctx);
-      roundtableStatus = registerRoundtableJobs(ctx);
+      roundtableStatus = await registerRoundtableJobs(ctx);
       objectiveIntakeStatus = registerObjectiveIntake(ctx);
       registerOrgProfile(ctx);
+      registerOrganizationSearch(ctx);
       ctx.jobs.register("retry-blocked-deliveries", async () => {
         for (const company of await ctx.companies.list({ limit: 1000 })) {
           const config = await ctx.config.get(company.id);

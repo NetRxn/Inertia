@@ -1,0 +1,44 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/services/native-runtime/native-domain-review-composition.mjs": {
+      "candidate_sha256": "c8190cc9b119b9151bf1198870493d67dc886cb360ef4e384f90341de0b9d326",
+      "base_sha256": "c0d498708b7b78afd2418b7cdc84c917ac5c980358b60b8c939b7d4c6bd86e74"
+    },
+    "dist/services/native-runtime/native-domain-review.mjs": {
+      "candidate_sha256": "3336742617b86575c0eb513418e9844bad319181c01c7e4f37c2e5730a8f1e26",
+      "base_sha256": "47a40be8aa7a3a040791ecbbf2685a05de3933dc1e6f2567f792f763e61f063b"
+    },
+    "dist/services/native-runtime/native-funding-policy.js": {
+      "candidate_sha256": "1cd8fe5aecc57403b4fddafb085ebea71e64cb82d19cfb9d3d0c9da93898814d",
+      "base_sha256": "bdc1377b57401752e6c8ad54aa551213e6e53b8dacbe6f306afd8da99cb535a4"
+    },
+    "dist/services/native-runtime/native-review-runtime.mjs": {
+      "candidate_sha256": "13fe1f7503136bcb07a4751c6a6e4793819cecd951cd2bf79065672234c7e16a",
+      "base_sha256": "b20bb5bc49cea470f91c4c43176954864a8e257d0f3c4d29f38dc66b4a8ffa13"
+    },
+    "dist/services/native-runtime/native-review-stdio.mjs": {
+      "candidate_sha256": "b11d8d7de75e262dc8b9fabd0891889c480a51beeeaf38f3f7b60f704a70548c",
+      "base_sha256": "a5d8cfba1ed485f002037f1e9eec38cbf03999d811b87ada49079d46f3cf3bcf"
+    },
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": {
+      "candidate_sha256": "a832dc99cef539f533d1d13e20f8b283d90a829e722bfa15c950563cd967ed15",
+      "base_sha256": "227c404bc2194ba1cdb91599c16b315bfdf971e237d04226c7b11498968d0563"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-runtime/native-preparation-review.mjs": {
+      "candidate_sha256": "7df1cab2414551b1f2692ab5ad566766cb10d7a567cf364b9dd2c25fb198ac42"
+    }
+  },
+  "patch": "native-preparation-review.patch",
+  "patch_sha256": "e8680e4e0df20197f3f8eeffeb8963ac76e2406b2d9eb6fd23ae69c02d3aa970",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e"
+  }
+}

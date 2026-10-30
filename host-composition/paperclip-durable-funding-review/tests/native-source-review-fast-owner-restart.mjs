@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';import{pathToFileURL}from'node:url';
+const input=JSON.parse(process.argv[2]),native='/opt/host/node_modules',server='/tmp/case-native-sql/node_modules/@paperclipai/server/dist';
+const load=p=>import(pathToFileURL(native+'/'+p)),local=p=>import(pathToFileURL(server+'/'+p)),s=await load('@paperclipai/db/dist/schema/index.js'),{eq}=await load('drizzle-orm/index.js'),{createDb}=await load('@paperclipai/db/dist/index.js');
+const db=createDb(input.connectionString),{heartbeatService,startTaskDrain}=await local('services/heartbeat.js'),{createWakeQueue}=await local('modules/wake-queue/index.js');startTaskDrain();
+const bad=()=>{throw Error('Unexpected recovery escalation in exact deferred-wake release');};
+const wakeQueue=createWakeQueue(db,{resolveResponsibleUserId:async request=>{assert.equal(request.companyId,input.companyId);return input.human;},getRoutineEnv:async()=>null,resolveSessionBeforeForWakeup:async()=>null,wakeAdmissionHelpers:{},recovery:{escalateStrandedAssignedIssue:bad,escalateStrandedRecoveryIssueInPlace:bad}});
+const settled=await wakeQueue.releaseIssueExecution({companyId:input.companyId,runId:input.ownerRunId,now:new Date(),suppressImmediateRecovery:true});
+// Simulate losing process-local post-commit effects: the DB successor must survive alone.
+const fresh=heartbeatService(db);await fresh.dispatchPendingNativeStatusWakeups({companyId:input.companyId});await fresh.dispatchPendingNativeStatusWakeups({companyId:input.companyId});
+const rows=await db.select().from(s.heartbeatRuns).where(eq(s.heartbeatRuns.agentId,input.betaId)),queued=rows.filter(r=>r.status==='queued'),running=rows.filter(r=>r.status==='running');assert.equal(queued.length,1);assert.equal(running.length,0);
+const wake=(await db.select().from(s.agentWakeupRequests).where(eq(s.agentWakeupRequests.id,input.dispatchId)))[0];assert.equal(wake.runId,queued[0].id);assert.equal(queued[0].responsibleUserId,input.human);assert.equal(queued[0].contextSnapshot.issueId,input.caseId);assert.equal(queued[0].contextSnapshot.nativeStatusWakeIntentId,input.intentId);assert.equal(queued[0].startedAt,null);assert.equal(queued[0].status,'queued');
+console.log(JSON.stringify({releaseOutcome:settled.outcome.kind,queuedCount:queued.length,runningCount:running.length,queuedRunId:queued[0].id,providerStarted:false,postCommitEffectsDropped:settled.postCommitEffects.map(x=>x.kind)}));process.exit(0);

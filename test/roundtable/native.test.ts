@@ -355,3 +355,22 @@ it("does not publish an extraction whose source changed while classification was
  expect(f.published).toHaveLength(0);
  expect(f.saved?.operation??null).toBeNull();
 });
+
+it("preserves a historical empty operation and supports a new source revision correction through existing previous-hash CAS",async()=>{
+ const f=setup();
+ const historical={...f.deps,transform:async()=>({notes:[],decisions:[],actions:[]})};
+ await runMeetingJob(config,historical);f.complete();await runMeetingJob(config,historical);
+ const previous=structuredClone(f.saved!.operation!);
+ expect(JSON.parse(previous.body).publication.notes).toEqual({notes:[],decisions:[],actions:[]});
+ expect((await runMeetingJob(config,f.deps)).state).toBe("unchanged");
+ expect(f.saved!.operation).toEqual(previous);
+ f.revise("2");f.outcome={state:"pending",code:"readback_pending"};
+ await runMeetingJob(config,f.deps);
+ const correction=JSON.parse(f.saved!.operation!.body).publication;
+ expect(correction.revision).toBe("2");
+ expect(correction.notes.notes).toEqual([{text:"We did not approve.",line:1,verification:"unverified"}]);
+ expect(correction.sourceHash).toBe(JSON.parse(previous.body).publication.sourceHash);
+ expect(correction.expectedPreviousOutputHash).toBe(JSON.parse(previous.body).publication.outputHash);
+ expect(f.saved!.previous).toEqual(previous);
+ expect(f.saved!.operation!.operationId).not.toBe(previous.operationId);
+});

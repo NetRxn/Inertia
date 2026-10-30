@@ -1,0 +1,39 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/routes/access.js": "e5830325590dc866d00b8d522674d6f98913bc78f43ad843f1968a517a4a0efa",
+    "dist/routes/authz.js": "1340f50d6f737f7986185eaf06627804ffc39537d6af7cfceb6fc03bca40316a",
+    "dist/services/access.js": "7be2d934db167ac58678a610158f3061608885ea173adcf451b12054e8a45733",
+    "dist/services/authorization.js": "0b05137b4df0bee6c7edf8347470d3651fb3c85a3a1be4ca3b7feb9d49edca88",
+    "dist/services/built-in-agent-metadata.js": "b7f92b881d17474b7b9a9db9214440bc7a032f5b2a5fa2edc8a26f22b81cff42",
+    "dist/services/native-runtime/native-private-preparation.mjs": "a1822f27c5505f31f8d6a1480796055d66762917c53eed2014081abe3146c677",
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e",
+    "dist/services/native-runtime/native-session-resume.js": "c09c22a6e92c0783d3bd95ed3ae8a86bf9cb1e0124612e0b3d490c46e119ff6b",
+    "dist/services/native-runtime/funding-execution-policy.js": "38107e7ce53442614d06ad4ca111470b25d6558e9b6a34759e28ef23f8d3fc57",
+    "dist/services/native-runtime/funding-tool-preapproval.js": "ae3b345565ff7f9c8231e0e5bdec2995abcfac5c975a31be7fd7d07d83fe565d",
+    "dist/routes/agents.js": "46b47bee5adc0c4c6a897c8fe0d6b30a44f9f3923289a0976414230927b1c3f5",
+    "dist/services/native-agent-permission-grants.mjs": "80273c7263d65765ac9993266aaf5aea1f14d45327114e7ba3041640d3fb1485",
+    "dist/services/native-runtime/native-review-runtime.mjs": "0e6e4952771e24d29db0133050652b0f5dcdbbc79e172b1a155b82088aa4d96a",
+    "dist/services/native-runtime/native-case-review-runtime.mjs": "64d74780db811dcd54b540f30cbb70b753c9e8c36cfec6766d805f25b6493dec",
+    "dist/services/native-runtime/native-domain-review-composition.mjs": "6733759a4e10e353952e0c5bb4874fe1d52625eefbbcd00677e6bd260fc3c205",
+    "dist/services/native-runtime/native-packet-review.mjs": "5d62f81f5697b8b1010cf3b798651643d2ad9496d9d9561db39396449d75a6d4",
+    "dist/services/native-runtime/paperclip-runner-tool-authority.js": "ebba6cd16be8d012f9a50798f49842d9c36594970e518fca2a8b1068db99e7d7",
+    "dist/services/native-runtime/native-review-stdio.mjs": "6e9dcf315b3b263b019485241fa1751295d6ecdb42aa842a6bb1ac5a47036d09",
+    "dist/services/native-runtime/native-case-review-router.mjs": "9a0ab38c7e2ae2c80a6237dae23ce6dc56eac5e2a334235b1b0d89a0495b96d3",
+    "dist/services/native-runtime/native-source-review.mjs": "ab2f47dfcedff3d6ab91710e25962064b75f2367a230842c0386fddc533c2b57"
+  },
+  "files": {
+    "dist/services/native-runtime/native-case-work-tools.mjs": {
+      "base_sha256": "56a31978d149429f7c626374b31710c4fe906afb7daa9c92b83308fe27dc200f",
+      "candidate_sha256": "fbc3eed06d3bc7402882a83d100c7bc5797c647ecaa9a6a90ae5f8cf19f18f53"
+    }
+  },
+  "newFiles": {},
+  "patch": "native-source-review-contract.patch",
+  "patch_sha256": "6314063ef7ae331e331ee75a026f8bb0f182460d6c22abf73c5924dbb704f922"
+}

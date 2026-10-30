@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1480" viewBox="0 0 1280 1480" role="img" aria-labelledby="title desc">
+<title id="title">Inertia production target</title>
+<desc id="desc">Coordinator oversees organizational work. Alpha discovers; parallel Beta case owners research and prepare; Charlie independently reviews. Local Docker qualifies the Ubuntu VPS target. Gemini notes reuse and careful Buzz ingress follow funding.</desc>
+<rect width="1280" height="1480" fill="#f7f8fa"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9aadb5"/></marker></defs>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="48" y="57" fill="#345b9f" font-size="15" font-weight="600" text-anchor="start">INERTIA  /  ORGANIZATIONAL WORK</text>
+<text x="48" y="104" fill="#17333d" font-size="34" font-weight="600" text-anchor="start">Ubuntu VPS — midnight production target</text>
+<text x="48" y="136" fill="#526b75" font-size="19" font-weight="400" text-anchor="start">Target architecture • not a deployed or accepted production claim</text>
+<rect x="1045" y="35" width="185" height="29" rx="14" fill="#edf2fb"/>
+<text x="1137.5" y="55" fill="#345b9f" font-size="14" font-weight="600" text-anchor="middle">TARGET / UNQUALIFIED</text>
+<text x="48" y="182" fill="#345b9f" font-size="14" font-weight="600" text-anchor="start">PEOPLE AND COMMUNICATION</text>
+<rect x="48" y="198" width="370" height="109" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="68" y="230" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Authorized members</text>
+<text x="68" y="259" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Current identity, membership</text>
+<text x="68" y="284" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">and resource / action permission</text>
+<rect x="438" y="198" width="370" height="109" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="458" y="230" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Member app + native UI</text>
+<text x="458" y="259" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">One view of tasks, packets, reviews</text>
+<text x="458" y="284" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Partner owns member app / import API</text>
+<rect x="828" y="198" width="404" height="109" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="848" y="230" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Buzz + source connections</text>
+<text x="848" y="259" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Buzz: inbound shadow; outbound off</text>
+<text x="848" y="284" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Gemini notes: approved secure push</text>
+<path d="M640 307V348" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="655" y="335" fill="#526b75" font-size="15" font-weight="400" text-anchor="start">trusted, scoped entry</text>
+<rect x="48" y="352" width="1184" height="956" rx="18" fill="#ffffff" stroke="#bacbd2" stroke-width="1.6"/>
+<text x="72" y="386" fill="#345b9f" font-size="15" font-weight="600" text-anchor="start">UBUNTU 24 LTS VPS  ·  ONE ACTIVE EXECUTION PLANE</text>
+<rect x="885" y="367" width="322" height="29" rx="14" fill="#edf2fb"/>
+<text x="1046.0" y="387" fill="#345b9f" font-size="14" font-weight="600" text-anchor="middle">PRODUCTION CONFIGURATION TO VERIFY</text>
+<rect x="76" y="407" width="1128" height="337" rx="12" fill="#edf2fb" stroke="#cbdde0" stroke-width="1.3"/>
+<text x="96" y="439" fill="#345b9f" font-size="23" font-weight="600" text-anchor="start">Paperclip native control plane</text>
+<text x="96" y="468" fill="#17333d" font-size="18" font-weight="400" text-anchor="start">Goals • projects • issues • assignment • dependencies • reviews • budgets • run / recovery state</text>
+<rect x="370" y="490" width="540" height="75" rx="12" fill="#ffffff" stroke="#b8ccd2" stroke-width="1.3"/>
+<text x="390" y="522" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Coordinator / CEO</text>
+<text x="390" y="551" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Organization-wide priorities and follow-through</text>
+<path d="M510 565V581H280V594" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M640 565V594" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M770 565V581H1000V594" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="105" y="598" width="345" height="84" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="125" y="630" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Alpha — discovery</text>
+<text x="125" y="659" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Changed / due + targeted search</text>
+<rect x="470" y="598" width="345" height="84" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="490" y="630" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Beta — case owners</text>
+<text x="490" y="659" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Research • compile • draft • correct</text>
+<rect x="835" y="598" width="345" height="84" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="855" y="630" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Charlie — review</text>
+<text x="855" y="659" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Independent source / packet checks</text>
+<path d="M815 641H833" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="96" y="717" fill="#17333d" font-size="18" font-weight="400" text-anchor="start">Native reviewer child → decision → same case resumes; Alpha keeps discovering. No cross-review.</text>
+<path d="M640 744V780" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<text x="655" y="769" fill="#526b75" font-size="15" font-weight="400" text-anchor="start">task-specific context and domain tools</text>
+<text x="76" y="806" fill="#345b9f" font-size="14" font-weight="600" text-anchor="start">WORKFLOWS — ONE HIERARCHY, REUSABLE AGENTS</text>
+<rect x="76" y="825" width="360" height="161" rx="12" fill="#edf2fb" stroke="#d2dfe4" stroke-width="1.3"/>
+<text x="96" y="857" fill="#345b9f" font-size="22" font-weight="600" text-anchor="start">P0 — funding portfolio</text>
+<text x="96" y="886" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Full applicable scan → prioritization</text>
+<text x="96" y="911" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Research / draft every actionable result</text>
+<text x="96" y="936" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Review → correction → prepared handoff</text>
+<text x="96" y="961" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Continue other cases during human waits</text>
+<rect x="460" y="825" width="360" height="161" rx="12" fill="#edf2fb" stroke="#d2dfe4" stroke-width="1.3"/>
+<text x="480" y="857" fill="#345b9f" font-size="22" font-weight="600" text-anchor="start">P2 — existing Gemini notes</text>
+<text x="480" y="886" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Quick Notes + full Notes preserved</text>
+<text x="480" y="911" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Google-native signed intake</text>
+<text x="480" y="936" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">App-owned DAO import + readback</text>
+<text x="480" y="961" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Deduplicated native action triage</text>
+<rect x="844" y="825" width="360" height="161" rx="12" fill="#edf2fb" stroke="#d2dfe4" stroke-width="1.3"/>
+<text x="864" y="857" fill="#345b9f" font-size="21" font-weight="600" text-anchor="start">Organization + P1 Buzz</text>
+<text x="864" y="886" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Objectives • projects • member asks</text>
+<text x="864" y="911" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Buzz general: careful shadow ingress</text>
+<text x="864" y="936" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Isolated signed work-loop proof</text>
+<text x="864" y="961" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Live sends need reviewed canary</text>
+<path d="M256 986V1011H367V1035" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M640 986V1011H367" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<path d="M1024 986V1011H930V1035" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="76" y="1040" width="548" height="124" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="96" y="1072" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">DFW evidence + app-owned DAO records</text>
+<text x="96" y="1101" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Funding evidence, matches, candidate / packet versions</text>
+<text x="96" y="1126" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">DAO production PG is not a staging database</text>
+<text x="96" y="1151" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Source provenance • audience • exact domain receipts</text>
+<rect x="648" y="1040" width="556" height="124" rx="12" fill="#ffffff" stroke="#d8e1e5" stroke-width="1.3"/>
+<text x="668" y="1072" fill="#17333d" font-size="21" font-weight="600" text-anchor="start">Paperclip state + protected files</text>
+<text x="668" y="1101" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Native tasks, decisions, runs and delivery correlation</text>
+<text x="668" y="1126" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Durable workspaces, artifact bytes and credential homes</text>
+<text x="668" y="1151" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Native persistence remains separate from domain data</text>
+<rect x="76" y="1182" width="1128" height="118" rx="12" fill="#f3f5f9" stroke="#d6dfe7" stroke-width="1.3"/>
+<text x="96" y="1214" fill="#345b9f" font-size="20" font-weight="600" text-anchor="start">Production operating boundary — qualify before declaring ready</text>
+<text x="96" y="1243" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Pinned release / configuration • supported authentication and current-access checks • least-privilege tools</text>
+<text x="96" y="1268" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Durable state + protected credentials • backup / restore + rollback • health / failure observation</text>
+<text x="96" y="1293" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Restart and lost-response recovery preserve native ownership, exact versions and immutable receipts</text>
+<path d="M640 1308V1340" fill="none" stroke="#9aadb5" stroke-width="1.6" marker-end="url(#arrow)"/>
+<rect x="218" y="1344" width="844" height="77" rx="12" fill="#edf2fb" stroke="#cbdde0" stroke-width="1.3"/>
+<text x="238" y="1376" fill="#345b9f" font-size="21" font-weight="600" text-anchor="start">Human decision / signature / external submission</text>
+<text x="238" y="1405" fill="#526b75" font-size="18" font-weight="400" text-anchor="start">Agents prepare the work; authenticated people retain human authority.</text>
+<text x="48" y="1451" fill="#526b75" font-size="15" font-weight="400" text-anchor="start">28 Oct 2026 • Logical architecture; a box is not necessarily a separate container.</text>
+<text x="1232" y="1451" fill="#526b75" font-size="15" font-weight="400" text-anchor="end">Target, not a readiness claim</text>
+</g></svg>

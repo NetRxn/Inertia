@@ -1,0 +1,26 @@
+{
+  "packageVersion": "2026.1012.0",
+  "buildCommit": "bba6a45f0d364cfd962ac59b3bdf2426a8222adb",
+  "files": {
+    "dist/routes/agents.js": {
+      "base_sha256": "d0d0a5833fa90cb20e96857a45cfc486d204f771d97c71723c797c96c13314bc",
+      "candidate_sha256": "e3af91edd975abdda9124360f952143f4c1e4369a7a6e1300694d4af80232b77"
+    }
+  },
+  "newFiles": {
+    "dist/services/native-discovery-tool-grants.mjs": {
+      "candidate_sha256": "91976f3c3090cd1eb2ae07746a90d33f8bbf8f59e2e8f12b18ba61524c38739f"
+    }
+  },
+  "patch_sha256": "e80c23024b89c3b250e25e3b68eb008f27befc113dd7fbeea1ac614646e2d39c",
+  "patch": "native-discovery-tool-grants.patch",
+  "unchangedAuthGuard": {
+    "file": "dist/services/ai-connection-runtime.js",
+    "sha256": "58ced6c0aa166969a53083bde5087daf7350384e2a84df924dc9932da7fdc874"
+  },
+  "unchangedGuards": {
+    "dist/services/native-runtime/native-funding-policy.js": "c8dca6746fb1bafc5e6b2fb47cfb066d33c37ff9ec2b96a7dfcda6e2d4bf0215",
+    "dist/vendor/paperclip-runner/drivers/codex/codex-security-config.js": "7cebcd6cbd00e711c9e33afcc4a4da32353392a6df0af1394fd098753707741e",
+    "dist/services/native-runtime/native-discovery-policy.mjs": "37827f386bbb76e38310528899f6641612e8daaebf786fe0ef8386054fcd0cac"
+  }
+}

@@ -83,3 +83,9 @@ functional rehearsal, not qualification of the actual SDK HTTP/RPC resource boun
 The explicit disposable writer fence is not a production writer/grant policy. Approved
 production writer inventory/fencing, lifecycle/retention, scheduling and a real authenticated
 human walkthrough remain activation gates. No deployment, scheduler or live grant is added.
+
+### Optional whole-packet acceptance
+
+A protected native review scope may opt into `wholePacketReview: true`. Its private producer and reviewer configurations must both opt into `whole_packet_review: true`; the reviewer requires the existing exact `preparation` mapping. This source change applies none of these settings. Existing scopes keep their candidate-only contract.
+
+In the optional mode, the existing review artifact schema accepts section or packet artifacts, while acceptance requires a current complete-packet receipt. A supported section is returned through the existing native attention lifecycle so the real Alpha continuation can regenerate/register the full packet. Beta then receives complete JSON/Markdown/DOCX/review bytes and the exact source-run manifest. Acceptance checks the independent current reviewer, card, decision, source run, packet/version and manifest under the held private PostgreSQL/file fence. Missing, oversized, corrupted, stale or candidate-only evidence fails closed. The private DFW contract is documented in `docs/NATIVE_WHOLE_PACKET_REVIEW.md` in that repository. No scheduler, broad document access, hosted search, shell/network access, credentials or live policy changes are introduced by this acceptance mode.
