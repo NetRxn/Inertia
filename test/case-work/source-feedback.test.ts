@@ -18,3 +18,11 @@ it('preserves only finite source-schema correction paths in source facade errors
  for(const frame of [{...failure,details:{...failure.details,issues:[{path:['PRIVATE-CANARY'],code:'missing'}]}},{...failure,details:{...failure.details,issues:[{path:['fields'],code:'missing',input:'PRIVATE-CANARY'}]}},{...failure,details:{...failure.details,issues:[{path:['fields'],code:'PRIVATE-CANARY'}]}}])expect((await rejected(frame)).message).toBe('DFW drafting rejected request');
  expect((await rejected(failure,'save')).message).toBe('DFW drafting rejected request');
 });
+
+it('preserves closed semantic proposal correction codes without accepting arbitrary reason text',async()=>{
+ for(const code of ['sponsor_language_quote_mismatch','exact_source_passage_required','verified_metadata_incomplete']) {
+  const frame={...failure,details:{issues:[{path:['requirements',0,'requirement'],code}],truncated:false}};
+  expect((await rejected(frame)).message).toContain(code);
+  expect((await rejected({...frame,details:{...frame.details,issues:[{path:['requirements',0],code:'PRIVATE-CANARY'}]}})).message).toBe('DFW drafting rejected request');
+ }
+});

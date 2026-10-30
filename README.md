@@ -1,5 +1,13 @@
 # Inertia
 
+## Find the right branch
+
+- **Member app / teammate work:** [`claude/member-app-feed-redesign-cf004e` → `apps/member`](https://github.com/NetRxn/Inertia/tree/claude/member-app-feed-redesign-cf004e/apps/member), tracked in [PR #141](https://github.com/NetRxn/Inertia/pull/141).
+- **Integrated plugin, funding and native source:** [`develop`](https://github.com/NetRxn/Inertia/tree/develop). Plugin code is in `src/`; native overlays are in `host-composition/paperclip-durable-funding-review/`.
+- **Funding domain:** [DFW-Gov-Fund `main` → `government-funding-dfw`](https://github.com/NetRxn/DFW-Gov-Fund/tree/main/government-funding-dfw).
+
+On GitHub, open the direct link or choose the exact branch in the branch dropdown above the file list. On an existing local checkout, `git fetch origin` and `git log --oneline -5 origin/develop` inspect integrated history without switching or resetting teammate work. See the [source integration status](docs/development/source-integration-20261029.md) for ownership and validation.
+
 **October30 demo:** [persistent critical-path chart](docs/delivery/critical-path/index.html) · [dated readiness](docs/delivery/CURRENT-DEMO-READINESS.md), [visual proof map](docs/delivery/architecture/index.html), and [walkthrough](docs/delivery/DEMO-WALKTHROUGH.md). Current status, plans, warnings and time credits are maintained in the persistent chart; dated snapshots below remain historical. Historical claims below do not override it.
 
 **Source integration:** [October29 repository status](docs/development/source-integration-20261029.md) records the canonical develop integration, validation and retained peer/qualification branches.
