@@ -41,8 +41,25 @@ test.describe('Login flow', () => {
     await page.goto(loginUrl);
 
     // Should see expired message
-    await expect(page.locator('h1')).toContainText('Link Expired');
+    await expect(page.locator('h1')).toContainText('Link expired');
     await expect(page.locator('text=This link has expired or was already used')).toBeVisible();
+  });
+
+  test('opening a link, as a chat preview would, does not use it up', async ({ page, request }) => {
+    await page.goto('/login');
+    await page.fill('input[type="email"]', 'rob@example.org');
+    await page.click('button[type="submit"]');
+    await page.waitForSelector('text=Check your email');
+    await page.waitForTimeout(500);
+    const { promises: fs } = await import('fs');
+    const loginUrl = await fs.readFile('data/dev-mail/rob@example.org.txt', 'utf-8');
+
+    // A preview fetches the page; the link still works afterwards.
+    expect((await request.get(loginUrl)).status()).toBe(200);
+    await page.goto(loginUrl);
+    await expect(page.locator('h1')).toContainText('Welcome back, Rob');
+    await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page).toHaveURL('/');
   });
 
   test('visiting / signed out redirects to /login', async ({ page }) => {

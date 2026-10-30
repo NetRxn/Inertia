@@ -38,6 +38,13 @@ Tips:
 - Keep or add the initiatives (including *Pursue grant funding strategy*) **before** running Find work, so tasks land under the right goal.
 - Without Paperclip settings the app uses an in-memory engine: fine for rehearsals, but tasks are lost on restart.
 
+## Sign-in
+
+- Opening a sign-in link shows a **Sign in** button; only pressing it uses the link, so chat apps that fetch links for previews (Telegram, Slack, iMessage) no longer use them up.
+- Links members request by email work once, for an hour. Links an admin copies from Organization → People work once, for 72 hours.
+- A session lasts 90 days from its last use and renews whenever the app is opened; Sign out (Organization → People) ends it.
+- **Email:** create a Resend account, add the sending domain (e.g. `inertia.ing`) and put its DNS records in Cloudflare, then set `RESEND_API_KEY` and `MEMBER_APP_MAIL_FROM=Inertia <login@inertia.ing>`. The connection check reports whether Resend has verified the domain. Without them, production sends nothing and an admin copies links.
+
 ## Settings in the app
 
 Admins can set the **language model** and the **Telegram bot** in Agents → Connections instead of this file. Saved settings override the matching variables. Keys and tokens are encrypted with `MEMBER_APP_SECRET_KEY` (at least 32 characters; `openssl rand -base64 48`), which must be set on the server, and never sent back to the page. The connectors read saved Telegram settings when the app uses a shared Postgres (`DATABASE_URL`) and restart themselves within a minute of a change.

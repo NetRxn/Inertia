@@ -9,7 +9,7 @@ describe('connection checks', () => {
     const calls: string[] = [];
     const results = await checkConnections({}, (async (u: string) => { calls.push(u); return json({}); }) as unknown as typeof fetch);
     expect(results.map((r) => [r.name, r.status])).toEqual([
-      ['Language model', 'not set'], ['Paperclip', 'not set'], ['Ingest endpoint', 'not set'], ['Telegram bot', 'not set'], ['Buzz', 'not set'],
+      ['Language model', 'not set'], ['Paperclip', 'not set'], ['Sign-in email', 'not set'], ['Ingest endpoint', 'not set'], ['Telegram bot', 'not set'], ['Buzz', 'not set'],
     ]);
     expect(calls).toEqual([]);
   });
@@ -37,4 +37,16 @@ describe('connection checks', () => {
     expect(by['Telegram bot']).toMatchObject({ status: 'warning', detail: expect.stringContaining('/setprivacy') });
     expect(by['Buzz']).toMatchObject({ status: 'failed', detail: expect.stringContaining('add it as a member') });
   });
+
+  it('checks that Resend has verified the sending domain, sending nothing', async () => {
+    const env = { RESEND_API_KEY: 're_test', MEMBER_APP_MAIL_FROM: 'Inertia <login@inertia.ing>' };
+    const answer = (status: string) => (async (input: string | URL) => {
+      expect(String(input)).toBe('https://api.resend.com/domains');
+      return json({ data: [{ name: 'inertia.ing', status }] });
+    }) as unknown as typeof fetch;
+    const email = async (status: string) => (await checkConnections(env, answer(status))).find((r) => r.name === 'Sign-in email')!;
+    expect(await email('verified')).toMatchObject({ status: 'ok' });
+    expect(await email('pending')).toMatchObject({ status: 'warning', detail: expect.stringContaining('Cloudflare') });
+  });
 });
+

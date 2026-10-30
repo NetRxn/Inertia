@@ -25,6 +25,14 @@ interface ConsumeFailure {
 
 export type ConsumeLoginTokenResult = ConsumeResult | ConsumeFailure;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** How long a link someone requests by email stays valid. */
+export const EMAIL_LINK_TTL_MS = 60 * 60 * 1000;
+/** A session lasts this long after it was last used, then ends. */
+export const SESSION_TTL_MS = 90 * DAY_MS;
+/** Renew a session at most once a day, so reads don't write every time. */
+const SESSION_RENEW_AFTER_MS = DAY_MS;
+
 /**
  * Generates a random token and returns both the token and its SHA-256 hash.
  */
@@ -69,7 +77,7 @@ export async function requestLoginLink(
   // Rate limit check and insert in transaction (atomic)
   const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const { token, hash } = generateToken();
-  const expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes
+  const expiresAt = new Date(now.getTime() + EMAIL_LINK_TTL_MS);
 
   // Track whether a token was inserted so we only send mail after commit
   let tokenInserted = false;
@@ -138,6 +146,26 @@ export async function issueSignInLink(
 }
 
 /**
+ * Says whether a sign-in link still works, without using it. The link page
+ * calls this on open, so a chat app fetching the link for a preview leaves it
+ * working; only the person's "Sign in" press consumes it.
+ */
+export async function checkLoginToken(
+  db: Db,
+  token: string,
+  now?: Date
+): Promise<{ ok: true; firstName: string } | ConsumeFailure> {
+  const currentTime = now ?? new Date();
+  const [loginToken] = await db.select().from(loginTokens).where(eq(loginTokens.tokenHash, hashToken(token))).limit(1);
+  if (!loginToken) return { ok: false, reason: 'invalid' };
+  if (loginToken.usedAt) return { ok: false, reason: 'used' };
+  if (loginToken.expiresAt < currentTime) return { ok: false, reason: 'expired' };
+  const [member] = await db.select().from(members).where(eq(members.id, loginToken.memberId)).limit(1);
+  if (!member || member.status !== 'active') return { ok: false, reason: 'inactive' };
+  return { ok: true, firstName: member.displayName.trim().split(/\s+/)[0] };
+}
+
+/**
  * Consumes a login token and creates a session if valid.
  * Returns the session token on success, or an error reason on failure.
  * Uses atomic UPDATE to ensure single-use tokens even under concurrency.
@@ -194,7 +222,7 @@ export async function consumeLoginToken(
 
     // Create session
     const { token: sessionToken, hash: sessionHash } = generateToken();
-    const sessionExpiresAt = new Date(currentTime.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
+    const sessionExpiresAt = new Date(currentTime.getTime() + SESSION_TTL_MS);
 
     await tx.insert(sessions).values({
       memberId: member.id,
@@ -244,6 +272,12 @@ export async function getMemberForSession(
 
   if (!member || member.status !== 'active') {
     return null;
+  }
+
+  // Sliding expiry: a session in use keeps going; one left alone for its full term ends.
+  const renewed = new Date(currentTime.getTime() + SESSION_TTL_MS);
+  if (renewed.getTime() - session.expiresAt.getTime() >= SESSION_RENEW_AFTER_MS) {
+    await db.update(sessions).set({ expiresAt: renewed }).where(eq(sessions.id, session.id));
   }
 
   // Update lastSeenAt if more than 5 minutes have passed
