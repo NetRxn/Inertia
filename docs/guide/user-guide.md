@@ -1,5 +1,7 @@
 # Use Inertia
 
+[Project README](../../README.md) · [Documentation index](README.md)
+
 ## Find the right surface
 
 Open the admitted member app or Paperclip installation with your own account and current organization permissions. The pilot uses Cloudflare Access plus application authentication. Never share a login link, session cookie or signing key. Enabling signup does not prove that a person has joined successfully.

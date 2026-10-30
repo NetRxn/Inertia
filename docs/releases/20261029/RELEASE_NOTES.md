@@ -1,5 +1,7 @@
 # Source release notes — Inertia 0.1.0 / DFW 3.4.1
 
+[Project README](../../../README.md) · [Documentation index](../../guide/README.md)
+
 This release records qualified integration source, with DFW retaining its supervised-beta/manual-submission scope. The first version tags match existing package metadata: `v0.1.0` and `v3.4.1`. Actual annotated refs and the external release receipt are publication evidence; source tags do not certify full product readiness or deployed/runtime parity. Human-owned DemoDocs remain untouched.
 
 ## Supported source scope

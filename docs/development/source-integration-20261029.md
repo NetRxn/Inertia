@@ -1,5 +1,7 @@
 # Repository source integration — October 29, 2026
 
+[Project README](../../README.md) · [Documentation index](../guide/README.md)
+
 ## Teammate quick navigation
 
 | What you need | Exact branch and link |
