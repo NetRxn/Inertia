@@ -18,7 +18,7 @@ Saved Alpha candidates reached the Coordinator and thirteen distinct Beta case t
 
 Charlie independently rejected sources and returned corrections to the same case. FUTO source proposal `393f…` was accepted, completed its native source-review child and resumed Beta. **Source approval is not approval of the application draft, budget or final packet.** No final Charlie whole-packet approval or external submission is claimed.
 
-The intended MVP outcome is a Coordinator-ranked shortlist of the strongest active saved opportunities and readable real agent-authored drafts. Individual case and draft evidence does not establish completed portfolio acceptance. Full 1,475-record coverage is not an MVP gate. Missing legal/contact facts and final authority remain explicit; answerable proposed writing can proceed before those final decisions. The separate source-reconciliation audit is retained evidence, not a demand to restart the funding scan.
+The Coordinator has saved a ranked shortlist of three active opportunities in its existing queue, preserving all thirteen case bindings. The [P2 evidence record](../releases/p2-shortlist-20261030/README.md) binds that result to its actual native document revision and body hash. This closes the ranked-handful outcome; individual case and draft evidence does not establish completed portfolio or application acceptance. Full 1,475-record coverage is not an MVP gate. Missing legal/contact facts and final authority remain explicit; answerable proposed writing can proceed before those final decisions. The separate source-reconciliation audit is retained evidence, not a demand to restart the funding scan.
 
 ## Deferred from this MVP
 
