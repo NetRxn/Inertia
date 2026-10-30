@@ -1,0 +1,64 @@
+{
+  "schema": "inertia-p2-shortlist-evidence-pin-v1",
+  "recordedAt": "2026-10-30T11:29:13.415252+00:00",
+  "state": "ACTUAL_COORDINATOR_RANKED_SHORTLIST_VERIFIED",
+  "acceptanceObservedAt": "2026-10-30T11:25:46.012621+00:00",
+  "independentCheckedAt": "2026-10-30T11:26:37.144231+00:00",
+  "actualCoordinatorRun": {
+    "runId": "2cf35911-198c-4b92-b002-00761fc30344",
+    "status": "succeeded",
+    "startedAt": "2026-10-30T11:19:48.966+00:00",
+    "finishedAt": "2026-10-30T11:21:28.419+00:00",
+    "lastOutputAt": "2026-10-30T11:21:27.578+00:00"
+  },
+  "nativeDocument": {
+    "id": "88a75c69-0e2c-4dff-8a34-59011c81c103",
+    "key": "funding-case-queue",
+    "previousRevision": 24,
+    "revision": 25,
+    "revisionId": "0576598e-9291-4f2f-bb46-1e0d5b22c744",
+    "bodySha256": "0e336daa890ded67f6862aa793250364dd280b6141e0838ee21b0815a12cb1f2",
+    "bodyBytes": 46147
+  },
+  "rankedActiveHandful": [
+    {
+      "rank": 1,
+      "task": "INE-73",
+      "binding": "331425f9-e7ae-5352-829f-b98050b765f4",
+      "officialURL": "https://hackerinitiative.org/"
+    },
+    {
+      "rank": 2,
+      "task": "INE-74",
+      "binding": "24c461b7-efe6-54bb-be31-7ebd03333b9d",
+      "officialURL": "https://futo.tech/grants"
+    },
+    {
+      "rank": 3,
+      "task": "INE-64",
+      "binding": "6ef608d1-fddc-5792-ba26-b02b3e476a45",
+      "officialURL": "https://www.datcu.org/why-datcu/about-us/grants"
+    }
+  ],
+  "preservation": {
+    "oldQueueByteExactPrefix": true,
+    "all13Bindings": true,
+    "operatorAuthoredRanking": false
+  },
+  "requiredFieldsAllPresent": true,
+  "morningSponsorPagesRechecked": true,
+  "evidenceSha256": "39c8b0035f73af5fdb02faecf39accba00b85b64c923888d7523b00e6f11b78e",
+  "readableExtractSha256": "4a87a25bbbb9504b73e10ab6d0b0b1f19aa19ef80cdb835c3288f4d4ffa5a1f1",
+  "scope": "Actual Coordinator saved ranked active handful; not full1475 coverage or packet/application/submission approval",
+  "releasePolicy": "Evidence-onlyP2pin. P0v0.1.1immutable. P1Charlie/Betaacceptance separate; no source/packageversion change or acceptedP1tag implied.",
+  "evidenceTag": "evidence/p2-20261030.1",
+  "tagSemantics": "Immutable business-evidence snapshot; not a software version, deployment instruction, accepted P1 review, final application approval or submission",
+  "sourceContext": {
+    "softwareReleaseReference": "v0.1.1",
+    "canonicalSourceIntegration": "0dd8c7c3454eab6fc33cc6050816fcd7fe2d0610",
+    "softwarePackageVersion": "0.1.1",
+    "codeChangesRequired": false,
+    "runtimeComposition": "Selective runtime composition; no whole-Git-tree parity assertion"
+  },
+  "gitBinding": "The annotated evidence tag and external publication receipt bind the accepted commit containing this pin. The native document revision/body hash binds the actual saved business output."
+}

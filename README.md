@@ -27,6 +27,8 @@ The demonstrated pilot created thirteen distinct case tasks, ran four case provi
 
 [Watch the recorded demo](https://youtu.be/s5NHieVPrN4) for the product walkthrough. See the [MVP guide](docs/guide/README.md) for scope and the [source integration record](docs/development/source-integration-20261029.md) for technical validation and provenance.
 
+The Coordinator has also saved a ranked shortlist of three active opportunities into its existing queue while preserving all thirteen case bindings. See the [P2 evidence record](docs/releases/p2-shortlist-20261030/README.md) for the immutable revision, hash and scope.
+
 ## Documentation
 
 | Review question | Documentation |
