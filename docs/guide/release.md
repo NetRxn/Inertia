@@ -36,6 +36,10 @@ Release notes must record the Inertia commit/tag, DFW commit/tag, native upstrea
 
 The Git integration lane owns merge/tag closeout; the live operator owns target proof. Both records must agree before claiming source/runtime parity. This documentation change runs no deployment, rollback or tagging command.
 
+## Qualified deployment records
+
+- [0.1.1 P0 deployment](../releases/0.1.1/RELEASE_NOTES.md): member compatibility, org-profile activation, exact image/source pin and historical provenance limits. Later P1 runtime/business acceptance is recorded separately.
+
 ## Known dependency follow-up
 
 The tagged DFW lock contains Mako 1.3.12. GitHub advisory [GHSA-5639-2j2p-m4mx](https://github.com/advisories/GHSA-5639-2j2p-m4mx) describes a Windows TemplateLookup drive-letter path-traversal vulnerability, patched in 1.4.2. The existing [dependency PR #41](https://github.com/NetRxn/DFW-Gov-Fund/pull/41) proposes the update. The release CI dependency audit passed, but the separate GitHub alert remains open; source qualification does not close it or establish runtime exploitability. Review the dependency update through its own checks before deployment.

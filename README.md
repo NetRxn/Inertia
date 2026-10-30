@@ -37,6 +37,8 @@ The demonstrated pilot created thirteen distinct case tasks, ran four case provi
 | How are deployment, recovery and source releases managed? | [Release and recovery](docs/guide/release.md) · [Release notes](docs/releases/20261029/RELEASE_NOTES.md) |
 | Which commits and components were qualified? | [Source inputs](docs/releases/20261029/source-inputs.json) · [Integration evidence](docs/development/source-integration-20261029.md) |
 
+The [0.1.1 P0 release record](docs/releases/0.1.1/RELEASE_NOTES.md) documents the qualified deployment, exact image/source pins and provenance limits.
+
 ## Source and local validation
 
 GitHub's default branch, `develop`, contains the integrated source. The [Inertia v0.1.0](https://github.com/NetRxn/Inertia/tree/v0.1.0) and [DFW v3.4.1](https://github.com/NetRxn/DFW-Gov-Fund/tree/v3.4.1) tags preserve the qualified source release; documentation may advance on `develop`.
