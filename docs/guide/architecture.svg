@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc"><title id="title">Inertia MVP architecture and scope</title><desc id="desc">A general Coordinator delegates discovery and parallel funding cases, with separate independent review. Durable native, domain and member storage remain distinct. Notes, real Buzz and exhaustion revisit are deferred.</desc>
+<rect x="0" y="0" width="1200" height="900" rx="12" fill="#f4f7fa" stroke="#f4f7fa"/>
+<text x="40" y="40" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#286587">INERTIA / MVP ARCHITECTURE</text>
+<text x="40" y="88" font-family="Arial,sans-serif" font-size="35" font-weight="700" fill="#20394c">Knowledge into accountable work</text>
+<text x="40" y="121" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Logical architecture and verified scope, October 29. A source diagram does not establish current deployment or final application approval.</text>
+<rect x="40" y="160" width="350" height="125" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="58" y="191" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">People and objectives</text>
+<text x="58" y="221" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Own account, current organization</text>
+<text x="58" y="244.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">access and exact final decisions. No</text>
+<text x="58" y="268.6" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">agent impersonates human authority.</text>
+<rect x="425" y="160" width="350" height="125" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="443" y="191" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">Member knowledge</text>
+<text x="443" y="221" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Existing shared corpus and scoped</text>
+<text x="443" y="244.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">search/read; source, passage and hash</text>
+<text x="443" y="268.6" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">attribution remain explicit.</text>
+<rect x="810" y="160" width="350" height="125" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="828" y="191" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">VPS access boundary</text>
+<text x="828" y="221" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Cloudflare Access + tunnel and</text>
+<text x="828" y="244.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">application auth. Durable stores. No</text>
+<text x="828" y="268.6" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Caddy layer.</text>
+<path d="M600 285 L600 314" stroke="#547895" stroke-width="2"/>
+<path d="M595 306 L600 314 L605 306" fill="none" stroke="#547895" stroke-width="2"/>
+<rect x="40" y="320" width="1120" height="82" rx="12" fill="#e1edf5" stroke="#d4dfe8"/>
+<text x="61" y="352" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#286587">GENERAL COORDINATOR</text>
+<text x="61" y="381" font-family="Arial,sans-serif" font-size="20" font-weight="400" fill="#20394c">Rank active saved opportunities; delegate, monitor and return useful work across the organization.</text>
+<path d="M215 402 L215 431" stroke="#547895" stroke-width="2"/>
+<path d="M210 423 L215 431 L220 423" fill="none" stroke="#547895" stroke-width="2"/>
+<path d="M600 402 L600 431" stroke="#547895" stroke-width="2"/>
+<path d="M595 423 L600 431 L605 423" fill="none" stroke="#547895" stroke-width="2"/>
+<path d="M985 402 L985 431" stroke="#547895" stroke-width="2"/>
+<path d="M980 423 L985 431 L990 423" fill="none" stroke="#547895" stroke-width="2"/>
+<rect x="40" y="438" width="350" height="175" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="58" y="469" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">Alpha / discovery</text>
+<text x="58" y="499" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Retain candidates and source frontier.</text>
+<text x="58" y="522.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Reuse saved evidence. Full 1,475-record</text>
+<text x="58" y="546.5999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">coverage is not tomorrow&#x27;s MVP gate.</text>
+<rect x="425" y="438" width="350" height="175" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="443" y="469" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">Parallel Beta / cases</text>
+<text x="443" y="499" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Research, propose, save and correct.</text>
+<text x="443" y="522.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Thirteen case tasks and four overlapping</text>
+<text x="443" y="546.5999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">providers observed. Preserve useful</text>
+<text x="443" y="570.3999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">partial work.</text>
+<rect x="810" y="438" width="350" height="175" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="828" y="469" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">Charlie / independent review</text>
+<text x="828" y="499" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Exact source and artifact versions.</text>
+<text x="828" y="522.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Rejection returns correction. FUTO 393f</text>
+<text x="828" y="546.5999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">is source acceptance, not final packet</text>
+<text x="828" y="570.3999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">approval.</text>
+<rect x="40" y="636" width="545" height="128" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="58" y="667" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">Separate durable ownership</text>
+<text x="58" y="697" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Paperclip: tasks/reviews/run history. DFW: funding evidence/cases.</text>
+<text x="58" y="720.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Member app: organization sources and shares. Scoped readers</text>
+<text x="58" y="744.5999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">connect them.</text>
+<rect x="610" y="636" width="550" height="128" rx="12" fill="#ffffff" stroke="#d4dfe8"/>
+<text x="628" y="667" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#20394c">Readable proposed work -&gt; human decision</text>
+<text x="628" y="697" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Organization-grounded writing and artifact readback observed.</text>
+<text x="628" y="720.8" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">Human accepted FUTO sample quality; current submission remains</text>
+<text x="628" y="744.5999999999999" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#20394c">manual.</text>
+<rect x="40" y="776" width="1120" height="72" rx="12" fill="#fff4df" stroke="#e1c387"/>
+<text x="60" y="803" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#865a12">DEFERRED FROM THIS MVP</text>
+<text x="60" y="829" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#20394c">Real Paperclip-Buzz loop  |  Gemini notes import/triage  |  Durable exhaustion/new-evidence revisit</text>
+<text x="40" y="873" font-family="Arial,sans-serif" font-size="14" font-weight="400" fill="#526879">Source, release tag, deployed image, source approval and application approval are separate evidence.</text>
+</svg>

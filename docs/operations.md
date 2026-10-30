@@ -1,5 +1,7 @@
 # Run the connected Buzz–Paperclip loop
 
+> The live MVP guide and release scope are in [MVP guide](https://github.com/NetRxn/Inertia/blob/develop/docs/guide/README.md). This document describes the controlled Buzz bridge/fixture and connection contract; real Paperclip-Buzz participation is deferred from the current MVP.
+
 ## Run the fixture
 
 From a source checkout, use Node 24.11.0 or newer and run `npm ci && npm run demo`. Run development commands from the checkout. This uses the real signature verifier, native SDK adapter, PostgreSQL migration/store, service and Buzz HTTP transport. External host and relay I/O are synthetic. It prints the linked source, native comment and receipt IDs, then proves replay after service reconstruction creates no second comment. The fixture runs offline without credentials.
