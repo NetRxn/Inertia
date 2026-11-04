@@ -34,6 +34,7 @@ The Coordinator has also saved a ranked shortlist of three active opportunities 
 | Review question | Documentation |
 | --- | --- |
 | What can users do, and what does the MVP demonstrate? | [MVP overview](docs/guide/README.md) · [User guide](docs/guide/user-guide.md) |
+| How do I configure agents and onboard teammates or external runtimes? | [Agent configuration cheat sheet](docs/guide/paperclip-agent-configuration.md) · [Onboarding cheat sheet](docs/guide/paperclip-onboarding.md) |
 | How are agents, review and durable stores connected? | [Architecture diagram](docs/guide/architecture.svg) · [Printable PDF](docs/guide/architecture.pdf) · [HTML source](docs/guide/architecture.html) |
 | How do I install dependencies and validate the source? | [Installation and qualification](docs/guide/install.md) |
 | How are deployment, recovery and source releases managed? | [Release and recovery](docs/guide/release.md) · [Release notes](docs/releases/20261029/RELEASE_NOTES.md) |
